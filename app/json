@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "SetReady",
+    "slug": "setready",
+    "version": "1.0.0",
+    "ios": {
+      "bundleIdentifier": "com.setready.app",
+      "infoPlist": {
+        "NSPrivacyAccessedAPITypes": []
+      }
+    },
+    "android": {
+      "package": "com.setready.app"
+    }
+  }
+}
