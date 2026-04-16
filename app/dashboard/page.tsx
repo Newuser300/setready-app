@@ -74,6 +74,9 @@ export default function Dashboard() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+  // SECTION 2 POP-UP STATE
+  const [showSection2Popup, setShowSection2Popup] = useState(false);
+
   // Work Log State
   const [workLogs, setWorkLogs] = useState<WorkLog[]>([]);
   const [showWorkLogForm, setShowWorkLogForm] = useState(false);
@@ -143,6 +146,39 @@ export default function Dashboard() {
     }
   }, []);
 
+  // SECTION 2 POP-UP CHECK
+  async function checkSection2Completion() {
+    if (!user) return;
+    
+    // Section 2 modules are 6, 7, 8, 9
+    const section2ModuleIds = [6, 7, 8, 9];
+    
+    const { data: progressData } = await supabase
+      .from('user_progress')
+      .select('module_id, completed, section2_popup_shown')
+      .eq('user_id', user.id)
+      .in('module_id', section2ModuleIds);
+    
+    if (!progressData || progressData.length === 0) return;
+    
+    // Check if all Section 2 modules are completed
+    const allCompleted = progressData.filter(p => p.completed === true).length === 4;
+    const alreadyShown = progressData.some(p => p.section2_popup_shown === true);
+    
+    if (allCompleted && !alreadyShown) {
+      setShowSection2Popup(true);
+      
+      // Mark as shown so it doesn't appear again
+      for (const module of progressData) {
+        await supabase
+          .from('user_progress')
+          .update({ section2_popup_shown: true })
+          .eq('user_id', user.id)
+          .eq('module_id', module.module_id);
+      }
+    }
+  }
+
   async function checkUser() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -189,6 +225,9 @@ export default function Dashboard() {
           .eq('id', user.id);
         setIsUpdating(false);
       }
+      
+      // SECTION 2 POP-UP: Check after refreshing progress
+      await checkSection2Completion();
     }
   }
 
@@ -223,6 +262,9 @@ export default function Dashboard() {
           .update({ section1_completed: true })
           .eq('id', user.id);
       }
+      
+      // SECTION 2 POP-UP: Check after loading modules
+      await checkSection2Completion();
     }
     setLoading(false);
   }
@@ -426,484 +468,533 @@ export default function Dashboard() {
   const progressPercentage = (completedCount / section1Modules.length) * 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Hero Header */}
-      <div className="bg-gradient-to-r from-blue-700 via-purple-700 to-indigo-800 text-white">
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-                Welcome back, <span className="text-yellow-300">{user?.email?.split('@')[0]}</span>
-              </h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <Link href="/settings" className="text-white/80 hover:text-white transition text-sm flex items-center gap-1">
-                <span className="text-xl">⚙️</span>
-                <span className="hidden sm:inline">Settings</span>
-              </Link>
-              <div className="hidden md:block text-6xl">🎭</div>
-            </div>
-          </div>
-          
-          {/* Progress Card */}
-          <div className="mt-6 bg-white/10 rounded-2xl p-4 backdrop-blur-sm">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-medium">Your Progress</span>
-              <span className="text-2xl font-bold">{completedCount}/{section1Modules.length}</span>
-            </div>
-            <div className="h-3 bg-white/20 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full transition-all duration-500"
-                style={{ width: `${progressPercentage}%` }}
-              />
-            </div>
-            <p className="text-sm text-blue-200 mt-2">
-              {completedCount === section1Modules.length 
-                ? '🎉 Amazing! You\'ve unlocked the secret section!' 
-                : `${section1Modules.length - completedCount} more modules to unlock the secret section`}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Section 1 Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="text-3xl">📚</div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">Section 1: Background Performer Training</h2>
-            <p className="text-gray-500 text-sm">Master the fundamentals of working on a film set</p>
-          </div>
-        </div>
-
-        {/* Section 1 Modules - ALL UNLOCKED */}
-        <div className="grid gap-4">
-          {section1Modules.map((module) => {
-            const isCompleted = progress[module.id]?.completed;
-            const score = progress[module.id]?.score;
-            const actualScore = getActualScore(score);
-            
-            return (
-              <Link href={`/module/${module.id}`} key={module.id}>
-                <div className={`
-                  relative overflow-hidden rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:shadow-xl
-                  ${isCompleted 
-                    ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500' 
-                    : 'bg-white hover:shadow-md border border-gray-200'
-                  }
-                `}>
-                  <div className="p-5">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="text-4xl">{moduleIcons[module.module_number] || '📘'}</div>
-                        <div>
-                          <h3 className="font-bold text-lg text-gray-800">{module.title}</h3>
-                          <p className="text-sm text-gray-500 mt-1">{moduleSubtitles[module.module_number] || 'Complete this module to advance'}</p>
-                        </div>
-                      </div>
-                      <div>
-                        {isCompleted ? (
-                          <div className="flex items-center gap-2">
-                            <span className="bg-green-100 text-green-700 text-sm font-medium px-3 py-1 rounded-full">
-                              ✓ Completed ({actualScore}/15)
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <span className="bg-blue-100 text-blue-700 text-sm font-medium px-3 py-1 rounded-full">
-                              📝 Not started
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {isCompleted && (
-                      <div className="mt-3 flex items-center gap-2 text-sm text-green-600">
-                        <span>✓</span>
-                        <span>Passed with {actualScore}/15</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* Secret Section 2 - LOCKED until all Section 1 complete */}
-        {section2Visible ? (
-          <div className="mt-12">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl blur-xl opacity-30"></div>
-              <div className="relative bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl p-6 text-center">
-                <div className="text-5xl mb-3">🎉</div>
-                <h2 className="text-2xl font-bold text-white">SECRET SECTION UNLOCKED!</h2>
-                <p className="text-yellow-100 mt-2">You've mastered the basics. Now learn to become a principal actor.</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 mt-8 mb-6">
-              <div className="text-3xl">🎭</div>
+    <>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        {/* Hero Header */}
+        <div className="bg-gradient-to-r from-blue-700 via-purple-700 to-indigo-800 text-white">
+          <div className="max-w-4xl mx-auto px-4 py-8">
+            <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-gray-800">Section 2: From Background to Acting</h2>
-                <p className="text-gray-500 text-sm">Advanced techniques for the serious performer</p>
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+                  Welcome back, <span className="text-yellow-300">{user?.email?.split('@')[0]}</span>
+                </h1>
+              </div>
+              <div className="flex items-center gap-4">
+                <Link href="/settings" className="text-white/80 hover:text-white transition text-sm flex items-center gap-1">
+                  <span className="text-xl">⚙️</span>
+                  <span className="hidden sm:inline">Settings</span>
+                </Link>
+                <div className="hidden md:block text-6xl">🎭</div>
               </div>
             </div>
+            
+            {/* Progress Card */}
+            <div className="mt-6 bg-white/10 rounded-2xl p-4 backdrop-blur-sm">
+              <div className="flex justify-between items-center mb-2">
+                <span className="font-medium">Your Progress</span>
+                <span className="text-2xl font-bold">{completedCount}/{section1Modules.length}</span>
+              </div>
+              <div className="h-3 bg-white/20 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full transition-all duration-500"
+                  style={{ width: `${progressPercentage}%` }}
+                />
+              </div>
+              <p className="text-sm text-blue-200 mt-2">
+                {completedCount === section1Modules.length 
+                  ? '🎉 Amazing! You\'ve unlocked the secret section!' 
+                  : `${section1Modules.length - completedCount} more modules to unlock the secret section`}
+              </p>
+            </div>
+          </div>
+        </div>
 
-            <div className="grid gap-4">
-              {section2Modules.map((module) => {
-                const isCompleted = progress[module.id]?.completed;
-                return (
-                  <Link href={`/module/${module.id}`} key={module.id}>
-                    <div className={`bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-5 hover:scale-[1.02] transition-all duration-300 hover:shadow-lg border border-purple-200 ${isCompleted ? 'border-l-4 border-green-500' : ''}`}>
-                      <div className="flex items-start justify-between gap-4">
+        {/* Main Content */}
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          {/* Section 1 Header */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="text-3xl">📚</div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">Section 1: Background Performer Training</h2>
+              <p className="text-gray-500 text-sm">Master the fundamentals of working on a film set</p>
+            </div>
+          </div>
+
+          {/* Section 1 Modules - ALL UNLOCKED */}
+          <div className="grid gap-4">
+            {section1Modules.map((module) => {
+              const isCompleted = progress[module.id]?.completed;
+              const score = progress[module.id]?.score;
+              const actualScore = getActualScore(score);
+              
+              return (
+                <Link href={`/module/${module.id}`} key={module.id}>
+                  <div className={`
+                    relative overflow-hidden rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:shadow-xl
+                    ${isCompleted 
+                      ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500' 
+                      : 'bg-white hover:shadow-md border border-gray-200'
+                    }
+                  `}>
+                    <div className="p-5">
+                      <div className="flex items-start justify-between">
                         <div className="flex items-center gap-4">
-                          <div className="text-4xl">{moduleIcons[module.module_number] || '🎯'}</div>
+                          <div className="text-4xl">{moduleIcons[module.module_number] || '📘'}</div>
                           <div>
                             <h3 className="font-bold text-lg text-gray-800">{module.title}</h3>
-                            <p className="text-sm text-gray-500 mt-1">{moduleSubtitles[module.module_number] || 'Advanced acting techniques'}</p>
+                            <p className="text-sm text-gray-500 mt-1">{moduleSubtitles[module.module_number] || 'Complete this module to advance'}</p>
                           </div>
                         </div>
-                        {isCompleted && (
-                          <span className="bg-green-100 text-green-700 text-sm font-medium px-3 py-1 rounded-full">
-                            ✓ Completed
-                          </span>
-                        )}
+                        <div>
+                          {isCompleted ? (
+                            <div className="flex items-center gap-2">
+                              <span className="bg-green-100 text-green-700 text-sm font-medium px-3 py-1 rounded-full">
+                                ✓ Completed ({actualScore}/15)
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="bg-blue-100 text-blue-700 text-sm font-medium px-3 py-1 rounded-full">
+                                📝 Not started
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
+                      
+                      {isCompleted && (
+                        <div className="mt-3 flex items-center gap-2 text-sm text-green-600">
+                          <span>✓</span>
+                          <span>Passed with {actualScore}/15</span>
+                        </div>
+                      )}
                     </div>
-                  </Link>
-                );
-              })}
-            </div>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
-        ) : (
-          <div className="mt-12 text-center">
-            <div className="bg-gray-100 rounded-2xl p-8 border border-dashed border-gray-300">
-              <div className="text-4xl mb-3">🔒</div>
-              <h3 className="font-bold text-gray-600">Secret Section Locked</h3>
-              <p className="text-sm text-gray-400 mt-1">Complete all 5 modules in Section 1 to unlock</p>
-            </div>
-          </div>
-        )}
 
-        {/* SPACER - Extra space BEFORE Work Log section */}
-        <div className="h-48"></div>
-
-        {/* ===================================================== */}
-        {/* WORK LOG SECTION */}
-        {/* ===================================================== */}
-        <div>
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="text-3xl">📋💰</div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800">Work Log & Earnings Tracker</h2>
-                <p className="text-gray-500 text-sm italic">Track your film industry work, earnings, and deductions</p>
+          {/* Secret Section 2 - LOCKED until all Section 1 complete */}
+          {section2Visible ? (
+            <div className="mt-12">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl blur-xl opacity-30"></div>
+                <div className="relative bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl p-6 text-center">
+                  <div className="text-5xl mb-3">🎉</div>
+                  <h2 className="text-2xl font-bold text-white">SECRET SECTION UNLOCKED!</h2>
+                  <p className="text-yellow-100 mt-2">You've mastered the basics. Now learn to become a principal actor.</p>
+                </div>
               </div>
-            </div>
-            <button
-              onClick={() => setShowWorkLogForm(!showWorkLogForm)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-medium"
-            >
-              {showWorkLogForm ? '✖ Cancel' : '➕ Add Work Entry'}
-            </button>
-          </div>
 
-          {/* Work Log Form - Modified with requested changes */}
-          {showWorkLogForm && (
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 mb-8">
-              <h3 className="text-lg font-bold text-gray-800 mb-6">
-                {editingWorkLog ? 'Edit Work Entry' : 'New Work Entry'}
-              </h3>
-              <form onSubmit={saveWorkLog} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Work Date *</label>
-                    <input
-                      type="date"
-                      required
-                      value={workLogForm.work_date}
-                      onChange={(e) => setWorkLogForm({...workLogForm, work_date: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Location *</label>
-                    <input
-                      type="text"
-                      required
-                      value={workLogForm.location}
-                      onChange={(e) => setWorkLogForm({...workLogForm, location: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      placeholder="City / Studio"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Production Name *</label>
-                    <input
-                      type="text"
-                      required
-                      value={workLogForm.production_name}
-                      onChange={(e) => setWorkLogForm({...workLogForm, production_name: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      placeholder="e.g., Movie Title"
-                    />
-                  </div>
-                  {/* Role Field */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Role</label>
-                    <input
-                      type="text"
-                      value={workLogForm.role}
-                      onChange={(e) => setWorkLogForm({...workLogForm, role: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      placeholder="Actor, Stunts, BG, Stand-in, etc."
-                    />
-                  </div>
-                  {/* Character Field */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Character</label>
-                    <input
-                      type="text"
-                      value={workLogForm.character_name}
-                      onChange={(e) => setWorkLogForm({...workLogForm, character_name: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      placeholder="Character name you played"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Hours Worked</label>
-                    <input
-                      type="number"
-                      step="0.5"
-                      value={workLogForm.hours_worked}
-                      onChange={(e) => setWorkLogForm({...workLogForm, hours_worked: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      placeholder="e.g., 8.5"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={workLogForm.lunch_break}
-                        onChange={(e) => setWorkLogForm({...workLogForm, lunch_break: e.target.checked})}
-                        className="w-5 h-5 text-blue-600 rounded"
-                      />
-                      <span className="text-sm text-gray-700">Lunch Break Taken</span>
-                    </label>
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={workLogForm.is_union}
-                        onChange={(e) => setWorkLogForm({...workLogForm, is_union: e.target.checked})}
-                        className="w-5 h-5 text-blue-600 rounded"
-                      />
-                      <span className="text-sm text-gray-700">Union</span>
-                    </label>
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={workLogForm.paid}
-                        onChange={(e) => setWorkLogForm({...workLogForm, paid: e.target.checked})}
-                        className="w-5 h-5 text-blue-600 rounded"
-                      />
-                      <span className="text-sm text-gray-700">Paid</span>
-                    </label>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Pay Rate ($/hour)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={workLogForm.pay_rate}
-                      onChange={(e) => setWorkLogForm({...workLogForm, pay_rate: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      placeholder="e.g., 270.30"
-                    />
-                  </div>
-                  {/* Gross Pay moved above Deductions */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Gross Pay</label>
-                    <input
-                      type="text"
-                      readOnly
-                      value={`$${grossPay.toFixed(2)}`}
-                      className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-700"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Deductions ($)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={workLogForm.deductions}
-                      onChange={(e) => setWorkLogForm({...workLogForm, deductions: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      placeholder="e.g., 50.00"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Final Pay (After Deductions)</label>
-                    <input
-                      type="text"
-                      readOnly
-                      value={`$${finalPay.toFixed(2)}`}
-                      className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-700 font-bold"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Notes</label>
-                    <textarea
-                      value={workLogForm.notes}
-                      onChange={(e) => setWorkLogForm({...workLogForm, notes: e.target.value})}
-                      rows={3}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      placeholder="Any additional notes..."
-                    />
-                  </div>
+              <div className="flex items-center gap-3 mt-8 mb-6">
+                <div className="text-3xl">🎭</div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">Section 2: From Background to Acting</h2>
+                  <p className="text-gray-500 text-sm">Advanced techniques for the serious performer</p>
                 </div>
-                <div className="flex gap-4 pt-4">
-                  <button
-                    type="submit"
-                    disabled={workLogLoading}
-                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium disabled:opacity-50"
-                  >
-                    {workLogLoading ? 'Saving...' : (editingWorkLog ? 'Update Entry' : 'Save Entry')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={resetWorkLogForm}
-                    className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition font-medium"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
+              </div>
 
-          {/* Earnings Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
-              <p className="text-sm text-gray-600">💰 Total Earnings</p>
-              <p className="text-2xl font-bold text-gray-800">${totalEarnings.toFixed(2)}</p>
-            </div>
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
-              <p className="text-sm text-gray-600">✅ Total Paid</p>
-              <p className="text-2xl font-bold text-green-600">${totalPaid.toFixed(2)}</p>
-            </div>
-            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-4 border border-yellow-200">
-              <p className="text-sm text-gray-600">⏳ Total Unpaid</p>
-              <p className="text-2xl font-bold text-orange-600">${totalUnpaid.toFixed(2)}</p>
-            </div>
-          </div>
-
-          {/* Work Logs Table */}
-          {workLogs.length === 0 ? (
-            <div className="bg-white rounded-2xl p-8 text-center border border-gray-200">
-              <div className="text-5xl mb-3">📋</div>
-              <p className="text-gray-500 italic">No work entries yet.</p>
-              <p className="text-sm text-gray-400">Click "Add Work Entry" to start tracking your film industry work.</p>
+              <div className="grid gap-4">
+                {section2Modules.map((module) => {
+                  const isCompleted = progress[module.id]?.completed;
+                  return (
+                    <Link href={`/module/${module.id}`} key={module.id}>
+                      <div className={`bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-5 hover:scale-[1.02] transition-all duration-300 hover:shadow-lg border border-purple-200 ${isCompleted ? 'border-l-4 border-green-500' : ''}`}>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className="text-4xl">{moduleIcons[module.module_number] || '🎯'}</div>
+                            <div>
+                              <h3 className="font-bold text-lg text-gray-800">{module.title}</h3>
+                              <p className="text-sm text-gray-500 mt-1">{moduleSubtitles[module.module_number] || 'Advanced acting techniques'}</p>
+                            </div>
+                          </div>
+                          {isCompleted && (
+                            <span className="bg-green-100 text-green-700 text-sm font-medium px-3 py-1 rounded-full">
+                              ✓ Completed
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">📅 Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">🎬 Production</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">📍 Location</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Role</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Character</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">⏱️ Hours</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">🎭 Union</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">💰 Gross</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">💵 Final</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">✅ Paid</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {workLogs.map((log) => (
-                      <tr key={log.id} className="hover:bg-gray-50 transition">
-                        <td className="px-4 py-3 text-sm text-gray-700">{new Date(log.work_date).toLocaleDateString()}</td>
-                        <td className="px-4 py-3 text-sm font-medium text-gray-800">{log.production_name}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{log.location || '—'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{log.role || '—'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{log.character_name || '—'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{log.hours_worked}h</td>
-                        <td className="px-4 py-3 text-sm">
-                          {log.is_union ? (
-                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">Union</span>
-                          ) : (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">Non-Union</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-700">${log.gross_pay?.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-sm font-semibold text-gray-800">${log.final_pay?.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-sm">
-                          {log.paid ? (
-                            <span className="text-green-600 font-medium">✓ Yes</span>
-                          ) : (
-                            <span className="text-red-500">✗ No</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => editWorkLog(log)}
-                              className="text-blue-600 hover:text-blue-800 transition"
-                              title="Edit"
-                            >
-                              ✏️
-                            </button>
-                            <button
-                              onClick={() => deleteWorkLog(log.id)}
-                              className="text-red-600 hover:text-red-800 transition"
-                              title="Delete"
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <div className="mt-12 text-center">
+              <div className="bg-gray-100 rounded-2xl p-8 border border-dashed border-gray-300">
+                <div className="text-4xl mb-3">🔒</div>
+                <h3 className="font-bold text-gray-600">Secret Section Locked</h3>
+                <p className="text-sm text-gray-400 mt-1">Complete all 5 modules in Section 1 to unlock</p>
               </div>
             </div>
           )}
-        </div>
 
-        {/* Footer Links */}
-        <div className="mt-12 pt-6 border-t border-gray-200 flex justify-center gap-6 text-sm text-gray-400">
-          <Link href="/privacy" className="hover:text-gray-600 transition">Privacy Policy</Link>
-          <Link href="/terms" className="hover:text-gray-600 transition">Terms of Service</Link>
-          {currentUserId ? (
-            <Link 
-              href={`/dashboard/certificates?userId=${currentUserId}`} 
+          {/* SPACER - Extra space BEFORE Work Log section */}
+          <div className="h-48"></div>
+
+          {/* ===================================================== */}
+          {/* WORK LOG SECTION */}
+          {/* ===================================================== */}
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="text-3xl">📋💰</div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">Work Log & Earnings Tracker</h2>
+                  <p className="text-gray-500 text-sm italic">Track your film industry work, earnings, and deductions</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowWorkLogForm(!showWorkLogForm)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-medium"
+              >
+                {showWorkLogForm ? '✖ Cancel' : '➕ Add Work Entry'}
+              </button>
+            </div>
+
+            {/* Work Log Form - Modified with requested changes */}
+            {showWorkLogForm && (
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 mb-8">
+                <h3 className="text-lg font-bold text-gray-800 mb-6">
+                  {editingWorkLog ? 'Edit Work Entry' : 'New Work Entry'}
+                </h3>
+                <form onSubmit={saveWorkLog} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Work Date *</label>
+                      <input
+                        type="date"
+                        required
+                        value={workLogForm.work_date}
+                        onChange={(e) => setWorkLogForm({...workLogForm, work_date: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Location *</label>
+                      <input
+                        type="text"
+                        required
+                        value={workLogForm.location}
+                        onChange={(e) => setWorkLogForm({...workLogForm, location: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="City / Studio"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Production Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={workLogForm.production_name}
+                        onChange={(e) => setWorkLogForm({...workLogForm, production_name: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g., Movie Title"
+                      />
+                    </div>
+                    {/* Role Field */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Role</label>
+                      <input
+                        type="text"
+                        value={workLogForm.role}
+                        onChange={(e) => setWorkLogForm({...workLogForm, role: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="Actor, Stunts, BG, Stand-in, etc."
+                      />
+                    </div>
+                    {/* Character Field */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Character</label>
+                      <input
+                        type="text"
+                        value={workLogForm.character_name}
+                        onChange={(e) => setWorkLogForm({...workLogForm, character_name: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="Character name you played"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Hours Worked</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        value={workLogForm.hours_worked}
+                        onChange={(e) => setWorkLogForm({...workLogForm, hours_worked: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g., 8.5"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={workLogForm.lunch_break}
+                          onChange={(e) => setWorkLogForm({...workLogForm, lunch_break: e.target.checked})}
+                          className="w-5 h-5 text-blue-600 rounded"
+                        />
+                        <span className="text-sm text-gray-700">Lunch Break Taken</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={workLogForm.is_union}
+                          onChange={(e) => setWorkLogForm({...workLogForm, is_union: e.target.checked})}
+                          className="w-5 h-5 text-blue-600 rounded"
+                        />
+                        <span className="text-sm text-gray-700">Union</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={workLogForm.paid}
+                          onChange={(e) => setWorkLogForm({...workLogForm, paid: e.target.checked})}
+                          className="w-5 h-5 text-blue-600 rounded"
+                        />
+                        <span className="text-sm text-gray-700">Paid</span>
+                      </label>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Pay Rate ($/hour)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={workLogForm.pay_rate}
+                        onChange={(e) => setWorkLogForm({...workLogForm, pay_rate: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g., 270.30"
+                      />
+                    </div>
+                    {/* Gross Pay moved above Deductions */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Gross Pay</label>
+                      <input
+                        type="text"
+                        readOnly
+                        value={`$${grossPay.toFixed(2)}`}
+                        className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-700"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Deductions ($)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={workLogForm.deductions}
+                        onChange={(e) => setWorkLogForm({...workLogForm, deductions: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g., 50.00"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Final Pay (After Deductions)</label>
+                      <input
+                        type="text"
+                        readOnly
+                        value={`$${finalPay.toFixed(2)}`}
+                        className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-700 font-bold"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Notes</label>
+                      <textarea
+                        value={workLogForm.notes}
+                        onChange={(e) => setWorkLogForm({...workLogForm, notes: e.target.value})}
+                        rows={3}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="Any additional notes..."
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-4 pt-4">
+                    <button
+                      type="submit"
+                      disabled={workLogLoading}
+                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium disabled:opacity-50"
+                    >
+                      {workLogLoading ? 'Saving...' : (editingWorkLog ? 'Update Entry' : 'Save Entry')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={resetWorkLogForm}
+                      className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition font-medium"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Earnings Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
+                <p className="text-sm text-gray-600">💰 Total Earnings</p>
+                <p className="text-2xl font-bold text-gray-800">${totalEarnings.toFixed(2)}</p>
+              </div>
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
+                <p className="text-sm text-gray-600">✅ Total Paid</p>
+                <p className="text-2xl font-bold text-green-600">${totalPaid.toFixed(2)}</p>
+              </div>
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-4 border border-yellow-200">
+                <p className="text-sm text-gray-600">⏳ Total Unpaid</p>
+                <p className="text-2xl font-bold text-orange-600">${totalUnpaid.toFixed(2)}</p>
+              </div>
+            </div>
+
+            {/* Work Logs Table */}
+            {workLogs.length === 0 ? (
+              <div className="bg-white rounded-2xl p-8 text-center border border-gray-200">
+                <div className="text-5xl mb-3">📋</div>
+                <p className="text-gray-500 italic">No work entries yet.</p>
+                <p className="text-sm text-gray-400">Click "Add Work Entry" to start tracking your film industry work.</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">📅 Date</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">🎬 Production</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">📍 Location</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Role</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Character</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">⏱️ Hours</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">🎭 Union</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">💰 Gross</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">💵 Final</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">✅ Paid</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {workLogs.map((log) => (
+                        <tr key={log.id} className="hover:bg-gray-50 transition">
+                          <td className="px-4 py-3 text-sm text-gray-700">{new Date(log.work_date).toLocaleDateString()}</td>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-800">{log.production_name}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{log.location || '—'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{log.role || '—'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{log.character_name || '—'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{log.hours_worked}h</td>
+                          <td className="px-4 py-3 text-sm">
+                            {log.is_union ? (
+                              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">Union</span>
+                            ) : (
+                              <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">Non-Union</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-700">${log.gross_pay?.toFixed(2)}</td>
+                          <td className="px-4 py-3 text-sm font-semibold text-gray-800">${log.final_pay?.toFixed(2)}</td>
+                          <td className="px-4 py-3 text-sm">
+                            {log.paid ? (
+                              <span className="text-green-600 font-medium">✓ Yes</span>
+                            ) : (
+                              <span className="text-red-500">✗ No</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => editWorkLog(log)}
+                                className="text-blue-600 hover:text-blue-800 transition"
+                                title="Edit"
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                onClick={() => deleteWorkLog(log.id)}
+                                className="text-red-600 hover:text-red-800 transition"
+                                title="Delete"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer Links */}
+          <div className="mt-12 pt-6 border-t border-gray-200 flex justify-center gap-6 text-sm text-gray-400">
+            <Link href="/privacy" className="hover:text-gray-600 transition">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-gray-600 transition">Terms of Service</Link>
+            {/* "My Certificates" link removed as requested */}
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                router.push('/auth/sign-in');
+              }}
               className="hover:text-gray-600 transition"
             >
-              My Certificates
-            </Link>
-          ) : (
-            <span className="text-gray-400">My Certificates (Loading...)</span>
-          )}
-          <button
-            onClick={async () => {
-              await supabase.auth.signOut();
-              router.push('/auth/sign-in');
-            }}
-            className="hover:text-gray-600 transition"
-          >
-            Sign Out
-          </button>
+              Sign Out
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* SECTION 2 COMPLETION POP-UP */}
+      {showSection2Popup && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          padding: '16px'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            maxWidth: '400px',
+            width: '90%',
+            padding: '24px',
+            textAlign: 'center',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎉</div>
+            <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>CONGRATULATIONS!</h2>
+            <p style={{ color: '#4b5563', marginBottom: '16px' }}>You've completed all Section 2 training modules!</p>
+            <div style={{ backgroundColor: '#f3e8ff', borderRadius: '8px', padding: '16px', marginBottom: '16px', textAlign: 'left' }}>
+              <p style={{ fontWeight: '600', color: '#6b21a5', marginBottom: '8px' }}>You've mastered:</p>
+              <ul style={{ listStyle: 'none', padding: 0 }}>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontSize: '14px' }}>✓ Foundation (Stanislavski)</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontSize: '14px' }}>✓ Audition Technique (Shurtleff)</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontSize: '14px' }}>✓ Scene Study (Hagen)</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>✓ Advanced Technique (Meisner, Adler)</li>
+              </ul>
+            </div>
+            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '16px' }}>You're now ready to apply these professional acting techniques.</p>
+            <button
+              onClick={() => setShowSection2Popup(false)}
+              style={{
+                width: '100%',
+                backgroundColor: '#7c3aed',
+                color: 'white',
+                padding: '8px 16px',
+                borderRadius: '12px',
+                fontWeight: '600',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              Continue to Dashboard
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

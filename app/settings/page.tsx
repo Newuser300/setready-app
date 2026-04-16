@@ -328,6 +328,15 @@ export default function SettingsPage() {
             >
               Sign Out
             </button>
+            {/* Contact Support - Added */}
+            <div className="pt-2 mt-2 border-t border-gray-200">
+              <a 
+                href="mailto:setready@mail.com" 
+                className="block text-blue-600 hover:underline"
+              >
+                📧 Contact Support: setready@mail.com
+              </a>
+            </div>
           </div>
         </div>
       </div>

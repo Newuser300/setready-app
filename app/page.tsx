@@ -75,13 +75,11 @@ export default function Home() {
       {/* Features Section */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
-          {/* Feature 1 */}
+          {/* Feature 1 - Paragraph REMOVED as requested */}
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-white">
             <div className="text-4xl mb-4">📚</div>
             <h3 className="text-xl font-bold mb-2">Learn at Your Pace</h3>
-            <p className="text-blue-100 text-sm sm:text-base">
-              Complete modules with professional film set terminology and industry best practices.
-            </p>
+            {/* Paragraph removed - only icon and title remain */}
           </div>
 
           {/* Feature 2 */}

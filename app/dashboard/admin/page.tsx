@@ -576,7 +576,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Quick Links Section */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <Link href="/dashboard/admin/users" className="group bg-white rounded-xl p-5 shadow-md hover:shadow-xl transition-all duration-300 border border-slate-100 hover:border-indigo-200">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300">
@@ -601,6 +601,22 @@ export default function AdminDashboard() {
               <div>
                 <h3 className="font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">Affiliates</h3>
                 <p className="text-xs text-slate-500 mt-0.5">Track performance & payouts</p>
+              </div>
+            </div>
+          </Link>
+
+          {/* NEW: Codes Card */}
+          <Link href="/dashboard/admin/codes" className="group bg-white rounded-xl p-5 shadow-md hover:shadow-xl transition-all duration-300 border border-slate-100 hover:border-indigo-200">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">Access Codes</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Generate & manage e-transfer codes</p>
               </div>
             </div>
           </Link>
