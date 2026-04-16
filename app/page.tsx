@@ -59,11 +59,10 @@ export default function Home() {
       {/* Hero Section */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20 text-center">
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-4 sm:mb-6">
-          Master Film Set Terminology
+          Set Ready: Background Performer Essential Film Industry Training
         </h1>
         <p className="text-lg sm:text-xl text-blue-100 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
-          Professional training for background actors. Learn industry terminology, 
-          pass your modules, and earn your certificates.
+          Professional training for background actors. Learn, pass your modules, and earn your certificates.
         </p>
         <button
           onClick={() => router.push('/auth/sign-up')}
@@ -109,11 +108,8 @@ export default function Home() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         <div className="bg-amber-500/20 rounded-lg p-6 sm:p-8 text-center">
           <h2 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">
-            Ready to Start Your Acting Career?
+            Ready to Start Your Training?
           </h2>
-          <p className="text-blue-100 mb-4 sm:mb-6 text-sm sm:text-base">
-            Join hundreds of actors mastering film set terminology
-          </p>
           <button
             onClick={() => router.push('/auth/sign-up')}
             className="px-5 sm:px-6 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition font-semibold"
