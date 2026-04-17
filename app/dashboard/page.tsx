@@ -77,6 +77,11 @@ export default function Dashboard() {
   // SECTION 2 POP-UP STATE
   const [showSection2Popup, setShowSection2Popup] = useState(false);
 
+  // PAYMENT STATES - ADDED
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [section2Unlocked, setSection2Unlocked] = useState(false);
+  const [loadingPayment, setLoadingPayment] = useState(false);
+
   // Work Log State
   const [workLogs, setWorkLogs] = useState<WorkLog[]>([]);
   const [showWorkLogForm, setShowWorkLogForm] = useState(false);
@@ -96,6 +101,24 @@ export default function Dashboard() {
     notes: '',
   });
   const [workLogLoading, setWorkLogLoading] = useState(false);
+
+  // PAYMENT FUNCTION - ADDED
+  async function handleCheckout(variantId: string, type: string) {
+    setLoadingPayment(true);
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ variantId, type })
+      });
+      const { url } = await response.json();
+      if (url) window.location.href = url;
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Error starting checkout. Please try again.');
+    }
+    setLoadingPayment(false);
+  }
 
   useEffect(() => {
     checkUser();
@@ -189,11 +212,13 @@ export default function Dashboard() {
     
     const { data } = await supabase
       .from('users')
-      .select('section1_completed')
+      .select('section1_completed, subscription_status, section2_unlocked')
       .eq('id', user.id)
       .single();
     if (data) {
       setSection2Visible(data.section1_completed || false);
+      setIsSubscribed(data.subscription_status === 'active');
+      setSection2Unlocked(data.section2_unlocked || false);
     }
   }
 
@@ -511,6 +536,35 @@ export default function Dashboard() {
 
         {/* Main Content */}
         <div className="max-w-4xl mx-auto px-4 py-8">
+          {/* PAYMENT STATUS CARDS - ADDED */}
+          {!isSubscribed && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
+              <p className="font-semibold text-yellow-800">🔓 Unlock Section 1 Modules</p>
+              <p className="text-sm text-yellow-700 mb-3">Subscribe for $9.99/month to access all training modules.</p>
+              <button
+                onClick={() => handleCheckout(process.env.NEXT_PUBLIC_MONTHLY_VARIANT_ID!, 'subscription')}
+                disabled={loadingPayment}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
+              >
+                {loadingPayment ? 'Processing...' : 'Subscribe Now - $9.99/month'}
+              </button>
+            </div>
+          )}
+
+          {section2Visible && !section2Unlocked && isSubscribed && (
+            <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6">
+              <p className="font-semibold text-purple-800">🎓 Unlock Section 2</p>
+              <p className="text-sm text-purple-700 mb-3">You've completed Section 1! Unlock advanced acting modules for a one-time fee of $19.99.</p>
+              <button
+                onClick={() => handleCheckout(process.env.NEXT_PUBLIC_SECTION2_VARIANT_ID!, 'section2')}
+                disabled={loadingPayment}
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50"
+              >
+                {loadingPayment ? 'Processing...' : 'Unlock Section 2 - $19.99'}
+              </button>
+            </div>
+          )}
+
           {/* Section 1 Header */}
           <div className="flex items-center gap-3 mb-6">
             <div className="text-3xl">📚</div>

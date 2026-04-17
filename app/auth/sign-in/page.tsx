@@ -81,6 +81,14 @@ export default function SignIn() {
             </div>
           </div>
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+          
+          {/* Reset Password Link - ADDED */}
+          <div className="text-right">
+            <a href="/auth/reset-password" className="text-sm text-blue-600 hover:underline">
+              Forgot your password?
+            </a>
+          </div>
+          
           <button
             type="submit"
             disabled={loading}
@@ -95,6 +103,16 @@ export default function SignIn() {
             Sign up
           </a>
         </p>
+        
+        {/* Customer Service Email - ADDED */}
+        <div className="mt-4 pt-4 border-t border-gray-200 text-center">
+          <p className="text-xs text-gray-500">
+            Need help? Contact us at{' '}
+            <a href="mailto:setready@mail.com" className="text-blue-600 hover:underline">
+              setready@mail.com
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );

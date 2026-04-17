@@ -25,6 +25,30 @@ export default function ModulePage() {
   const [progress, setProgress] = useState<Progress | null>(null);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  
+  // PAYMENT STATE - ADDED
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [section2Unlocked, setSection2Unlocked] = useState(false);
+  const [loadingPayment, setLoadingPayment] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
+
+  // PAYMENT FUNCTION - ADDED
+  async function handleCheckout(variantId: string, type: string) {
+    setLoadingPayment(true);
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ variantId, type })
+      });
+      const { url } = await response.json();
+      if (url) window.location.href = url;
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Error starting checkout. Please try again.');
+    }
+    setLoadingPayment(false);
+  }
 
   useEffect(() => {
     async function loadModule() {
@@ -37,7 +61,20 @@ export default function ModulePage() {
       if (user) {
         setUserId(user.id);
         console.log('Module page - User ID:', user.id);
+        
+        // GET PAYMENT STATUS - ADDED
+        const { data: userData } = await supabase
+          .from('users')
+          .select('subscription_status, section2_unlocked')
+          .eq('id', user.id)
+          .single();
+        
+        if (userData) {
+          setIsSubscribed(userData.subscription_status === 'active');
+          setSection2Unlocked(userData.section2_unlocked || false);
+        }
       }
+      setCheckingAccess(false);
       
       // Get module data
       const { data: moduleData, error: moduleError } = await supabase
@@ -88,7 +125,7 @@ export default function ModulePage() {
     router.push('/dashboard');
   };
 
-  if (loading) {
+  if (loading || checkingAccess) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -109,6 +146,65 @@ export default function ModulePage() {
             className="bg-blue-600 text-white px-4 py-2 rounded-lg"
           >
             Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // SECTION 1 ACCESS CHECK - ADDED (requires subscription)
+  if (module.section === 1 && !isSubscribed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
+          <div className="text-5xl mb-4">🔒</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Subscription Required</h2>
+          <p className="text-gray-600 mb-6">
+            Section 1 training modules require an active subscription.
+          </p>
+          <button
+            onClick={() => handleCheckout(process.env.NEXT_PUBLIC_MONTHLY_VARIANT_ID!, 'subscription')}
+            disabled={loadingPayment}
+            className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
+          >
+            {loadingPayment ? 'Processing...' : 'Subscribe for $9.99/month'}
+          </button>
+          <button
+            onClick={handleBackToDashboard}
+            className="w-full mt-3 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
+          >
+            ← Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // SECTION 2 ACCESS CHECK - ADDED (requires subscription + one-time unlock)
+  if (module.section === 2 && (!isSubscribed || !section2Unlocked)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
+          <div className="text-5xl mb-4">🔒</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Section 2 Locked</h2>
+          <p className="text-gray-600 mb-2">
+            Complete all Section 1 modules first, then unlock Section 2.
+          </p>
+          <p className="text-gray-600 mb-6">
+            One-time payment of $19.99 for permanent access.
+          </p>
+          <button
+            onClick={() => handleCheckout(process.env.NEXT_PUBLIC_SECTION2_VARIANT_ID!, 'section2')}
+            disabled={loadingPayment}
+            className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50"
+          >
+            {loadingPayment ? 'Processing...' : 'Unlock Section 2 - $19.99'}
+          </button>
+          <button
+            onClick={handleBackToDashboard}
+            className="w-full mt-3 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
+          >
+            ← Back to Dashboard
           </button>
         </div>
       </div>
