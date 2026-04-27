@@ -1,0 +1,1077 @@
+{\rtf1\fbidis\ansi\ansicpg1252\deff0\nouicompat\deflang1033{\fonttbl{\f0\fnil\fcharset0 Calibri;}{\f1\fnil\fcharset1 Segoe UI Symbol;}{\f2\fnil\fcharset1 Segoe UI Emoji;}{\f3\fnil Calibri;}{\f4\fnil\fcharset1 Segoe UI Symbol;}}
+{\*\generator Riched20 10.0.19041}\viewkind4\uc1 
+\pard\sa200\sl276\slmult1\f0\fs22\lang9 'use client';\par
+\par
+import \{ useEffect, useState \} from 'react';\par
+import \{ useRouter \} from 'next/navigation';\par
+import Link from 'next/link';\par
+import \{ supabase \} from '@/lib/supabase';\par
+\par
+type Module = \{\par
+  id: string;\par
+  title: string;\par
+  section: number;\par
+  module_number: number;\par
+  order_index: number;\par
+\};\par
+\par
+type Progress = \{\par
+  module_id: string;\par
+  completed: boolean;\par
+  score: number;\par
+\};\par
+\par
+type WorkLog = \{\par
+  id: string;\par
+  work_date: string;\par
+  production_name: string;\par
+  location: string;\par
+  role: string;\par
+  character_name: string;\par
+  hours_worked: number;\par
+  lunch_break: boolean;\par
+  is_union: boolean;\par
+  pay_rate: number;\par
+  gross_pay: number;\par
+  deductions: number;\par
+  final_pay: number;\par
+  paid: boolean;\par
+  notes: string;\par
+  created_at: string;\par
+\};\par
+\par
+// Module icons\par
+const moduleIcons: Record<number, string> = \{\par
+  1: '\f1\u-10180?\u-8276?\f0 ',\par
+  2: '\f1\u-10180?\u-8275?\f0 ',\par
+  3: '\f2\u9878?\u-497?\f0 ',\par
+  4: '\f2\u-10179?\u-8479?\u-497?\f0 ',\par
+  5: '\f1\u-10179?\u-9040?\f0 ',\par
+  6: '\f1\u-10179?\u-9002?\f0 ',\par
+  7: '\f1\u-10180?\u-8284?\f0 ',\par
+  8: '\f1\u-10180?\u-8278?\f0 ',\par
+  9: '\f1\u-10180?\u-8250?\f0 ',\par
+\};\par
+\par
+// Module subtitle descriptions\par
+const moduleSubtitles: Record<number, string> = \{\par
+  1: 'Learn the language of the film set',\par
+  2: 'Master the craft of invisible performance',\par
+  3: 'Professional conduct that gets you hired',\par
+  4: 'Protect yourself and others',\par
+  5: 'Know your worth, build your career',\par
+  6: 'The foundation of modern acting',\par
+  7: 'Nail every audition',\par
+  8: 'Advanced scene study techniques',\par
+  9: 'Meisner, Adler, and more',\par
+\};\par
+\par
+export default function Dashboard() \{\par
+  const router = useRouter();\par
+  const [modules, setModules] = useState<Module[]>([]);\par
+  const [progress, setProgress] = useState<Record<string, Progress>>(\{\});\par
+  const [user, setUser] = useState<any>(null);\par
+  const [section2Visible, setSection2Visible] = useState(false);\par
+  const [loading, setLoading] = useState(true);\par
+  const [isUpdating, setIsUpdating] = useState(false);\par
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);\par
+\par
+  // SECTION 2 POP-UP STATE\par
+  const [showSection2Popup, setShowSection2Popup] = useState(false);\par
+\par
+  // PAYMENT STATES - ADDED\par
+  const [isSubscribed, setIsSubscribed] = useState(false);\par
+  const [section2Unlocked, setSection2Unlocked] = useState(false);\par
+  const [loadingPayment, setLoadingPayment] = useState(false);\par
+\par
+  // Work Log State\par
+  const [workLogs, setWorkLogs] = useState<WorkLog[]>([]);\par
+  const [showWorkLogForm, setShowWorkLogForm] = useState(false);\par
+  const [editingWorkLog, setEditingWorkLog] = useState<WorkLog | null>(null);\par
+  const [workLogForm, setWorkLogForm] = useState(\{\par
+    work_date: new Date().toISOString().split('T')[0],\par
+    production_name: '',\par
+    location: '',\par
+    role: '',\par
+    character_name: '',\par
+    hours_worked: '',\par
+    lunch_break: false,\par
+    is_union: false,\par
+    pay_rate: '',\par
+    deductions: '0',\par
+    paid: false,\par
+    notes: '',\par
+  \});\par
+  const [workLogLoading, setWorkLogLoading] = useState(false);\par
+\par
+  // PAYMENT FUNCTION - UPDATED with Authorization token\par
+  async function handleCheckout(variantId: string, type: string) \{\par
+    setLoadingPayment(true);\par
+    try \{\par
+      // Get the access token from the session\par
+      const \{ data: \{ session \} \} = await supabase.auth.getSession();\par
+      const accessToken = session?.access_token;\par
+      \par
+      if (!accessToken) \{\par
+        alert('Please sign in again');\par
+        setLoadingPayment(false);\par
+        return;\par
+      \}\par
+      \par
+      const response = await fetch('/api/checkout', \{\par
+        method: 'POST',\par
+        headers: \{ \par
+          'Content-Type': 'application/json',\par
+          'Authorization': `Bearer $\{accessToken\}`\par
+        \},\par
+        body: JSON.stringify(\{ variantId, type \})\par
+      \});\par
+      \par
+      const result = await response.json();\par
+      \par
+      if (result.url) \{\par
+        window.location.href = result.url;\par
+      \} else \{\par
+        alert(result.error || 'Error starting checkout');\par
+      \}\par
+    \} catch (error) \{\par
+      console.error('Checkout error:', error);\par
+      alert('Error starting checkout. Please try again.');\par
+    \}\par
+    setLoadingPayment(false);\par
+  \}\par
+\par
+  useEffect(() => \{\par
+    checkUser();\par
+    loadModules();\par
+    loadWorkLogs();\par
+    // Subscribe to realtime updates for user_progress\par
+    const subscription = supabase\par
+      .channel('user_progress_changes')\par
+      .on('postgres_changes', \par
+        \{ event: '*', schema: 'public', table: 'user_progress' \}, \par
+        (payload) => \{\par
+          // Refresh progress when changes occur\par
+          refreshProgress();\par
+        \}\par
+      )\par
+      .subscribe();\par
+\par
+    return () => \{\par
+      subscription.unsubscribe();\par
+    \};\par
+  \}, []);\par
+\par
+  // Get current user ID to pass to child pages (like certificates)\par
+  // Using getSession() instead of getUser() for better reliability\par
+  useEffect(() => \{\par
+    async function getCurrentUserId() \{\par
+      const \{ data: \{ session \} \} = await supabase.auth.getSession();\par
+      if (session?.user) \{\par
+        setCurrentUserId(session.user.id);\par
+        console.log('Dashboard - User ID loaded from session:', session.user.id);\par
+      \} else \{\par
+        console.log('Dashboard - No session found');\par
+      \}\par
+    \}\par
+    getCurrentUserId();\par
+  \}, []);\par
+\par
+  // NEW: Check for refresh parameter when returning from quiz\par
+  useEffect(() => \{\par
+    // Check if we just came back from a quiz\par
+    const urlParams = new URLSearchParams(window.location.search);\par
+    const refresh = urlParams.get('refresh');\par
+    if (refresh) \{\par
+      // Refresh the progress data\par
+      refreshProgress();\par
+      // Remove the query param from URL without refreshing the page\par
+      window.history.replaceState(\{\}, '', '/dashboard');\par
+    \}\par
+  \}, []);\par
+\par
+  // SECTION 2 POP-UP CHECK\par
+  async function checkSection2Completion() \{\par
+    if (!user) return;\par
+    \par
+    // Section 2 modules are 6, 7, 8, 9\par
+    const section2ModuleIds = [6, 7, 8, 9];\par
+    \par
+    const \{ data: progressData \} = await supabase\par
+      .from('user_progress')\par
+      .select('module_id, completed, section2_popup_shown')\par
+      .eq('user_id', user.id)\par
+      .in('module_id', section2ModuleIds);\par
+    \par
+    if (!progressData || progressData.length === 0) return;\par
+    \par
+    // Check if all Section 2 modules are completed\par
+    const allCompleted = progressData.filter(p => p.completed === true).length === 4;\par
+    const alreadyShown = progressData.some(p => p.section2_popup_shown === true);\par
+    \par
+    if (allCompleted && !alreadyShown) \{\par
+      setShowSection2Popup(true);\par
+      \par
+      // Mark as shown so it doesn't appear again\par
+      for (const module of progressData) \{\par
+        await supabase\par
+          .from('user_progress')\par
+          .update(\{ section2_popup_shown: true \})\par
+          .eq('user_id', user.id)\par
+          .eq('module_id', module.module_id);\par
+      \}\par
+    \}\par
+  \}\par
+\par
+  async function checkUser() \{\par
+    const \{ data: \{ user \} \} = await supabase.auth.getUser();\par
+    if (!user) \{\par
+      router.push('/auth/sign-in');\par
+      return;\par
+    \}\par
+    setUser(user);\par
+    \par
+    const \{ data \} = await supabase\par
+      .from('users')\par
+      .select('section1_completed, subscription_status, section2_unlocked')\par
+      .eq('id', user.id)\par
+      .single();\par
+    if (data) \{\par
+      setSection2Visible(data.section1_completed || false);\par
+      setIsSubscribed(data.subscription_status === 'active');\par
+      setSection2Unlocked(data.section2_unlocked || false);\par
+    \}\par
+  \}\par
+\par
+  async function refreshProgress() \{\par
+    const \{ data: \{ user \} \} = await supabase.auth.getUser();\par
+    if (user) \{\par
+      const \{ data: prog \} = await supabase\par
+        .from('user_progress')\par
+        .select('*')\par
+        .eq('user_id', user.id);\par
+      \par
+      const progressMap: Record<string, Progress> = \{\};\par
+      prog?.forEach(p => \{\par
+        progressMap[p.module_id] = p;\par
+      \});\par
+      setProgress(progressMap);\par
+      \par
+      // Check if section 1 is now complete\par
+      const section1ModulesList = modules.filter(m => m.section === 1);\par
+      const allCompleted = section1ModulesList.length > 0 && \par
+        section1ModulesList.every(m => progressMap[m.id]?.completed === true);\par
+      \par
+      if (allCompleted && !section2Visible && !isUpdating) \{\par
+        setIsUpdating(true);\par
+        setSection2Visible(true);\par
+        await supabase\par
+          .from('users')\par
+          .update(\{ section1_completed: true \})\par
+          .eq('id', user.id);\par
+        setIsUpdating(false);\par
+      \}\par
+      \par
+      // SECTION 2 POP-UP: Check after refreshing progress\par
+      await checkSection2Completion();\par
+    \}\par
+  \}\par
+\par
+  async function loadModules() \{\par
+    const \{ data \} = await supabase\par
+      .from('modules')\par
+      .select('*')\par
+      .order('order_index');\par
+    setModules(data || []);\par
+    \par
+    const \{ data: \{ user \} \} = await supabase.auth.getUser();\par
+    if (user) \{\par
+      const \{ data: prog \} = await supabase\par
+        .from('user_progress')\par
+        .select('*')\par
+        .eq('user_id', user.id);\par
+      \par
+      const progressMap: Record<string, Progress> = \{\};\par
+      prog?.forEach(p => \{\par
+        progressMap[p.module_id] = p;\par
+      \});\par
+      setProgress(progressMap);\par
+      \par
+      const section1ModulesList = (data || []).filter(m => m.section === 1);\par
+      const allCompleted = section1ModulesList.length > 0 && \par
+        section1ModulesList.every(m => progressMap[m.id]?.completed === true);\par
+      \par
+      if (allCompleted && !section2Visible) \{\par
+        setSection2Visible(true);\par
+        await supabase\par
+          .from('users')\par
+          .update(\{ section1_completed: true \})\par
+          .eq('id', user.id);\par
+      \}\par
+      \par
+      // SECTION 2 POP-UP: Check after loading modules\par
+      await checkSection2Completion();\par
+    \}\par
+    setLoading(false);\par
+  \}\par
+\par
+  // Work Log Functions\par
+  async function loadWorkLogs() \{\par
+    const \{ data: \{ user \} \} = await supabase.auth.getUser();\par
+    if (!user) return;\par
+\par
+    const \{ data, error \} = await supabase\par
+      .from('work_logs')\par
+      .select('*')\par
+      .eq('user_id', user.id)\par
+      .order('work_date', \{ ascending: false \});\par
+\par
+    if (error) \{\par
+      console.error('Error loading work logs:', error);\par
+    \} else \{\par
+      setWorkLogs(data || []);\par
+    \}\par
+  \}\par
+\par
+  function calculatePay() \{\par
+    const hours = parseFloat(workLogForm.hours_worked) || 0;\par
+    const rate = parseFloat(workLogForm.pay_rate) || 0;\par
+    const deductions = parseFloat(workLogForm.deductions) || 0;\par
+    \par
+    const grossPay = hours * rate;\par
+    const finalPay = grossPay - deductions;\par
+    \par
+    return \{ grossPay, finalPay \};\par
+  \}\par
+\par
+  // UPDATED saveWorkLog with Production Name required\par
+  async function saveWorkLog(e: React.FormEvent) \{\par
+    e.preventDefault();\par
+    \par
+    // Validate required fields: Work Date, Location, and Production Name\par
+    if (!workLogForm.work_date) \{\par
+      alert('Please enter the work date');\par
+      return;\par
+    \}\par
+    if (!workLogForm.location.trim()) \{\par
+      alert('Please enter the location');\par
+      return;\par
+    \}\par
+    if (!workLogForm.production_name.trim()) \{\par
+      alert('Please enter the production name');\par
+      return;\par
+    \}\par
+    \par
+    setWorkLogLoading(true);\par
+\par
+    const \{ data: \{ user \}, error: authError \} = await supabase.auth.getUser();\par
+    if (authError || !user) \{\par
+      console.error('Auth error:', authError);\par
+      alert('Please sign in again');\par
+      setWorkLogLoading(false);\par
+      return;\par
+    \}\par
+\par
+    const hours = parseFloat(workLogForm.hours_worked) || 0;\par
+    const rate = parseFloat(workLogForm.pay_rate) || 0;\par
+    const deductions = parseFloat(workLogForm.deductions) || 0;\par
+    const grossPay = hours * rate;\par
+    const finalPay = grossPay - deductions;\par
+\par
+    const workLogData = \{\par
+      user_id: user.id,\par
+      work_date: workLogForm.work_date,\par
+      production_name: workLogForm.production_name,\par
+      location: workLogForm.location,\par
+      role: workLogForm.role || null,\par
+      character_name: workLogForm.character_name || null,\par
+      hours_worked: hours,\par
+      lunch_break: workLogForm.lunch_break,\par
+      is_union: workLogForm.is_union,\par
+      pay_rate: rate,\par
+      gross_pay: grossPay,\par
+      deductions: deductions,\par
+      final_pay: finalPay,\par
+      paid: workLogForm.paid,\par
+      notes: workLogForm.notes || null,\par
+    \};\par
+\par
+    console.log('Attempting to save:', workLogData);\par
+\par
+    try \{\par
+      let result;\par
+      if (editingWorkLog) \{\par
+        // Update existing\par
+        result = await supabase\par
+          .from('work_logs')\par
+          .update(workLogData)\par
+          .eq('id', editingWorkLog.id)\par
+          .select();\par
+      \} else \{\par
+        // Insert new\par
+        result = await supabase\par
+          .from('work_logs')\par
+          .insert([workLogData])\par
+          .select();\par
+      \}\par
+\par
+      console.log('Supabase response:', result);\par
+\par
+      if (result.error) \{\par
+        console.error('Supabase error details:', result.error);\par
+        alert(`Error saving: $\{result.error.message || 'Unknown error'\}`);\par
+      \} else \{\par
+        console.log('Saved successfully:', result.data);\par
+        resetWorkLogForm();\par
+        loadWorkLogs();\par
+        alert('Work entry saved successfully!');\par
+      \}\par
+    \} catch (err) \{\par
+      console.error('Unexpected error:', err);\par
+      alert(`Error: $\{err.message || 'Something went wrong'\}`);\par
+    \} finally \{\par
+      setWorkLogLoading(false);\par
+    \}\par
+  \}\par
+\par
+  async function deleteWorkLog(id: string) \{\par
+    if (!confirm('Are you sure you want to delete this entry?')) return;\par
+\par
+    const \{ error \} = await supabase\par
+      .from('work_logs')\par
+      .delete()\par
+      .eq('id', id);\par
+\par
+    if (error) \{\par
+      console.error('Error deleting work log:', error);\par
+      alert('Error deleting work log');\par
+    \} else \{\par
+      loadWorkLogs();\par
+    \}\par
+  \}\par
+\par
+  function editWorkLog(log: WorkLog) \{\par
+    setEditingWorkLog(log);\par
+    setWorkLogForm(\{\par
+      work_date: log.work_date,\par
+      production_name: log.production_name || '',\par
+      location: log.location || '',\par
+      role: log.role || '',\par
+      character_name: log.character_name || '',\par
+      hours_worked: log.hours_worked?.toString() || '',\par
+      lunch_break: log.lunch_break || false,\par
+      is_union: log.is_union || false,\par
+      pay_rate: log.pay_rate?.toString() || '',\par
+      deductions: log.deductions?.toString() || '0',\par
+      paid: log.paid || false,\par
+      notes: log.notes || '',\par
+    \});\par
+    setShowWorkLogForm(true);\par
+  \}\par
+\par
+  function resetWorkLogForm() \{\par
+    setEditingWorkLog(null);\par
+    setWorkLogForm(\{\par
+      work_date: new Date().toISOString().split('T')[0],\par
+      production_name: '',\par
+      location: '',\par
+      role: '',\par
+      character_name: '',\par
+      hours_worked: '',\par
+      lunch_break: false,\par
+      is_union: false,\par
+      pay_rate: '',\par
+      deductions: '0',\par
+      paid: false,\par
+      notes: '',\par
+    \});\par
+    setShowWorkLogForm(false);\par
+  \}\par
+\par
+  const totalEarnings = workLogs.reduce((sum, log) => sum + (log.final_pay || 0), 0);\par
+  const totalPaid = workLogs.filter(log => log.paid).reduce((sum, log) => sum + (log.final_pay || 0), 0);\par
+  const totalUnpaid = totalEarnings - totalPaid;\par
+  const \{ grossPay, finalPay \} = calculatePay();\par
+\par
+  // Helper function to convert percentage score to actual correct answers\par
+  const getActualScore = (percentageScore: number | undefined): number => \{\par
+    if (!percentageScore) return 0;\par
+    return Math.round(percentageScore * 15 / 100);\par
+  \};\par
+\par
+  if (loading) return (\par
+    <div className="min-h-screen flex items-center justify-center">\par
+      <div className="text-center">\par
+        <div className="text-4xl mb-4 animate-pulse">\f1\u-10180?\u-8276?\f0 </div>\par
+        <p className="text-gray-500">Loading your dashboard...</p>\par
+      </div>\par
+    </div>\par
+  );\par
+\par
+  const section1Modules = modules.filter(m => m.section === 1);\par
+  const section2Modules = modules.filter(m => m.section === 2);\par
+  const completedCount = section1Modules.filter(m => progress[m.id]?.completed).length;\par
+  const progressPercentage = (completedCount / section1Modules.length) * 100;\par
+\par
+  return (\par
+    <>\par
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">\par
+        \{/* Hero Header */\}\par
+        <div className="bg-gradient-to-r from-blue-700 via-purple-700 to-indigo-800 text-white">\par
+          <div className="max-w-4xl mx-auto px-4 py-8">\par
+            <div className="flex items-center justify-between">\par
+              <div>\par
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">\par
+                  Welcome back, <span className="text-yellow-300">\{user?.email?.split('@')[0]\}</span>\par
+                </h1>\par
+              </div>\par
+              <div className="flex items-center gap-4">\par
+                <Link href="/settings" className="text-white/80 hover:text-white transition text-sm flex items-center gap-1">\par
+                  <span className="text-xl">\f2\u9881?\u-497?\f0 </span>\par
+                  <span className="hidden sm:inline">Settings</span>\par
+                </Link>\par
+                <div className="hidden md:block text-6xl">\f1\u-10180?\u-8275?\f0 </div>\par
+              </div>\par
+            </div>\par
+            \par
+            \{/* Progress Card */\}\par
+            <div className="mt-6 bg-white/10 rounded-2xl p-4 backdrop-blur-sm">\par
+              <div className="flex justify-between items-center mb-2">\par
+                <span className="font-medium">Your Progress</span>\par
+                <span className="text-2xl font-bold">\{completedCount\}/\{section1Modules.length\}</span>\par
+              </div>\par
+              <div className="h-3 bg-white/20 rounded-full overflow-hidden">\par
+                <div \par
+                  className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full transition-all duration-500"\par
+                  style=\{\{ width: `$\{progressPercentage\}%` \}\}\par
+                />\par
+              </div>\par
+              <p className="text-sm text-blue-200 mt-2">\par
+                \{completedCount === section1Modules.length \par
+                  ? '\f1\u-10180?\u-8311?\f3  \f0 Amazing! You\\'ve unlocked the secret section!' \par
+                  : `$\{section1Modules.length - completedCount\} more modules to unlock the secret section`\}\par
+              </p>\par
+            </div>\par
+          </div>\par
+        </div>\par
+\par
+        \{/* Main Content */\}\par
+        <div className="max-w-4xl mx-auto px-4 py-8">\par
+          \{/* PAYMENT STATUS CARDS - ADDED */\}\par
+          \{!isSubscribed && (\par
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">\par
+              <p className="font-semibold text-yellow-800">\f1\u-10179?\u-8941?\f3  \f0 Unlock Section 1 Modules</p>\par
+              <p className="text-sm text-yellow-700 mb-3">Subscribe for $9.99/month to access all training modules.</p>\par
+              <button\par
+                onClick=\{() => handleCheckout(process.env.NEXT_PUBLIC_MONTHLY_VARIANT_ID!, 'subscription')\}\par
+                disabled=\{loadingPayment\}\par
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"\par
+              >\par
+                \{loadingPayment ? 'Processing...' : 'Subscribe Now - $9.99/month'\}\par
+              </button>\par
+            </div>\par
+          )\}\par
+\par
+          \{section2Visible && !section2Unlocked && isSubscribed && (\par
+            <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6">\par
+              <p className="font-semibold text-purple-800">\f1\u-10180?\u-8301?\f3  \f0 Unlock Section 2</p>\par
+              <p className="text-sm text-purple-700 mb-3">You've completed Section 1! Unlock advanced acting modules for a one-time fee of $19.99.</p>\par
+              <button\par
+                onClick=\{() => handleCheckout(process.env.NEXT_PUBLIC_SECTION2_VARIANT_ID!, 'section2')\}\par
+                disabled=\{loadingPayment\}\par
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50"\par
+              >\par
+                \{loadingPayment ? 'Processing...' : 'Unlock Section 2 - $19.99'\}\par
+              </button>\par
+            </div>\par
+          )\}\par
+\par
+          \{/* Section 1 Header */\}\par
+          <div className="flex items-center gap-3 mb-6">\par
+            <div className="text-3xl">\f1\u-10179?\u-8998?\f0 </div>\par
+            <div>\par
+              <h2 className="text-2xl font-bold text-gray-800">Section 1: Background Performer Training</h2>\par
+              <p className="text-gray-500 text-sm">Master the fundamentals of working on a film set</p>\par
+            </div>\par
+          </div>\par
+\par
+          \{/* Section 1 Modules - ALL UNLOCKED */\}\par
+          <div className="grid gap-4">\par
+            \{section1Modules.map((module) => \{\par
+              const isCompleted = progress[module.id]?.completed;\par
+              const score = progress[module.id]?.score;\par
+              const actualScore = getActualScore(score);\par
+              \par
+              return (\par
+                <Link href=\{`/module/$\{module.id\}`\} key=\{module.id\}>\par
+                  <div className=\{`\par
+                    relative overflow-hidden rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:shadow-xl\par
+                    $\{isCompleted \par
+                      ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500' \par
+                      : 'bg-white hover:shadow-md border border-gray-200'\par
+                    \}\par
+                  `\}>\par
+                    <div className="p-5">\par
+                      <div className="flex items-start justify-between">\par
+                        <div className="flex items-center gap-4">\par
+                          <div className="text-4xl">\{moduleIcons[module.module_number] || '\f1\u-10179?\u-9000?\f0 '\}</div>\par
+                          <div>\par
+                            <h3 className="font-bold text-lg text-gray-800">\{module.title\}</h3>\par
+                            <p className="text-sm text-gray-500 mt-1">\{moduleSubtitles[module.module_number] || 'Complete this module to advance'\}</p>\par
+                          </div>\par
+                        </div>\par
+                        <div>\par
+                          \{isCompleted ? (\par
+                            <div className="flex items-center gap-2">\par
+                              <span className="bg-green-100 text-green-700 text-sm font-medium px-3 py-1 rounded-full">\par
+\f3                                 \f4\u10003?\f3  \f0 Completed (\{actualScore\}/15)\par
+                              </span>\par
+                            </div>\par
+                          ) : (\par
+                            <div className="flex items-center gap-2">\par
+                              <span className="bg-blue-100 text-blue-700 text-sm font-medium px-3 py-1 rounded-full">\par
+\f3                                 \f1\u-10179?\u-8995?\f3  \f0 Not started\par
+                              </span>\par
+                            </div>\par
+                          )\}\par
+                        </div>\par
+                      </div>\par
+                      \par
+                      \{isCompleted && (\par
+                        <div className="mt-3 flex items-center gap-2 text-sm text-green-600">\par
+                          <span>\f4\u10003?\f0 </span>\par
+                          <span>Passed with \{actualScore\}/15</span>\par
+                        </div>\par
+                      )\}\par
+                    </div>\par
+                  </div>\par
+                </Link>\par
+              );\par
+            \})\}\par
+          </div>\par
+\par
+          \{/* Secret Section 2 - LOCKED until all Section 1 complete */\}\par
+          \{section2Visible ? (\par
+            <div className="mt-12">\par
+              <div className="relative">\par
+                <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl blur-xl opacity-30"></div>\par
+                <div className="relative bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl p-6 text-center">\par
+                  <div className="text-5xl mb-3">\f1\u-10180?\u-8311?\f0 </div>\par
+                  <h2 className="text-2xl font-bold text-white">SECRET SECTION UNLOCKED!</h2>\par
+                  <p className="text-yellow-100 mt-2">You've mastered the basics. Now learn to become a principal actor.</p>\par
+                </div>\par
+              </div>\par
+\par
+              <div className="flex items-center gap-3 mt-8 mb-6">\par
+                <div className="text-3xl">\f1\u-10180?\u-8275?\f0 </div>\par
+                <div>\par
+                  <h2 className="text-2xl font-bold text-gray-800">Section 2: From Background to Acting</h2>\par
+                  <p className="text-gray-500 text-sm">Advanced techniques for the serious performer</p>\par
+                </div>\par
+              </div>\par
+\par
+              <div className="grid gap-4">\par
+                \{section2Modules.map((module) => \{\par
+                  const isCompleted = progress[module.id]?.completed;\par
+                  return (\par
+                    <Link href=\{`/module/$\{module.id\}`\} key=\{module.id\}>\par
+                      <div className=\{`bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-5 hover:scale-[1.02] transition-all duration-300 hover:shadow-lg border border-purple-200 $\{isCompleted ? 'border-l-4 border-green-500' : ''\}`\}>\par
+                        <div className="flex items-start justify-between gap-4">\par
+                          <div className="flex items-center gap-4">\par
+                            <div className="text-4xl">\{moduleIcons[module.module_number] || '\f1\u-10180?\u-8273?\f0 '\}</div>\par
+                            <div>\par
+                              <h3 className="font-bold text-lg text-gray-800">\{module.title\}</h3>\par
+                              <p className="text-sm text-gray-500 mt-1">\{moduleSubtitles[module.module_number] || 'Advanced acting techniques'\}</p>\par
+                            </div>\par
+                          </div>\par
+                          \{isCompleted && (\par
+                            <span className="bg-green-100 text-green-700 text-sm font-medium px-3 py-1 rounded-full">\par
+\f3                               \f4\u10003?\f3  \f0 Completed\par
+                            </span>\par
+                          )\}\par
+                        </div>\par
+                      </div>\par
+                    </Link>\par
+                  );\par
+                \})\}\par
+              </div>\par
+            </div>\par
+          ) : (\par
+            <div className="mt-12 text-center">\par
+              <div className="bg-gray-100 rounded-2xl p-8 border border-dashed border-gray-300">\par
+                <div className="text-4xl mb-3">\f1\u-10179?\u-8942?\f0 </div>\par
+                <h3 className="font-bold text-gray-600">Secret Section Locked</h3>\par
+                <p className="text-sm text-gray-400 mt-1">Complete all 5 modules in Section 1 to unlock</p>\par
+              </div>\par
+            </div>\par
+          )\}\par
+\par
+          \{/* SPACER - Extra space BEFORE Work Log section */\}\par
+          <div className="h-48"></div>\par
+\par
+          \{/* ===================================================== */\}\par
+          \{/* WORK LOG SECTION */\}\par
+          \{/* ===================================================== */\}\par
+          <div>\par
+            <div className="flex items-center justify-between mb-6">\par
+              <div className="flex items-center gap-3">\par
+                <div className="text-3xl">\f1\u-10179?\u-9013?\u-10179?\u-9040?\f0 </div>\par
+                <div>\par
+                  <h2 className="text-2xl font-bold text-gray-800">Work Log & Earnings Tracker</h2>\par
+                  <p className="text-gray-500 text-sm italic">Track your film industry work, earnings, and deductions</p>\par
+                </div>\par
+              </div>\par
+              <button\par
+                onClick=\{() => setShowWorkLogForm(!showWorkLogForm)\}\par
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-medium"\par
+              >\par
+                \{showWorkLogForm ? '\f4\u10006?\f3  \f0 Cancel' : '\f4\u10133?\f3  \f0 Add Work Entry'\}\par
+              </button>\par
+            </div>\par
+\par
+            \{/* Work Log Form - Modified with requested changes */\}\par
+            \{showWorkLogForm && (\par
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 mb-8">\par
+                <h3 className="text-lg font-bold text-gray-800 mb-6">\par
+                  \{editingWorkLog ? 'Edit Work Entry' : 'New Work Entry'\}\par
+                </h3>\par
+                <form onSubmit=\{saveWorkLog\} className="space-y-6">\par
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">\par
+                    <div>\par
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Work Date *</label>\par
+                      <input\par
+                        type="date"\par
+                        required\par
+                        value=\{workLogForm.work_date\}\par
+                        onChange=\{(e) => setWorkLogForm(\{...workLogForm, work_date: e.target.value\})\}\par
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"\par
+                      />\par
+                    </div>\par
+                    <div>\par
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Location *</label>\par
+                      <input\par
+                        type="text"\par
+                        required\par
+                        value=\{workLogForm.location\}\par
+                        onChange=\{(e) => setWorkLogForm(\{...workLogForm, location: e.target.value\})\}\par
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"\par
+                        placeholder="City / Studio"\par
+                      />\par
+                    </div>\par
+                    <div>\par
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Production Name *</label>\par
+                      <input\par
+                        type="text"\par
+                        required\par
+                        value=\{workLogForm.production_name\}\par
+                        onChange=\{(e) => setWorkLogForm(\{...workLogForm, production_name: e.target.value\})\}\par
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"\par
+                        placeholder="e.g., Movie Title"\par
+                      />\par
+                    </div>\par
+                    \{/* Role Field */\}\par
+                    <div>\par
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Role</label>\par
+                      <input\par
+                        type="text"\par
+                        value=\{workLogForm.role\}\par
+                        onChange=\{(e) => setWorkLogForm(\{...workLogForm, role: e.target.value\})\}\par
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"\par
+                        placeholder="Actor, Stunts, BG, Stand-in, etc."\par
+                      />\par
+                    </div>\par
+                    \{/* Character Field */\}\par
+                    <div>\par
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Character</label>\par
+                      <input\par
+                        type="text"\par
+                        value=\{workLogForm.character_name\}\par
+                        onChange=\{(e) => setWorkLogForm(\{...workLogForm, character_name: e.target.value\})\}\par
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"\par
+                        placeholder="Character name you played"\par
+                      />\par
+                    </div>\par
+                    <div>\par
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Hours Worked</label>\par
+                      <input\par
+                        type="number"\par
+                        step="0.5"\par
+                        value=\{workLogForm.hours_worked\}\par
+                        onChange=\{(e) => setWorkLogForm(\{...workLogForm, hours_worked: e.target.value\})\}\par
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"\par
+                        placeholder="e.g., 8.5"\par
+                      />\par
+                    </div>\par
+                    <div className="flex flex-col gap-3">\par
+                      <label className="flex items-center gap-3 cursor-pointer">\par
+                        <input\par
+                          type="checkbox"\par
+                          checked=\{workLogForm.lunch_break\}\par
+                          onChange=\{(e) => setWorkLogForm(\{...workLogForm, lunch_break: e.target.checked\})\}\par
+                          className="w-5 h-5 text-blue-600 rounded"\par
+                        />\par
+                        <span className="text-sm text-gray-700">Lunch Break Taken</span>\par
+                      </label>\par
+                      <label className="flex items-center gap-3 cursor-pointer">\par
+                        <input\par
+                          type="checkbox"\par
+                          checked=\{workLogForm.is_union\}\par
+                          onChange=\{(e) => setWorkLogForm(\{...workLogForm, is_union: e.target.checked\})\}\par
+                          className="w-5 h-5 text-blue-600 rounded"\par
+                        />\par
+                        <span className="text-sm text-gray-700">Union</span>\par
+                      </label>\par
+                      <label className="flex items-center gap-3 cursor-pointer">\par
+                        <input\par
+                          type="checkbox"\par
+                          checked=\{workLogForm.paid\}\par
+                          onChange=\{(e) => setWorkLogForm(\{...workLogForm, paid: e.target.checked\})\}\par
+                          className="w-5 h-5 text-blue-600 rounded"\par
+                        />\par
+                        <span className="text-sm text-gray-700">Paid</span>\par
+                      </label>\par
+                    </div>\par
+                    <div>\par
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Pay Rate ($/hour)</label>\par
+                      <input\par
+                        type="number"\par
+                        step="0.01"\par
+                        value=\{workLogForm.pay_rate\}\par
+                        onChange=\{(e) => setWorkLogForm(\{...workLogForm, pay_rate: e.target.value\})\}\par
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"\par
+                        placeholder="e.g., 270.30"\par
+                      />\par
+                    </div>\par
+                    \{/* Gross Pay moved above Deductions */\}\par
+                    <div>\par
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Gross Pay</label>\par
+                      <input\par
+                        type="text"\par
+                        readOnly\par
+                        value=\{`$$\{grossPay.toFixed(2)\}`\}\par
+                        className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-700"\par
+                      />\par
+                    </div>\par
+                    <div>\par
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Deductions ($)</label>\par
+                      <input\par
+                        type="number"\par
+                        step="0.01"\par
+                        value=\{workLogForm.deductions\}\par
+                        onChange=\{(e) => setWorkLogForm(\{...workLogForm, deductions: e.target.value\})\}\par
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"\par
+                        placeholder="e.g., 50.00"\par
+                      />\par
+                    </div>\par
+                    <div>\par
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Final Pay (After Deductions)</label>\par
+                      <input\par
+                        type="text"\par
+                        readOnly\par
+                        value=\{`$$\{finalPay.toFixed(2)\}`\}\par
+                        className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-700 font-bold"\par
+                      />\par
+                    </div>\par
+                    <div className="md:col-span-2">\par
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Notes</label>\par
+                      <textarea\par
+                        value=\{workLogForm.notes\}\par
+                        onChange=\{(e) => setWorkLogForm(\{...workLogForm, notes: e.target.value\})\}\par
+                        rows=\{3\}\par
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"\par
+                        placeholder="Any additional notes..."\par
+                      />\par
+                    </div>\par
+                  </div>\par
+                  <div className="flex gap-4 pt-4">\par
+                    <button\par
+                      type="submit"\par
+                      disabled=\{workLogLoading\}\par
+                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium disabled:opacity-50"\par
+                    >\par
+                      \{workLogLoading ? 'Saving...' : (editingWorkLog ? 'Update Entry' : 'Save Entry')\}\par
+                    </button>\par
+                    <button\par
+                      type="button"\par
+                      onClick=\{resetWorkLogForm\}\par
+                      className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition font-medium"\par
+                    >\par
+                      Cancel\par
+                    </button>\par
+                  </div>\par
+                </form>\par
+              </div>\par
+            )\}\par
+\par
+            \{/* Earnings Summary Cards */\}\par
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">\par
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">\par
+                <p className="text-sm text-gray-600">\f1\u-10179?\u-9040?\f3  \f0 Total Earnings</p>\par
+                <p className="text-2xl font-bold text-gray-800">$\{totalEarnings.toFixed(2)\}</p>\par
+              </div>\par
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">\par
+                <p className="text-sm text-gray-600">\f4\u9989?\f3  \f0 Total Paid</p>\par
+                <p className="text-2xl font-bold text-green-600">$\{totalPaid.toFixed(2)\}</p>\par
+              </div>\par
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-4 border border-yellow-200">\par
+                <p className="text-sm text-gray-600">\f4\u9203?\f3  \f0 Total Unpaid</p>\par
+                <p className="text-2xl font-bold text-orange-600">$\{totalUnpaid.toFixed(2)\}</p>\par
+              </div>\par
+            </div>\par
+\par
+            \{/* Work Logs Table */\}\par
+            \{workLogs.length === 0 ? (\par
+              <div className="bg-white rounded-2xl p-8 text-center border border-gray-200">\par
+                <div className="text-5xl mb-3">\f1\u-10179?\u-9013?\f0 </div>\par
+                <p className="text-gray-500 italic">No work entries yet.</p>\par
+                <p className="text-sm text-gray-400">Click "Add Work Entry" to start tracking your film industry work.</p>\par
+              </div>\par
+            ) : (\par
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">\par
+                <div className="overflow-x-auto">\par
+                  <table className="min-w-full divide-y divide-gray-200">\par
+                    <thead className="bg-gray-50">\par
+                      <tr>\par
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">\f1\u-10179?\u-9019?\f3  \f0 Date</th>\par
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">\f1\u-10180?\u-8276?\f3  \f0 Production</th>\par
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">\f1\u-10179?\u-9011?\f3  \f0 Location</th>\par
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Role</th>\par
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Character</th>\par
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">\f2\u9201?\u-497?\f3  \f0 Hours</th>\par
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">\f1\u-10180?\u-8275?\f3  \f0 Union</th>\par
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">\f1\u-10179?\u-9040?\f3  \f0 Gross</th>\par
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">\f1\u-10179?\u-9035?\f3  \f0 Final</th>\par
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">\f4\u9989?\f3  \f0 Paid</th>\par
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Actions</th>\par
+                      </tr>\par
+                    </thead>\par
+                    <tbody className="bg-white divide-y divide-gray-200">\par
+                      \{workLogs.map((log) => (\par
+                        <tr key=\{log.id\} className="hover:bg-gray-50 transition">\par
+                          <td className="px-4 py-3 text-sm text-gray-700">\{new Date(log.work_date).toLocaleDateString()\}</td>\par
+                          <td className="px-4 py-3 text-sm font-medium text-gray-800">\{log.production_name\}</td>\par
+                          <td className="px-4 py-3 text-sm text-gray-600">\{log.location || '\f3\emdash '\}</td>\par
+                          <td className="px-4 py-3 text-sm text-gray-600">\{log.role || '\emdash '\}</td>\par
+                          <td className="px-4 py-3 text-sm text-gray-600">\{log.character_name || '\emdash '\}</td>\par
+                          <td className="px-4 py-3 text-sm text-gray-700">\{log.hours_worked\}h</td>\par
+                          <td className="px-4 py-3 text-sm">\par
+                            \{log.is_union ? (\par
+                              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">Union</span>\par
+                            ) : (\par
+                              <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">Non-Union</span>\par
+                            )\}\par
+                          </td>\par
+                          <td className="px-4 py-3 text-sm text-gray-700">$\{log.gross_pay?.toFixed(2)\}</td>\par
+                          <td className="px-4 py-3 text-sm font-semibold text-gray-800">$\{log.final_pay?.toFixed(2)\}</td>\par
+                          <td className="px-4 py-3 text-sm">\par
+                            \{log.paid ? (\par
+                              <span className="text-green-600 font-medium">\f4\u10003?\f3  \f0 Yes</span>\par
+                            ) : (\par
+                              <span className="text-red-500">\f4\u10007?\f3  \f0 No</span>\par
+                            )\}\par
+                          </td>\par
+                          <td className="px-4 py-3 text-sm">\par
+                            <div className="flex gap-2">\par
+                              <button\par
+                                onClick=\{() => editWorkLog(log)\}\par
+                                className="text-blue-600 hover:text-blue-800 transition"\par
+                                title="Edit"\par
+                              >\par
+\f3                                 \f2\u9999?\u-497?\f0\par
+                              </button>\par
+                              <button\par
+                                onClick=\{() => deleteWorkLog(log.id)\}\par
+                                className="text-red-600 hover:text-red-800 transition"\par
+                                title="Delete"\par
+                              >\par
+\f3                                 \f2\u-10179?\u-8751?\u-497?\f0\par
+                              </button>\par
+                            </div>\par
+                          </td>\par
+                        </tr>\par
+                      ))\}\par
+                    </tbody>\par
+                  </table>\par
+                </div>\par
+              </div>\par
+            )\}\par
+          </div>\par
+\par
+          \{/* Footer Links */\}\par
+          <div className="mt-12 pt-6 border-t border-gray-200 flex justify-center gap-6 text-sm text-gray-400">\par
+            <Link href="/privacy" className="hover:text-gray-600 transition">Privacy Policy</Link>\par
+            <Link href="/terms" className="hover:text-gray-600 transition">Terms of Service</Link>\par
+            \{/* "My Certificates" link removed as requested */\}\par
+            <button\par
+              onClick=\{async () => \{\par
+                await supabase.auth.signOut();\par
+                router.push('/auth/sign-in');\par
+              \}\}\par
+              className="hover:text-gray-600 transition"\par
+            >\par
+              Sign Out\par
+            </button>\par
+          </div>\par
+        </div>\par
+      </div>\par
+\par
+      \{/* SECTION 2 COMPLETION POP-UP */\}\par
+      \{showSection2Popup && (\par
+        <div style=\{\{\par
+          position: 'fixed',\par
+          top: 0,\par
+          left: 0,\par
+          right: 0,\par
+          bottom: 0,\par
+          backgroundColor: 'rgba(0,0,0,0.5)',\par
+          display: 'flex',\par
+          alignItems: 'center',\par
+          justifyContent: 'center',\par
+          zIndex: 99999,\par
+          padding: '16px'\par
+        \}\}>\par
+          <div style=\{\{\par
+            backgroundColor: 'white',\par
+            borderRadius: '16px',\par
+            maxWidth: '400px',\par
+            width: '90%',\par
+            padding: '24px',\par
+            textAlign: 'center',\par
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'\par
+          \}\}>\par
+            <div style=\{\{ fontSize: '48px', marginBottom: '16px' \}\}>\f1\u-10180?\u-8311?\f0 </div>\par
+            <h2 style=\{\{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' \}\}>CONGRATULATIONS!</h2>\par
+            <p style=\{\{ color: '#4b5563', marginBottom: '16px' \}\}>You've completed all Section 2 training modules!</p>\par
+            <div style=\{\{ backgroundColor: '#f3e8ff', borderRadius: '8px', padding: '16px', marginBottom: '16px', textAlign: 'left' \}\}>\par
+              <p style=\{\{ fontWeight: '600', color: '#6b21a5', marginBottom: '8px' \}\}>You've mastered:</p>\par
+              <ul style=\{\{ listStyle: 'none', padding: 0 \}\}>\par
+                <li style=\{\{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontSize: '14px' \}\}>\f4\u10003?\f3  \f0 Foundation (Stanislavski)</li>\par
+                <li style=\{\{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontSize: '14px' \}\}>\f4\u10003?\f3  \f0 Audition Technique (Shurtleff)</li>\par
+                <li style=\{\{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontSize: '14px' \}\}>\f4\u10003?\f3  \f0 Scene Study (Hagen)</li>\par
+                <li style=\{\{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' \}\}>\f4\u10003?\f3  \f0 Advanced Technique (Meisner, Adler)</li>\par
+              </ul>\par
+            </div>\par
+            <p style=\{\{ fontSize: '14px', color: '#6b7280', marginBottom: '16px' \}\}>You're now ready to apply these professional acting techniques.</p>\par
+            <button\par
+              onClick=\{() => setShowSection2Popup(false)\}\par
+              style=\{\{\par
+                width: '100%',\par
+                backgroundColor: '#7c3aed',\par
+                color: 'white',\par
+                padding: '8px 16px',\par
+                borderRadius: '12px',\par
+                fontWeight: '600',\par
+                border: 'none',\par
+                cursor: 'pointer'\par
+              \}\}\par
+            >\par
+              Continue to Dashboard\par
+            </button>\par
+          </div>\par
+        </div>\par
+      )\}\par
+    </>\par
+  );\par
+\}\par
+}
+ 

@@ -47,7 +47,7 @@ export default function SettingsPage() {
 
     const { data: profileData } = await supabase
       .from('users')
-      .select('name, province')
+      .select('name, province, subscription_id, subscription_status')
       .eq('id', user.id)
       .single();
 
@@ -111,19 +111,80 @@ export default function SettingsPage() {
     setPasswordLoading(false);
   }
 
+  /**
+   * Cancel Lemon Squeezy subscription via API route
+   * This calls your internal API which then calls Lemon Squeezy
+   */
+  async function cancelLemonSqueezySubscription(subscriptionId: string): Promise<boolean> {
+    try {
+      const response = await fetch('/api/lemon/cancel-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ subscriptionId }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Lemon Squeezy cancellation failed:', error);
+        return false;
+      }
+
+      const data = await response.json();
+      console.log('Subscription cancelled:', data);
+      return true;
+    } catch (error) {
+      console.error('Error cancelling subscription:', error);
+      return false;
+    }
+  }
+
   async function deleteAccount() {
     if (deleteConfirm !== 'DELETE') {
       alert('Please type DELETE to confirm account deletion');
       return;
     }
 
-    if (!confirm('Are you absolutely sure? This action cannot be undone. All your progress, certificates, and data will be permanently deleted.')) {
+    if (!confirm('Are you absolutely sure? This action cannot be undone. All your progress, certificates, data, and your active subscription will be permanently cancelled and deleted.')) {
       return;
     }
 
     setDeleting(true);
 
     try {
+      // STEP 1: Get user's subscription info before deleting
+      const { data: userData, error: fetchError } = await supabase
+        .from('users')
+        .select('subscription_id, subscription_status')
+        .eq('id', user.id)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching user subscription:', fetchError);
+      }
+
+      // STEP 2: Cancel Lemon Squeezy subscription if it exists and is active
+      if (userData?.subscription_id && userData.subscription_status === 'active') {
+        console.log('Cancelling subscription:', userData.subscription_id);
+        const cancellationSuccess = await cancelLemonSqueezySubscription(userData.subscription_id);
+        
+        if (!cancellationSuccess) {
+          const continueDeletion = confirm(
+            'Warning: We could not automatically cancel your subscription. ' +
+            'You may need to cancel it manually from your Lemon Squeezy customer portal. ' +
+            'Do you still want to delete your account?'
+          );
+          if (!continueDeletion) {
+            setDeleting(false);
+            return;
+          }
+        } else {
+          console.log('Subscription cancelled successfully');
+        }
+      }
+
+      // STEP 3: Delete user data from Supabase tables
       // Delete from user_progress
       await supabase.from('user_progress').delete().eq('user_id', user.id);
       
@@ -149,7 +210,7 @@ export default function SettingsPage() {
       
     } catch (err) {
       console.error('Delete error:', err);
-      alert('Error deleting account. Please contact support.');
+      alert('Error deleting account. Please contact support at setready@mail.com');
     } finally {
       setDeleting(false);
     }
@@ -277,13 +338,14 @@ export default function SettingsPage() {
 
         {/* Danger Zone */}
         <div className="bg-white rounded-2xl shadow-lg border border-red-200 p-6 mb-6">
-          <h2 className="text-lg font-bold text-red-600 mb-4 flex-items-center gap-2">
+          <h2 className="text-lg font-bold text-red-600 mb-4 flex items-center gap-2">
             ⚠️ Danger Zone
           </h2>
           <div className="bg-red-50 rounded-lg p-4 mb-4">
-            <p className="text-sm text-red-800 font-semibold mb-2">Delete Account</p>
+            <p className="text-sm text-red-800 font-semibold mb-2">Delete/Cancel Account</p>
             <p className="text-sm text-red-700 mb-3">
-              This action cannot be undone. All your progress, certificates, and data will be permanently deleted.
+              <strong>Warning:</strong> This will permanently delete your account data AND cancel your active subscription (if any). 
+              Your subscription will not renew after cancellation. This action cannot be undone.
             </p>
             <div className="mb-3">
               <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -302,7 +364,7 @@ export default function SettingsPage() {
               disabled={deleting}
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium disabled:opacity-50"
             >
-              {deleting ? 'Deleting...' : 'Permanently Delete Account'}
+              {deleting ? 'Processing...' : 'Permanently Delete / Cancel Account'}
             </button>
           </div>
         </div>
@@ -328,7 +390,6 @@ export default function SettingsPage() {
             >
               Sign Out
             </button>
-            {/* Contact Support - Added */}
             <div className="pt-2 mt-2 border-t border-gray-200">
               <a 
                 href="mailto:setready@mail.com" 

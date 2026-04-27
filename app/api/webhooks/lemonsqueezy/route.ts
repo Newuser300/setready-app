@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import crypto from 'crypto';
 
 export async function POST(request: Request) {
@@ -14,6 +14,7 @@ export async function POST(request: Request) {
       .digest('hex');
     
     if (signature !== hash) {
+      console.error('Invalid webhook signature');
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
     
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
     if (eventName === 'subscription_created' || eventName === 'subscription_updated') {
       const { attributes } = data;
       const userId = attributes.custom_data?.user_id;
-      const status = attributes.status; // 'active', 'past_due', 'cancelled', 'expired'
+      const status = attributes.status;
       const subscriptionId = attributes.id;
       const endsAt = attributes.ends_at;
       
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
             subscription_ends_at: endsAt ? new Date(endsAt).toISOString() : null
           })
           .eq('id', userId);
+        console.log(`Updated subscription for user ${userId}: ${status}`);
       }
     }
     
@@ -56,6 +58,7 @@ export async function POST(request: Request) {
           .from('users')
           .update({ section2_unlocked: true })
           .eq('id', userId);
+        console.log(`Unlocked Section 2 for user ${userId}`);
       }
     }
     

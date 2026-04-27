@@ -1,0 +1,1867 @@
+{\rtf1\fbidis\ansi\ansicpg1252\deff0\nouicompat\deflang1033{\fonttbl{\f0\fnil\fcharset0 Calibri;}{\f1\fnil Calibri;}{\f2\fnil\fcharset1 Segoe UI Symbol;}{\f3\fnil\fcharset1 Segoe UI Symbol;}{\f4\fnil\fcharset1 Segoe UI Emoji;}{\f5\fnil\fcharset1 Cambria Math;}}
+{\*\generator Riched20 10.0.19041}{\*\mmathPr\mmathFont5\mwrapIndent1440 }\viewkind4\uc1 
+\pard\sa200\sl276\slmult1\f0\fs22\lang9 'use client';\par
+\par
+import \{ useParams, useRouter \} from 'next/navigation';\par
+import \{ useEffect, useState \} from 'react';\par
+import \{ supabase \} from '@/lib/supabase';\par
+\par
+const LESSONS: Record<number, string> = \{\par
+  1: `Film Set Terminology & Professional Operations\par
+*Academic Level: Industry Professional Certification*\par
+\par
+**Lesson 1.1: The 24-Hour Clock System \f1\endash  Professional Time Management**\par
+\par
+*Industry Standard Timekeeping*\par
+The film industry operates on a 24-hour clock (military time) to eliminate AM/PM confusion during overnight shoots. Productions routinely run 14-16 hour days, and a 12-hour turnaround is the minimum legal requirement under ACTRA/UBCP collective agreements (Article 24: Hours of Work).\par
+\par
+> \f2\u9200?\f1  \f0 **Critical Knowledge**: "Call time" is when you must be *ready to work* in wardrobe and makeup, not when you arrive. Professional performers arrive 15-20 minutes before call time to account for parking, wardrobe checks, and sign-in procedures.\par
+\par
+**Professional Time Calculations:**\par
+\f1\bullet  Time is tracked in 6-minute increments (0.1 hours) for payroll accuracy\par
+\bullet  Example: 8 hours 12 minutes = 8.2 hours on your voucher\par
+\bullet  **Overtime Calculation** (ACTRA/UBCP Standard Agreement Article 24.04):\par
+  - Hours 1-8: Straight time\par
+  - Hours 8-12: 1.5x (time and a half)\par
+  - Hours 12+: 2x (double time)\par
+\bullet  **Meal Penalty** (Article 24.07): If meal is delayed beyond 6 hours, production pays:\par
+  - 1st hour delay: $13.50\par
+  - 2nd hour delay: $18.00\par
+  - 3rd+ hour delay: $22.50 per hour\par
+\par
+**Legal Protections Under ACTRA/UBCP:**\par
+\bullet  Minimum 12-hour turnaround between wrap and next call (Article 24.06)\par
+\bullet  Meal breaks required every 6 hours (Article 24.07)\par
+\bullet  8-hour maximum before overtime begins\par
+\bullet  Night premium: $30.00 for work between midnight and 6 AM (Article 24.08)\par
+\bullet  Rest periods: 10 minutes rest for every 4 hours worked\par
+\par
+**Time Conversion Practice:**\par
+Convert the following call times to standard time:\par
+| 24-Hour | Standard | 24-Hour | Standard |\par
+|---------|----------|---------|----------|\par
+| 0545 | 5:45 AM | 1430 | 2:30 PM |\par
+| 0730 | 7:30 AM | 1645 | 4:45 PM |\par
+| 1245 | 12:45 PM | 2115 | 9:15 PM |\par
+\par
+---\par
+\par
+**Lesson 1.2: Professional Set Hierarchy \endash  The Assistant Director Department**\par
+\par
+*The Chain of Command \endash  ACTRA/UBCP Collective Agreement Definition*\par
+\par
+The Assistant Director (AD) department is your primary point of contact. Understanding their roles is essential for professional conduct.\par
+\par
+| Position | Responsibility | Interaction with Background |\par
+|----------|----------------|------------------------------|\par
+| **1st AD** | Sets the pace, manages the schedule, ensures safety, communicates with Director | Gives general direction to entire set; announces "rolling," "cut," "wrap"; manages the flow of the day |\par
+| **2nd AD** | Creates call sheets, manages cast logistics, handles background logistics | *Your primary contact*; check in upon arrival; handles vouchers; communicates call times |\par
+| **3rd AD** | Coordinates background action, crowd scenes, walk-ons | *Your direct supervisor*; gives specific direction for background movement; manages holding area |\par
+| **2nd 2nd AD** | Large productions only, dedicated background handling | Manages large groups, organizes holding area, coordinates background movement |\par
+\par
+**Professional Protocol:**\par
+\bullet  **Never approach the Director directly** \endash  all communication flows through the AD department\par
+\bullet  **Listen for AD instructions** \endash  they may call your name or group\par
+\bullet  **Ask questions to 3rd AD or Background Coordinator** \endash  they are your designated contacts\par
+\bullet  **Violation of chain of command** is considered unprofessional and can result in being replaced\par
+\par
+> \f3\u-10180?\u-8276?\f1  \f0 **Professional Insight**: The 1st AD is often called the "First." When you hear "First!" called across the set, stop what you're doing and listen for instructions. This is a production-wide command.\par
+\par
+---\par
+\par
+**Lesson 1.3: Professional Background Cues and Commands \f1\endash  Essential Vocabulary**\par
+\par
+*Master These Commands \endash  They Are Used on Every Set*\par
+\par
+| Command | Meaning | Professional Response |\par
+|---------|---------|----------------------|\par
+| *"Picture's up"* | Cameras preparing to roll | Stop all movement, prepare for silence |\par
+| *"Sound's up"* | Audio preparing to record | Complete silence |\par
+| *"Roll sound"* | Start audio recording | Absolute silence |\par
+| *"Roll camera"* | Start camera recording | Hold position, no movement |\par
+| *"Rolling"* | Both sound and camera recording | *Freeze. Hold all movement.* |\par
+| *"Speed"* | Camera and sound at proper speed | Continue only if directed |\par
+| *"Background action"* | Start background movement | *Begin your business with energy, then settle into scene* |\par
+| *"Action"* | Principal actors begin | **DO NOT move on "Action"** \endash  this is for principals only |\par
+| *"Cut"* | Stop immediately | Freeze in place until "Reset" or "Back to one" |\par
+| *"Back to one"* | Return to starting position | Move quickly but quietly to your first mark |\par
+| *"Reset"* | Prepare for another take | Return to starting positions for next take |\par
+| *"Going again"* | Another take immediately | Hold positions, don't reset |\par
+| *"Lock it up"* | Absolute silence, everyone freeze | Stop all movement and noise immediately |\par
+| *"Check the gate"* | Camera operator checks for debris | *Hold positions until you hear "Moving on" or "That's a wrap"* |\par
+| *"Moving on"* / *"Next setup"* | Changing camera position | You may relax, but stay quiet |\par
+| *"Strike"* | Taking down set | Stay clear of the area |\par
+| *"That's a wrap"* | End of day or end of production | You are dismissed after signing out |\par
+\par
+---\par
+\par
+**Lesson 1.4: Professional Set Locations and Zones**\par
+\par
+*Know Where You Are \endash  Safety and Protocol*\par
+\par
+| Zone | Purpose | Rules | ACTRA/UBCP Reference |\par
+|------|---------|-------|---------------------|\par
+| *The Floor* | Active filming area | *Do not enter without being called* | General safety protocol |\par
+| *Video Village* | Director/producer monitors | *Do not enter unless invited* | Production discretion |\par
+| *Craft Services* | Food and beverages | Respect portions; crew eats first | Collective Agreement Article 31 |\par
+| *Holding* | Background waiting area | Your designated area; stay here until called | Required facility under agreement |\par
+| *Circus* | Main production area with trailers | Authorized personnel only | Production area |\par
+| *Honeywagon* | Restroom trailers | Keep clean; report issues to AD | Required facility |\par
+| *Hot Set* | Active filming area | **DO NOT ENTER. Never touch anything.** | Safety protocol |\par
+| *Cold Set* | Not actively filming | Enter quietly only if directed | Safety protocol |\par
+| *Strike Zone* | Equipment being removed | Stay clear | Safety protocol |\par
+\par
+> \f4\u9888?\u-497?\f1  \f0 **Safety Protocol**: A "Hot Set" means cameras are active or about to roll. Touching anything on a hot set \f1\endash  even moving a prop \endash  can ruin a take and cost the production thousands of dollars. **Do not touch anything on a hot set unless directed by an AD.**\par
+\par
+---\par
+\par
+**Lesson 1.5: The Voucher System \endash  Professional Payroll Documentation**\par
+\par
+*Your Voucher is a Legal Document*\par
+\par
+The voucher is your payroll record. ACTRA/UBCP collective agreements (Article 29: Vouchers) specify:\par
+\par
+\bullet  **Union Voucher**: For ACTRA/UBCP members; counts toward membership credits; higher rates; benefits contributions\par
+\bullet  **Non-Union Voucher**: For non-members; does not count toward membership; lower rates; no benefits\par
+\bullet  **Background performers do NOT sign vouchers** \endash  production signs them\par
+\bullet  You sign to confirm attendance and verify your information\par
+\par
+**What to Verify on Every Voucher:**\par
+1. Your name spelled correctly (must match ID for payroll)\par
+2. Correct call time and wrap time\par
+3. Overtime hours recorded (1.5x 8-12h, 2x 12+h)\par
+4. Meal penalties if applicable ($13.50/$18.00/$22.50)\par
+5. Night premium if applicable ($30.00)\par
+6. Union status correctly marked\par
+\par
+> \f3\u-10179?\u-9020?\f1  \f0 **Professional Practice**: "If it's not on the voucher, it didn't happen." \f1\endash  Keep a photo of every voucher for your records. Errors can be corrected, but only if you have proof.\par
+\par
+---\par
+\par
+**Lesson 1.6: Professional Etiquette Summary**\par
+\par
+*The Professional Performer's Code*\par
+\par
+| Rule | Rationale |\par
+|------|-----------|\par
+| Arrive 15-20 minutes before call time | Accounts for parking, wardrobe, sign-in |\par
+| Sign in immediately upon arrival | Starts your pay clock |\par
+| Stay in holding until called | Production needs to know where you are |\par
+| Never sign out until dismissed by AD | Your pay ends when you sign out |\par
+| Report any injury immediately | Required for workers' compensation |\par
+| If you must leave holding, tell the Background Coordinator | You must be locatable |\par
+| Speak quietly in holding | Sound carries to set |\par
+| No phones on set floor | Distraction and safety hazard |\par
+| No photography | NDAs and legal liability`,\par
+\par
+  2: `Background Acting Terms & Performance \endash  Professional Techniques\par
+*Academic Level: Advanced Performance Studies*\par
+\par
+**Lesson 2.1: Professional Mark Technique \endash  The Foundation of Camera Awareness**\par
+\par
+*The Art of Hitting Your Mark*\par
+\par
+A "mark" is a piece of colored spike tape on the floor indicating your exact position for camera focus and lighting. Professional background performers hit their marks consistently without looking down.\par
+\par
+**Types of Marks:**\par
+\bullet  **T-shaped tape**: Where your feet should be placed (toes at the crossbar)\par
+\bullet  **Cross-shaped tape**: Precise stop points (center of cross is your position)\par
+\bullet  **Colored tape**: Different colors for different performers or positions\par
+\bullet  **Dry-erase marker**: Temporary marks on floors (fading, must be reapplied)\par
+\bullet  **Apple boxes**: Wooden boxes used as standing marks for height\par
+\par
+**Professional Mark Technique \endash  The 5-Step Process:**\par
+1. **Acknowledge your mark** \endash  know where it is before blocking; ask AD to show you\par
+2. **Feel it with your feet** \endash  use peripheral vision, develop proprioceptive awareness\par
+3. **Count steps** \endash  if walking, memorize your stride count (e.g., "3 steps to the mark")\par
+4. **Use landmarks** \endash  corner of a table, edge of a rug, light fixture, door frame\par
+5. **Land softly** \endash  stop without jarring or abrupt movement; practice smooth deceleration\par
+\par
+> \f3\u-10180?\u-8273?\f1  \f0 **Professional Insight**: Actors who consistently miss their marks are often not rehired. The camera operator focuses on marks. Miss your mark = out of focus = unusable take = wasted production time and money.\par
+\par
+---\par
+\par
+**Lesson 2.2: Continuity and Matching \f1\endash  The Invisible Art**\par
+\par
+*Why Continuity Matters \endash  From the Script Supervisor's Perspective*\par
+\par
+Continuity errors are among the most common mistakes in film. The Continuity Supervisor (Script Supervisor) documents every detail with photos and notes. Your job is to maintain consistency across all takes.\par
+\par
+**What Must Match Across Every Take:**\par
+\bullet  **Physical positioning**: Same spot on floor, same hand placement, same body orientation\par
+\bullet  **Prop handling**: Same hand, same grip, same timing (\f0\'b11 second)\par
+\f1\bullet  **Walking path**: Same route, same speed, same stride count\par
+\bullet  **Facial expression**: Same level of engagement/emotion; avoid "acting"\par
+\bullet  **Clothing**: Same adjustments (jacket open/closed, sleeves rolled, collar position)\par
+\bullet  **Hair**: Same position; don't tuck behind ear unless it was tucked in previous takes\par
+\bullet  **Business timing**: If you pick up a cup at 5 seconds in take 1, pick it up at 5 seconds in take 2\par
+\par
+**Professional Continuity Protocol:**\par
+\bullet  Take mental notes after each take \endash  what did you do, where were your hands?\par
+\bullet  If something changes (your mark moved, prop changed), ask the AD to confirm continuity\par
+\bullet  When in doubt, ask the Continuity Supervisor \endash  they have photos and will appreciate your professionalism\par
+\bullet  Film yourself practicing to review your own continuity\par
+\par
+> \f3\u-10179?\u-8968?\f1  \f0 **Professional Insight**: The Continuity Supervisor takes Polaroid photos of every setup. They will correct you if you change something. Be grateful \f1\endash  they're saving your performance from continuity errors that could affect the final edit.\par
+\par
+---\par
+\par
+**Lesson 2.3: Eyelines and Sightlines \endash  Professional Camera Awareness**\par
+\par
+*Eyeline \endash  Where You Look*\par
+\par
+Your eyeline determines where the audience believes you're looking. Incorrect eyeline ruins the illusion of the scene.\par
+\par
+**Professional Eyeline Directives:**\par
+\bullet  *"Eyeline camera left"* \endash  Look to the left of camera (not at it)\par
+\bullet  *"Eyeline camera right"* \endash  Look to the right of camera\par
+\bullet  *"Eyeline mark"* \endash  Look at a specific taped X (often a person standing there)\par
+\bullet  *"Eyeline off-camera"* \endash  Look at a person or object not in frame\par
+\bullet  *"Eyeline to principal"* \endash  Look at the principal actor (for reaction shots)\par
+\bullet  *"Eyeline to object"* \endash  Look at a specific prop or location\par
+\par
+> \f4\u-10179?\u-9151?\u-497?\f1  \f0 **Critical Rule**: **Never look directly at the camera unless specifically instructed.** This breaks the fourth wall and ruins the illusion. In professional terms, this is called "spiking the camera" and is considered a major error.\par
+\par
+*Sightline \f1\endash  The Camera's View*\par
+\par
+Your sightline is the path the camera needs to see you. Blocking another actor's sightline ruins their shot and wastes production time.\par
+\par
+**Sightline Rules:**\par
+\bullet  Don't stand directly between camera and principal actor\par
+\bullet  Don't walk through the frame during a principal's close-up\par
+\bullet  Be aware of where camera is positioned at all times\par
+\bullet  If you're unsure, ask the 3rd AD: "Am I in the shot?"\par
+\par
+*Cheating \endash  Professional Technique*\par
+\par
+"Cheating" is turning slightly toward camera while appearing to face another direction. This allows the camera to see your face while maintaining the illusion of natural orientation.\par
+\par
+**How to Cheat Properly:**\par
+\bullet  Turn your body 15-30 degrees toward camera\par
+\bullet  Keep your eyeline in the correct direction (use peripheral vision)\par
+\bullet  Practice in a mirror to see what looks natural\par
+\bullet  Ask the AD: "Is this cheating too much?" \endash  they'll adjust you\par
+\par
+---\par
+\par
+**Lesson 2.4: The "Furniture" Mindset \endash  Professional Philosophy**\par
+\par
+*Being Human Scenery*\par
+\par
+Your job is to create a believable world, not to be noticed. When the camera is on the principal actor, your movement should be subtle and natural.\par
+\par
+**Professional Principles:**\par
+\bullet  **Be present, not performative** \endash  Your focus should be on your business, not on "acting"\par
+\bullet  **If the Director is looking at you, you're doing too much** \endash  Background should blend into the environment\par
+\bullet  **Create realistic business** \endash  Your activity should be what people actually do in that setting\par
+\bullet  **Listen and react** \endash  Background performers react to principal actors, not to camera\par
+\bullet  **Trust the director** \endash  If they haven't given you direction, your performance is appropriate\par
+\par
+> \f4\u-10178?\u-8559?\f1  \f0 **Professional Wisdom**: The term "furniture" isn't derogatory \f1\endash  it's a compliment. The best background performers create atmosphere so seamlessly that audiences never notice them individually. Your work is invisible but essential.\par
+\par
+---\par
+\par
+**Lesson 2.5: Background Performance Techniques \endash  The Professional Toolkit**\par
+\par
+| Technique | Description | Professional Application |\par
+|-----------|-------------|--------------------------|\par
+| *Pantomime* | Silent acting without props | Essential for scenes where audio must be clean; practice in mirror; develop specific, repeatable gestures |\par
+| *Business* | Your activity (reading, typing, serving) | Should be consistent and match scene's mood; have a beginning, middle, and end; can be practiced before shoot |\par
+| *Cross* | Walking across frame | Timing must be precise; count steps; know entry/exit points; practice timing with AD |\par
+| *Deep Background* | Far from camera, minimal detail | Good for beginners; focus on group movement; follow 3rd AD direction |\par
+| *Featured Background* | Close to camera, detailed performance | Higher pay rate; may be given specific direction; more pressure; may have interaction with principal |\par
+| *Atmosphere* | Group movement (crowd scenes) | Follow 3rd AD direction; stay with group; create group activity (talking, laughing, working) |\par
+\par
+---\par
+\par
+**Lesson 2.6: Equipment Safety \endash  Professional Protocol**\par
+\par
+*Never Touch Equipment \endash  It's Not Your Job*\par
+\par
+| Equipment | Department | Hazard | Professional Rule |\par
+|-----------|------------|--------|-------------------|\par
+| Camera | Camera Department | Expensive, delicate | Never touch cameras, lenses, tripods, dolly track |\par
+| Lighting | Grip & Electric | Heat, electricity, heavy | Never touch lights, C-stands, flags, barn doors, stingers |\par
+| Sound | Sound Department | Audio interference | Never touch booms, microphones, recorders |\par
+| Props | Props Department | Breakable, valuable | Handle only when directed; hero props are irreplaceable |\par
+\par
+*If Equipment Blocks Your Path:*\par
+1. Stop and wait\par
+2. Call "Coming through" to alert crew\par
+3. Ask AD or crew member to move it\par
+4. Never step over cables \endash  ask for cable covers\par
+\par
+> \f4\u9888?\u-497?\f1  \f0 **Safety Protocol**: C-stands have counterweights. Moving one without knowing how can cause serious injury or damage. **Never touch equipment you haven't been trained to handle.**`,\par
+\par
+  3: `Set Etiquette & Professional Conduct \f1\endash  The Industry Standard\par
+*Academic Level: Professional Certification*\par
+\par
+**Lesson 3.1: Professional Punctuality and Arrival Protocol**\par
+\par
+*Call Time \endash  The Non-Negotiable Standard*\par
+\par
+Your call time is when you must be *ready to work*, not when you arrive. Professional performers arrive 15-20 minutes early to account for:\par
+\par
+\bullet  Parking (may be off-site, requiring shuttle)\par
+\bullet  Wardrobe changes (fittings, alterations, base wardrobe)\par
+\bullet  Makeup checks (if required)\par
+\bullet  Sign-in procedures (voucher verification)\par
+\bullet  Holding area location (may be far from set)\par
+\par
+> \f2\u9200?\f1  \f0 **Professional Standard**: Being late is the #1 reason background performers are not rehired. Casting directors maintain databases with notes on performer reliability. A single late arrival can affect future opportunities with multiple casting offices.\par
+\par
+*If You Are Running Late \f1\endash  Professional Protocol:*\par
+1. Call the 2nd AD or production office **immediately**\par
+2. Have your voucher number ready\par
+3. Give your estimated arrival time\par
+4. Do not assume they will wait for you \endash  they often won't\par
+5. Apologize and be prepared for consequences (may be sent home without pay)\par
+6. Document the call (time, who you spoke to) in case of dispute\par
+\par
+---\par
+\par
+**Lesson 3.2: Professional Communication**\par
+\par
+*The Art of Being Seen but Not Heard*\par
+\par
+| Professional DO | Professional DON'T |\par
+|-----------------|-------------------|\par
+| Speak quietly in holding | Use phone on set floor (even on silent) |\par
+| Ask questions to ADs or Background Coordinator | Approach Director or principal actors |\par
+| Listen for AD instructions | Talk during takes |\par
+| Signal if you need to leave holding | Wander onto set or into restricted areas |\par
+| Use hand signals for communication during takes | Make unnecessary noise |\par
+\par
+*Professional Cell Phone Protocol:*\par
+\bullet  Phones on **silent or off** at all times (vibrate can be heard on set)\par
+\bullet  Never use phone on set floor \endash  step to designated "phone zones"\par
+\bullet  No photography or video recording under any circumstances\par
+\bullet  *Even "just for me" photos are prohibited and can get you blacklisted*\par
+\bullet  NDAs are legally binding \endash  violations can result in lawsuits\par
+\par
+> \f3\u-10179?\u-8975?\f1  \f0 **Legal Notice**: Many productions require signing NDAs (Non-Disclosure Agreements). Violating an NDA can result in lawsuits with damages up to $50,000+. **Do not post anything about the production on social media.** This includes set photos, actor sightings, plot details, or even vague "working on a secret project" posts.\par
+\par
+---\par
+\par
+**Lesson 3.3: Sign-In/Sign-Out Procedures \f1\endash  Protecting Your Pay**\par
+\par
+*Start of Day Protocol \endash  Your Pay Clock Begins*\par
+\par
+\bullet  Sign in **immediately upon arrival** \endash  this starts your pay clock\par
+\bullet  Verify your name spelling matches your ID (payroll requires exact match)\par
+\bullet  Check your voucher number against your call sheet\par
+\bullet  Confirm "in" time is correct (to the minute)\par
+\bullet  **Keep your voucher copy for tax records** \endash  you'll need it for CRA\par
+\bullet  Take a photo of your voucher for your records\par
+\par
+*End of Day Protocol \endash  Your Pay Ends When You Sign Out*\par
+\par
+\bullet  Sign out when dismissed by AD \endash  **never before**\par
+\bullet  Verify "out" time matches actual wrap (to the minute)\par
+\bullet  Check for overtime hours (1.5x 8-12h, 2x 12+h)\par
+\bullet  Verify meal penalties if applicable (delayed meal)\par
+\bullet  Verify night premium if applicable (midnight-6 AM)\par
+\bullet  Report errors **immediately** \endash  adjustments after wrap are difficult\par
+\par
+*Voucher Errors to Watch For \endash  Check Every Time:*\par
+\bullet  Wrong name spelling\par
+\bullet  Incorrect call time\par
+\bullet  Incorrect wrap time\par
+\bullet  Missing overtime hours\par
+\bullet  Missing meal penalty\par
+\bullet  Wrong union status (union/non-union)\par
+\bullet  Missing night premium\par
+\bullet  Wrong voucher number\par
+\par
+---\par
+\par
+**Lesson 3.4: Professional Conduct with Principal Actors**\par
+\par
+*The Golden Rules of Professional Distance*\par
+\par
+| DO \f2\u9989?\f1  \f0 | DON'T \f2\u10060?\f1  \f0 |\par
+|-------|---------|\par
+| Treat them as colleagues | Ask for autographs or photos |\par
+| Make brief, professional eye contact | Stare at them |\par
+| Respond if they speak to you | Approach them first |\par
+| Be respectful of their space | Discuss their personal lives |\par
+| Return to your business after brief interaction | Linger or hover |\par
+\par
+*If a Principal Actor Approaches You:*\par
+1. Respond politely but briefly\par
+2. Do not ask questions about the production\par
+3. Do not share personal stories\par
+4. Return to your business\par
+5. Do not post about the interaction on social media\par
+\par
+> \f3\u-10180?\u-8275?\f1  \f0 **Professional Wisdom**: Principal actors are working. Their focus is on their performance. Any distraction, even well-intentioned, can affect their concentration and the quality of the production. The set is their workplace, not a meet-and-greet.\par
+\par
+---\par
+\par
+**Lesson 3.5: Craft Services Etiquette \f1\endash  The Professional Standard**\par
+\par
+*Respecting the Craft Services Area*\par
+\par
+Craft services is not a buffet \endash  it's a professional courtesy provided by production under collective agreement (Article 31: Meals and Craft Service).\par
+\par
+**Professional Rules:**\par
+\bullet  **Take reasonable portions** \endash  one portion at a time; return for more later\par
+\bullet  **Clean up after yourself** \endash  throw away trash, wipe spills, return dishes\par
+\bullet  **Do not take food home** \endash  this is theft and can result in blacklisting\par
+\bullet  **First team (principal actors) eat first** \endash  crew and background eat after\par
+\bullet  **Don't rush the line** \endash  wait your turn; be patient\par
+\bullet  **Respect labeled items** \endash  some items are for specific departments (e.g., "Camera Only")\par
+\bullet  **Dietary restrictions** \endash  if you have allergies, inform craft services; don't assume accommodations\par
+\par
+*What Craft Services Typically Provides:*\par
+\bullet  Water, coffee, tea, soft drinks\par
+\bullet  Snacks (granola bars, fruit, nuts, chips)\par
+\bullet  Hot meals on long days (breakfast, lunch, dinner)\par
+\bullet  Dietary options (gluten-free, vegetarian, vegan, kosher, halal)\par
+\bullet  Condiments, utensils, napkins\par
+\par
+*What to Bring Yourself:*\par
+\bullet  Water bottle (refillable \endash  stay hydrated)\par
+\bullet  Snacks if you have specific dietary restrictions\par
+\bullet  Meals for very long days (if you prefer)\par
+\bullet  Caffeine if you need it (some sets don't have coffee after lunch)\par
+\par
+---\par
+\par
+**Lesson 3.6: Wardrobe and Props \endash  Professional Handling**\par
+\par
+*Wardrobe Protocol \endash  Respect the Costume Department*\par
+\par
+\bullet  Arrive in "wearing" or "base" wardrobe if instructed (check call sheet)\par
+\bullet  Wardrobe fitting is separate pay (usually 0.5 hour minimum)\par
+\bullet  **Return all wardrobe at end of day** \endash  lost items may be charged to you (costume pieces can be hundreds of dollars)\par
+\bullet  Report any damage immediately \endash  repairs are easier than replacements\par
+\bullet  Do not alter wardrobe \endash  even pinning or hemming without permission\par
+\bullet  Do not share wardrobe with others \endash  cross-contamination, sizing issues\par
+\par
+*Props Protocol \endash  Handle with Care*\par
+\par
+\bullet  **Do not take props home** \endash  this is theft and can result in blacklisting\par
+\bullet  **Hero props** (featured items) are valuable and often one-of-a-kind \endash  handle with extreme care\par
+\bullet  **Breakaway props** are designed to break \endash  handle carefully until instructed\par
+\bullet  **Weapons** (even prop weapons) \endash  **never touch without direction from AD and armorer**\par
+\bullet  Return props immediately when done \endash  don't leave them on set\par
+\par
+> \f3\u-10179?\u-9075?\f1  \f0 **Professional Note**: Hero props can be worth thousands of dollars and may be irreplaceable. Treat every prop as if it's the only one in existence.\par
+\par
+---\par
+\par
+**Lesson 3.7: Bullying and Harassment \f1\endash  Know Your Rights**\par
+\par
+*ACTRA/UBCP Policy (Article 33: Harassment)*\par
+\par
+All performers have the right to a workplace free from harassment and discrimination. You are protected from retaliation for reporting in good faith.\par
+\par
+**What to Do:**\par
+1. **Document everything** \endash  date, time, location, witnesses, exactly what was said/done\par
+2. **Report to 2nd AD or Background Coordinator** \endash  they are required by collective agreement to investigate\par
+3. **Contact your union** (ACTRA/UBCP) \endash  they have dedicated harassment hotlines\par
+4. **Keep copies** of all communications (emails, texts, notes)\par
+5. **Seek support** \endash  talk to trusted colleagues; don't suffer in silence\par
+\par
+*Production Responsibilities:*\par
+\bullet  Must have anti-harassment policies posted\par
+\bullet  Must have designated contacts for reports\par
+\bullet  Must investigate complaints promptly\par
+\bullet  Must protect you from retaliation\par
+\bullet  Must provide a safe work environment\par
+\par
+> \f4\u9878?\u-497?\f1  \f0 **Legal Protection**: Under provincial human rights legislation and ACTRA/UBCP collective agreements, harassment and discrimination are prohibited. You cannot be fired or punished for reporting in good faith.`,\par
+\par
+  4: `Safety on Set \f1\endash  Professional Health and Safety Standards\par
+*Academic Level: Occupational Health and Safety Certification*\par
+\par
+**Lesson 4.1: Your Legal Rights and Responsibilities**\par
+\par
+*Right to Refuse Unsafe Work \endash  ACTRA/UBCP Collective Agreement Article 25*\par
+\par
+> \f4\u-10179?\u-8479?\u-497?\f1  \f0 **Legal Protection**: "No performer shall be dismissed or disciplined for refusing to work in conditions they reasonably believe to be unsafe." \f1\endash  ACTRA/UBCP Standard Agreement Article 25.02\par
+\par
+*Your Legal Responsibilities Under Provincial OHS Acts:*\par
+\bullet  You are required to refuse work that you believe may harm you or someone else\par
+\bullet  Report any unsafe work to a Supervisor immediately\par
+\bullet  If you observe unsafe conditions, report them \endash  do not assume someone else will\par
+\bullet  Cooperate with safety investigations\par
+\bullet  Know the location of first aid and emergency exits\par
+\par
+*Injury Reporting Protocol \endash  Immediate Action Required*\par
+If you sustain an injury, no matter how minor:\par
+1. Advise Background Coordinator immediately\par
+2. Report to First Aid (location will be on call sheet)\par
+3. Complete an Accident Report \endash  get a copy\par
+4. Document everything: date, time, location, witnesses, what happened, equipment involved\par
+5. See your family doctor as soon as possible (within 24 hours)\par
+6. Follow up with production about medical coverage (WSIB/WorkSafeBC/WCB)\par
+\par
+> \f3\u-10179?\u-9013?\f1  \f0 **Professional Documentation**: Take photos of the area where the injury occurred (if safe). Write down names of witnesses. Keep a copy of the Accident Report. Your health comes first \f1\endash  never downplay injuries to avoid "causing trouble."\par
+\par
+---\par
+\par
+**Lesson 4.2: Slips, Trips, and Falls \endash  The Most Common Injury**\par
+\par
+*Common Hazards on Set \endash  Prevention is Your Responsibility*\par
+\par
+| Hazard | Prevention | What to Report |\par
+|--------|------------|----------------|\par
+| Cables and cords | Use cable covers; tape down securely; ask for covers if missing | Exposed cables, loose tape |\par
+| Wet floors (Honeywagons, rain, spills) | Report immediately; place warning signs; avoid wet areas | Standing water, no signs |\par
+| Uneven terrain (location shoots) | Wear appropriate footwear; watch your step; ask for lighting | Hidden holes, loose ground |\par
+| Stairs without handrails | Use three points of contact; ask for handrail | No handrail, poor lighting |\par
+| Night shoots on roads | Stay in designated areas; wear reflective tape; ask for lighting | Poor visibility, moving vehicles |\par
+| Props left in walkways | Report to AD; move to designated area | Obstructions, tripping hazards |\par
+\par
+*Professional Prevention Protocol:*\par
+\bullet  Always be aware of your surroundings \endash  situational awareness is a skill\par
+\bullet  Walk, don't run, unless directed for scene\par
+\bullet  Use three points of contact on stairs (two feet, one hand)\par
+\bullet  Wear appropriate footwear for terrain (no flip-flops on outdoor sets)\par
+\bullet  Report hazards immediately \endash  don't wait for someone else\par
+\par
+> \f4\u9888?\u-497?\f1  \f0 **Safety First**: Most set injuries are preventable. If you see a hazard, report it. You may save someone from serious injury.\par
+\par
+---\par
+\par
+**Lesson 4.3: Propane Heater Safety \f1\endash  Winter Shoot Protocol**\par
+\par
+*ACTRA/UBCP Safety Guidelines for Outdoor Winter Shoots*\par
+\par
+Propane heaters are common on outdoor winter shoots but pose serious risks if used improperly. Know these protocols.\par
+\par
+**Critical Safety Rules:**\par
+\bullet  **Never close tent flaps completely** \endash  ventilation prevents carbon monoxide poisoning\par
+\bullet  **Keep combustibles at least 1.37m (4 feet 6 inches)** away from heaters (ACTRA/UBCP standard)\par
+\bullet  **Ensure propane tanks are level and secured** \endash  tipping can cause leaks\par
+\bullet  **Never move or tamper with radiant heaters** \endash  only qualified crew handles them\par
+\bullet  **Report any smell of gas immediately** \endash  this is a serious hazard\par
+\par
+*Carbon Monoxide Poisoning \endash  Know the Symptoms and Act Fast*\par
+\par
+| Symptom | Severity | Action |\par
+|---------|----------|--------|\par
+| Headache | Mild | Evacuate area immediately; get fresh air |\par
+| Nausea | Moderate | Report to First Aid; do not re-enter |\par
+| Dizziness | Moderate | Seek medical attention; do not drive |\par
+| Confusion | Severe | Call 911; emergency medical attention |\par
+| Breathlessness | Severe | Call 911; high oxygen treatment may be needed |\par
+\par
+> \f3\u-10179?\u-8536?\f1  \f0 **Emergency Protocol**: If you or anyone else has signs of CO poisoning, evacuate immediately and inform the supervisor. Do not re-enter the space until it has been declared safe by a qualified person (usually First Aid or location manager).\par
+\par
+---\par
+\par
+**Lesson 4.4: Environmental Illnesses \f1\endash  Weather Extremes**\par
+\par
+*Heat Stress Prevention \endash  ACTRA/UBCP Guidelines*\par
+\par
+| Stage | Symptoms | Action |\par
+|-------|----------|--------|\par
+| Heat Cramps | Muscle pain, spasms | Rest, hydrate (water + electrolytes), stretch |\par
+| Heat Exhaustion | Heavy sweating, weakness, dizziness, nausea | Seek shade, hydrate, cool compresses, remove excess clothing |\par
+| Heat Stroke | Confusion, loss of consciousness, high body temp, no sweating | **Call 911 immediately** \endash  this is life-threatening |\par
+\par
+*Cold Exposure / Hypothermia Prevention*\par
+\par
+| Stage | Symptoms | Action |\par
+|-------|----------|--------|\par
+| Mild | Shivering, numbness, blue fingers/toes | Seek warmth, remove wet clothing, warm gradually |\par
+| Moderate | Confusion, slurred speech, drowsiness | Warm gradually, no direct heat (no hot water, no heating pad), seek medical attention |\par
+| Severe | Loss of consciousness, weak pulse | **Call 911 immediately** \endash  life-threatening |\par
+\par
+*Production Responsibilities Under ACTRA/UBCP:*\par
+\bullet  Provide adequate shelter in extreme weather (Article 25: Working Conditions)\par
+\bullet  Allow warming/cooling breaks as needed\par
+\bullet  Provide appropriate gear (waterproof for rain scenes, warm layers for cold)\par
+\bullet  Have First Aid on site at all times\par
+\bullet  Monitor weather conditions and adjust schedule as needed\par
+\par
+---\par
+\par
+**Lesson 4.5: Physical Hazards \endash  Professional Awareness**\par
+\par
+*Heavy Equipment Safety \endash  Know Your Surroundings*\par
+\par
+| Equipment | Hazard | Prevention |\par
+|-----------|--------|------------|\par
+| Cranes, jibs | Swing path, overhead objects | Stay behind safety line; listen for "swinging" call |\par
+| Set structures | Falling objects | Hard hat if working near construction; stay clear of overhead work |\par
+| Lighting | Heat, electrical, heavy | Never touch; report malfunction; stay clear of hot lights |\par
+| C-stands | Counterweights, arms, tipping | Never move without crew; stay clear of arms |\par
+\par
+*Firearms and Pyrotechnics \endash  ACTRA/UBCP Protocol (Article 27: Weapons)*\par
+\par
+> \f3\u-10179?\u-8917?\f1  \f0 **Critical Rule**: **Never touch a prop gun, even if you think it's not real.** Only licensed professionals (armorers) handle firearms on set.\par
+\par
+\f1\bullet  Be aware of when and where firearms, explosives, pyrotechnics, open flames will be used (check call sheet)\par
+\bullet  Make being safe your number one priority\par
+\bullet  Stay behind the safety line\par
+\bullet  Wear hearing protection when advised\par
+\bullet  Follow all safety instructions from AD and armorer\par
+\bullet  Do not joke about weapons \endash  safety is not a game\par
+\par
+*Laser Devices*\par
+\bullet  Focus pullers may use laser measuring devices\par
+\bullet  Ask if lasers are in use\par
+\bullet  Avoid looking directly at lasers \endash  they can cause permanent eye damage\par
+\bullet  Report any laser misuse\par
+\par
+---\par
+\par
+**Lesson 4.6: Vehicle Safety \endash  On-Set Driving**\par
+\par
+*Professional Vehicle Protocol*\par
+\par
+\bullet  Always wear seat belts when in vehicles on set (even parked)\par
+\bullet  Follow direction of AD and Stunt Coordinator\par
+\bullet  Drive slowly and predictably (5-10 km/h in staging areas)\par
+\bullet  Be aware of crew members and equipment near vehicles\par
+\bullet  Never drive under the influence \endash  this is immediate dismissal and blacklisting\par
+\par
+*If You're Asked to Drive:*\par
+\bullet  If you're not a professional stunt driver, let someone else drive\par
+\bullet  If you've never ridden a motorcycle or driven a boat, the set is not the place to learn\par
+\bullet  Vehicle movement is part of the scene \endash  safety is priority\par
+\par
+---\par
+\par
+**Lesson 4.7: Working with Animals \endash  Professional Protocol**\par
+\par
+*Animal Actors \endash  Respect Their Training*\par
+\par
+\bullet  Animal actors are specially trained and handled by professionals (animal wranglers)\par
+\bullet  Do not approach animals without the trainer's permission and supervision\par
+\bullet  Even "friendly" animals can bite or kick when stressed or frightened\par
+\bullet  If you're in a scene with an animal, talk to the trainer \endash  learn about the animal before "Action!"\par
+\bullet  Report any animal-related concerns to the AD immediately\par
+\par
+---\par
+\par
+**Lesson 4.8: Intimate Scenes and Nudity \endash  Professional Protocols**\par
+\par
+*ACTRA/UBCP Intimacy Guidelines (Article 32: Intimacy)*\par
+\par
+An Intimacy Coordinator is required for any production involving nudity, semi-nudity, or simulated sexual activity.\par
+\par
+**Your Rights:**\par
+\bullet  Know exactly what will be required before agreeing to work (Intimacy Rider)\par
+\bullet  You cannot be forced to perform nudity or intimate scenes\par
+\bullet  You can change your mind at any time \endash  this is your right\par
+\bullet  Closed set protocols (only essential personnel present)\par
+\bullet  Modesty garments provided\par
+\bullet  Right to stop the scene if uncomfortable\par
+\bullet  Chaperones available if requested\par
+\par
+---\par
+\par
+**Lesson 4.9: Stunt Safety \endash  Professional Protocol**\par
+\par
+*What Is a Stunt? (ACTRA/UBCP Definition)*\par
+\par
+A stunt is any performance that would be considered dangerous if not performed by someone with special training, or is beyond a performer's general experience or abilities.\par
+\par
+**Your Role:**\par
+\bullet  A Stunt Coordinator decides whether a performance is a stunt \endash  they have final say\par
+\bullet  If there is no Stunt Coordinator and you feel unsafe, let production know\par
+\bullet  Suggest they get a qualified stunt performer \endash  this is your right\par
+\bullet  Attend the on-set safety meeting if you're in a shot with a stunt\par
+\bullet  Note: an increase in your fees will not make the performance any safer\par
+\par
+> \f3\u-10179?\u-9040?\f1  \f0 **Professional Wisdom**: Safety is paramount, not budget. No amount of money is worth injury.\par
+\par
+---\par
+\par
+**Lesson 4.10: Child Performer Protections**\par
+\par
+*Protecting Child Performers Act (Ontario) and Similar Provincial Legislation*\par
+\par
+\f1\bullet  Parental accompaniment required for young children\par
+\bullet  Chaperones must have clean criminal record checks\par
+\bullet  Right to refuse work \endash  children cannot be forced to perform\par
+\bullet  Healthy food requirements \endash  production must provide appropriate meals\par
+\bullet  Mandatory rest periods: 30-minute break every 3 hours for younger children\par
+\bullet  Education time: school-age children require tutoring on set\par
+\bullet  No nudity or sexual content for minors\par
+\par
+> \f3\u-10179?\u-9113?\f1  \f0 **Professional Responsibility**: Child performer protections are law. Do not bend rules to please production. The safety and well-being of young performers is paramount.`,\par
+\par
+  5: `Industry Standards, Pay & Career Advancement \f1\endash  The Professional Path\par
+*Academic Level: Career Development Certification*\par
+\par
+**Lesson 5.1: Professional Classification of Background Performers**\par
+\par
+*ACTRA/UBCP Rate Classifications*\par
+\par
+| Type | Description | Rate | Qualification | Collective Agreement Article |\par
+|------|-------------|------|---------------|------------------------------|\par
+| *General Background* | Basic crowd work | Standard rate | No special skills required | Article 29 |\par
+| *Special Ability* | Specific skills (juggling, skateboarding, musical instrument) | +$20-50/day | Demonstrated skill; may require audition | Article 29.03 |\par
+| *Stand-in* | Replaces principal for lighting/camera setup | +$25-50/day | Height/build match; experience preferred | Article 29.04 |\par
+| *Photo Double* | Body double for hands/feet/back | +$25-50/day | Match specific body part; no face shown | Article 29.04 |\par
+| *Continuity Background* | Appears across multiple scenes/days | +$10-20/day | Availability for multiple days; consistent look | Article 29.05 |\par
+\par
+---\par
+\par
+**Lesson 5.2: ACTRA/UBCP \endash  Professional Union Membership**\par
+\par
+*Benefits of Union Membership (ACTRA/UBCP Collective Agreement)*\par
+\par
+| Benefit | Description | Article Reference |\par
+|---------|-------------|------------------|\par
+| **Higher Pay** | Union rates are significantly higher than non-union | Article 29 (Rates of Pay) |\par
+| **Pension Contributions** | 7% employer contribution to RRSP (AFBS) | Article 39 (Pension) |\par
+| **Health Benefits** | AFBS/MBT health and dental coverage | Article 38 (Health Benefits) |\par
+| **Residuals** | Payment for re-runs and secondary use | Article 36 (Residuals) |\par
+| **Workplace Protections** | Enforced turnaround times, meal penalties, safety standards | Article 24-25 |\par
+| **Legal Representation** | Union lawyers for contract disputes, harassment cases | Article 33 (Harassment) |\par
+| **Grievance Process** | Formal process for addressing violations | Article 37 (Grievances) |\par
+| **Professional Development** | Workshops, networking events, mentorship | Union programs |\par
+\par
+*How to Become a Member \endash  The Application Process*\par
+\par
+**Qualifying Credits:**\par
+\bullet  3 qualifying credits required for full membership\par
+\bullet  **Background permits do NOT count** \endash  only speaking/featured roles with residuals (Article 29.06)\par
+\bullet  Credits can be earned in ACTRA productions across Canada\par
+\bullet  Each credit must be for a role with at least one spoken line\par
+\par
+**Initiation Fee:**\par
+\bullet  $1,600 CAD (minus value of permits already purchased)\par
+\bullet  Can be paid in installments\par
+\bullet  Membership is for life\par
+\bullet  Reduced fee for students and emerging artists\par
+\par
+> \f3\u-10180?\u-8301?\f1  \f0 **Professional Pathway**: Background \f5\u8594?\f1  \f0 Upgrade on Set (get a speaking line) \f5\u8594?\f1  \f0 Qualifying Credit #1 \f5\u8594?\f1  \f0 Principal Roles \f5\u8594?\f1  \f0 3 Credits \f5\u8594?\f1  \f0 Full Membership \f5\u8594?\f1  \f0 Agent Representation \f5\u8594?\f1  \f0 Principal Actor Career\par
+\par
+---\par
+\par
+**Lesson 5.3: The Voucher System \f1\endash  Professional Payroll Documentation**\par
+\par
+*Union vs Non-Union Vouchers \endash  Know the Difference*\par
+\par
+| Voucher Type | Features | Implications |\par
+|--------------|----------|--------------|\par
+| **Union Voucher** | For ACTRA/UBCP members; counts toward membership credits; higher rates; benefits contributions | Required for union membership; must be used for union members |\par
+| **Non-Union Voucher** | For non-members; does not count toward membership; lower rates; no benefits | Permit fees may apply; does not lead to membership |\par
+\par
+*Voucher Verification Checklist \endash  Check Every Time*\par
+\par
+- [ ] Your name spelled correctly (must match ID for payroll)\par
+- [ ] Correct call time (to the minute)\par
+- [ ] Correct wrap time (to the minute)\par
+- [ ] Overtime hours recorded (1.5x 8-12h, 2x 12+h)\par
+- [ ] Meal penalties if applicable ($13.50/$18.00/$22.50)\par
+- [ ] Night premium if applicable ($30.00)\par
+- [ ] Union status correctly marked (union/non-union/permit)\par
+- [ ] Voucher number matches call sheet\par
+\par
+> \f3\u-10179?\u-9020?\f1  \f0 **Professional Practice**: "If it's not on the voucher, it didn't happen." \f1\endash  Keep a photo of every voucher for your records. Errors can be corrected, but only if you have proof.\par
+\par
+---\par
+\par
+**Lesson 5.4: Upgrading to Principal Actor \endash  The Professional Milestone**\par
+\par
+*What Triggers an Upgrade (ACTRA/UBCP Article 29.08)*\par
+\par
+| Trigger | Action | Rate |\par
+|---------|--------|------|\par
+| Speaking line (any words) | Immediate upgrade to Principal Actor | Principal actor rates retroactive to call time |\par
+| Featured background (camera focus on you for extended time) | May negotiate upgrade | Negotiated rate |\par
+| Special action (significant action in scene) | Upgrade if action is significant | Principal actor rates |\par
+| Interaction with principal (scripted interaction) | May qualify for upgrade | Negotiated rate |\par
+\par
+*Your Rights Upon Upgrade:*\par
+\bullet  Must be paid principal actor rates retroactive to call time (Article 29.08)\par
+\bullet  Must be offered opportunity to audition for the speaking role (if applicable)\par
+\bullet  Must be credited if applicable\par
+\bullet  May be eligible for residuals\par
+\bullet  Must receive a principal actor contract\par
+\par
+---\par
+\par
+**Lesson 5.5: Provincial Rates (2026) \endash  Professional Compensation**\par
+\par
+*British Columbia (UBCP/ACTRA)*\par
+| Item | Rate | Article |\par
+|------|------|---------|\par
+| Background (8 hours) | $270.30 | Appendix A |\par
+| Permit fee | $15.00/day | Article 29.07 |\par
+| Minimum background on voucher | 15 | Article 29.09 |\par
+| Overtime (8-12h) | 1.5x | Article 24.04 |\par
+| Overtime (12+h) | 2.0x | Article 24.04 |\par
+| Night premium | $30.00 | Article 24.08 |\par
+| Meal penalties | $13.50/$18.00/$22.50 | Article 24.07 |\par
+| Turnaround | 12 hours minimum | Article 24.06 |\par
+\par
+*Ontario (ACTRA Toronto)*\par
+| Item | Rate | Article |\par
+|------|------|---------|\par
+| Background (8 hours) | $270.30 | Appendix A |\par
+| Permit fee (within 120km) | $12.50 | Article 29.07 |\par
+| Permit fee (outside 120km) | $7.50 | Article 29.07 |\par
+| Minimum background on voucher | 25 | Article 29.09 |\par
+| Overtime | 1.5x/2x | Article 24.04 |\par
+\par
+*Quebec (ACTRA Montreal)*\par
+| Item | Rate | Article |\par
+|------|------|---------|\par
+| Background (8 hours) | $270.30 | Appendix A |\par
+| Permit fee | $12.50 | Article 29.07 |\par
+| Minimum background on voucher | 25 | Article 29.09 |\par
+\par
+*Quebec (Union des artistes \endash  French-language)*\par
+| Item | Rate | Notes |\par
+|------|------|-------|\par
+| Background | Varies by production budget | UDA collective agreement differs |\par
+| French language proficiency | Required | Quebec language laws apply |\par
+\par
+*Maritimes (ACTRA Maritimes Tier II)*\par
+| Item | Rate | Article |\par
+|------|------|---------|\par
+| Background (4-8 hours) | $60.00 minimum | Appendix A |\par
+| Overtime | 1.5x after 8h | Article 24.04 |\par
+| Minimum background (within 80km) | 12 | Article 29.09 |\par
+| Remote productions (80km+) | Exempt from minimum | Article 29.10 |\par
+\par
+*Alberta, Saskatchewan, Manitoba*\par
+| Item | Rate |\par
+|------|------|\par
+| Background (8 hours) | $270.30 |\par
+| Permit fee | $12.50 |\par
+| Minimum background | 25 |\par
+\par
+*Newfoundland*\par
+| Item | Rate |\par
+|------|------|\par
+| Background (8 hours) | $270.30 |\par
+| Permit fee | $12.50 |\par
+| Minimum background | 25 |\par
+\par
+*Territories (YT, NT, NU)*\par
+Modified rules for remote productions; travel and accommodation often provided; rates vary by production\par
+\par
+---\par
+\par
+**Lesson 5.6: Professional Career Development**\par
+\par
+*Building Your Professional Network \endash  Strategies for Success*\par
+\par
+| Strategy | Action | Timeline |\par
+|----------|--------|----------|\par
+| Be professional | Always show up on time, prepared, and ready to work | Every job |\par
+| Take direction well | Listen, apply feedback, show you can collaborate | Every job |\par
+| Develop special skills | Juggling, skateboarding, musical instruments, languages, sports | Ongoing |\par
+| Take acting classes | Even background performers benefit from training | Quarterly |\par
+| Get professional headshots | Updated photos for casting submissions | Annually |\par
+| Build a portfolio | Collect your vouchers, certificates, and reel | Ongoing |\par
+| Network appropriately | Connect with other performers, ADs, casting directors | Every job |\par
+| Join industry groups | Facebook groups, ACTRA/UBCP events, workshops | Monthly |\par
+\par
+*Professional Resources \endash  Free and Low-Cost*\par
+\par
+| Resource | Purpose | Cost |\par
+|----------|---------|------|\par
+| **ACTRA** | Union information, workshops, resources | Membership dues |\par
+| **UBCP** | BC performer resources | Membership dues |\par
+| **Union des artistes** | Quebec French-language union | Membership dues |\par
+| **WorkSafeBC** | Safety guidelines | Free |\par
+| **Backstage** | Casting, advice, industry news | Free/Subscription |\par
+| **Mandy** | Casting, crew calls | Free/Subscription |\par
+| **Casting Workbook** | Canadian casting platform | Free/Subscription |\par
+\par
+> \f3\u-10180?\u-8417?\f1  \f0 **Professional Wisdom**: Your reputation is your currency. Be known as reliable, professional, and pleasant to work with. Opportunities come from the relationships you build. The person you work with today may be the one who hires you tomorrow.`,\par
+\par
+  6: `Foundation (Stanislavski) \f1\endash  Professional Acting Methodology\par
+*Academic Level: Advanced Acting Studies*\par
+\par
+**Lesson 6.1: Given Circumstances \endash  The Actor's Foundation**\par
+\par
+*From "An Actor Prepares" by Constantin Stanislavski \endash  Chapter 3*\par
+\par
+The "given circumstances" are all the conditions of the character's life that the actor must accept as true and real. These are non-negotiable \endash  they are the foundation of the character.\par
+\par
+**Complete List of Given Circumstances \endash  The Actor's Analysis:**\par
+\par
+| Category | Questions to Ask | Why It Matters |\par
+|----------|------------------|----------------|\par
+| *Who you are* | Name, age, occupation, social status, education, physical health, temperament | Defines your character's worldview and behavior |\par
+| *Where you are* | Location, room, city, country, time period, climate | Creates the physical world of the character |\par
+| *When it is* | Year, season, time of day, historical context, political climate | Situates the character in time |\par
+| *What you want* | Immediate objective, long-term goals, super objective | Drives all action |\par
+| *What just happened* | The moment before the scene, events leading up | Provides emotional entry |\par
+| *Your relationships* | To other characters, history, power dynamics, feelings | Determines interaction |\par
+| *Your history* | Events that led to this moment, backstory | Explains present behavior |\par
+| *The world around you* | Politics, culture, economics of the time, social norms | Contextualizes character |\par
+\par
+> \f3\u-10179?\u-9002?\f1  \f0 **Stanislavski**: "The more specific your given circumstances, the more truthful your performance."\par
+\par
+*Professional Script Analysis Exercise:*\par
+1. Read the script three times (first for story, second for character, third for given circumstances)\par
+2. Underline every fact about your character\par
+3. Note everything other characters say about your character\par
+4. Research the time period and location\par
+5. Create a character biography (1-2 pages)\par
+6. Identify contradictions in the character \f1\endash  these are opportunities for depth\par
+7. Fill in gaps with your imagination (what isn't specified in the script)\par
+\par
+---\par
+\par
+**Lesson 6.2: The Magic If \endash  The Actor's Imagination**\par
+\par
+*From "An Actor Prepares" \endash  Chapter 4*\par
+\par
+The "Magic If" is the actor's tool for imagination. Ask yourself: "What would I do IF I were in this character's situation?" This bridges your personal reality with the character's fictional reality.\par
+\par
+**How to Use the Magic If \endash  The 5-Step Process:**\par
+1. Read the scene thoroughly\par
+2. Identify the character's situation (given circumstances)\par
+3. Set aside judgment \endash  don't decide what you "should" do\par
+4. Ask yourself what *you* would do in that situation\par
+5. Allow your honest response to emerge and apply it to the character\par
+\par
+> \f3\u-10180?\u-8275?\f1  \f0 **Stanislavski**: "The Magic If activates your emotional response and imagination. It makes the imaginary situation real and immediate for the actor."\par
+\par
+*The Magic If Must Be Specific:*\par
+| Too General | Specific and Playable |\par
+|-------------|----------------------|\par
+| "What if I were rich?" | "What if I inherited $2 million today and had to decide whether to keep it or give it to charity?" |\par
+| "What if I were in love?" | "What if the person I've loved secretly for years just walked in?" |\par
+| "What if I were scared?" | "What if I just heard footsteps behind me in an empty building?" |\par
+\par
+---\par
+\par
+**Lesson 6.3: Objectives \f1\endash  What Your Character Wants**\par
+\par
+*From "An Actor Prepares" \endash  Chapter 6*\par
+\par
+Every character has an "objective" \endash  what they want in each scene, moment-to-moment. Objectives are the engine of dramatic action.\par
+\par
+**Strong Objectives Must Be:**\par
+\par
+| Criteria | Description | Example |\par
+|----------|-------------|---------|\par
+| *Active* | Using action verbs, not states of being | "To make him admit he's wrong" not "to be right" |\par
+| *Specific* | Clear and concrete | "To get her to sign the contract" not "to win" |\par
+| *Personal* | Connected to your own desires | Use your own wants to fuel the character's |\par
+| *Urgent* | Must happen now, stakes are high | "Before she leaves forever" |\par
+| *Playable* | You can actively do it | You can attempt to "persuade," you can't attempt to "be persuasive" |\par
+\par
+*Weak vs Strong Objectives \endash  Examples:*\par
+\par
+| \f2\u10060?\f1  \f0 Weak (State) | \f2\u9989?\f1  \f0 Strong (Action) |\par
+|-----------------|-------------------|\par
+| To be happy | To make him laugh |\par
+| To be liked | To get her approval |\par
+| To win | To prove I'm right |\par
+| To be successful | To get the promotion |\par
+| To be loved | To make him stay |\par
+\par
+---\par
+\par
+**Lesson 6.4: The Super Objective \f1\endash  The Character's Life Goal**\par
+\par
+*From "An Actor Prepares" \endash  Chapter 14*\par
+\par
+The "super objective" is the character's overall life goal that drives all scene objectives. It answers: "What does this character want from life?" All scene objectives must serve the super objective.\par
+\par
+**Finding the Super Objective \endash  The Through-Line:**\par
+1. Read the entire play or script\par
+2. Notice what the character talks about repeatedly\par
+3. Identify what drives their actions across scenes\par
+4. Look for what they're fighting for consistently\par
+5. Find the through-line of their journey\par
+6. Express it in active, human terms\par
+\par
+*Examples of Super Objectives:*\par
+\bullet  To be loved (a character who seeks approval, avoids conflict)\par
+\bullet  To achieve power (a character who manipulates, competes)\par
+\bullet  To find truth (a character who investigates, questions)\par
+\bullet  To protect family (a character who sacrifices, defends)\par
+\bullet  To escape the past (a character who runs, reinvents)\par
+\bullet  To build something lasting (a character who creates, invests)\par
+\par
+---\par
+\par
+**Lesson 6.5: Emotional Memory (Affective Memory) \endash  Accessing Authentic Emotion**\par
+\par
+*From "An Actor Prepares" \endash  Chapter 9*\par
+\par
+Emotional memory is recalling your own past experiences to generate authentic emotion for the character's situation.\par
+\par
+**The Process \endash  5 Steps:**\par
+1. Recall a specific past event with similar emotional qualities\par
+2. Relive it fully using sensory details (what did you see, hear, smell, feel?)\par
+3. Let the emotion arise naturally \endash  don't force it\par
+4. Channel that emotion into the character's circumstances\par
+5. Use the emotion, not the memory \endash  let go of the specific event\par
+\par
+**Sensory Details to Recall \endash  The 5 Senses:**\par
+\bullet  What did you *see*? Colors, shapes, movement, faces\par
+\bullet  What did you *hear*? Sounds, voices, music, silence\par
+\bullet  What did you *smell*? Perfume, food, air, rain\par
+\bullet  What did you *feel* physically? Temperature, texture, pressure, pain\par
+\bullet  What did you *taste*? Food, drink, saliva, blood\par
+\par
+*Dangers of Emotional Memory \endash  Protect Yourself:*\par
+\bullet  Don't get lost in your own memory \endash  stay present\par
+\bullet  Don't force emotions \endash  they arise naturally or not at all\par
+\bullet  Don't use traumatic memories that could harm you\par
+\bullet  The emotion must be appropriate to the character's given circumstances, not just your personal history\par
+\bullet  If a memory is too painful, choose a different one\par
+\bullet  Work with a teacher or coach for intense emotions\par
+\bullet  Have support systems in place for difficult work\par
+\par
+> \f4\u9888?\u-497?\f1  \f0 **Stanislavski's Warning**: "If you use emotional memory carelessly, you may harm yourself. The actor's instrument is their own psyche. Protect it."\par
+\par
+---\par
+\par
+**Lesson 6.6: Professional Application \f1\endash  Putting It All Together**\par
+\par
+*Practical Exercises for Developing Your Craft*\par
+\par
+| Exercise | Purpose | Method |\par
+|----------|---------|--------|\par
+| **Given Circumstances Journal** | Deepen character analysis | Write 2-page biography for every role |\par
+| **Magic If Scenarios** | Activate imagination | Daily practice: "What would I do if..." |\par
+| **Objective Trees** | Map character arc | Identify super objective \f5\u8594?\f1  \f0 scene objectives \f5\u8594?\f1  \f0 beats |\par
+| **Emotional Memory Journal** | Build emotional vocabulary | Document sensory details of emotional experiences |\par
+| **Script Analysis** | Apply all tools | Analyze one play per month |\par
+\par
+*Recommended Reading \f1\endash  Stanislavski System:*\par
+\bullet  "An Actor Prepares" \endash  Constantin Stanislavski (foundational)\par
+\bullet  "Building a Character" \endash  Constantin Stanislavski (physical expression)\par
+\bullet  "Creating a Role" \endash  Constantin Stanislavski (character development)\par
+\bullet  "The Stanislavski System" \endash  Sonia Moore (practical application)\par
+\bullet  "The Actor's Art and Craft" \endash  William Esper (Meisner interpretation)`,\par
+\par
+  7: `Audition Technique (Shurtleff) \endash  The 12 Guideposts\par
+*Academic Level: Professional Audition Preparation*\par
+\par
+**Lesson 7.1: The 12 Guideposts \endash  Overview**\par
+\par
+*From "Audition" by Michael Shurtleff \endash  The Complete System*\par
+\par
+Michael Shurtleff's 12 Guideposts are tools for analyzing scenes and auditions. They help you make specific, active choices rather than general, passive ones. Shurtleff cast over 500 Broadway shows and taught generations of actors.\par
+\par
+**The 12 Guideposts \endash  Quick Reference:**\par
+1. Relationship \endash  Who are these people to each other?\par
+2. Conflict \endash  What are they fighting for?\par
+3. The Moment Before \endash  What just happened?\par
+4. Humor \endash  What is funny in this scene?\par
+5. Opposites \endash  What is the unexpected choice?\par
+6. Discoveries \endash  What is new in each moment?\par
+7. Communication and Competition \endash  Who is winning?\par
+8. Importance \endash  Why does this matter?\par
+9. Find the Events \endash  What changes?\par
+10. Place \endash  Where are we?\par
+11. Game Playing and Role Playing \endash  Who is pretending?\par
+12. Mystery and Secret \endash  What is unsaid?\par
+\par
+---\par
+\par
+**Lesson 7.2: Guidepost 1 \endash  Relationship**\par
+\par
+*Who Are These People to Each Other?*\par
+\par
+Relationship is not general ("we're friends") but specific ("I need her approval because she's my boss's daughter and my promotion depends on her opinion").\par
+\par
+**Questions to Ask:**\par
+\bullet  What is the history between these characters?\par
+\bullet  How do they feel about each other? (Honestly, not what they say)\par
+\bullet  What do they need from each other?\par
+\bullet  What is the power dynamic? Who has more power? How does that affect behavior?\par
+\bullet  How long have they known each other?\par
+\bullet  What's unspoken between them? What are they not saying?\par
+\bullet  How does their relationship change during the scene?\par
+\par
+> \f3\u-10180?\u-8275?\f1  \f0 **Shurtleff**: "Relationship is the most important guidepost. If you don't know who these people are to each other, you can't play the scene."\par
+\par
+---\par
+\par
+**Lesson 7.3: Guidepost 2 \f1\endash  Conflict**\par
+\par
+*What Are They Fighting For?*\par
+\par
+Conflict is the heart of drama. There is no drama without conflict. Conflict is not fighting \endash  it's opposing wants.\par
+\par
+**Questions to Ask:**\par
+\bullet  What does each character want? (Be specific)\par
+\bullet  How are those wants in opposition?\par
+\bullet  Who is winning at each moment?\par
+\bullet  What tactics are they using to get what they want?\par
+\bullet  When does the balance shift?\par
+\bullet  What's at stake? What happens if they lose?\par
+\par
+> \f4\u9876?\u-497?\f1  \f0 **Shurtleff**: "If you don't know what the conflict is, you don't know what the scene is about."\par
+\par
+---\par
+\par
+**Lesson 7.4: Guidepost 3 \f1\endash  The Moment Before**\par
+\par
+*What Just Happened?*\par
+\par
+The Moment Before gives you immediate emotional preparation and entry into the scene. What were you doing? Where were you? How were you feeling?\par
+\par
+**Questions to Ask:**\par
+\bullet  Where was I just before the scene started?\par
+\bullet  What was I doing?\par
+\bullet  Who was I with?\par
+\bullet  How was I feeling? (Specific emotion, not general)\par
+\bullet  Why did I come here? What drove me to this moment?\par
+\bullet  What am I bringing into this scene?\par
+\par
+> \f4\u9198?\u-497?\f1  \f0 **Shurtleff**: "The moment before is the launching pad for the scene. Without it, you have no takeoff."\par
+\par
+---\par
+\par
+**Lesson 7.5: Guidepost 4 \f1\endash  Humor**\par
+\par
+*What Is Funny?*\par
+\par
+Find what is funny in every scene, even dramas. Humor comes from pain and unexpected situations. Don't play for laughs \endash  play the situation truthfully.\par
+\par
+**Questions to Ask:**\par
+\bullet  What's absurd about this situation?\par
+\bullet  Where is the irony?\par
+\bullet  What unexpected thing happens?\par
+\bullet  How do characters react to the ridiculous?\par
+\bullet  What would make someone laugh if they were watching?\par
+\par
+> \f3\u-10179?\u-8700?\f1  \f0 **Shurtleff**: "Even tragedy has humor. Find it. It makes the tragedy more tragic and the comedy more real."\par
+\par
+---\par
+\par
+**Lesson 7.6: Guidepost 5 \f1\endash  Opposites**\par
+\par
+*What Is the Unexpected Choice?*\par
+\par
+People are contradictory. Play the opposite of what is expected. If the line is "I love you," find the opposite ("I'm terrified of losing you").\par
+\par
+**Questions to Ask:**\par
+\bullet  What is the expected choice? (Usually the first thing that comes to mind)\par
+\bullet  What's the opposite choice?\par
+\bullet  What contradiction is in the character?\par
+\bullet  Where does the character hide their true feelings?\par
+\bullet  What are they pretending? What mask are they wearing?\par
+\par
+> \f3\u-10179?\u-8956?\f1  \f0 **Shurtleff**: "Opposites create drama. The unexpected choice is almost always the right choice."\par
+\par
+---\par
+\par
+**Lesson 7.7: Guidepost 6 \f1\endash  Discoveries**\par
+\par
+*What Is New?*\par
+\par
+Discoveries are what is new in the scene. What do you learn that changes things? Acting is reacting to discoveries. If there are no discoveries, the scene is dead.\par
+\par
+**Questions to Ask:**\par
+\bullet  What does the character learn?\par
+\bullet  What new information arrives?\par
+\bullet  How does it change things? (Behavior, objective, relationship)\par
+\bullet  What realization occurs?\par
+\bullet  What surprise happens?\par
+\bullet  How does the character's response change after the discovery?\par
+\par
+> \f3\u-10179?\u-9055?\f1  \f0 **Shurtleff**: "Every moment should be a discovery. If you're not discovering, you're not acting \f1\endash  you're reciting."\par
+\par
+---\par
+\par
+**Lesson 7.8: Guidepost 7 \endash  Communication and Competition**\par
+\par
+*Who Is Winning?*\par
+\par
+Every scene is a competition. Someone is trying to get something, someone is resisting. Track who is winning moment to moment.\par
+\par
+**Questions to Ask:**\par
+\bullet  What is each character trying to get? (Specific objective)\par
+\bullet  What are they doing to get it? (Tactics)\par
+\bullet  Who is succeeding? (At each moment)\par
+\bullet  When does the power shift?\par
+\bullet  What tactics are working? What tactics are failing?\par
+\par
+> \f3\u-10180?\u-8250?\f1  \f0 **Shurtleff**: "In every scene, someone is winning and someone is losing. If you don't know who's winning, you don't know what's happening."\par
+\par
+---\par
+\par
+**Lesson 7.9: Guidepost 8 \f1\endash  Importance**\par
+\par
+*Why Does This Matter?*\par
+\par
+Raise the stakes. Make it matter more. If it's not important to the character, it won't be important to the audience.\par
+\par
+**Questions to Ask:**\par
+\bullet  What is at stake? (What will be lost or gained?)\par
+\bullet  What happens if they fail?\par
+\bullet  What happens if they succeed?\par
+\bullet  Why does this matter now? (Urgency)\par
+\bullet  What will they lose? (Love, money, dignity, life)\par
+\par
+> \f3\u-10179?\u-9016?\f1  \f0 **Shurtleff**: "Actors tend to play things too small. Raise the stakes. Make it a matter of life and death, even when it's not."\par
+\par
+---\par
+\par
+**Lesson 7.10: Guidepost 9 \f1\endash  Find the Events**\par
+\par
+*What Changes?*\par
+\par
+Every scene has events that change the direction. Find them and play them. Events are the turning points of the scene.\par
+\par
+**Questions to Ask:**\par
+\bullet  What happens in this scene? (List the events)\par
+\bullet  What changes? (Objective, relationship, power, information)\par
+\bullet  How does the character change?\par
+\bullet  What is the turning point? (The moment where nothing is the same)\par
+\bullet  What's the new direction after the event?\par
+\par
+> \f3\u-10179?\u-9011?\f1  \f0 **Shurtleff**: "Events are the architecture of the scene. Find them, play them, and let them change you."\par
+\par
+---\par
+\par
+**Lesson 7.11: Guidepost 10 \f1\endash  Place**\par
+\par
+*Where Are We?*\par
+\par
+Be specific. A park bench isn't just wood \endash  it's where you got engaged. The coffee cup is stolen from your ex-lover.\par
+\par
+**Questions to Ask:**\par
+\bullet  Where exactly are we? (Specific location, not general)\par
+\bullet  What does this place mean to the character?\par
+\bullet  What history does this place have?\par
+\bullet  How does the character feel about being here?\par
+\bullet  What sensory details are here? (Sights, sounds, smells, textures)\par
+\par
+> \f3\u-10180?\u-8224?\f1  \f0 **Shurtleff**: "Place creates mood. The more specific you are about where you are, the more specific your behavior becomes."\par
+\par
+---\par
+\par
+**Lesson 7.12: Guidepost 11 \f1\endash  Game Playing and Role Playing**\par
+\par
+*Who Is Pretending?*\par
+\par
+People play roles: the victim, the hero, the innocent, the martyr, the seducer. Find what role your character is playing.\par
+\par
+**Questions to Ask:**\par
+\bullet  What role is the character playing? (What mask are they wearing?)\par
+\bullet  What are they hiding?\par
+\bullet  What do they want others to think?\par
+\bullet  What is the real self underneath?\par
+\bullet  When does the mask slip?\par
+\par
+> \f3\u-10180?\u-8275?\f1  \f0 **Shurtleff**: "We all play roles. The drama is when the mask slips and we see the real person underneath."\par
+\par
+---\par
+\par
+**Lesson 7.13: Guidepost 12 \f1\endash  Mystery and Secret**\par
+\par
+*What Is Unsaid?*\par
+\par
+Every character has secrets. What isn't being said is often more important than what is.\par
+\par
+**Questions to Ask:**\par
+\bullet  What is the character hiding?\par
+\bullet  What don't they want others to know?\par
+\bullet  What is the unspoken truth?\par
+\bullet  What would happen if the secret came out?\par
+\bullet  What is the character afraid of?\par
+\par
+> \f4\u-10178?\u-8917?\f1  \f0 **Shurtleff**: "The most important thing in any scene is usually what isn't being said."\par
+\par
+---\par
+\par
+**Lesson 7.14: Audition Practical Application**\par
+\par
+*Putting It All Together \f1\endash  Your Audition Toolkit*\par
+\par
+**Before the Audition \endash  Preparation:**\par
+1. Read the sides (script pages) 3-5 times\par
+2. Apply all 12 guideposts to the scene\par
+3. Make specific choices \endash  don't be general\par
+4. Prepare to be flexible \endash  they may ask for adjustments\par
+5. Dress appropriately (don't costume, but be in character's world)\par
+6. Arrive early (15-20 minutes)\par
+7. Warm up vocally and physically\par
+\par
+**During the Audition \endash  Performance:**\par
+\bullet  Make eye contact with the reader or camera\par
+\bullet  Use the space \endash  don't stand in one place\par
+\bullet  Show range \endash  demonstrate opposites and conflict\par
+\bullet  Take direction \endash  show you can collaborate\par
+\bullet  Be prepared but flexible if asked to adjust\par
+\bullet  Leave with your work, not your worries\par
+\par
+**After the Audition \endash  Follow Up:**\par
+\bullet  Thank the casting director (briefly)\par
+\bullet  Let it go \endash  don't obsess\par
+\bullet  Learn from the experience \endash  what worked? what didn't?\par
+\bullet  Continue to work on your craft\par
+\bullet  Keep auditioning \endash  it's a numbers game\par
+\par
+> \f3\u-10180?\u-8276?\f1  \f0 **Shurtleff**: "The audition is not about getting the job. It's about doing your work. If you do your work, the job will follow."`,\par
+\par
+  8: `Scene Study (Hagen) \f1\endash  The Actor's Craft\par
+*Academic Level: Advanced Scene Study*\par
+\par
+**Lesson 8.1: Substitution \endash  Making It Personal**\par
+\par
+*From "Respect for Acting" by Uta Hagen \endash  Chapter 5*\par
+\par
+Substitution is replacing the character's circumstances with your own reality to make the situation personally meaningful.\par
+\par
+**How Substitution Works:**\par
+\bullet  The character's circumstances become *your own*\par
+\bullet  You use *your own experiences* to understand the character\par
+\bullet  You transfer your *genuine feelings* to the character's situation\par
+\bullet  The emotion is real, even if the cause is different\par
+\par
+**Example:**\par
+> *The character's father just died. You substitute your own beloved dog who died. The grief is real, even if the cause is different. You don't pretend to grieve \endash  you grieve.*\par
+\par
+**Rules for Substitution \endash  The 5 Requirements:**\par
+1. Must have *equivalent emotional weight* \endash  don't substitute minor for major\par
+2. Must have *similar relationship dynamics* \endash  parent/child, friend/friend, lover/lover\par
+3. Must be *specific and personal* \endash  not general ideas but actual memories and people\par
+4. The substitution must be *appropriate* to the character's circumstances\par
+5. You must be able to access the emotion *safely* \endash  don't harm yourself\par
+\par
+**How to Find Substitutions \endash  Building Your Emotional Archive:**\par
+\bullet  Keep a journal of emotional experiences\par
+\bullet  Note sensory details of important memories\par
+\bullet  Identify what about a character's situation is similar to your own\par
+\bullet  Find the emotional truth, not the literal event\par
+\bullet  Work with a teacher to find appropriate substitutions\par
+\par
+---\par
+\par
+**Lesson 8.2: Endowment \endash  Giving Objects Meaning**\par
+\par
+*From "Respect for Acting" \endash  Chapter 7*\par
+\par
+Endowment is giving physical objects and places specific meaning and history. The coffee cup isn't just a prop \endash  it's the cup your character stole from their ex-lover's apartment.\par
+\par
+**How to Endow Objects \endash  The 5-Step Process:**\par
+1. Choose an object or place\par
+2. Give it a personal history (invent or use your own)\par
+3. Connect it to a real object from your life if possible\par
+4. Use all five senses to make it real (feel it, smell it, see it)\par
+5. Treat the object with the appropriate significance\par
+\par
+**Examples of Endowment:**\par
+\bullet  A photograph \f5\u8594?\f1  \f0 *the last picture of your mother before she died*\par
+\f1\bullet  A letter \f5\u8594?\f1  \f0 *a love letter from a lost partner that you never sent*\par
+\f1\bullet  A ring \f5\u8594?\f1  \f0 *a family heirloom passed down for generations*\par
+\f1\bullet  A door \f5\u8594?\f1  \f0 *the entrance to a place you fear (or love)*\par
+\f1\bullet  A window \f5\u8594?\f1  \f0 *a view of your childhood home you'll never see again*\par
+\par
+**The 5 Senses in Endowment \f1\endash  Make It Real:**\par
+\bullet  What does it *look* like? (Color, texture, wear, light)\par
+\bullet  What does it *feel* like? (Temperature, texture, weight)\par
+\bullet  What does it *smell* like? (Perfume, dust, memory)\par
+\bullet  What does it *sound* like? (Creak, rustle, silence)\par
+\bullet  What does it *taste* like? (Memory, association)\par
+\par
+> \f3\u-10180?\u-8319?\f1  \f0 **Hagen**: "The object is not the object. It is what it means to the character."\par
+\par
+---\par
+\par
+**Lesson 8.3: The Fourth Side \f1\endash  Creating the Complete World**\par
+\par
+*From "Respect for Acting" \endash  Chapter 9*\par
+\par
+The "Fourth Side" is the imaginary wall that completes the room when acting in a three-walled set (the fourth wall is where the audience sits). Beyond the fourth side are the rest of the room, other characters who just left, and the world outside.\par
+\par
+**How to Use the Fourth Side \endash  Creating the World:**\par
+\bullet  Imagine what is beyond the set \endash  be specific\par
+\bullet  Create the rest of the room in your mind (furniture, walls, windows)\par
+\bullet  Hear sounds from other rooms (traffic, voices, music)\par
+\bullet  Feel the environment beyond the walls (temperature, weather)\par
+\bullet  Allow your character to be affected by what's outside\par
+\par
+**Questions to Ask:**\par
+\bullet  What is happening just out of sight? (Who else is there?)\par
+\bullet  What do you hear from the next room?\par
+\bullet  Who is waiting outside? (Or who just left?)\par
+\bullet  What is the weather like?\par
+\bullet  What is the world beyond this scene?\par
+\par
+> \f4\u-10180?\u-8229?\u-497?\f1  \f0 **Hagen**: "The fourth side is your link to the world of the play. Without it, you're acting in a vacuum."\par
+\par
+---\par
+\par
+**Lesson 8.4: Object Exercises \f1\endash  Training the Senses**\par
+\par
+*From "Respect for Acting" \endash  Chapter 11*\par
+\par
+Object exercises train the actor's ability to create reality through physical action. They are the foundation of Hagen's technique.\par
+\par
+**Common Object Exercises \endash  Practice These:**\par
+\bullet  Make breakfast *as your character* (full sensory reality)\par
+\bullet  Pack a suitcase *to leave someone* (with meaning and urgency)\par
+\bullet  Write a *difficult letter* (with emotional weight)\par
+\bullet  Wait for *important news* (with anticipation and fear)\par
+\bullet  Prepare for a *first date* (with nervousness and hope)\par
+\bullet  Clean a space that *matters* to your character (with care and memory)\par
+\par
+**How to Do Object Exercises \endash  The Method:**\par
+1. Don't indicate or pretend \endash  *actually do it* with full sensory reality\par
+2. Use all five senses \endash  make it real\par
+3. Focus on the task, *not yourself* \endash  let the character emerge\par
+4. Allow the character to reveal themselves *through the action*\par
+5. Repeat the exercise to refine it \endash  each time deeper\par
+\par
+**What Object Exercises Reveal \endash  Character Through Action:**\par
+\bullet  How does your character handle objects? *Rushed or slow? Careful or sloppy?*\par
+\bullet  What do they pay attention to? (Details? The big picture?)\par
+\bullet  What do they ignore? (What doesn't matter to them?)\par
+\bullet  What is their relationship to the physical world? (Master of it? Controlled by it?)\par
+\bullet  What is their emotional state? (Anxious? Calm? Sad? Joyful?)\par
+\par
+> \f4\u-10178?\u-8744?\f1  \f0 **Hagen**: "Object exercises eliminate self-consciousness by focusing attention on the task rather than yourself. They ground you in reality and create truthful behavior."\par
+\par
+---\par
+\par
+**Lesson 8.5: Professional Application \f1\endash  Scene Study**\par
+\par
+*Putting It All Together \endash  Your Scene Study Toolkit*\par
+\par
+| Exercise | Purpose | Frequency |\par
+|----------|---------|----------|\par
+| **Object Work** | Grounding in reality | Daily practice |\par
+| **Substitution Practice** | Accessing genuine emotion | With every scene |\par
+| **Endowment Work** | Making objects meaningful | With every prop |\par
+| **Fourth Side Awareness** | Creating the world | In every rehearsal |\par
+| **Script Analysis** | Understanding the scene | With every new piece |\par
+\par
+*Recommended Reading \endash  Uta Hagen:*\par
+\bullet  "Respect for Acting" \endash  Uta Hagen (foundational)\par
+\bullet  "A Challenge for the Actor" \endash  Uta Hagen (advanced)\par
+\bullet  "Acting for the Stage" \endash  Uta Hagen (practical application)`,\par
+\par
+  9: `Advanced Technique \endash  Masters of the Craft\par
+*Academic Level: Professional Actor Training*\par
+\par
+**Lesson 9.1: Meisner Technique \endash  Living Truthfully Under Imaginary Circumstances**\par
+\par
+*From "Sanford Meisner on Acting" by Sanford Meisner & Dennis Longwell*\par
+\par
+The foundation of the Meisner Technique is "living truthfully under imaginary circumstances." It's about getting out of your head and responding to what's actually happening.\par
+\par
+**The Repetition Exercise \endash  The Core of Meisner:**\par
+\par
+*Setup:* Two actors sit facing each other. One makes an observation about the other ("You're wearing blue"). The other repeats with their own truth ("I'm wearing blue"). This continues, changing as behavior changes.\par
+\par
+*Rules of Repetition \endash  The 5 Commandments:*\par
+1. *No planning* \endash  respond to what you see and hear in the moment\par
+2. *No anticipating* \endash  don't think ahead; stay present\par
+3. *No performing* \endash  just be yourself; don't "act"\par
+4. *No judging* \endash  accept what happens; don't criticize\par
+5. *Let it evolve* \endash  the repetition will naturally change as behavior changes\par
+\par
+**Purpose of Repetition \endash  What It Develops:**\par
+\bullet  Get out of your head \endash  stop planning and thinking\par
+\bullet  Stop anticipating \endash  respond to actual behavior\par
+\bullet  Respond to what's happening \endash  not what you think will happen\par
+\bullet  Develop listening skills \endash  truly hear your partner\par
+\bullet  Build spontaneous reactions \endash  trust your impulses\par
+\bullet  Connect with other actors \endash  real relationship\par
+\par
+**Independent Activity \endash  The Second Core Exercise:**\par
+\par
+Doing a physical task that has *meaning and urgency* (packing to leave someone, writing a difficult letter, preparing for a life-changing event). The activity must be important enough to be done even if you weren't acting.\par
+\par
+*Requirements for Independent Activity \endash  The 5 Conditions:*\par
+1. Must be *difficult* enough to require concentration (not mindless)\par
+2. Must have a *clear objective* (what you're trying to accomplish)\par
+3. Must have a *deadline* (urgency \endash  must be done by a certain time)\par
+4. Must be *important to you* (emotional investment)\par
+5. Must have *obstacles* (something making it difficult)\par
+\par
+**Meisner: Emotional Preparation**\par
+\par
+Emotional preparation is the actor's process of generating necessary emotional state before entering the scene. It is personal and private \endash  using your own life, dreams, fantasies to create emotional reality.\par
+\par
+*How to Prepare \endash  The 5 Steps:*\par
+1. Recall a personal experience that creates the needed emotion\par
+2. Use sensory details to make it real (5 senses)\par
+3. Allow the emotion to build organically \endash  don't force it\par
+4. Do not rehearse the scene \endash  only the emotional state\par
+5. Enter the scene with the emotion, not the memory\par
+\par
+*Rules for Emotional Preparation \endash  The 3 Protections:*\par
+\bullet  Preparation must not be the scene itself \endash  you don't prepare the specific scene events, you prepare the emotional state\par
+\bullet  Example: If the scene requires grief, you prepare by connecting to your own experiences of loss \endash  but not the specific funeral scene you're about to play\par
+\bullet  Let go of the preparation when the scene starts \endash  use the emotion, not the memory\par
+\par
+---\par
+\par
+**Lesson 9.2: Stella Adler \endash  Script Analysis and Actions**\par
+\par
+*From "The Art of Acting" by Stella Adler*\par
+\par
+**Key Principles of Adler's Approach:**\par
+\par
+| Principle | Description |\par
+|-----------|-------------|\par
+| *Script Analysis* | Analyze the script for given circumstances \endash  don't miss anything. Research the time period, place, and culture. |\par
+| *Actions, Not Emotions* | Focus on what the character does (actions), not just what they say. Physical actions reveal character. |\par
+| *Imagination* | The actor must have a strong imagination and use it to create the world of the play. |\par
+| *Size and Theatricality* | Actors must be larger than life while remaining truthful. The stage demands scale. |\par
+| *Playwright's Intent* | Understand the playwright's intentions. The actor serves the writer. |\par
+\par
+**Stella Adler's Script Analysis Method \endash  The 5 Steps:**\par
+1. Read the script many times (at least 5)\par
+2. Research the time period, place, and culture (be specific)\par
+3. Understand the playwright's intentions (what are they trying to say?)\par
+4. Find the character's actions (not emotions \endash  what do they DO?)\par
+5. Discover the character's journey (how do they change?)\par
+\par
+> \f3\u-10179?\u-8996?\f1  \f0 **Adler**: "The play is the actor's bible. Everything you need is in the text."\par
+\par
+---\par
+\par
+**Lesson 9.3: Practical Handbook \f1\endash  Action Verbs and Beat Changes**\par
+\par
+*From "A Practical Handbook for the Actor" by Bruder, Cohn, Olnek, Pollack, Previto, and Zigler*\par
+\par
+**Action Verbs \endash  Play Actions, Not Emotions:**\par
+\par
+Action verbs are active, playable verbs that drive the scene. Instead of trying to play an emotion (sad, happy, angry), you play an action (to accuse, to console, to seduce).\par
+\par
+*Action Verb Categories \endash  Your Vocabulary:*\par
+\par
+| Category | Examples |\par
+|----------|----------|\par
+| *To affect* | move, touch, impress, stir, influence, sway, persuade |\par
+| *To undermine* | weaken, sabotage, subvert, undercut, destabilize |\par
+| *To charm* | attract, delight, enchant, captivate, woo, seduce |\par
+| *To investigate* | examine, explore, probe, scrutinize, study, interrogate |\par
+| *To provoke* | annoy, challenge, confront, goad, irritate, incite |\par
+| *To beguile* | charm, enchant, entrance, captivate, bewitch |\par
+| *To accuse* | blame, charge, condemn, indict, incriminate |\par
+| *To console* | comfort, soothe, reassure, sympathize, calm |\par
+| *To interrogate* | question, examine, cross-examine, grill, probe |\par
+| *To protect* | guard, defend, shield, shelter, safeguard |\par
+\par
+*How to Use Action Verbs \endash  The 5 Steps:*\par
+1. Choose a strong, active verb (not a state of being)\par
+2. Make it specific to the moment (not general)\par
+3. Play the verb, not the result (trust the process)\par
+4. Be willing to change verbs as the scene changes\par
+5. Let the action drive your behavior\par
+\par
+**Beat Changes \endash  The Architecture of the Scene:**\par
+\par
+A "beat" is a unit of action with a single objective. When the objective changes, the beat changes. Each beat requires a new action verb and objective.\par
+\par
+*How to Find Beat Changes \endash  The 6 Indicators:*\par
+1. Shifts in topic \endash  when the subject changes\par
+2. Changes in power dynamics \endash  when who's winning changes\par
+3. Moments of discovery \endash  when new information arrives\par
+4. When tactics fail \endash  when what you're doing isn't working\par
+5. When energy shifts \endash  when the mood changes\par
+6. When someone enters or leaves \endash  new dynamic\par
+\par
+> \f2\u9889?\f1  \f0 **Bruder**: "Playing actions rather than indicating emotions creates truthful, watchable behavior. The audience sees the pursuit, not the result."\par
+\par
+---\par
+\par
+**Lesson 9.4: Actor's Thesaurus \f1\endash  Expanding Your Action Vocabulary**\par
+\par
+*From "Actions: The Actor's Thesaurus" by Marina Caldarone*\par
+\par
+**Action Verbs by Category \endash  Your Expanded Vocabulary:**\par
+\par
+| Category | Action Verbs |\par
+|----------|--------------|\par
+| *To affect* | move, touch, impress, stir, influence, sway, persuade, convince, inspire |\par
+| *To undermine* | weaken, sabotage, subvert, undercut, destabilize, erode, dismantle |\par
+| *To charm* | attract, delight, enchant, captivate, woo, seduce, beguile, entrance |\par
+| *To investigate* | examine, explore, probe, scrutinize, study, interrogate, analyze |\par
+| *To provoke* | annoy, challenge, confront, goad, irritate, incite, agitate, provoke |\par
+| *To protect* | guard, defend, shield, shelter, safeguard, preserve, secure |\par
+| *To attack* | accuse, blame, charge, condemn, indict, criticize, denounce |\par
+| *To comfort* | console, soothe, reassure, sympathize, calm, pacify, comfort |\par
+| *To pursue* | chase, follow, track, hunt, seek, pursue, pursue |\par
+| *To escape* | flee, avoid, evade, dodge, elude, escape, retreat |\par
+\par
+**Using the Thesaurus \endash  Professional Application:**\par
+1. Look up the emotion you want to create (not what you play)\par
+2. Find the action that creates that emotion in others\par
+3. Choose the *most specific* verb (not the most common)\par
+4. Play that action truthfully (do it, don't think about it)\par
+5. Let the emotion come as a result (trust the process)\par
+\par
+> \f3\u-10179?\u-8998?\f1  \f0 **Caldarone**: "Strong action vocabulary prevents generic acting. Specific verbs lead to specific behavior. The more precise your action, the more truthful your performance."\par
+\par
+---\par
+\par
+**Lesson 9.5: Professional Integration \f1\endash  Creating Your Technique**\par
+\par
+*Combining the Masters \endash  Your Personal Approach*\par
+\par
+| Master | Key Contribution | When to Use |\par
+|--------|------------------|-------------|\par
+| *Stanislavski* | Given circumstances, objectives, super objectives | Script analysis, character development |\par
+| *Meisner* | Repetition, independent activity, emotional preparation | Rehearsal, scene work, being present |\par
+| *Adler* | Script analysis, actions, imagination | Preparation, research, understanding |\par
+| *Hagen* | Substitution, endowment, object exercises | Connecting personally to the material |\par
+| *Shurtleff* | The 12 Guideposts | Auditions, scene analysis |\par
+| *Practical Handbook* | Action verbs, beat changes | Moment-to-moment acting |\par
+\par
+*Building Your Personal Warm-Up \endash  Daily Practice:*\par
+1. Physical warm-up (10 minutes) \endash  release tension, center yourself\par
+2. Vocal warm-up (10 minutes) \endash  breath, resonance, articulation\par
+3. Repetition exercise (10 minutes) \endash  with a partner, stay present\par
+4. Independent activity (15 minutes) \endash  with meaning and urgency\par
+5. Object exercise (15 minutes) \endash  with sensory reality\par
+6. Script analysis (ongoing) \endash  apply to current material\par
+\par
+*Recommended Reading \endash  Complete Library:*\par
+\bullet  "An Actor Prepares" \endash  Constantin Stanislavski\par
+\bullet  "Building a Character" \endash  Constantin Stanislavski\par
+\bullet  "Creating a Role" \endash  Constantin Stanislavski\par
+\bullet  "Audition" \endash  Michael Shurtleff\par
+\bullet  "Respect for Acting" \endash  Uta Hagen\par
+\bullet  "A Challenge for the Actor" \endash  Uta Hagen\par
+\bullet  "Sanford Meisner on Acting" \endash  Sanford Meisner\par
+\bullet  "A Practical Handbook for the Actor" \endash  Bruder et al.\par
+\bullet  "The Art of Acting" \endash  Stella Adler\par
+\bullet  "Actions: The Actor's Thesaurus" \endash  Marina Caldarone\par
+\bullet  "The Actor and the Target" \endash  Declan Donnellan\par
+\bullet  "The Viewpoints Book" \endash  Anne Bogart\par
+\par
+> \f3\u-10180?\u-8417?\f1  \f0 **Professional Wisdom**: "Your technique is what you use when you're not inspired. When you are inspired, you don't need it. But without it, you won't be inspired when you need to be."`\par
+\};\par
+\par
+export default function ModulePage() \{\par
+  const \{ id \} = useParams();\par
+  const router = useRouter();\par
+  const [module, setModule] = useState<any>(null);\par
+  const [progress, setProgress] = useState<any>(null);\par
+  const [loading, setLoading] = useState(true);\par
+\par
+  useEffect(() => \{\par
+    loadModule();\par
+  \}, [id]);\par
+\par
+  async function loadModule() \{\par
+    const \{ data: moduleData \} = await supabase\par
+      .from('modules')\par
+      .select('*')\par
+      .eq('id', id)\par
+      .single();\par
+    setModule(moduleData);\par
+    \par
+    const \{ data: \{ user \} \} = await supabase.auth.getUser();\par
+    if (user) \{\par
+      const \{ data: progressData \} = await supabase\par
+        .from('user_progress')\par
+        .select('completed, score')\par
+        .eq('user_id', user.id)\par
+        .eq('module_id', id)\par
+        .maybeSingle();\par
+      setProgress(progressData);\par
+    \}\par
+    setLoading(false);\par
+  \}\par
+\par
+  const formatLessonContent = (content: string) => \{\par
+    const lines = content.split('\\n');\par
+    const elements: JSX.Element[] = [];\par
+    let i = 0;\par
+    let inList = false;\par
+    let listItems: JSX.Element[] = [];\par
+    let inTable = false;\par
+    let tableHeaders: string[] = [];\par
+    let tableRows: string[][] = [];\par
+    \par
+    while (i < lines.length) \{\par
+      const line = lines[i];\par
+      \par
+      if (line === '') \{\par
+        if (inList) \{\par
+          elements.push(<ul key=\{`list-$\{i\}`\} className="list-disc pl-6 mb-4 space-y-1">\{listItems\}</ul>);\par
+          listItems = [];\par
+          inList = false;\par
+        \}\par
+        if (inTable) \{\par
+          elements.push(renderTable(tableHeaders, tableRows));\par
+          tableHeaders = [];\par
+          tableRows = [];\par
+          inTable = false;\par
+        \}\par
+        i++;\par
+        continue;\par
+      \}\par
+      \par
+      // Headers (###)\par
+      if (line.startsWith('###')) \{\par
+        if (inList) \{\par
+          elements.push(<ul key=\{`list-$\{i\}`\} className="list-disc pl-6 mb-4 space-y-1">\{listItems\}</ul>);\par
+          listItems = [];\par
+          inList = false;\par
+        \}\par
+        elements.push(\par
+          <h3 key=\{`h3-$\{i\}`\} className="text-lg font-semibold text-blue-700 mt-6 mb-3 border-l-4 border-blue-500 pl-3">\par
+            \{line.replace('###', '').trim()\}\par
+          </h3>\par
+        );\par
+        i++;\par
+        continue;\par
+      \}\par
+      \par
+      // Bold headers (**)\par
+      if (line.startsWith('**') && line.includes('** \f1\emdash ')) \{\par
+        if (inList) \{\par
+          elements.push(<ul key=\{`list-$\{i\}`\} className="list-disc pl-6 mb-4 space-y-1">\{listItems\}</ul>);\par
+          listItems = [];\par
+          inList = false;\par
+        \}\par
+        const [bold, rest] = line.split(' \emdash  ');\par
+        elements.push(\par
+          <h4 key=\{`h4-$\{i\}`\} className="text-md font-semibold text-purple-700 mt-4 mb-2">\par
+            \{bold.replace(/\\*\\*/g, '')\} <span className="text-gray-600 italic">\emdash  \{rest\}</span>\par
+          </h4>\par
+        );\par
+        i++;\par
+        continue;\par
+      \}\par
+      \par
+      // Tables\par
+      if (line.startsWith('|') && lines[i+1]?.startsWith('|--')) \{\par
+        if (inList) \{\par
+          elements.push(<ul key=\{`list-$\{i\}`\} className="list-disc pl-6 mb-4 space-y-1">\{listItems\}</ul>);\par
+          listItems = [];\par
+          inList = false;\par
+        \}\par
+        inTable = true;\par
+        tableHeaders = line.split('|').filter(h => h.trim()).map(h => h.trim());\par
+        i += 2;\par
+        while (i < lines.length && lines[i].startsWith('|')) \{\par
+          tableRows.push(lines[i].split('|').filter(c => c.trim()).map(c => c.trim()));\par
+          i++;\par
+        \}\par
+        continue;\par
+      \}\par
+      \par
+      // Bullet points (\bullet )\par
+      if (line.startsWith('\bullet ')) \{\par
+        inList = true;\par
+        listItems.push(<li key=\{`li-$\{i\}`\} className="text-gray-700">\{line.replace('\bullet ', '').trim()\}</li>);\par
+        i++;\par
+        continue;\par
+      \}\par
+      \par
+      // Numbered lists (1., 2.)\par
+      if (line.match(/^\\d+\\./)) \{\par
+        inList = true;\par
+        listItems.push(<li key=\{`li-$\{i\}`\} className="text-gray-700">\{line\}</li>);\par
+        i++;\par
+        continue;\par
+      \}\par
+      \par
+      // Blockquotes (>)\par
+      if (line.startsWith('>')) \{\par
+        if (inList) \{\par
+          elements.push(<ul key=\{`list-$\{i\}`\} className="list-disc pl-6 mb-4 space-y-1">\{listItems\}</ul>);\par
+          listItems = [];\par
+          inList = false;\par
+        \}\par
+        elements.push(\par
+          <blockquote key=\{`quote-$\{i\}`\} className="border-l-4 border-blue-300 bg-blue-50 pl-4 py-2 my-3 italic text-gray-700">\par
+            \{line.replace('>', '').trim()\}\par
+          </blockquote>\par
+        );\par
+        i++;\par
+        continue;\par
+      \}\par
+      \par
+      // Regular text\par
+      if (inList) \{\par
+        elements.push(<ul key=\{`list-$\{i\}`\} className="list-disc pl-6 mb-4 space-y-1">\{listItems\}</ul>);\par
+        listItems = [];\par
+        inList = false;\par
+      \}\par
+      \par
+      // Process inline formatting\par
+      let processedLine = line;\par
+      processedLine = processedLine.replace(/\\*\\*(.*?)\\*\\*/g, '<strong class="text-blue-800">$1</strong>');\par
+      processedLine = processedLine.replace(/\\*(.*?)\\*/g, '<em class="text-gray-600 italic">$1</em>');\par
+      \par
+      elements.push(\par
+        <p key=\{`p-$\{i\}`\} className="text-gray-700 mb-3" dangerouslySetInnerHTML=\{\{ __html: processedLine \}\} />\par
+      );\par
+      i++;\par
+    \}\par
+    \par
+    if (inList) \{\par
+      elements.push(<ul key=\{`list-final`\} className="list-disc pl-6 mb-4 space-y-1">\{listItems\}</ul>);\par
+    \}\par
+    if (inTable) \{\par
+      elements.push(renderTable(tableHeaders, tableRows));\par
+    \}\par
+    \par
+    return elements;\par
+  \};\par
+  \par
+  const renderTable = (headers: string[], rows: string[][]) => \{\par
+    return (\par
+      <div key=\{`table-$\{Date.now()\}`\} className="overflow-x-auto my-4">\par
+        <table className="min-w-full border-collapse border border-gray-200">\par
+          <thead className="bg-gray-100">\par
+            <tr>\par
+              \{headers.map((h, idx) => (\par
+                <th key=\{idx\} className="border border-gray-200 px-4 py-2 text-left font-semibold">\{h\}</th>\par
+              ))\}\par
+            </tr>\par
+          </thead>\par
+          <tbody>\par
+            \{rows.map((row, ridx) => (\par
+              <tr key=\{ridx\} className="hover:bg-gray-50">\par
+                \{row.map((cell, cidx) => (\par
+                  <td key=\{cidx\} className="border border-gray-200 px-4 py-2">\{cell\}</td>\par
+                ))\}\par
+              </tr>\par
+            ))\}\par
+          </tbody>\par
+        </table>\par
+      </div>\par
+    );\par
+  \};\par
+\par
+  if (loading) return <div className="p-4 text-center">Loading...</div>;\par
+  if (!module) return <div className="p-4 text-center">Module not found</div>;\par
+\par
+  const isCompleted = progress?.completed;\par
+  const content = LESSONS[module.module_number] || `## $\{module.title\}\\n\\nComplete this module and pass the test with 12/15 to unlock the next module.`;\par
+\par
+  return (\par
+    <div className="max-w-3xl mx-auto p-4">\par
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-2xl mb-6">\par
+        <h1 className="text-3xl font-bold">\{module.title\}</h1>\par
+        <p className="text-blue-100 mt-2">Module \{module.module_number\} of \{module.section === 1 ? '5' : '4'\}</p>\par
+      </div>\par
+      \par
+      \{isCompleted && (\par
+        <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded mb-6">\par
+          <p className="text-green-700 font-medium">\f2\u10003?\f1  \f0 Module Completed!</p>\par
+          <p className="text-green-600 text-sm">Score: \{progress?.score\}/15</p>\par
+        </div>\par
+      )\}\par
+      \par
+      <div className="bg-white rounded-xl shadow-lg p-6 mb-6 prose prose-blue max-w-none">\par
+        \{formatLessonContent(content)\}\par
+      </div>\par
+      \par
+      <button\par
+        onClick=\{() => router.push(`/module/$\{id\}/quiz`)\}\par
+        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-medium hover:opacity-90 transition"\par
+      >\par
+        \{isCompleted ? '\f3\u-10179?\u-8995?\f1  \f0 Retake Test' : '\f3\u-10179?\u-8995?\f1  \f0 Take Module Test'\} (12/15 to pass)\par
+      </button>\par
+    </div>\par
+  );\par
+\}\lang9\par
+}
+ 

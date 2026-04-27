@@ -102,17 +102,36 @@ export default function Dashboard() {
   });
   const [workLogLoading, setWorkLogLoading] = useState(false);
 
-  // PAYMENT FUNCTION - ADDED
+  // PAYMENT FUNCTION - UPDATED with Authorization token
   async function handleCheckout(variantId: string, type: string) {
     setLoadingPayment(true);
     try {
+      // Get the access token from the session
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      
+      if (!accessToken) {
+        alert('Please sign in again');
+        setLoadingPayment(false);
+        return;
+      }
+      
       const response = await fetch('/api/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
         body: JSON.stringify({ variantId, type })
       });
-      const { url } = await response.json();
-      if (url) window.location.href = url;
+      
+      const result = await response.json();
+      
+      if (result.url) {
+        window.location.href = result.url;
+      } else {
+        alert(result.error || 'Error starting checkout');
+      }
     } catch (error) {
       console.error('Checkout error:', error);
       alert('Error starting checkout. Please try again.');
