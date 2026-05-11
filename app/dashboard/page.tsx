@@ -102,8 +102,12 @@ export default function Dashboard() {
   });
   const [workLogLoading, setWorkLogLoading] = useState(false);
 
-  // PAYMENT FUNCTION - UPDATED with Authorization token
-  async function handleCheckout(variantId: string, type: string) {
+  // Locks to prevent concurrent auth calls
+  let isCheckingUser = false;
+  let isRefreshingProgress = false;
+
+  // STRIPE PAYMENT FUNCTIONS - Replacing LemonSqueezy
+  async function handleSection1Checkout() {
     setLoadingPayment(true);
     try {
       // Get the access token from the session
@@ -116,13 +120,48 @@ export default function Dashboard() {
         return;
       }
       
-      const response = await fetch('/api/checkout', {
+      const response = await fetch('/api/checkout/section1', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`
         },
-        body: JSON.stringify({ variantId, type })
+      });
+      
+      const result = await response.json();
+      
+      if (result.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = result.url;
+      } else if (result.error) {
+        alert(result.error || 'Error starting checkout');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Error starting checkout. Please try again.');
+    }
+    setLoadingPayment(false);
+  }
+
+  async function handleSection2Checkout() {
+    setLoadingPayment(true);
+    try {
+      // Get the access token from the session
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      
+      if (!accessToken) {
+        alert('Please sign in again');
+        setLoadingPayment(false);
+        return;
+      }
+      
+      const response = await fetch('/api/checkout/section2', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
       });
       
       const result = await response.json();
@@ -222,32 +261,63 @@ export default function Dashboard() {
   }
 
   async function checkUser() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/auth/sign-in');
+    // Prevent concurrent calls
+    if (isCheckingUser) {
+      console.log('Already checking user, skipping...');
       return;
     }
-    setUser(user);
     
-    const { data } = await supabase
-      .from('users')
-      .select('section1_completed, subscription_status, section2_unlocked')
-      .eq('id', user.id)
-      .single();
-    if (data) {
-      setSection2Visible(data.section1_completed || false);
-      setIsSubscribed(data.subscription_status === 'active');
-      setSection2Unlocked(data.section2_unlocked || false);
+    isCheckingUser = true;
+    
+    try {
+      // Use getSession() instead of getUser() to avoid token conflicts
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.error('Session error:', sessionError);
+        router.push('/auth/sign-in');
+        return;
+      }
+      
+      const user = session.user;
+      setUser(user);
+      
+      const { data } = await supabase
+        .from('users')
+        .select('section1_completed, subscription_status, section2_unlocked')
+        .eq('id', user.id)
+        .single();
+        
+      if (data) {
+        setSection2Visible(data.section1_completed || false);
+        setIsSubscribed(data.subscription_status === 'active');
+        setSection2Unlocked(data.section2_unlocked || false);
+        console.log('User subscription status:', data.subscription_status);
+      }
+    } catch (error) {
+      console.error('Check user error:', error);
+    } finally {
+      isCheckingUser = false;
     }
   }
 
   async function refreshProgress() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
+    // Prevent concurrent calls
+    if (isRefreshingProgress) {
+      console.log('Already refreshing progress, skipping...');
+      return;
+    }
+    
+    isRefreshingProgress = true;
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      
       const { data: prog } = await supabase
         .from('user_progress')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', session.user.id);
       
       const progressMap: Record<string, Progress> = {};
       prog?.forEach(p => {
@@ -266,12 +336,20 @@ export default function Dashboard() {
         await supabase
           .from('users')
           .update({ section1_completed: true })
-          .eq('id', user.id);
+          .eq('id', session.user.id);
         setIsUpdating(false);
       }
       
       // SECTION 2 POP-UP: Check after refreshing progress
-      await checkSection2Completion();
+      if (session.user) {
+        // Temporarily set user for checkSection2Completion
+        setUser(session.user);
+        await checkSection2Completion();
+      }
+    } catch (error) {
+      console.error('Refresh progress error:', error);
+    } finally {
+      isRefreshingProgress = false;
     }
   }
 
@@ -282,12 +360,12 @@ export default function Dashboard() {
       .order('order_index');
     setModules(data || []);
     
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
       const { data: prog } = await supabase
         .from('user_progress')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', session.user.id);
       
       const progressMap: Record<string, Progress> = {};
       prog?.forEach(p => {
@@ -304,10 +382,11 @@ export default function Dashboard() {
         await supabase
           .from('users')
           .update({ section1_completed: true })
-          .eq('id', user.id);
+          .eq('id', session.user.id);
       }
       
       // SECTION 2 POP-UP: Check after loading modules
+      setUser(session.user);
       await checkSection2Completion();
     }
     setLoading(false);
@@ -315,13 +394,13 @@ export default function Dashboard() {
 
   // Work Log Functions
   async function loadWorkLogs() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
 
     const { data, error } = await supabase
       .from('work_logs')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', session.user.id)
       .order('work_date', { ascending: false });
 
     if (error) {
@@ -362,9 +441,9 @@ export default function Dashboard() {
     
     setWorkLogLoading(true);
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      console.error('Auth error:', authError);
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session?.user) {
+      console.error('Auth error:', sessionError);
       alert('Please sign in again');
       setWorkLogLoading(false);
       return;
@@ -377,7 +456,7 @@ export default function Dashboard() {
     const finalPay = grossPay - deductions;
 
     const workLogData = {
-      user_id: user.id,
+      user_id: session.user.id,
       work_date: workLogForm.work_date,
       production_name: workLogForm.production_name,
       location: workLogForm.location,
@@ -555,13 +634,13 @@ export default function Dashboard() {
 
         {/* Main Content */}
         <div className="max-w-4xl mx-auto px-4 py-8">
-          {/* PAYMENT STATUS CARDS - ADDED */}
+          {/* PAYMENT STATUS CARDS - UPDATED to use Stripe functions */}
           {!isSubscribed && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
               <p className="font-semibold text-yellow-800">🔓 Unlock Section 1 Modules</p>
               <p className="text-sm text-yellow-700 mb-3">Subscribe for $9.99/month to access all training modules.</p>
               <button
-                onClick={() => handleCheckout(process.env.NEXT_PUBLIC_MONTHLY_VARIANT_ID!, 'subscription')}
+                onClick={() => handleSection1Checkout()}
                 disabled={loadingPayment}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
               >
@@ -575,7 +654,7 @@ export default function Dashboard() {
               <p className="font-semibold text-purple-800">🎓 Unlock Section 2</p>
               <p className="text-sm text-purple-700 mb-3">You've completed Section 1! Unlock advanced acting modules for a one-time fee of $19.99.</p>
               <button
-                onClick={() => handleCheckout(process.env.NEXT_PUBLIC_SECTION2_VARIANT_ID!, 'section2')}
+                onClick={() => handleSection2Checkout()}
                 disabled={loadingPayment}
                 className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50"
               >
@@ -823,7 +902,7 @@ export default function Dashboard() {
                         <input
                           type="checkbox"
                           checked={workLogForm.paid}
-                          onChange={(e) => setWorkLogForm({...workLogForm, paid: e.target.checked})}
+                          onChange={(e) => setWorkLogForm({...workLogForm, paid: e.target.value})}
                           className="w-5 h-5 text-blue-600 rounded"
                         />
                         <span className="text-sm text-gray-700">Paid</span>

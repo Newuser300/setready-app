@@ -26,23 +26,76 @@ export default function ModulePage() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   
-  // PAYMENT STATE - ADDED
+  // PAYMENT STATE
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [section2Unlocked, setSection2Unlocked] = useState(false);
   const [loadingPayment, setLoadingPayment] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
 
-  // PAYMENT FUNCTION - ADDED
-  async function handleCheckout(variantId: string, type: string) {
+  // STRIPE PAYMENT FUNCTIONS - Replacing LemonSqueezy
+  async function handleSection1Checkout() {
     setLoadingPayment(true);
     try {
-      const response = await fetch('/api/checkout', {
+      // Get the access token from the session
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      
+      if (!accessToken) {
+        alert('Please sign in again');
+        setLoadingPayment(false);
+        return;
+      }
+      
+      const response = await fetch('/api/checkout/section1', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ variantId, type })
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
       });
-      const { url } = await response.json();
-      if (url) window.location.href = url;
+      
+      const result = await response.json();
+      
+      if (result.url) {
+        window.location.href = result.url;
+      } else {
+        alert(result.error || 'Error starting checkout');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Error starting checkout. Please try again.');
+    }
+    setLoadingPayment(false);
+  }
+
+  async function handleSection2Checkout() {
+    setLoadingPayment(true);
+    try {
+      // Get the access token from the session
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      
+      if (!accessToken) {
+        alert('Please sign in again');
+        setLoadingPayment(false);
+        return;
+      }
+      
+      const response = await fetch('/api/checkout/section2', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+      });
+      
+      const result = await response.json();
+      
+      if (result.url) {
+        window.location.href = result.url;
+      } else {
+        alert(result.error || 'Error starting checkout');
+      }
     } catch (error) {
       console.error('Checkout error:', error);
       alert('Error starting checkout. Please try again.');
@@ -62,7 +115,7 @@ export default function ModulePage() {
         setUserId(user.id);
         console.log('Module page - User ID:', user.id);
         
-        // GET PAYMENT STATUS - ADDED
+        // GET PAYMENT STATUS
         const { data: userData } = await supabase
           .from('users')
           .select('subscription_status, section2_unlocked')
@@ -116,7 +169,6 @@ export default function ModulePage() {
         return;
       }
       console.log('Navigating to quiz for module:', id, 'with userId:', userId);
-      // Pass the user ID as a query parameter to the quiz index page
       router.push(`/module/${id}/quiz?userId=${userId}`);
     }
   };
@@ -152,7 +204,7 @@ export default function ModulePage() {
     );
   }
 
-  // SECTION 1 ACCESS CHECK - ADDED (requires subscription)
+  // SECTION 1 ACCESS CHECK - Requires subscription
   if (module.section === 1 && !isSubscribed) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -163,7 +215,7 @@ export default function ModulePage() {
             Section 1 training modules require an active subscription.
           </p>
           <button
-            onClick={() => handleCheckout(process.env.NEXT_PUBLIC_MONTHLY_VARIANT_ID!, 'subscription')}
+            onClick={() => handleSection1Checkout()}
             disabled={loadingPayment}
             className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
           >
@@ -180,7 +232,7 @@ export default function ModulePage() {
     );
   }
 
-  // SECTION 2 ACCESS CHECK - ADDED (requires subscription + one-time unlock)
+  // SECTION 2 ACCESS CHECK - Requires subscription + one-time unlock
   if (module.section === 2 && (!isSubscribed || !section2Unlocked)) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -194,7 +246,7 @@ export default function ModulePage() {
             One-time payment of $19.99 for permanent access.
           </p>
           <button
-            onClick={() => handleCheckout(process.env.NEXT_PUBLIC_SECTION2_VARIANT_ID!, 'section2')}
+            onClick={() => handleSection2Checkout()}
             disabled={loadingPayment}
             className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50"
           >
