@@ -54,6 +54,7 @@ export async function POST(request: Request) {
           .update({
             subscription_status: 'active',
             stripe_subscription_id: session.subscription,
+            stripe_customer_id: session.customer,  // REQUIRED for Customer Portal
           })
           .eq('id', userId);
         
@@ -68,7 +69,10 @@ export async function POST(request: Request) {
       else if (session.mode === 'payment') {
         const { error } = await supabaseAdmin
           .from('users')
-          .update({ section2_unlocked: true })
+          .update({ 
+            section2_unlocked: true,
+            stripe_customer_id: session.customer,  // Also save customer ID for Section 2
+          })
           .eq('id', userId);
         
         if (error) {

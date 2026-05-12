@@ -82,6 +82,9 @@ export default function Dashboard() {
   const [section2Unlocked, setSection2Unlocked] = useState(false);
   const [loadingPayment, setLoadingPayment] = useState(false);
 
+  // CUSTOMER PORTAL STATE
+  const [loadingPortal, setLoadingPortal] = useState(false);
+
   // Work Log State
   const [workLogs, setWorkLogs] = useState<WorkLog[]>([]);
   const [showWorkLogForm, setShowWorkLogForm] = useState(false);
@@ -176,6 +179,26 @@ export default function Dashboard() {
       alert('Error starting checkout. Please try again.');
     }
     setLoadingPayment(false);
+  }
+
+  // CUSTOMER PORTAL FUNCTION
+  async function handleManageBilling() {
+    setLoadingPortal(true);
+    try {
+      const response = await fetch('/api/stripe/create-portal-session', {
+        method: 'POST',
+      });
+      const { url, error } = await response.json();
+      if (url) {
+        window.location.href = url;
+      } else {
+        alert(error || 'Error opening billing portal');
+      }
+    } catch (error) {
+      console.error('Portal error:', error);
+      alert('Error opening billing portal');
+    }
+    setLoadingPortal(false);
   }
 
   useEffect(() => {
@@ -1073,6 +1096,19 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+
+          {/* CUSTOMER PORTAL BUTTON - Added under subscription status */}
+          {isSubscribed && (
+            <div className="mt-3 text-center">
+              <button
+                onClick={handleManageBilling}
+                disabled={loadingPortal}
+                className="text-sm text-blue-600 hover:text-blue-800 transition underline"
+              >
+                {loadingPortal ? 'Loading...' : 'Manage Billing →'}
+              </button>
+            </div>
+          )}
 
           {/* Footer Links */}
           <div className="mt-12 pt-6 border-t border-gray-200 flex justify-center gap-6 text-sm text-gray-400">
