@@ -6,6 +6,9 @@ import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
+// Force dynamic rendering to avoid static prerendering issues
+export const dynamic = 'force-dynamic';
+
 // This component uses useSearchParams() and must be wrapped in Suspense
 function PaymentProcessingContent() {
   const router = useRouter();
