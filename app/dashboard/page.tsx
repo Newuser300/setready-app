@@ -181,18 +181,34 @@ export default function Dashboard() {
     setLoadingPayment(false);
   }
 
-  // CUSTOMER PORTAL FUNCTION
+  // CUSTOMER PORTAL FUNCTION - Updated with authorization header
   async function handleManageBilling() {
     setLoadingPortal(true);
     try {
+      // Get the current session to obtain the access token
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      
+      if (!accessToken) {
+        alert('Please sign in again');
+        setLoadingPortal(false);
+        return;
+      }
+      
       const response = await fetch('/api/stripe/create-portal-session', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
       });
-      const { url, error } = await response.json();
-      if (url) {
-        window.location.href = url;
+      
+      const result = await response.json();
+      
+      if (result.url) {
+        window.location.href = result.url;
       } else {
-        alert(error || 'Error opening billing portal');
+        alert(result.error || 'Error opening billing portal');
       }
     } catch (error) {
       console.error('Portal error:', error);

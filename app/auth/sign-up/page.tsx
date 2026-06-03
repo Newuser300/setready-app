@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
@@ -37,18 +37,35 @@ export default function SignUp() {
 
     if (error) {
       setError(error.message);
-    } else {
-      // Save province to users table
-      if (data.user) {
-        await supabase.from('users').upsert({
-          id: data.user.id,
-          email,
-          province,
-          name,
-        });
-      }
-      router.push('/dashboard');
+      setLoading(false);
+      return;
     }
+
+    if (data.user) {
+      // Insert the user into the users table with ALL required fields
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: data.user.id,
+          email: email,
+          name: name,
+          province: province,
+          subscription_status: 'inactive',
+          section2_unlocked: false,
+          section1_completed: false,
+        });
+
+      if (insertError) {
+        console.error('Error inserting user:', insertError);
+        setError('Account created but profile setup failed. Please contact support.');
+      } else {
+        // Success - redirect to dashboard
+        router.push('/dashboard');
+      }
+    } else {
+      setError('Sign up failed. Please try again.');
+    }
+    
     setLoading(false);
   };
 

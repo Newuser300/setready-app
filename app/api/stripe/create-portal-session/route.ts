@@ -1,17 +1,27 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createClient } from '@/lib/supabase/server';
+import { supabase } from '@/lib/supabase';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-02-24.acacia',
 });
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { session } } = await supabase.auth.getSession();
+    // Get the authorization header from the request
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
     
-    if (!session) {
+    if (!token) {
+      console.error('No authorization token');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // Verify the token and get the user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.error('Auth error:', authError);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
@@ -19,11 +29,11 @@ export async function POST() {
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('stripe_customer_id')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single();
     
     if (userError || !userData?.stripe_customer_id) {
-      console.error('No Stripe customer ID found for user:', session.user.id);
+      console.error('No Stripe customer ID found for user:', user.id);
       return NextResponse.json({ error: 'No billing account found' }, { status: 404 });
     }
     

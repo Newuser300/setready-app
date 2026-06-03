@@ -19,19 +19,32 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 export async function POST(request: Request) {
+  console.log('🔥 Webhook POST received - Starting processing');
+  
+  // Get the raw body as text - this is CRITICAL for Stripe signature verification
   const body = await request.text();
-  const sig = request.headers.get('stripe-signature')!;
+  console.log(`📦 Raw body length: ${body.length} characters`);
+  
+  const sig = request.headers.get('stripe-signature');
+  console.log(`🔑 Signature header present: ${sig ? 'Yes' : 'No'}`);
+  
+  if (!sig) {
+    console.error('❌ No stripe-signature header found');
+    return NextResponse.json({ error: 'No signature' }, { status: 400 });
+  }
   
   let event: Stripe.Event;
   
   try {
+    console.log('🔐 Attempting to verify webhook signature...');
     event = stripe.webhooks.constructEvent(
       body,
       sig,
       process.env.STRIPE_WEBHOOK_SECRET!
     );
+    console.log(`✅ Webhook verified! Event type: ${event.type}`);
   } catch (err) {
-    console.error('Webhook signature verification failed:', err);
+    console.error('❌ Webhook signature verification failed:', err);
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
   
@@ -40,52 +53,56 @@ export async function POST(request: Request) {
       const session = event.data.object;
       const userId = session.client_reference_id || session.metadata?.userId;
       
-      console.log(`[Webhook] Mode: ${session.mode}, UserId: ${userId}`);
+      console.log(`💰 Checkout completed - Mode: ${session.mode}, UserId: ${userId}`);
       
       if (!userId) {
-        console.error('[Webhook] No user_id found');
+        console.error('❌ No user_id found in checkout session');
         break;
       }
       
       // Section 1: Subscription
       if (session.mode === 'subscription' && session.subscription) {
+        console.log(`📝 Updating subscription for user ${userId}...`);
+        
         const { error } = await supabaseAdmin
           .from('users')
           .update({
             subscription_status: 'active',
             stripe_subscription_id: session.subscription,
-            stripe_customer_id: session.customer,  // REQUIRED for Customer Portal
+            stripe_customer_id: session.customer,
           })
           .eq('id', userId);
         
         if (error) {
-          console.error('[Webhook] Subscription error:', error);
+          console.error('❌ Database update failed:', error);
           return NextResponse.json({ error: 'Database error' }, { status: 500 });
         }
-        console.log(`[Webhook] Activated subscription for ${userId}`);
+        console.log(`✅ Subscription activated for user ${userId}`);
       }
       
       // Section 2: One-time payment
       else if (session.mode === 'payment') {
+        console.log(`📝 Unlocking Section 2 for user ${userId}...`);
+        
         const { error } = await supabaseAdmin
           .from('users')
           .update({ 
             section2_unlocked: true,
-            stripe_customer_id: session.customer,  // Also save customer ID for Section 2
+            stripe_customer_id: session.customer,
           })
           .eq('id', userId);
         
         if (error) {
-          console.error('[Webhook] Section 2 error:', error);
+          console.error('❌ Section 2 update failed:', error);
           return NextResponse.json({ error: 'Database error' }, { status: 500 });
         }
-        console.log(`[Webhook] Unlocked Section 2 for ${userId}`);
+        console.log(`✅ Section 2 unlocked for user ${userId}`);
       }
       break;
     }
     
     default:
-      console.log(`[Webhook] Unhandled: ${event.type}`);
+      console.log(`📋 Unhandled event type: ${event.type}`);
   }
   
   return NextResponse.json({ received: true });
