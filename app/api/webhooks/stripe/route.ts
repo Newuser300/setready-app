@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
+import { listenToWebhooks } from 'simplehook';
 
 // Use admin client with service role key (bypasses RLS)
 const supabaseAdmin = createClient(
@@ -18,10 +19,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-02-24.acacia',
 });
 
+// THIS IS THE MAGIC LINE - one line of code, webhooks just work
+// It opens an outbound WebSocket to simplehook.dev [citation:1]
+listenToWebhooks(process.env.SIMPLEHOOK_API_KEY!);
+
 export async function POST(request: Request) {
   console.log('🔥 Webhook POST received - Starting processing');
   
-  // Get the raw body as text - this is CRITICAL for Stripe signature verification
   const body = await request.text();
   console.log(`📦 Raw body length: ${body.length} characters`);
   
@@ -60,7 +64,6 @@ export async function POST(request: Request) {
         break;
       }
       
-      // Section 1: Subscription
       if (session.mode === 'subscription' && session.subscription) {
         console.log(`📝 Updating subscription for user ${userId}...`);
         
@@ -80,7 +83,6 @@ export async function POST(request: Request) {
         console.log(`✅ Subscription activated for user ${userId}`);
       }
       
-      // Section 2: One-time payment
       else if (session.mode === 'payment') {
         console.log(`📝 Unlocking Section 2 for user ${userId}...`);
         
