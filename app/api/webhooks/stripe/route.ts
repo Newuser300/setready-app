@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
-import { listenToWebhooks } from 'simplehook';
 
 // Use admin client with service role key (bypasses RLS)
 const supabaseAdmin = createClient(
@@ -18,10 +17,6 @@ const supabaseAdmin = createClient(
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-02-24.acacia',
 });
-
-// THIS IS THE MAGIC LINE - one line of code, webhooks just work
-// It opens an outbound WebSocket to simplehook.dev [citation:1]
-listenToWebhooks(process.env.SIMPLEHOOK_API_KEY!);
 
 export async function POST(request: Request) {
   console.log('🔥 Webhook POST received - Starting processing');
@@ -64,26 +59,8 @@ export async function POST(request: Request) {
         break;
       }
       
-      if (session.mode === 'subscription' && session.subscription) {
-        console.log(`📝 Updating subscription for user ${userId}...`);
-        
-        const { error } = await supabaseAdmin
-          .from('users')
-          .update({
-            subscription_status: 'active',
-            stripe_subscription_id: session.subscription,
-            stripe_customer_id: session.customer,
-          })
-          .eq('id', userId);
-        
-        if (error) {
-          console.error('❌ Database update failed:', error);
-          return NextResponse.json({ error: 'Database error' }, { status: 500 });
-        }
-        console.log(`✅ Subscription activated for user ${userId}`);
-      }
-      
-      else if (session.mode === 'payment') {
+      // Section 2: One-time payment (unlock immediately)
+      if (session.mode === 'payment') {
         console.log(`📝 Unlocking Section 2 for user ${userId}...`);
         
         const { error } = await supabaseAdmin
@@ -96,9 +73,66 @@ export async function POST(request: Request) {
         
         if (error) {
           console.error('❌ Section 2 update failed:', error);
+        } else {
+          console.log(`✅ Section 2 unlocked for user ${userId}`);
+        }
+      } 
+      // Section 1: Subscription - save customer ID for later use
+      else if (session.mode === 'subscription') {
+        console.log(`📝 Saving Stripe customer ID for user ${userId}...`);
+        const { error } = await supabaseAdmin
+          .from('users')
+          .update({
+            stripe_customer_id: session.customer,
+          })
+          .eq('id', userId);
+        
+        if (error) {
+          console.error('❌ Failed to save customer ID:', error);
+        } else {
+          console.log(`✅ Customer ID saved for user ${userId}`);
+        }
+      }
+      break;
+    }
+
+    case 'invoice.paid': {
+      const invoice = event.data.object;
+      const subscriptionId = invoice.subscription;
+      
+      console.log(`💰 invoice.paid received - Subscription ID: ${subscriptionId}`);
+      
+      if (!subscriptionId) {
+        console.error('❌ No subscription ID found on invoice.paid event');
+        break;
+      }
+
+      const { data: userData, error: findError } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('stripe_customer_id', invoice.customer)
+        .single();
+
+      if (findError) {
+        console.error('❌ Error finding user by customer ID:', findError);
+        break;
+      }
+
+      if (userData) {
+        console.log(`📝 Updating subscription for user ${userData.id}...`);
+        const { error } = await supabaseAdmin
+          .from('users')
+          .update({
+            subscription_status: 'active',
+            stripe_subscription_id: subscriptionId,
+          })
+          .eq('id', userData.id);
+          
+        if (error) {
+          console.error('❌ Database update failed:', error);
           return NextResponse.json({ error: 'Database error' }, { status: 500 });
         }
-        console.log(`✅ Section 2 unlocked for user ${userId}`);
+        console.log(`✅ Subscription activated for user ${userData.id}`);
       }
       break;
     }

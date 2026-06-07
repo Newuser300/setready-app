@@ -217,10 +217,23 @@ export default function Dashboard() {
     setLoadingPortal(false);
   }
 
+  // Add this new function to fetch subscription status from the database
+  const fetchSubscriptionStatus = async () => {
+    try {
+      const response = await fetch('/api/user/get-subscription-status');
+      const data = await response.json();
+      setIsSubscribed(data.isSubscribed);
+    } catch (error) {
+      console.error('Failed to fetch subscription status:', error);
+    }
+  };
+
   useEffect(() => {
     checkUser();
     loadModules();
     loadWorkLogs();
+    fetchSubscriptionStatus(); // <-- ADD THIS LINE to refresh subscription status on page load
+    
     // Subscribe to realtime updates for user_progress
     const subscription = supabase
       .channel('user_progress_changes')
