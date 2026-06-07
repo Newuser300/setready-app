@@ -27,8 +27,13 @@ export async function POST(request: Request) {
     
     console.log('Checkout Section 1 - User:', user.id);
     
-    // HARDCODED PRICE ID FOR TESTING (Test Mode - CAD $9.99/month)
-    const priceId = 'price_1TR1hpLMmgde5ZjKyU4wcttB';
+    // Get the Price ID from environment variables
+    const priceId = process.env.NEXT_PUBLIC_STRIPE_SECTION_1_PRICE_ID;
+    
+    if (!priceId) {
+      console.error('Missing Stripe Price ID for Section 1');
+      return NextResponse.json({ error: 'Payment configuration error' }, { status: 500 });
+    }
     
     console.log('Using Price ID:', priceId);
     

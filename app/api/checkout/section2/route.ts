@@ -29,6 +29,7 @@ export async function POST(request: Request) {
     
     // Get the Price ID from environment variables
     const priceId = process.env.NEXT_PUBLIC_STRIPE_SECTION_2_PRICE_ID;
+    
     if (!priceId) {
       console.error('Missing Stripe Price ID for Section 2');
       return NextResponse.json({ error: 'Payment configuration error' }, { status: 500 });
