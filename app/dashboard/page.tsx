@@ -220,7 +220,15 @@ export default function Dashboard() {
   // Add this new function to fetch subscription status from the database
   const fetchSubscriptionStatus = async () => {
     try {
-      const response = await fetch('/api/user/get-subscription-status');
+      // Get the access token from the session
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      
+      const response = await fetch('/api/user/get-subscription-status', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
       const data = await response.json();
       setIsSubscribed(data.isSubscribed);
     } catch (error) {

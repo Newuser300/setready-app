@@ -3,10 +3,32 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
   try {
+    // Get the authorization header from the request
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+    
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    
+    let user = null;
+    
+    // Try to get user from token first (if provided)
+    if (token) {
+      const { data: { user: tokenUser }, error: tokenError } = await supabase.auth.getUser(token);
+      if (!tokenError && tokenUser) {
+        user = tokenUser;
+      }
+    }
+    
+    // If no token or token failed, try session
+    if (!user) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        user = session.user;
+      }
+    }
 
     if (!user) {
+      console.error('No authenticated user found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
