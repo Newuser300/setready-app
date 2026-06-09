@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-// Use admin client with service role key (bypasses RLS)
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -15,25 +14,25 @@ const supabaseAdmin = createClient(
 );
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-02-24.acacia',
+  apiVersion: '2026-04-22.dahlia',
 });
 
 export async function POST(request: Request) {
   console.log('🔥 Webhook POST received - Starting processing');
-  
+
   const body = await request.text();
   console.log(`📦 Raw body length: ${body.length} characters`);
-  
+
   const sig = request.headers.get('stripe-signature');
   console.log(`🔑 Signature header present: ${sig ? 'Yes' : 'No'}`);
-  
+
   if (!sig) {
     console.error('❌ No stripe-signature header found');
     return NextResponse.json({ error: 'No signature' }, { status: 400 });
   }
-  
+
   let event: Stripe.Event;
-  
+
   try {
     console.log('🔐 Attempting to verify webhook signature...');
     event = stripe.webhooks.constructEvent(
@@ -46,133 +45,186 @@ export async function POST(request: Request) {
     console.error('❌ Webhook signature verification failed:', err);
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
-  
+
   switch (event.type) {
+
+    // ─── STEP 2: Store stripe_customer_id when checkout completes ────────────
     case 'checkout.session.completed': {
-      const session = event.data.object;
-      const userId = session.client_reference_id || session.metadata?.userId;
-      
-      console.log(`💰 Checkout completed - Mode: ${session.mode}, UserId: ${userId}`);
-      
+      const session = event.data.object as Stripe.Checkout.Session;
+
+      console.log('📋 checkout.session.completed received');
+      console.log(`   session.id:                ${session.id}`);
+      console.log(`   session.mode:              ${session.mode}`);
+      console.log(`   session.client_reference_id: ${session.client_reference_id}`);
+      console.log(`   session.metadata:          ${JSON.stringify(session.metadata)}`);
+      console.log(`   session.customer:          ${session.customer}`);
+
+      const userId = session.client_reference_id ?? session.metadata?.userId ?? null;
+      const stripeCustomerId = session.customer as string | null;
+
+      console.log(`👤 Resolved userId: ${userId}`);
+      console.log(`💳 Resolved stripeCustomerId: ${stripeCustomerId}`);
+
       if (!userId) {
-        console.error('❌ No user_id found in checkout session');
+        console.error('❌ No userId — client_reference_id and metadata.userId are both missing. Skipping.');
         break;
       }
-      
-      // Section 2: One-time payment (unlock immediately)
+
+      if (!stripeCustomerId) {
+        console.error('❌ No stripeCustomerId on session. Skipping.');
+        break;
+      }
+
+      // For section 2 (one-time payment) also unlock section 2 immediately.
+      // For section 1 (subscription) only store the customer id here —
+      // subscription_status is set in invoice.paid once payment is confirmed.
+      const updatePayload: Record<string, unknown> = {
+        stripe_customer_id: stripeCustomerId,
+      };
+
       if (session.mode === 'payment') {
-        console.log(`📝 Unlocking Section 2 for user ${userId}...`);
-        
-        const { error } = await supabaseAdmin
-          .from('users')
-          .update({ 
-            section2_unlocked: true,
-            stripe_customer_id: session.customer,
-          })
-          .eq('id', userId);
-        
-        if (error) {
-          console.error('❌ Section 2 update failed:', error);
-        } else {
-          console.log(`✅ Section 2 unlocked for user ${userId}`);
-        }
-      } 
-      // Section 1: Subscription - activate immediately on checkout completion
-      else if (session.mode === 'subscription') {
-        console.log(`📝 Activating subscription for user ${userId}...`);
-        const { error } = await supabaseAdmin
-          .from('users')
-          .update({
-            stripe_customer_id: session.customer,
-            subscription_status: 'active',
-            stripe_subscription_id: session.subscription,
-          })
-          .eq('id', userId);
+        console.log('🎓 One-time payment — also setting section2_unlocked = true');
+        updatePayload.section2_unlocked = true;
+      } else {
+        console.log('🔄 Subscription checkout — storing stripe_customer_id only (invoice.paid will activate)');
+      }
 
-        if (error) {
-          console.error('❌ Failed to activate subscription:', error);
-        } else {
-          console.log(`✅ Subscription activated for user ${userId}`);
-        }
+      console.log(`📝 Updating users WHERE id = '${userId}' with:`, updatePayload);
+      const { data: updatedRows, error: updateError } = await supabaseAdmin
+        .from('users')
+        .update(updatePayload)
+        .eq('id', userId)
+        .select();
+
+      if (updateError) {
+        console.error('❌ Failed to update user in checkout.session.completed:', updateError);
+      } else {
+        console.log(`✅ User updated. Rows affected:`, updatedRows);
       }
       break;
     }
 
+    // ─── STEP 3: Activate subscription when invoice is paid ──────────────────
     case 'invoice.paid': {
-      const invoice = event.data.object;
-      const subscriptionId = invoice.subscription;
-      
-      console.log(`💰 invoice.paid received - Subscription ID: ${subscriptionId}`);
-      
-      if (!subscriptionId) {
-        console.error('❌ No subscription ID found on invoice.paid event');
+      const invoice = event.data.object as Stripe.Invoice;
+      const invoiceAny = invoice as any;
+      const stripeCustomerId = invoice.customer as string | null;
+      // In API version 2026-04-22.dahlia the subscription moved to parent.subscription_details.subscription
+      const stripeSubscriptionId = (
+        invoiceAny.parent?.subscription_details?.subscription ??
+        invoiceAny.subscription ??
+        null
+      ) as string | null;
+
+      console.log('💰 invoice.paid received');
+      console.log(`   invoice.id:              ${invoice.id}`);
+      console.log(`   invoice.customer:        ${stripeCustomerId}`);
+      console.log(`   invoice.subscription:    ${stripeSubscriptionId}`);
+
+      if (!stripeCustomerId) {
+        console.error('❌ No stripeCustomerId on invoice.paid event. Skipping.');
         break;
       }
 
+      if (!stripeSubscriptionId) {
+        console.log('ℹ️  invoice.paid has no subscription id — likely a one-time payment, skipping subscription activation.');
+        break;
+      }
+
+      console.log(`🔍 Looking up user WHERE stripe_customer_id = '${stripeCustomerId}'...`);
       const { data: userData, error: findError } = await supabaseAdmin
         .from('users')
         .select('id')
-        .eq('stripe_customer_id', invoice.customer)
-        .single();
+        .eq('stripe_customer_id', stripeCustomerId)
+        .maybeSingle();
 
       if (findError) {
-        console.error('❌ Error finding user by customer ID:', findError);
+        console.error('❌ Error querying user by stripe_customer_id:', findError);
         break;
       }
 
-      if (userData) {
-        console.log(`📝 Updating subscription for user ${userData.id}...`);
-        const { error } = await supabaseAdmin
-          .from('users')
-          .update({
-            subscription_status: 'active',
-            stripe_subscription_id: subscriptionId,
-          })
-          .eq('id', userData.id);
-          
-        if (error) {
-          console.error('❌ Database update failed:', error);
-          return NextResponse.json({ error: 'Database error' }, { status: 500 });
-        }
-        console.log(`✅ Subscription activated for user ${userData.id}`);
+      if (!userData) {
+        console.error(`❌ No user found with stripe_customer_id = '${stripeCustomerId}'. Was checkout.session.completed processed first?`);
+        break;
+      }
+
+      console.log(`👤 Found user: ${userData.id}`);
+
+      const subscriptionEndsAt = new Date();
+      subscriptionEndsAt.setDate(subscriptionEndsAt.getDate() + 30);
+      console.log(`📅 subscription_ends_at set to: ${subscriptionEndsAt.toISOString()}`);
+
+      const updatePayload = {
+        subscription_status: 'active',
+        stripe_subscription_id: stripeSubscriptionId,
+        subscription_ends_at: subscriptionEndsAt.toISOString(),
+      };
+
+      console.log(`📝 Updating users WHERE id = '${userData.id}' with:`, updatePayload);
+      const { data: updatedRows, error: updateError } = await supabaseAdmin
+        .from('users')
+        .update(updatePayload)
+        .eq('id', userData.id)
+        .select();
+
+      if (updateError) {
+        console.error('❌ Failed to activate subscription in invoice.paid:', updateError);
+      } else {
+        console.log(`✅ Subscription activated for user ${userData.id}. Rows affected:`, updatedRows);
       }
       break;
     }
-    
+
+    // ─── STEP 4: Deactivate subscription when it is cancelled ────────────────
     case 'customer.subscription.deleted': {
-      const subscription = event.data.object;
+      const subscription = event.data.object as Stripe.Subscription;
+      const stripeCustomerId = subscription.customer as string | null;
 
-      console.log(`❌ Subscription deleted: ${subscription.id}`);
+      console.log('🗑️  customer.subscription.deleted received');
+      console.log(`   subscription.id:      ${subscription.id}`);
+      console.log(`   subscription.customer: ${stripeCustomerId}`);
 
-      const { data: userData, error: findError } = await supabaseAdmin
-        .from('users')
-        .select('id')
-        .eq('stripe_subscription_id', subscription.id)
-        .single();
-
-      if (findError) {
-        console.error('❌ Error finding user by subscription ID:', findError);
+      if (!stripeCustomerId) {
+        console.error('❌ No stripeCustomerId on subscription.deleted event. Skipping.');
         break;
       }
 
-      if (userData) {
-        const { error } = await supabaseAdmin
-          .from('users')
-          .update({ subscription_status: 'inactive' })
-          .eq('id', userData.id);
+      console.log(`🔍 Looking up user WHERE stripe_customer_id = '${stripeCustomerId}'...`);
+      const { data: userData, error: findError } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('stripe_customer_id', stripeCustomerId)
+        .maybeSingle();
 
-        if (error) {
-          console.error('❌ Failed to deactivate subscription:', error);
-        } else {
-          console.log(`✅ Subscription marked inactive for user ${userData.id}`);
-        }
+      if (findError) {
+        console.error('❌ Error querying user by stripe_customer_id:', findError);
+        break;
+      }
+
+      if (!userData) {
+        console.error(`❌ No user found with stripe_customer_id = '${stripeCustomerId}'. Skipping.`);
+        break;
+      }
+
+      console.log(`👤 Found user: ${userData.id} — setting subscription_status = 'inactive'`);
+      const { data: updatedRows, error: updateError } = await supabaseAdmin
+        .from('users')
+        .update({ subscription_status: 'inactive' })
+        .eq('id', userData.id)
+        .select();
+
+      if (updateError) {
+        console.error('❌ Failed to deactivate subscription:', updateError);
+      } else {
+        console.log(`✅ Subscription deactivated for user ${userData.id}. Rows affected:`, updatedRows);
       }
       break;
     }
 
     default:
-      console.log(`📋 Unhandled event type: ${event.type}`);
+      console.log(`📋 Unhandled event type: ${event.type} — ignoring`);
   }
-  
+
+  console.log('✅ Webhook handler complete — returning 200');
   return NextResponse.json({ received: true });
 }
