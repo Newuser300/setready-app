@@ -77,20 +77,22 @@ export async function POST(request: Request) {
           console.log(`✅ Section 2 unlocked for user ${userId}`);
         }
       } 
-      // Section 1: Subscription - save customer ID for later use
+      // Section 1: Subscription - activate immediately on checkout completion
       else if (session.mode === 'subscription') {
-        console.log(`📝 Saving Stripe customer ID for user ${userId}...`);
+        console.log(`📝 Activating subscription for user ${userId}...`);
         const { error } = await supabaseAdmin
           .from('users')
           .update({
             stripe_customer_id: session.customer,
+            subscription_status: 'active',
+            stripe_subscription_id: session.subscription,
           })
           .eq('id', userId);
-        
+
         if (error) {
-          console.error('❌ Failed to save customer ID:', error);
+          console.error('❌ Failed to activate subscription:', error);
         } else {
-          console.log(`✅ Customer ID saved for user ${userId}`);
+          console.log(`✅ Subscription activated for user ${userId}`);
         }
       }
       break;
@@ -137,6 +139,37 @@ export async function POST(request: Request) {
       break;
     }
     
+    case 'customer.subscription.deleted': {
+      const subscription = event.data.object;
+
+      console.log(`❌ Subscription deleted: ${subscription.id}`);
+
+      const { data: userData, error: findError } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('stripe_subscription_id', subscription.id)
+        .single();
+
+      if (findError) {
+        console.error('❌ Error finding user by subscription ID:', findError);
+        break;
+      }
+
+      if (userData) {
+        const { error } = await supabaseAdmin
+          .from('users')
+          .update({ subscription_status: 'inactive' })
+          .eq('id', userData.id);
+
+        if (error) {
+          console.error('❌ Failed to deactivate subscription:', error);
+        } else {
+          console.log(`✅ Subscription marked inactive for user ${userData.id}`);
+        }
+      }
+      break;
+    }
+
     default:
       console.log(`📋 Unhandled event type: ${event.type}`);
   }

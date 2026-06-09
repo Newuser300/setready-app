@@ -220,15 +220,15 @@ export default function Dashboard() {
   // Add this new function to fetch subscription status from the database
   const fetchSubscriptionStatus = async () => {
     try {
-      // Get the access token from the session
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
-      
-      const response = await fetch('/api/user/get-subscription-status', {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
-      });
+
+      const headers: Record<string, string> = {};
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+
+      const response = await fetch('/api/user/get-subscription-status', { headers });
       const data = await response.json();
       setIsSubscribed(data.isSubscribed);
     } catch (error) {
@@ -565,7 +565,7 @@ export default function Dashboard() {
       }
     } catch (err) {
       console.error('Unexpected error:', err);
-      alert(`Error: ${err.message || 'Something went wrong'}`);
+      alert(`Error: ${err instanceof Error ? err.message : 'Something went wrong'}`);
     } finally {
       setWorkLogLoading(false);
     }
@@ -962,7 +962,7 @@ export default function Dashboard() {
                         <input
                           type="checkbox"
                           checked={workLogForm.paid}
-                          onChange={(e) => setWorkLogForm({...workLogForm, paid: e.target.value})}
+                          onChange={(e) => setWorkLogForm({...workLogForm, paid: e.target.checked})}
                           className="w-5 h-5 text-blue-600 rounded"
                         />
                         <span className="text-sm text-gray-700">Paid</span>
@@ -1151,7 +1151,6 @@ export default function Dashboard() {
           <div className="mt-12 pt-6 border-t border-gray-200 flex justify-center gap-6 text-sm text-gray-400">
             <Link href="/privacy" className="hover:text-gray-600 transition">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-gray-600 transition">Terms of Service</Link>
-            {/* "My Certificates" link removed as requested */}
             <button
               onClick={async () => {
                 await supabase.auth.signOut();

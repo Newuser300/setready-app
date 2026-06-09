@@ -19,11 +19,11 @@ export async function GET(request: Request) {
       }
     }
     
-    // If no token or token failed, try session
+    // If no token or token failed, try the session cookie (verified server-side)
     if (!user) {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        user = session.user;
+      const { data: { user: sessionUser } } = await supabase.auth.getUser();
+      if (sessionUser) {
+        user = sessionUser;
       }
     }
 
