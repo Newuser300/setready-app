@@ -221,6 +221,12 @@ export default function Dashboard() {
   const fetchSubscriptionStatus = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session || !session.user) {
+        setIsSubscribed(false);
+        return;
+      }
+
       const accessToken = session?.access_token;
 
       const headers: Record<string, string> = {};

@@ -36,14 +36,18 @@ export async function GET(request: Request) {
       .from('users')
       .select('subscription_status')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching subscription status:', error);
       return NextResponse.json({ error: 'Failed to fetch status' }, { status: 500 });
     }
 
-    return NextResponse.json({ isSubscribed: data?.subscription_status === 'active' });
+    if (!data) {
+      return NextResponse.json({ isSubscribed: false });
+    }
+
+    return NextResponse.json({ isSubscribed: data.subscription_status === 'active' });
   } catch (error) {
     console.error('Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
