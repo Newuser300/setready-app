@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 const rateLimit = new Map<string, number[]>()
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   // Rate limit API routes: max 30 requests per IP per path per minute
@@ -44,7 +44,7 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refreshes the session cookie if it has expired
+  // Refreshes the Supabase session cookie if it has expired
   await supabase.auth.getUser()
 
   supabaseResponse.headers.set('Cache-Control', 'private, no-store')
