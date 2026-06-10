@@ -75,31 +75,26 @@ export async function POST(request: Request) {
         break;
       }
 
-      // For section 2 (one-time payment) also unlock section 2 immediately.
-      // For section 1 (subscription) only store the customer id here —
-      // subscription_status is set in invoice.paid once payment is confirmed.
-      const updatePayload: Record<string, unknown> = {
+      // Upsert: DB trigger guarantees the row exists, but upsert is safe if it doesn't.
+      const upsertPayload: Record<string, unknown> = {
+        id: userId,
         stripe_customer_id: stripeCustomerId,
       };
 
       if (session.mode === 'payment') {
-        console.log('🎓 One-time payment — also setting section2_unlocked = true');
-        updatePayload.section2_unlocked = true;
-      } else {
-        console.log('🔄 Subscription checkout — storing stripe_customer_id only (invoice.paid will activate)');
+        upsertPayload.section2_unlocked = true;
       }
 
-      console.log(`📝 Updating users WHERE id = '${userId}' with:`, updatePayload);
+      console.log(`📝 Upserting users WHERE id = '${userId}' with:`, upsertPayload);
       const { data: updatedRows, error: updateError } = await supabaseAdmin
         .from('users')
-        .update(updatePayload)
-        .eq('id', userId)
+        .upsert(upsertPayload, { onConflict: 'id' })
         .select();
 
       if (updateError) {
-        console.error('❌ Failed to update user in checkout.session.completed:', updateError);
+        console.error('❌ Failed to upsert user in checkout.session.completed:', updateError);
       } else {
-        console.log(`✅ User updated. Rows affected:`, updatedRows);
+        console.log(`✅ User upserted. Rows affected:`, updatedRows);
       }
       break;
     }
@@ -131,20 +126,47 @@ export async function POST(request: Request) {
         break;
       }
 
+      // FIX B: Retry lookup once after a delay to handle the race where
+      // invoice.paid arrives before checkout.session.completed has written
+      // stripe_customer_id to public.users.
       console.log(`🔍 Looking up user WHERE stripe_customer_id = '${stripeCustomerId}'...`);
-      const { data: userData, error: findError } = await supabaseAdmin
+      let findError: unknown = null;
+      let userData: { id: string } | null = null;
+
+      const { data: firstAttempt, error: firstError } = await supabaseAdmin
         .from('users')
         .select('id')
         .eq('stripe_customer_id', stripeCustomerId)
         .maybeSingle();
 
+      if (firstError) {
+        console.error('❌ Error querying user by stripe_customer_id:', firstError);
+        break;
+      }
+
+      if (!firstAttempt) {
+        console.log('⏳ User not found on first attempt — waiting 3 seconds and retrying...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        const { data: secondAttempt, error: secondError } = await supabaseAdmin
+          .from('users')
+          .select('id')
+          .eq('stripe_customer_id', stripeCustomerId)
+          .maybeSingle();
+
+        findError = secondError;
+        userData = secondAttempt;
+      } else {
+        userData = firstAttempt;
+      }
+
       if (findError) {
-        console.error('❌ Error querying user by stripe_customer_id:', findError);
+        console.error('❌ Error on retry querying user by stripe_customer_id:', findError);
         break;
       }
 
       if (!userData) {
-        console.error(`❌ No user found with stripe_customer_id = '${stripeCustomerId}'. Was checkout.session.completed processed first?`);
+        console.error(`❌ User still not found after retry with stripe_customer_id = '${stripeCustomerId}'. Giving up.`);
         break;
       }
 
