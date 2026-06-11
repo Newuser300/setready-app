@@ -217,26 +217,20 @@ export default function Dashboard() {
     setLoadingPortal(false);
   }
 
-  // Add this new function to fetch subscription status from the database
+  // Fetch subscription status directly from Supabase to avoid API 401 issues
   const fetchSubscriptionStatus = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session || !session.user) {
+      if (!session?.user) {
         setIsSubscribed(false);
         return;
       }
-
-      const accessToken = session?.access_token;
-
-      const headers: Record<string, string> = {};
-      if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
-      }
-
-      const response = await fetch('/api/user/get-subscription-status', { headers });
-      const data = await response.json();
-      setIsSubscribed(data.isSubscribed);
+      const { data } = await supabase
+        .from('users')
+        .select('subscription_status')
+        .eq('id', session.user.id)
+        .maybeSingle();
+      setIsSubscribed(data?.subscription_status === 'active');
     } catch (error) {
       console.error('Failed to fetch subscription status:', error);
     }

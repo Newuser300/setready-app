@@ -3,6 +3,7 @@
 
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 
 // Force dynamic rendering to avoid static prerendering issues
 export const dynamic = 'force-dynamic';
@@ -15,6 +16,7 @@ function PaymentProcessingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
+  const supabase = createClient();
 
   const [statusMessage, setStatusMessage] = useState('Activating your subscription...');
   const [elapsed, setElapsed] = useState(0);
@@ -32,19 +34,28 @@ function PaymentProcessingContent() {
       setElapsed(Math.min(Date.now() - startTime, TIMEOUT_MS));
     }, 100);
 
-    // Poll /api/user/get-subscription-status every 2 seconds
+    // Poll subscription status directly via Supabase client (avoids 401 after Stripe redirect)
     const pollInterval = setInterval(async () => {
       try {
-        const res = await fetch('/api/user/get-subscription-status');
-        if (res.ok) {
-          const json = await res.json();
-          if (json.isSubscribed) {
-            clearInterval(pollInterval);
-            clearInterval(progressInterval);
-            clearTimeout(fallbackTimeout);
-            setStatusMessage('Subscription activated! Redirecting...');
-            router.push('/dashboard');
-          }
+        let { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          await supabase.auth.refreshSession();
+          ({ data: { user } } = await supabase.auth.getUser());
+        }
+        if (!user) return;
+
+        const { data } = await supabase
+          .from('users')
+          .select('subscription_status')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (data?.subscription_status === 'active') {
+          clearInterval(pollInterval);
+          clearInterval(progressInterval);
+          clearTimeout(fallbackTimeout);
+          setStatusMessage('Subscription activated! Redirecting...');
+          router.push('/dashboard');
         }
       } catch {
         // Network hiccup — keep polling
