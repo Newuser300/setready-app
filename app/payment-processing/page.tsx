@@ -15,7 +15,8 @@ const TIMEOUT_MS = 30000;
 function PaymentProcessingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const sessionId = searchParams.get('session_id');
+  const sessionId = searchParams?.get('session_id') ?? null;
+  const plan = searchParams?.get('plan') ?? null;
   const supabase = createClient();
 
   const [statusMessage, setStatusMessage] = useState('Activating your subscription...');
@@ -46,15 +47,19 @@ function PaymentProcessingContent() {
 
         const { data } = await supabase
           .from('users')
-          .select('subscription_status')
+          .select('subscription_status, section2_unlocked')
           .eq('id', user.id)
           .maybeSingle();
 
-        if (data?.subscription_status === 'active') {
+        const isReady = plan === 'section2'
+          ? data?.section2_unlocked === true
+          : data?.subscription_status === 'active';
+
+        if (isReady) {
           clearInterval(pollInterval);
           clearInterval(progressInterval);
           clearTimeout(fallbackTimeout);
-          setStatusMessage('Subscription activated! Redirecting...');
+          setStatusMessage('Access granted! Redirecting...');
           router.push('/dashboard');
         }
       } catch {

@@ -70,6 +70,24 @@ export async function POST(request: Request) {
         break;
       }
 
+      // One-time Section 2 payment: session.customer is null, use userId directly
+      if (session.mode === 'payment' && session.metadata?.type === 'section2') {
+        console.log(`📝 One-time section2 payment — updating users WHERE id = '${userId}', setting section2_unlocked = true`);
+        const { data: updatedRows, error: updateError } = await supabaseAdmin
+          .from('users')
+          .update({ section2_unlocked: true })
+          .eq('id', userId)
+          .select();
+
+        if (updateError) {
+          console.error('❌ Failed to unlock section2:', updateError);
+        } else {
+          console.log(`✅ section2_unlocked = true set for user ${userId}. Rows affected:`, updatedRows);
+        }
+        break;
+      }
+
+      // Subscription checkout: stripeCustomerId is required
       if (!stripeCustomerId) {
         console.error('❌ No stripeCustomerId on session. Skipping.');
         break;
@@ -80,10 +98,6 @@ export async function POST(request: Request) {
         id: userId,
         stripe_customer_id: stripeCustomerId,
       };
-
-      if (session.mode === 'payment') {
-        upsertPayload.section2_unlocked = true;
-      }
 
       console.log(`📝 Upserting users WHERE id = '${userId}' with:`, upsertPayload);
       const { data: updatedRows, error: updateError } = await supabaseAdmin
