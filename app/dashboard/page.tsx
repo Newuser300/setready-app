@@ -275,7 +275,7 @@ export default function Dashboard() {
   function saveAgencyCredentials() {
     const encoded = btoa(JSON.stringify({ username: agencyUsername, password: agencyPassword }));
     localStorage.setItem('agencyclick_credentials', encoded);
-    window.open('https://app.agencyclick.com', '_blank');
+    window.open('https://www.agencyclick.com', '_blank', 'noopener,noreferrer');
     setShowAgencyClickModal(false);
     setAgencyUsername('');
     setAgencyPassword('');
@@ -1598,7 +1598,7 @@ export default function Dashboard() {
                     Save Credentials
                   </button>
                   <button
-                    onClick={() => { window.open('https://app.agencyclick.com', '_blank'); setShowAgencyClickModal(false); }}
+                    onClick={() => { window.open('https://www.agencyclick.com', '_blank', 'noopener,noreferrer'); setShowAgencyClickModal(false); }}
                     className="w-full py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
                   >
                     Just Open
@@ -1655,7 +1655,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex flex-col gap-3">
                   <button
-                    onClick={() => { window.open('https://app.agencyclick.com', '_blank'); setShowAgencyClickModal(false); }}
+                    onClick={() => { window.open('https://www.agencyclick.com', '_blank', 'noopener,noreferrer'); setShowAgencyClickModal(false); }}
                     className="w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
                   >
                     Open Agency Click
