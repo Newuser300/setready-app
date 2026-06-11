@@ -17,11 +17,32 @@ export async function GET(request: Request) {
 
   const { data: userData } = await supabaseAdmin
     .from('users')
-    .select('referral_code')
+    .select('referral_code, email')
     .eq('id', user.id)
     .maybeSingle();
 
-  const referralCode = userData?.referral_code || null;
+  let referralCode = userData?.referral_code || null;
+
+  // Auto-generate a referral code for any logged-in user who doesn't have one yet.
+  // Referral codes were previously only created on subscription — this fixes access for free users.
+  if (!referralCode) {
+    const base = (userData?.email || user.email || '')
+      .split('@')[0]
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '')
+      .substring(0, 5);
+    const suffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const newCode = (base + suffix).substring(0, 8);
+
+    const { error: codeError } = await supabaseAdmin
+      .from('users')
+      .update({ referral_code: newCode })
+      .eq('id', user.id);
+
+    if (!codeError) {
+      referralCode = newCode;
+    }
+  }
 
   const { count: totalReferrals } = await supabaseAdmin
     .from('users')

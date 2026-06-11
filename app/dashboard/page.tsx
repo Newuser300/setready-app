@@ -876,7 +876,7 @@ export default function Dashboard() {
 
           {/* PAYMENT STATUS CARDS - UPDATED to use Stripe functions */}
           {!isSubscribed && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
+            <div id="subscribe-banner" className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
               <p className="font-semibold text-yellow-800">🔓 Unlock Section 1 Modules</p>
               <p className="text-sm text-yellow-700 mb-3">Subscribe for $9.99/month to access all training modules.</p>
               <button
@@ -912,19 +912,46 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Section 1 Modules - ALL UNLOCKED */}
+          {/* Section 1 Modules — locked for non-subscribers, clickable for subscribers */}
           <div className="grid gap-4">
             {section1Modules.map((module) => {
               const isCompleted = progress[module.id]?.completed;
               const score = progress[module.id]?.score;
               const actualScore = getActualScore(score);
-              
+
+              // Non-subscriber: show locked card that scrolls to subscribe banner on click
+              if (!isSubscribed) {
+                return (
+                  <div
+                    key={module.id}
+                    onClick={() => document.getElementById('subscribe-banner')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="relative overflow-hidden rounded-2xl bg-white border border-gray-200 cursor-pointer hover:shadow-md hover:border-yellow-300 transition-all duration-300"
+                  >
+                    <div className="p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-4">
+                          <div className="text-4xl opacity-40">{moduleIcons[module.module_number] || '📘'}</div>
+                          <div>
+                            <h3 className="font-bold text-lg text-gray-500">{module.title}</h3>
+                            <p className="text-sm text-gray-400 mt-1">{moduleSubtitles[module.module_number] || 'Subscribe to access this module'}</p>
+                          </div>
+                        </div>
+                        <span className="shrink-0 bg-yellow-100 text-yellow-700 text-xs font-semibold px-3 py-1 rounded-full">
+                          🔒 Subscribe to unlock
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Subscriber: full clickable card
               return (
                 <Link href={`/module/${module.id}`} key={module.id}>
                   <div className={`
                     relative overflow-hidden rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:shadow-xl
-                    ${isCompleted 
-                      ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500' 
+                    ${isCompleted
+                      ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500'
                       : 'bg-white hover:shadow-md border border-gray-200'
                     }
                   `}>
@@ -939,21 +966,16 @@ export default function Dashboard() {
                         </div>
                         <div>
                           {isCompleted ? (
-                            <div className="flex items-center gap-2">
-                              <span className="bg-green-100 text-green-700 text-sm font-medium px-3 py-1 rounded-full">
-                                ✓ Completed ({actualScore}/15)
-                              </span>
-                            </div>
+                            <span className="bg-green-100 text-green-700 text-sm font-medium px-3 py-1 rounded-full">
+                              ✓ Completed ({actualScore}/15)
+                            </span>
                           ) : (
-                            <div className="flex items-center gap-2">
-                              <span className="bg-blue-100 text-blue-700 text-sm font-medium px-3 py-1 rounded-full">
-                                📝 Not started
-                              </span>
-                            </div>
+                            <span className="bg-blue-100 text-blue-700 text-sm font-medium px-3 py-1 rounded-full">
+                              📝 Not started
+                            </span>
                           )}
                         </div>
                       </div>
-                      
                       {isCompleted && (
                         <div className="mt-3 flex items-center gap-2 text-sm text-green-600">
                           <span>✓</span>
@@ -1288,7 +1310,10 @@ export default function Dashboard() {
               </>
             ) : (
               <div className="bg-gray-50 rounded-xl p-6 text-center border border-dashed border-gray-300">
-                <p className="text-gray-400 text-sm">Loading your referral code...</p>
+                {loadingReferral
+                  ? <p className="text-gray-400 text-sm">Loading your referral code...</p>
+                  : <p className="text-gray-400 text-sm">Your referral code is being set up. Refresh the page in a moment.</p>
+                }
               </div>
             )}
           </div>

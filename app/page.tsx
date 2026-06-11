@@ -71,29 +71,29 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0A0A0A]">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-white text-gray-900">
 
       {/* ── STICKY NAV ──────────────────────────────────────── */}
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
-            ? 'bg-[#0A0A0A]/95 backdrop-blur-sm border-b border-white/10 shadow-lg'
+            ? 'bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm'
             : 'bg-transparent'
         }`}
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
-          <span className="text-white text-xl font-bold tracking-tight">🎬 SetReady</span>
+          <span className="text-gray-900 text-xl font-bold tracking-tight">🎬 SetReady</span>
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => router.push('/auth/sign-in')}
-              className="px-3 sm:px-4 py-2 text-white/70 hover:text-white text-sm transition"
+              className="px-3 sm:px-4 py-2 text-gray-600 hover:text-gray-900 text-sm transition"
             >
               Sign In
             </button>
@@ -108,28 +108,25 @@ export default function Home() {
       </nav>
 
       {/* ── HERO ────────────────────────────────────────────── */}
-      <section className="hero-grain relative min-h-screen flex flex-col justify-center items-center text-center px-4 overflow-hidden">
-        {/* Layered background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0A0A0A] via-[#0f0f0f] to-[#0A0A0A]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,rgba(245,158,11,0.07)_0%,transparent_70%)]" />
+      <section className="relative min-h-screen flex flex-col justify-center items-center text-center px-4 overflow-hidden bg-white">
+        {/* Subtle amber radial glow */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,rgba(245,158,11,0.06)_0%,transparent_70%)]" />
 
         <div className="relative z-10 max-w-4xl mx-auto">
           {/* Pill badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs font-semibold mb-8 animate-fade-in">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-50 text-amber-600 text-xs font-semibold mb-8 animate-fade-in">
             🎬 Canada&apos;s #1 Background Performer Training
           </div>
 
           {/* Headline */}
-          <h1
-            className="text-5xl sm:text-6xl md:text-7xl font-bold text-white mb-6 leading-tight animate-fade-in-up"
-          >
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight animate-fade-in-up">
             Your Career<br />
-            <span className="text-amber-400">Starts Here</span>
+            <span className="text-amber-500">Starts Here</span>
           </h1>
 
           {/* Sub-headline */}
           <p
-            className="text-lg sm:text-xl text-gray-400 mb-10 max-w-2xl mx-auto animate-fade-in-up"
+            className="text-lg sm:text-xl text-gray-500 mb-10 max-w-2xl mx-auto animate-fade-in-up"
             style={{ animationDelay: '0.15s' }}
           >
             Professional acting training trusted by background performers across Canada
@@ -148,7 +145,7 @@ export default function Home() {
             </button>
             <button
               onClick={() => router.push('/preview')}
-              className="px-8 py-4 bg-transparent text-white border border-white/25 text-base font-semibold rounded-xl hover:bg-white/5 transition-all duration-200"
+              className="px-8 py-4 bg-transparent text-gray-700 border border-gray-300 text-base font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200"
             >
               View Curriculum
             </button>
@@ -161,14 +158,14 @@ export default function Home() {
           >
             {['Cancel Anytime', '30-Day Guarantee', 'Industry Certified', 'Mobile Friendly'].map(b => (
               <span key={b} className="flex items-center gap-1.5">
-                <span className="text-green-400 font-bold">✓</span> {b}
+                <span className="text-green-500 font-bold">✓</span> {b}
               </span>
             ))}
           </div>
         </div>
 
         {/* Scroll arrow */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 opacity-30 animate-bounce">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 opacity-20 animate-bounce text-gray-400">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 5v14M5 12l7 7 7-7" />
           </svg>
@@ -176,21 +173,21 @@ export default function Home() {
       </section>
 
       {/* ── SOCIAL PROOF MARQUEE ───────────────────────────── */}
-      <section className="bg-[#111111] border-y border-white/8 py-4 overflow-hidden select-none">
+      <section className="bg-gray-100 border-y border-gray-200 py-4 overflow-hidden select-none">
         <div className="flex animate-marquee whitespace-nowrap">
           {[0, 1].map(i => (
             <div key={i} className="flex items-center gap-10 px-10 shrink-0">
-              <span className="text-amber-400 text-sm font-semibold">500+ Performers Trained</span>
-              <span className="w-1 h-1 rounded-full bg-gray-700 shrink-0" />
+              <span className="text-amber-600 text-sm font-semibold">500+ Performers Trained</span>
+              <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0" />
               <span className="text-gray-500 text-sm">9 Professional Modules</span>
-              <span className="w-1 h-1 rounded-full bg-gray-700 shrink-0" />
+              <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0" />
               <span className="text-gray-500 text-sm">Industry Expert Content</span>
-              <span className="w-1 h-1 rounded-full bg-gray-700 shrink-0" />
-              <span className="text-amber-400 text-sm tracking-wider">★★★★★</span>
+              <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0" />
+              <span className="text-amber-500 text-sm tracking-wider">★★★★★</span>
               <span className="text-gray-500 text-sm">4.9 Average Rating</span>
-              <span className="w-1 h-1 rounded-full bg-gray-700 shrink-0" />
+              <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0" />
               <span className="text-gray-500 text-sm">30-Day Guarantee</span>
-              <span className="w-1 h-1 rounded-full bg-gray-700 shrink-0" />
+              <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0" />
             </div>
           ))}
         </div>
@@ -226,11 +223,11 @@ export default function Home() {
 
           {/* Solution */}
           <FadeIn delay={150}>
-            <div className="bg-[#0A0A0A] rounded-2xl p-8 shadow-sm border border-amber-500/20 h-full">
-              <span className="inline-block px-3 py-1 bg-amber-500/20 text-amber-400 text-xs font-bold rounded-full mb-5 uppercase tracking-wide">
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-amber-200 h-full">
+              <span className="inline-block px-3 py-1 bg-amber-50 text-amber-600 text-xs font-bold rounded-full mb-5 uppercase tracking-wide">
                 The Solution
               </span>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6 leading-snug">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 leading-snug">
                 SetReady changes everything
               </h2>
               <div className="space-y-4">
@@ -240,8 +237,8 @@ export default function Home() {
                   'Know your worth and negotiate confidently',
                 ].map(pt => (
                   <div key={pt} className="flex items-start gap-3">
-                    <span className="text-amber-400 font-bold text-lg mt-0.5 shrink-0">✓</span>
-                    <p className="text-gray-300 leading-snug">{pt}</p>
+                    <span className="text-amber-500 font-bold text-lg mt-0.5 shrink-0">✓</span>
+                    <p className="text-gray-600 leading-snug">{pt}</p>
                   </div>
                 ))}
               </div>
@@ -257,14 +254,14 @@ export default function Home() {
       </section>
 
       {/* ── CURRICULUM PREVIEW ─────────────────────────────── */}
-      <section className="bg-[#0A0A0A] py-20 px-4">
+      <section className="bg-white py-20 px-4">
         <div className="max-w-6xl mx-auto">
           <FadeIn>
             <div className="text-center mb-14">
-              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
                 Everything You Need to Succeed
               </h2>
-              <p className="text-gray-400 max-w-xl mx-auto">
+              <p className="text-gray-500 max-w-xl mx-auto">
                 Two comprehensive sections designed by industry professionals
               </p>
             </div>
@@ -274,15 +271,15 @@ export default function Home() {
 
             {/* Section 1 — gold */}
             <FadeIn delay={100}>
-              <div className="relative bg-[#1A1A1A] rounded-2xl p-8 border border-amber-500/40 shadow-xl shadow-amber-500/5 h-full flex flex-col">
+              <div className="relative bg-white rounded-2xl p-8 border-2 border-amber-400 shadow-md h-full flex flex-col">
                 <span className="absolute -top-3.5 left-6 px-3 py-1 bg-amber-500 text-black text-xs font-bold rounded-full uppercase tracking-wide">
                   Most Popular
                 </span>
                 <div className="mb-6">
-                  <h3 className="text-xl font-bold text-white mb-2">Background Acting Essentials</h3>
-                  <p className="text-amber-400 text-3xl font-bold">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Background Acting Essentials</h3>
+                  <p className="text-amber-500 text-3xl font-bold">
                     $9.99
-                    <span className="text-sm text-gray-400 font-normal">/month</span>
+                    <span className="text-sm text-gray-500 font-normal">/month</span>
                   </p>
                 </div>
                 <ul className="space-y-3 mb-6 flex-1">
@@ -293,12 +290,12 @@ export default function Home() {
                     'Safety on Set',
                     'Industry Standards, Pay & Career Advancement',
                   ].map(m => (
-                    <li key={m} className="flex items-start gap-2 text-sm text-gray-300">
-                      <span className="text-amber-400 font-bold shrink-0 mt-0.5">✓</span> {m}
+                    <li key={m} className="flex items-start gap-2 text-sm text-gray-600">
+                      <span className="text-amber-500 font-bold shrink-0 mt-0.5">✓</span> {m}
                     </li>
                   ))}
                 </ul>
-                <p className="text-xs text-gray-500 mb-6 border-t border-white/10 pt-4">
+                <p className="text-xs text-gray-400 mb-6 border-t border-gray-100 pt-4">
                   Includes: Quizzes, Certificates, Progress Tracking
                 </p>
                 <button
@@ -312,15 +309,15 @@ export default function Home() {
 
             {/* Section 2 — silver */}
             <FadeIn delay={200}>
-              <div className="relative bg-[#1A1A1A] rounded-2xl p-8 border border-gray-600/40 shadow-xl h-full flex flex-col">
-                <span className="absolute -top-3.5 left-6 px-3 py-1 bg-gray-600 text-white text-xs font-bold rounded-full uppercase tracking-wide">
+              <div className="relative bg-white rounded-2xl p-8 border border-gray-200 shadow-sm h-full flex flex-col">
+                <span className="absolute -top-3.5 left-6 px-3 py-1 bg-gray-200 text-gray-700 text-xs font-bold rounded-full uppercase tracking-wide">
                   Advanced
                 </span>
                 <div className="mb-6">
-                  <h3 className="text-xl font-bold text-white mb-2">Advanced Acting Techniques</h3>
-                  <p className="text-gray-200 text-3xl font-bold">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Advanced Acting Techniques</h3>
+                  <p className="text-gray-900 text-3xl font-bold">
                     $19.99
-                    <span className="text-sm text-gray-400 font-normal"> one-time</span>
+                    <span className="text-sm text-gray-500 font-normal"> one-time</span>
                   </p>
                 </div>
                 <ul className="space-y-3 mb-6 flex-1">
@@ -330,17 +327,17 @@ export default function Home() {
                     'Scene Study (Uta Hagen)',
                     'Advanced Technique (Meisner, Adler)',
                   ].map(m => (
-                    <li key={m} className="flex items-start gap-2 text-sm text-gray-300">
+                    <li key={m} className="flex items-start gap-2 text-sm text-gray-600">
                       <span className="text-gray-400 font-bold shrink-0 mt-0.5">✓</span> {m}
                     </li>
                   ))}
                 </ul>
-                <p className="text-xs text-gray-500 mb-6 border-t border-white/10 pt-4">
+                <p className="text-xs text-gray-400 mb-6 border-t border-gray-100 pt-4">
                   Includes: Master Class Content, Certificates
                 </p>
                 <button
                   onClick={() => router.push('/preview')}
-                  className="w-full py-3 bg-transparent text-white border border-white/25 font-bold rounded-xl hover:bg-white/8 transition-all duration-200"
+                  className="w-full py-3 bg-transparent text-gray-700 border border-gray-300 font-bold rounded-xl hover:bg-gray-50 transition-all duration-200"
                 >
                   Unlock Section 2 →
                 </button>
@@ -388,10 +385,10 @@ export default function Home() {
               },
             ].map((ins, i) => (
               <FadeIn key={ins.name} delay={i * 80}>
-                <div className="bg-[#1A1A1A] rounded-2xl p-6 border-t-2 border-amber-500 h-full">
-                  <h3 className="text-white font-bold text-lg mb-1">{ins.name}</h3>
-                  <p className="text-amber-400 text-sm font-semibold mb-3">{ins.technique}</p>
-                  <p className="text-gray-400 text-sm leading-relaxed">{ins.desc}</p>
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 border-t-2 border-t-amber-500 h-full shadow-sm">
+                  <h3 className="text-gray-900 font-bold text-lg mb-1">{ins.name}</h3>
+                  <p className="text-amber-600 text-sm font-semibold mb-3">{ins.technique}</p>
+                  <p className="text-gray-500 text-sm leading-relaxed">{ins.desc}</p>
                 </div>
               </FadeIn>
             ))}
@@ -400,11 +397,11 @@ export default function Home() {
       </section>
 
       {/* ── FEATURES ───────────────────────────────────────── */}
-      <section className="bg-[#0A0A0A] py-20 px-4">
+      <section className="bg-white py-20 px-4">
         <div className="max-w-6xl mx-auto">
           <FadeIn>
             <div className="text-center mb-14">
-              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Everything Included</h2>
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Everything Included</h2>
               <p className="text-gray-500">One subscription, all the tools you need to succeed</p>
             </div>
           </FadeIn>
@@ -419,10 +416,10 @@ export default function Home() {
               { icon: '📱', title: 'Mobile Ready',              desc: 'Fully optimized for phones — train anywhere, anytime' },
             ].map((f, i) => (
               <FadeIn key={f.title} delay={i * 60}>
-                <div className="bg-[#1A1A1A] rounded-2xl p-6 border border-white/5 hover:border-amber-500/20 transition-all duration-200 h-full">
+                <div className="bg-white rounded-2xl p-6 border border-gray-200 hover:border-amber-300 transition-all duration-200 h-full shadow-sm hover:shadow-md">
                   <div className="text-3xl mb-4">{f.icon}</div>
-                  <h3 className="text-white font-bold mb-2">{f.title}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">{f.desc}</p>
+                  <h3 className="text-gray-900 font-bold mb-2">{f.title}</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
                 </div>
               </FadeIn>
             ))}
@@ -461,7 +458,7 @@ export default function Home() {
             ].map((t, i) => (
               <FadeIn key={t.name} delay={i * 100}>
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-4 h-full">
-                  <p className="text-amber-400 text-lg tracking-wider">★★★★★</p>
+                  <p className="text-amber-500 text-lg tracking-wider">★★★★★</p>
                   <p className="text-gray-700 text-sm leading-relaxed flex-1">&ldquo;{t.quote}&rdquo;</p>
                   <div>
                     <p className="text-gray-900 font-semibold text-sm">— {t.name}</p>
@@ -497,30 +494,30 @@ export default function Home() {
       </section>
 
       {/* ── REFERRAL SLIM BANNER ───────────────────────────── */}
-      <div className="bg-[#111111] border-y border-white/8 py-3 text-center px-4">
+      <div className="bg-gray-50 border-y border-gray-200 py-3 text-center px-4">
         <p className="text-sm text-gray-500">
           💰 Refer a friend and earn 20% commission on their subscription{' '}
-          <span className="text-gray-600">— paid monthly via e-transfer</span>
+          <span className="text-gray-400">— paid monthly via e-transfer</span>
         </p>
       </div>
 
       {/* ── FOOTER ─────────────────────────────────────────── */}
-      <footer className="bg-[#0A0A0A] border-t border-white/8 py-12 px-4">
+      <footer className="bg-gray-900 border-t border-gray-800 py-12 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
             <div>
               <p className="text-white font-bold text-xl">🎬 SetReady</p>
-              <p className="text-gray-600 text-sm mt-1">Professional training for background performers</p>
+              <p className="text-gray-400 text-sm mt-1">Professional training for background performers</p>
             </div>
-            <nav className="flex flex-wrap justify-center gap-6 text-sm text-gray-500">
+            <nav className="flex flex-wrap justify-center gap-6 text-sm text-gray-400">
               <Link href="/terms"   className="hover:text-white transition">Terms</Link>
               <Link href="/privacy" className="hover:text-white transition">Privacy</Link>
               <a href="mailto:setready@mail.com" className="hover:text-white transition">Contact</a>
             </nav>
           </div>
-          <div className="mt-8 pt-6 border-t border-white/8 flex flex-col sm:flex-row justify-between items-center gap-2">
-            <p className="text-xs text-gray-700">© 2026 SetReady. All rights reserved.</p>
-            <a href="mailto:setready@mail.com" className="text-xs text-gray-700 hover:text-gray-400 transition">
+          <div className="mt-8 pt-6 border-t border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <p className="text-xs text-gray-500">© 2026 SetReady. All rights reserved.</p>
+            <a href="mailto:setready@mail.com" className="text-xs text-gray-500 hover:text-gray-300 transition">
               setready@mail.com
             </a>
           </div>

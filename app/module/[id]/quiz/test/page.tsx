@@ -1720,7 +1720,8 @@ export default function QuizTestPage({ params }: TestPageProps) {
   const [moduleNumber, setModuleNumber] = useState<number>(1);
   const [moduleTitle, setModuleTitle] = useState<string>('');
   const [userId, setUserId] = useState<string | null>(null);
-  
+  const [showAllAnswers, setShowAllAnswers] = useState(false);
+
   const currentQuestion = questions[currentIndex];
   const isLast = currentIndex === questions.length - 1;
   const answeredCount = Object.keys(answers).length;
@@ -1948,25 +1949,28 @@ export default function QuizTestPage({ params }: TestPageProps) {
   if (submitted) {
     const passed = score >= 80;
     const percentage = Math.round(score);
-    
+    const incorrectCount = questions.filter(q => answers[q.id] !== q.correctAnswer).length;
+
     return (
-      <div className="min-h-screen bg-gray-50 py-12 px-4">
-        <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8 text-center">
+      <div className="min-h-screen bg-gray-50 py-12 px-4 pb-20">
+
+        {/* ── Score summary card (unchanged) ── */}
+        <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8 text-center mb-8">
           <div className={`w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-6 ${passed ? 'bg-green-100' : 'bg-red-100'}`}>
             <span className={`text-4xl font-bold ${passed ? 'text-green-600' : 'text-red-600'}`}>{percentage}%</span>
           </div>
-          
+
           {passed ? (
             <>
               <h1 className="text-2xl font-bold text-green-600 mb-2">🎉 Congratulations!</h1>
               <p className="text-gray-600 mb-4">You passed with {percentage}%!</p>
               <p className="text-green-600 font-semibold mb-4">✓ {moduleTitle} is now COMPLETE!</p>
-              
+
               {/* Certificate section - shows status and download button when ready */}
               <div className="mt-4">
                 {certificateUrl ? (
-                  <button 
-                    onClick={handleDownloadCertificate} 
+                  <button
+                    onClick={handleDownloadCertificate}
                     className="text-blue-600 underline text-sm hover:text-blue-800"
                   >
                     📄 Download Your Certificate
@@ -1984,7 +1988,7 @@ export default function QuizTestPage({ params }: TestPageProps) {
               <p className="text-gray-600 mb-4">You scored {percentage}%. You need 80% to pass.</p>
             </>
           )}
-          
+
           <div className="flex gap-4 mt-6">
             {!passed && (
               <button onClick={handleRetake} className="flex-1 bg-blue-600 text-white py-3 rounded-lg">Retake Test</button>
@@ -1994,6 +1998,103 @@ export default function QuizTestPage({ params }: TestPageProps) {
             </button>
           </div>
         </div>
+
+        {/* ── Answer review section ── */}
+        <div className="max-w-2xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">Review Your Answers</h2>
+              <p className="text-sm text-gray-500 mt-0.5">
+                {incorrectCount === 0
+                  ? 'Perfect score — you got everything right!'
+                  : `${incorrectCount} incorrect answer${incorrectCount !== 1 ? 's' : ''}`}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowAllAnswers(prev => !prev)}
+              className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition text-gray-700 shrink-0"
+            >
+              {showAllAnswers ? 'Show Incorrect Only' : 'Show All Answers'}
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {questions.map((q, idx) => {
+              const userAnswer = answers[q.id];
+              const isCorrect = userAnswer === q.correctAnswer;
+
+              if (isCorrect && !showAllAnswers) {
+                return (
+                  <div key={q.id} className="flex items-center gap-3 px-4 py-3 bg-green-50 border-l-4 border-green-400 rounded-xl">
+                    <span className="text-green-500 font-bold shrink-0">✓</span>
+                    <p className="text-sm text-green-700 leading-snug">
+                      <span className="font-semibold">Q{idx + 1}:</span> {q.text}
+                    </p>
+                  </div>
+                );
+              }
+
+              if (isCorrect) {
+                return (
+                  <div key={q.id} className="bg-white rounded-xl border-l-4 border-green-400 p-5 shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <span className="text-green-500 font-bold mt-0.5 shrink-0">✓</span>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-800 text-sm mb-3">
+                          Q{idx + 1}: {q.text}
+                        </p>
+                        <div className="bg-green-50 rounded-lg px-4 py-2.5">
+                          <p className="text-sm text-green-700">
+                            <span className="font-semibold">Your answer:</span> {q.options[userAnswer]}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={q.id} className="bg-white rounded-xl border-l-4 border-red-400 p-5 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <span className="text-red-500 font-bold mt-0.5 shrink-0">✗</span>
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-800 text-sm mb-4">
+                        Q{idx + 1}: {q.text}
+                      </p>
+
+                      <div className="space-y-2 mb-3">
+                        <div className="flex items-start gap-2 bg-red-50 rounded-lg px-4 py-2.5">
+                          <span className="text-red-500 font-bold text-sm mt-0.5 shrink-0">✗</span>
+                          <p className="text-sm text-red-700">
+                            <span className="font-semibold">Your answer:</span>{' '}
+                            {typeof userAnswer === 'number' ? q.options[userAnswer] : 'No answer selected'}
+                          </p>
+                        </div>
+                        <div className="flex items-start gap-2 bg-green-50 rounded-lg px-4 py-2.5">
+                          <span className="text-green-500 font-bold text-sm mt-0.5 shrink-0">✓</span>
+                          <p className="text-sm text-green-700">
+                            <span className="font-semibold">Correct answer:</span>{' '}
+                            {q.options[q.correctAnswer]}
+                          </p>
+                        </div>
+                      </div>
+
+                      {q.explanation && (
+                        <div className="bg-blue-50 rounded-lg px-4 py-2.5 border-l-2 border-blue-400">
+                          <p className="text-xs text-blue-700 leading-relaxed">
+                            <span className="font-semibold">Explanation: </span>{q.explanation}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
       </div>
     );
   }
