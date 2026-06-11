@@ -3,21 +3,24 @@ import { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.setready.app',
   appName: 'SetReady',
-  webDir: '.next/standalone',
-  bundledWebRuntime: false,
+  webDir: 'out',
   server: {
+    url: 'https://www.setready.site',
+    cleartext: false,
     androidScheme: 'https',
-    iosScheme: 'capacitor'
-  },
-  ios: {
-    contentInset: 'always',
-    scheme: 'SetReady'
   },
   android: {
-    allowMixedContent: true,
+    allowMixedContent: false,
     captureInput: true,
-    webContentsDebuggingEnabled: false
-  }
+    webContentsDebuggingEnabled: false,
+  },
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 2000,
+      backgroundColor: '#ffffff',
+      showSpinner: false,
+    },
+  },
 };
 
 export default config;
