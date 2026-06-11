@@ -53,7 +53,7 @@ export default function TermsPage() {
         
         <h3 className="font-semibold mt-3">3.3 Account Suspension and Termination</h3>
         <p>You may delete your account at any time through the Settings page.</p>
-        <p className="mt-2">We may suspend or terminate your account if we reasonably believe you have violated these Terms. We will provide you with notice of the suspension or termination and the reasons for it, unless providing such notice is prohibited by law or would pose a security risk. You may appeal a suspension or termination by contacting us at support@setready.com within 14 days of receiving the notice.</p>
+        <p className="mt-2">We may suspend or terminate your account if we reasonably believe you have violated these Terms. We will provide you with notice of the suspension or termination and the reasons for it, unless providing such notice is prohibited by law or would pose a security risk. You may appeal a suspension or termination by contacting us at setready@mail.com within 14 days of receiving the notice.</p>
       </section>
 
       <section className="mb-8">
@@ -95,7 +95,7 @@ export default function TermsPage() {
         <h3 className="font-semibold mt-3">6.2 Refund Policy</h3>
         <p>Due to the digital nature of our educational content, refunds are available within 30 days of purchase provided that you have not completed more than 10% of the course content or have not received your completion certificate.</p>
         <ul className="list-disc pl-6 mt-1 space-y-1 text-gray-700">
-          <li>To request a refund, contact support@setready.com with your account email and reason for refund</li>
+          <li>To request a refund, contact setready@mail.com with your account email and reason for refund</li>
           <li>Refunds are processed within 5-10 business days to the original payment method</li>
         </ul>
         <p className="mt-2">If you cancel a subscription during a free trial, you will not be charged.</p>
@@ -116,6 +116,7 @@ export default function TermsPage() {
         <ul className="list-disc pl-6 mt-2 space-y-1 text-gray-700">
           <li><strong>Supabase:</strong> Database and authentication</li>
           <li><strong>Vercel:</strong> App hosting and analytics</li>
+          <li><strong>Stripe (<a href="https://stripe.com" className="text-blue-600 hover:underline">stripe.com</a>):</strong> Payment processing. Stripe handles all payment card data and financial transactions. Stripe&apos;s privacy policy is available at <a href="https://stripe.com/privacy" className="text-blue-600 hover:underline">stripe.com/privacy</a>. Stripe is PCI DSS compliant and we do not store your payment card information.</li>
         </ul>
         <p className="mt-2">We are not responsible for the practices of these third parties.</p>
       </section>
@@ -182,7 +183,7 @@ export default function TermsPage() {
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">14. Contact Us</h2>
         <p>For all inquiries, including legal matters, privacy concerns, and general support:</p>
-        <p className="mt-2"><strong>Email:</strong> <a href="mailto:support@setready.com" className="text-blue-600 hover:underline">support@setready.com</a></p>
+        <p className="mt-2"><strong>Email:</strong> <a href="mailto:setready@mail.com" className="text-blue-600 hover:underline">setready@mail.com</a></p>
       </section>
 
       <section className="mb-8">

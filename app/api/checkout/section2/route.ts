@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2026-04-22.dahlia',
 });
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+);
 
 export async function POST(request: Request) {
   try {
@@ -26,7 +33,14 @@ export async function POST(request: Request) {
     }
     
     console.log('Checkout Section 2 - User:', user.id);
-    
+
+    const { data: userProfile } = await supabaseAdmin
+      .from('users')
+      .select('referred_by')
+      .eq('id', user.id)
+      .maybeSingle();
+    console.log('Checkout Section 2 - User referred_by:', userProfile?.referred_by || 'none');
+
     // Get the Price ID from environment variables
     const priceId = process.env.NEXT_PUBLIC_STRIPE_SECTION_2_PRICE_ID;
     

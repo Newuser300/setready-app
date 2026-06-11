@@ -81,6 +81,11 @@ export default function PrivacyPage() {
                 <td className="border border-gray-300 p-2">Usage data, IP addresses</td>
               </tr>
               <tr>
+                <td className="border border-gray-300 p-2">Stripe</td>
+                <td className="border border-gray-300 p-2">Payment processing</td>
+                <td className="border border-gray-300 p-2">Payment card data, billing information (processed by Stripe — we do not store card data). Policy: <a href="https://stripe.com/privacy" className="text-blue-600 hover:underline">stripe.com/privacy</a>. United States.</td>
+              </tr>
+              <tr>
                 <td className="border border-gray-300 p-2">Apple App Store</td>
                 <td className="border border-gray-300 p-2">App distribution & subscription payments</td>
                 <td className="border border-gray-300 p-2">User ID, purchase history, subscription status</td>

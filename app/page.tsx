@@ -1,6 +1,5 @@
 'use client';
 
-import Image from "next/image";
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useEffect, useState } from 'react';
@@ -9,18 +8,26 @@ export default function Home() {
   const router = useRouter();
   const supabase = createClient();
   const [isLoading, setIsLoading] = useState(true);
+  const [refCode, setRefCode] = useState<string | null>(null);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) setRefCode(ref.toUpperCase());
+
     async function checkAuth() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // If already logged in, send to dashboard
         router.push('/dashboard');
       }
       setIsLoading(false);
     }
     checkAuth();
   }, [supabase, router]);
+
+  function goToSignUp() {
+    router.push(refCode ? `/auth/sign-up?ref=${refCode}` : '/auth/sign-up');
+  }
 
   // Show loading spinner while checking auth
   if (isLoading) {
@@ -47,7 +54,7 @@ export default function Home() {
               Sign In
             </button>
             <button
-              onClick={() => router.push('/auth/sign-up')}
+              onClick={() => goToSignUp()}
               className="px-3 sm:px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition font-semibold text-sm sm:text-base"
             >
               Get Started
@@ -65,7 +72,7 @@ export default function Home() {
           Professional training for background actors. Learn, pass your modules, and earn your certificates.
         </p>
         <button
-          onClick={() => router.push('/auth/sign-up')}
+          onClick={() => goToSignUp()}
           className="px-6 sm:px-8 py-2.5 sm:py-3 bg-amber-500 text-white text-base sm:text-lg rounded-lg hover:bg-amber-600 transition font-semibold"
         >
           Start Learning Today →
@@ -102,6 +109,40 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Referral Program Section */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 sm:p-10 text-white text-center">
+          <div className="text-4xl mb-4">🤝</div>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-3">Refer a Friend, Earn 20% Commission</h2>
+          <p className="text-blue-100 mb-6 max-w-xl mx-auto">
+            Every SetReady member gets a unique referral code. Share it — when your referral subscribes, you earn 20% of their payment, paid monthly via Interac e-Transfer.
+          </p>
+          <div className="grid sm:grid-cols-3 gap-4 max-w-2xl mx-auto mb-6 text-sm">
+            <div className="bg-white/10 rounded-lg p-4">
+              <div className="text-2xl mb-2">🔗</div>
+              <p className="font-semibold">Share your link</p>
+              <p className="text-blue-200 text-xs mt-1">Every member gets a unique referral code automatically</p>
+            </div>
+            <div className="bg-white/10 rounded-lg p-4">
+              <div className="text-2xl mb-2">✅</div>
+              <p className="font-semibold">Friend subscribes</p>
+              <p className="text-blue-200 text-xs mt-1">20% commission tracked automatically on every payment</p>
+            </div>
+            <div className="bg-white/10 rounded-lg p-4">
+              <div className="text-2xl mb-2">💸</div>
+              <p className="font-semibold">Get paid monthly</p>
+              <p className="text-blue-200 text-xs mt-1">Request your payout via Interac e-Transfer from your dashboard</p>
+            </div>
+          </div>
+          <button
+            onClick={goToSignUp}
+            className="px-6 py-2.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition font-semibold"
+          >
+            Sign Up and Get Your Code →
+          </button>
+        </div>
+      </div>
+
       {/* Call to Action Footer */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         <div className="bg-amber-500/20 rounded-lg p-6 sm:p-8 text-center">
@@ -109,7 +150,7 @@ export default function Home() {
             Ready to Start Your Training?
           </h2>
           <button
-            onClick={() => router.push('/auth/sign-up')}
+            onClick={() => goToSignUp()}
             className="px-5 sm:px-6 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition font-semibold"
           >
             Sign Up Now - Free

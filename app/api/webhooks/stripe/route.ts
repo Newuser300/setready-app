@@ -145,11 +145,11 @@ export async function POST(request: Request) {
       // stripe_customer_id to public.users.
       console.log(`🔍 Looking up user WHERE stripe_customer_id = '${stripeCustomerId}'...`);
       let findError: unknown = null;
-      let userData: { id: string } | null = null;
+      let userData: { id: string; referred_by: string | null } | null = null;
 
       const { data: firstAttempt, error: firstError } = await supabaseAdmin
         .from('users')
-        .select('id')
+        .select('id, referred_by')
         .eq('stripe_customer_id', stripeCustomerId)
         .maybeSingle();
 
@@ -164,7 +164,7 @@ export async function POST(request: Request) {
 
         const { data: secondAttempt, error: secondError } = await supabaseAdmin
           .from('users')
-          .select('id')
+          .select('id, referred_by')
           .eq('stripe_customer_id', stripeCustomerId)
           .maybeSingle();
 
@@ -207,6 +207,42 @@ export async function POST(request: Request) {
         console.error('❌ Failed to activate subscription in invoice.paid:', updateError);
       } else {
         console.log(`✅ Subscription activated for user ${userData.id}. Rows affected:`, updatedRows);
+      }
+
+      // ── Commission tracking ──────────────────────────────────────────────────
+      if (userData.referred_by) {
+        console.log(`🤝 User was referred by code: ${userData.referred_by} — calculating commission...`);
+
+        const { data: referrer } = await supabaseAdmin
+          .from('users')
+          .select('id')
+          .eq('referral_code', userData.referred_by)
+          .maybeSingle();
+
+        if (referrer) {
+          const invoiceAmount = ((invoice as any).amount_paid ?? 0) / 100;
+          const commissionAmount = parseFloat((invoiceAmount * 0.20).toFixed(2));
+
+          const { error: commissionError } = await supabaseAdmin
+            .from('referral_commissions')
+            .insert({
+              referrer_id: referrer.id,
+              referred_user_id: userData.id,
+              sale_amount: invoiceAmount,
+              commission_amount: commissionAmount,
+              commission_rate: 20.00,
+              status: 'pending',
+              payment_method: 'etransfer',
+            });
+
+          if (commissionError) {
+            console.error('❌ Failed to insert referral commission:', commissionError);
+          } else {
+            console.log(`✅ Commission $${commissionAmount} (20% of $${invoiceAmount}) queued for referrer ${referrer.id}`);
+          }
+        } else {
+          console.log(`ℹ️  Referral code '${userData.referred_by}' not found — no commission recorded`);
+        }
       }
       break;
     }

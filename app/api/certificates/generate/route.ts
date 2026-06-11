@@ -15,13 +15,7 @@ const MODULE_NAMES: Record<number, string> = {
   9: 'Advanced Technique (Meisner, Adler)',
 };
 
-// Regular client for auth (uses anon key)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-// Admin client for storage (uses service role key - bypasses RLS)
+// Admin client for all operations (uses service role key - bypasses RLS)
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -48,7 +42,7 @@ export async function POST(request: NextRequest) {
     
     // Try token auth first (from frontend)
     if (token) {
-      const { data: { user: tokenUser }, error: tokenError } = await supabase.auth.getUser(token);
+      const { data: { user: tokenUser }, error: tokenError } = await supabaseAdmin.auth.getUser(token);
       if (!tokenError && tokenUser) {
         user = tokenUser;
         console.log('✅ Authenticated via token, user ID:', user.id);
@@ -59,7 +53,7 @@ export async function POST(request: NextRequest) {
     
     // Fallback to cookie auth
     if (!user) {
-      const { data: { user: cookieUser }, error: cookieError } = await supabase.auth.getUser();
+      const { data: { user: cookieUser }, error: cookieError } = await supabaseAdmin.auth.getUser();
       if (!cookieError && cookieUser) {
         user = cookieUser;
         console.log('✅ Authenticated via cookie, user ID:', user.id);
@@ -89,7 +83,7 @@ export async function POST(request: NextRequest) {
     }
     
     // 3. Get user profile
-    const { data: profile } = await supabase
+    const { data: profile } = await supabaseAdmin
       .from('users')
       .select('name')
       .eq('id', user.id)
@@ -178,16 +172,16 @@ export async function POST(request: NextRequest) {
     console.log('Public URL:', publicUrl);
     
     // 9. Save to database
-    const { data: existingCert } = await supabase
+    const { data: existingCert } = await supabaseAdmin
       .from('certificates')
       .select('id')
       .eq('user_id', user.id)
       .eq('module_id', moduleId || 0)
       .eq('certificate_type', certificateType)
       .maybeSingle();
-    
+
     if (existingCert) {
-      const { error: updateError } = await supabase
+      const { error: updateError } = await supabaseAdmin
         .from('certificates')
         .update({
           score: score,
@@ -202,7 +196,7 @@ export async function POST(request: NextRequest) {
         console.log('✅ Updated existing certificate record');
       }
     } else {
-      const { error: insertError } = await supabase
+      const { error: insertError } = await supabaseAdmin
         .from('certificates')
         .insert({
           user_id: user.id,

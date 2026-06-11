@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
 
 type Module = {
@@ -17,6 +18,17 @@ type Progress = {
   module_id: string;
   completed: boolean;
   score: number;
+};
+
+type Certificate = {
+  id: string;
+  user_id: string;
+  certificate_type: string;
+  module_name: string | null;
+  section_name: string | null;
+  score: number;
+  created_at: string;
+  pdf_url?: string;
 };
 
 type WorkLog = {
@@ -84,6 +96,42 @@ export default function Dashboard() {
 
   // CUSTOMER PORTAL STATE
   const [loadingPortal, setLoadingPortal] = useState(false);
+
+  // AGENCY CLICK MODAL STATE
+  const [showAgencyClickModal, setShowAgencyClickModal] = useState(false);
+  const [agencyClickView, setAgencyClickView] = useState<'confirm' | 'save-form' | 'with-saved'>('confirm');
+  const [agencyUsername, setAgencyUsername] = useState('');
+  const [agencyPassword, setAgencyPassword] = useState('');
+
+  // CERTIFICATES STATE
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [loadingCertificates, setLoadingCertificates] = useState(false);
+
+  // REFERRAL STATE
+  type ReferralCommission = {
+    id: string;
+    commission_amount: number;
+    sale_amount: number;
+    status: string;
+    created_at: string;
+    referred_email: string;
+  };
+  type ReferralStats = {
+    referralCode: string;
+    totalReferrals: number;
+    pendingCommission: number;
+    totalEarned: number;
+    commissions: ReferralCommission[];
+  };
+  const [referralCode, setReferralCode] = useState('');
+  const [referralStats, setReferralStats] = useState<ReferralStats | null>(null);
+  const [loadingReferral, setLoadingReferral] = useState(false);
+  const [showPayoutForm, setShowPayoutForm] = useState(false);
+  const [payoutEmail, setPayoutEmail] = useState('');
+  const [payoutAmount, setPayoutAmount] = useState('');
+  const [payoutLoading, setPayoutLoading] = useState(false);
+  const [payoutMessage, setPayoutMessage] = useState('');
+  const [copiedText, setCopiedText] = useState('');
 
   // Work Log State
   const [workLogs, setWorkLogs] = useState<WorkLog[]>([]);
@@ -217,6 +265,102 @@ export default function Dashboard() {
     setLoadingPortal(false);
   }
 
+  // AGENCY CLICK FUNCTIONS
+  function openAgencyClickModal() {
+    const stored = localStorage.getItem('agencyclick_credentials');
+    setAgencyClickView(stored ? 'with-saved' : 'confirm');
+    setShowAgencyClickModal(true);
+  }
+
+  function saveAgencyCredentials() {
+    const encoded = btoa(JSON.stringify({ username: agencyUsername, password: agencyPassword }));
+    localStorage.setItem('agencyclick_credentials', encoded);
+    window.open('https://app.agencyclick.com', '_blank');
+    setShowAgencyClickModal(false);
+    setAgencyUsername('');
+    setAgencyPassword('');
+  }
+
+  function clearAgencyCredentials() {
+    localStorage.removeItem('agencyclick_credentials');
+    setAgencyClickView('confirm');
+  }
+
+  // REFERRAL FUNCTIONS
+  async function loadReferralStats() {
+    setLoadingReferral(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+      const response = await fetch('/api/referral/stats', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setReferralStats(data);
+        if (data.referralCode) setReferralCode(data.referralCode);
+      }
+    } catch (error) {
+      console.error('Failed to load referral stats:', error);
+    } finally {
+      setLoadingReferral(false);
+    }
+  }
+
+  async function submitPayoutRequest() {
+    if (!payoutEmail || !payoutAmount) {
+      setPayoutMessage('Please fill in all fields.');
+      return;
+    }
+    setPayoutLoading(true);
+    setPayoutMessage('');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('/api/referral/request-payout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ etransferEmail: payoutEmail, amount: parseFloat(payoutAmount) }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setPayoutMessage(data.message);
+        setShowPayoutForm(false);
+        setPayoutEmail('');
+        setPayoutAmount('');
+      } else {
+        setPayoutMessage(data.error || 'Failed to submit request.');
+      }
+    } catch {
+      setPayoutMessage('An error occurred. Please try again.');
+    } finally {
+      setPayoutLoading(false);
+    }
+  }
+
+  function copyToClipboard(text: string, label: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedText(label);
+      setTimeout(() => setCopiedText(''), 2000);
+    });
+  }
+
+  // CERTIFICATES FUNCTION
+  async function loadCertificates() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+    setLoadingCertificates(true);
+    const { data } = await supabase
+      .from('certificates')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false });
+    setCertificates(data || []);
+    setLoadingCertificates(false);
+  }
+
   // Fetch subscription status directly from Supabase to avoid API 401 issues
   const fetchSubscriptionStatus = async () => {
     try {
@@ -240,6 +384,8 @@ export default function Dashboard() {
     checkUser();
     loadModules();
     loadWorkLogs();
+    loadCertificates();
+    loadReferralStats();
     fetchSubscriptionStatus(); // <-- ADD THIS LINE to refresh subscription status on page load
     
     // Subscribe to realtime updates for user_progress
@@ -344,14 +490,15 @@ export default function Dashboard() {
       
       const { data } = await supabase
         .from('users')
-        .select('section1_completed, subscription_status, section2_unlocked')
+        .select('section1_completed, subscription_status, section2_unlocked, referral_code')
         .eq('id', user.id)
         .single();
-        
+
       if (data) {
         setSection2Visible(data.section1_completed || false);
         setIsSubscribed(data.subscription_status === 'active');
         setSection2Unlocked(data.section2_unlocked || false);
+        if (data.referral_code) setReferralCode(data.referral_code);
         console.log('User subscription status:', data.subscription_status);
       }
     } catch (error) {
@@ -694,6 +841,22 @@ export default function Dashboard() {
 
         {/* Main Content */}
         <div className="max-w-4xl mx-auto px-4 py-8">
+          {/* QUICK ACTION BUTTONS */}
+          <div className="flex flex-wrap gap-3 mb-6">
+            <button
+              onClick={() => toast('Work Log coming soon!')}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
+            >
+              📋 Work Log
+            </button>
+            <button
+              onClick={openAgencyClickModal}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
+            >
+              🎭 Background Availability – Agency Click
+            </button>
+          </div>
+
           {/* PAYMENT STATUS CARDS - UPDATED to use Stripe functions */}
           {!isSubscribed && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
@@ -842,6 +1005,254 @@ export default function Dashboard() {
               </div>
             </div>
           )}
+
+          {/* MY CERTIFICATES SECTION */}
+          <div className="mt-12">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="text-3xl">🏆</div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">My Certificates</h2>
+                <p className="text-gray-500 text-sm">Your earned completion certificates</p>
+              </div>
+            </div>
+            {loadingCertificates ? (
+              <div className="text-center py-8 text-gray-400">Loading certificates...</div>
+            ) : certificates.length === 0 ? (
+              <div className="bg-gray-50 rounded-2xl p-8 text-center border border-dashed border-gray-300">
+                <div className="text-4xl mb-3">🏅</div>
+                <p className="text-gray-500">Complete modules to earn certificates</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2">
+                {certificates.map((cert) => (
+                  <div key={cert.id} className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-bold text-gray-800">{cert.module_name ?? cert.section_name ?? 'Certificate'}</p>
+                        <p className="text-sm text-gray-500 mt-1">Score: {cert.score}%</p>
+                        <p className="text-xs text-gray-400 mt-1">{new Date(cert.created_at).toLocaleDateString()}</p>
+                      </div>
+                      <div className="text-3xl">🏆</div>
+                    </div>
+                    {cert.pdf_url && (
+                      <a
+                        href={cert.pdf_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        ⬇️ Download Certificate
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* MY REFERRALS SECTION */}
+          <div className="mt-12">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="text-3xl">🤝</div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">My Referrals</h2>
+                <p className="text-gray-500 text-sm">Earn 20% commission on every subscription you refer — paid monthly via e-transfer</p>
+              </div>
+            </div>
+
+            {referralCode ? (
+              <>
+                {/* Referral code + link box */}
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-6">
+                  <p className="text-sm font-semibold text-blue-800 mb-2">Your Referral Code</p>
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-2xl font-bold font-mono text-blue-900 tracking-widest">{referralCode}</span>
+                    <button
+                      onClick={() => copyToClipboard(referralCode, 'code')}
+                      className="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+                    >
+                      {copiedText === 'code' ? '✓ Copied!' : 'Copy Code'}
+                    </button>
+                  </div>
+                  <p className="text-xs font-medium text-blue-700 mb-1">Your referral link:</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <code className="text-xs text-blue-700 bg-blue-100 px-2 py-1 rounded break-all">
+                      {`https://www.setready.site/auth/sign-up?ref=${referralCode}`}
+                    </code>
+                    <button
+                      onClick={() => copyToClipboard(`https://www.setready.site/auth/sign-up?ref=${referralCode}`, 'link')}
+                      className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition whitespace-nowrap"
+                    >
+                      {copiedText === 'link' ? '✓ Copied!' : 'Copy Link'}
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-blue-200">
+                    <a
+                      href={`mailto:?subject=Join me on SetReady!&body=${encodeURIComponent(`Hey! I've been using SetReady to advance my acting career. Use my referral code ${referralCode} when you sign up and we both benefit! Sign up here: https://www.setready.site/auth/sign-up?ref=${referralCode}`)}`}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-300 text-blue-700 text-xs rounded-lg hover:bg-blue-50 transition font-medium"
+                    >
+                      ✉️ Share via Email
+                    </a>
+                    <a
+                      href={`https://wa.me/?text=${encodeURIComponent(`Hey! I've been using SetReady to advance my acting career. Use my referral code ${referralCode} when you sign up and we both benefit! Sign up here: https://www.setready.site/auth/sign-up?ref=${referralCode}`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-green-300 text-green-700 text-xs rounded-lg hover:bg-green-50 transition font-medium"
+                    >
+                      💬 Share via WhatsApp
+                    </a>
+                  </div>
+                </div>
+
+                {/* How it works */}
+                <div className="bg-gray-50 rounded-xl p-5 mb-6 border border-gray-200">
+                  <p className="text-sm text-gray-700 mb-3">
+                    Share your referral code or link with friends. When they sign up and subscribe using your code, you earn 20% commission paid monthly via e-transfer.
+                  </p>
+                  <p className="text-sm font-semibold text-gray-800 mb-2">How to share:</p>
+                  <ol className="space-y-1 text-sm text-gray-600 list-none">
+                    <li>1. Copy your referral link above and send it to a friend</li>
+                    <li>2. Your friend signs up using your link</li>
+                    <li>3. Your friend subscribes to SetReady</li>
+                    <li>4. You earn 20% of their subscription fee</li>
+                    <li>5. Request your payout anytime from this page</li>
+                  </ol>
+                </div>
+
+                {/* Stats */}
+                {loadingReferral ? (
+                  <div className="text-center py-6 text-gray-400 text-sm">Loading referral stats...</div>
+                ) : referralStats ? (
+                  <>
+                    <div className="grid grid-cols-3 gap-4 mb-6">
+                      <div className="bg-white rounded-xl p-4 border border-gray-200 text-center shadow-sm">
+                        <p className="text-2xl font-bold text-gray-800">{referralStats.totalReferrals}</p>
+                        <p className="text-xs text-gray-500 mt-1">Total Referrals</p>
+                      </div>
+                      <div className="bg-white rounded-xl p-4 border border-gray-200 text-center shadow-sm">
+                        <p className="text-2xl font-bold text-orange-600">${referralStats.pendingCommission.toFixed(2)}</p>
+                        <p className="text-xs text-gray-500 mt-1">Pending</p>
+                      </div>
+                      <div className="bg-white rounded-xl p-4 border border-gray-200 text-center shadow-sm">
+                        <p className="text-2xl font-bold text-green-600">${referralStats.totalEarned.toFixed(2)}</p>
+                        <p className="text-xs text-gray-500 mt-1">Total Earned</p>
+                      </div>
+                    </div>
+
+                    {/* Commission history */}
+                    {referralStats.commissions.length === 0 ? (
+                      <div className="bg-gray-50 rounded-xl p-6 text-center border border-dashed border-gray-300 mb-4">
+                        <p className="text-gray-500 text-sm">No commissions yet. Share your referral link to start earning!</p>
+                      </div>
+                    ) : (
+                      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4 shadow-sm">
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Date</th>
+                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Referred User</th>
+                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Sale</th>
+                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Commission</th>
+                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                              {referralStats.commissions.map((c) => (
+                                <tr key={c.id} className="hover:bg-gray-50">
+                                  <td className="px-4 py-3 text-gray-600">{new Date(c.created_at).toLocaleDateString()}</td>
+                                  <td className="px-4 py-3 text-gray-600 font-mono text-xs">{c.referred_email}</td>
+                                  <td className="px-4 py-3 text-gray-700">${c.sale_amount.toFixed(2)}</td>
+                                  <td className="px-4 py-3 font-semibold text-green-700">${c.commission_amount.toFixed(2)}</td>
+                                  <td className="px-4 py-3">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${c.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                      {c.status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Payout request */}
+                    {!showPayoutForm ? (
+                      <div>
+                        <button
+                          onClick={() => {
+                            setPayoutAmount(referralStats.pendingCommission.toFixed(2));
+                            setPayoutMessage('');
+                            setShowPayoutForm(true);
+                          }}
+                          disabled={referralStats.pendingCommission <= 0}
+                          className="px-5 py-2 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition disabled:opacity-40 disabled:cursor-not-allowed text-sm"
+                        >
+                          💸 Request E-Transfer Payout
+                        </button>
+                        {payoutMessage && (
+                          <p className="mt-2 text-sm text-green-700">{payoutMessage}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+                        <h3 className="font-semibold text-gray-800 mb-4">Request E-Transfer Payout</h3>
+                        <div className="space-y-3 mb-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">E-Transfer Email</label>
+                            <input
+                              type="email"
+                              value={payoutEmail}
+                              onChange={(e) => setPayoutEmail(e.target.value)}
+                              placeholder="your@bank-email.com"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+                            />
+                            <p className="text-xs text-gray-400 mt-1">Must be registered with your bank for Interac e-Transfer</p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0.01"
+                              value={payoutAmount}
+                              onChange={(e) => setPayoutAmount(e.target.value)}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                        {payoutMessage && (
+                          <p className={`text-sm mb-3 ${payoutMessage.includes('ubmitted') ? 'text-green-700' : 'text-red-600'}`}>
+                            {payoutMessage}
+                          </p>
+                        )}
+                        <div className="flex gap-3">
+                          <button
+                            onClick={submitPayoutRequest}
+                            disabled={payoutLoading}
+                            className="px-5 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50 text-sm"
+                          >
+                            {payoutLoading ? 'Submitting...' : 'Submit Request'}
+                          </button>
+                          <button
+                            onClick={() => { setShowPayoutForm(false); setPayoutMessage(''); }}
+                            className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition text-sm"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : null}
+              </>
+            ) : (
+              <div className="bg-gray-50 rounded-xl p-6 text-center border border-dashed border-gray-300">
+                <p className="text-gray-400 text-sm">Loading your referral code...</p>
+              </div>
+            )}
+          </div>
 
           {/* SPACER - Extra space BEFORE Work Log section */}
           <div className="h-48"></div>
@@ -1163,6 +1574,110 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* AGENCY CLICK MODAL */}
+      {showAgencyClickModal && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '16px' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '16px', maxWidth: '420px', width: '90%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-800">🎭 Agency Click</h2>
+              <button onClick={() => setShowAgencyClickModal(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
+            </div>
+
+            {agencyClickView === 'confirm' && (
+              <div>
+                <p className="text-gray-600 mb-4 text-sm">Would you like to save your Agency Click credentials on this device for quick access?</p>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-5 text-xs text-amber-800">
+                  ⚠️ <strong>Device-only storage:</strong> Credentials are stored locally on this device only and never sent to our servers. Do not use this on shared devices.
+                </div>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => setAgencyClickView('save-form')}
+                    className="w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+                  >
+                    Save Credentials
+                  </button>
+                  <button
+                    onClick={() => { window.open('https://app.agencyclick.com', '_blank'); setShowAgencyClickModal(false); }}
+                    className="w-full py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
+                  >
+                    Just Open
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {agencyClickView === 'save-form' && (
+              <div>
+                <p className="text-gray-600 mb-4 text-sm">Enter your Agency Click credentials to save them on this device.</p>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-xs text-amber-800">
+                  ⚠️ <strong>Device-only:</strong> Stored in your browser's localStorage only — never sent to our servers. Clear with "Clear Credentials" when done.
+                </div>
+                <div className="space-y-3 mb-5">
+                  <input
+                    type="text"
+                    placeholder="Username or Email"
+                    value={agencyUsername}
+                    onChange={(e) => setAgencyUsername(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={agencyPassword}
+                    onChange={(e) => setAgencyPassword(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={saveAgencyCredentials}
+                    disabled={!agencyUsername || !agencyPassword}
+                    className="w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+                  >
+                    Save and Open Agency Click
+                  </button>
+                  <button
+                    onClick={() => setAgencyClickView('confirm')}
+                    className="w-full py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
+                  >
+                    Back
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {agencyClickView === 'with-saved' && (
+              <div>
+                <p className="text-gray-600 mb-4 text-sm">You have saved Agency Click credentials on this device.</p>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-5 text-xs text-amber-800">
+                  ⚠️ <strong>Device-only storage:</strong> These credentials exist only in your browser's localStorage and are never sent to our servers.
+                </div>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => { window.open('https://app.agencyclick.com', '_blank'); setShowAgencyClickModal(false); }}
+                    className="w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+                  >
+                    Open Agency Click
+                  </button>
+                  <button
+                    onClick={() => { setAgencyUsername(''); setAgencyPassword(''); setAgencyClickView('save-form'); }}
+                    className="w-full py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
+                  >
+                    Update Credentials
+                  </button>
+                  <button
+                    onClick={clearAgencyCredentials}
+                    className="w-full py-2 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition"
+                  >
+                    Clear Credentials
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* SECTION 2 COMPLETION POP-UP */}
       {showSection2Popup && (
