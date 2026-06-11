@@ -1531,7 +1531,7 @@ export const QUESTIONS: Question[] = [
     option_c: 'Magic tricks',
     option_d: 'Illusion',
     correct_answer: 'b',
-    explanation: 'Lesson 9.4: 'Imagination creates the world of the play through "the magic of as if."'',
+    explanation: `Lesson 9.4: 'Imagination creates the world of the play through "the magic of as if."'`,
     province_id: null
   },
   {

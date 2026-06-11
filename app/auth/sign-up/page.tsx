@@ -42,21 +42,23 @@ export default function SignUp() {
     }
 
     if (data.user) {
-      // Insert the user into the users table with ALL required fields
-      const { error: insertError } = await supabase
+      const { error: profileError } = await supabase
         .from('users')
-        .insert({
+        .upsert({
           id: data.user.id,
           email: email,
           name: name,
           province: province,
           subscription_status: 'inactive',
           section2_unlocked: false,
+          total_points: 0,
           section1_completed: false,
+        }, {
+          onConflict: 'id',
         });
 
-      if (insertError) {
-        console.error('Error inserting user:', insertError);
+      if (profileError) {
+        console.error('Failed to create user profile:', profileError);
         setError('Account created but profile setup failed. Please contact support.');
       } else {
         // Success - redirect to dashboard

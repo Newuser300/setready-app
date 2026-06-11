@@ -1,20 +1,23 @@
 // app/payment-processing/page.tsx
 'use client';
 
-import { Suspense } from 'react';
-import { useEffect } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 
 // Force dynamic rendering to avoid static prerendering issues
 export const dynamic = 'force-dynamic';
+
+const POLL_INTERVAL_MS = 2000;
+const TIMEOUT_MS = 30000;
 
 // This component uses useSearchParams() and must be wrapped in Suspense
 function PaymentProcessingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
-  const plan = searchParams.get('plan');
+
+  const [statusMessage, setStatusMessage] = useState('Activating your subscription...');
+  const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
     if (!sessionId) {
@@ -22,14 +25,49 @@ function PaymentProcessingContent() {
       return;
     }
 
-    // Simple approach: redirect to dashboard after 5 seconds
-    // The webhook will have updated the database by then
-    const timer = setTimeout(() => {
-      router.push('/dashboard');
-    }, 5000);
+    const startTime = Date.now();
 
-    return () => clearTimeout(timer);
-  }, [sessionId, router, plan]);
+    // Smooth progress bar — ticks every 100 ms
+    const progressInterval = setInterval(() => {
+      setElapsed(Math.min(Date.now() - startTime, TIMEOUT_MS));
+    }, 100);
+
+    // Poll /api/user/get-subscription-status every 2 seconds
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch('/api/user/get-subscription-status');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.isSubscribed) {
+            clearInterval(pollInterval);
+            clearInterval(progressInterval);
+            clearTimeout(fallbackTimeout);
+            setStatusMessage('Subscription activated! Redirecting...');
+            router.push('/dashboard');
+          }
+        }
+      } catch {
+        // Network hiccup — keep polling
+      }
+    }, POLL_INTERVAL_MS);
+
+    // Hard 30-second timeout: redirect regardless
+    const fallbackTimeout = setTimeout(() => {
+      clearInterval(pollInterval);
+      clearInterval(progressInterval);
+      setElapsed(TIMEOUT_MS);
+      setStatusMessage("Taking a little longer than expected — redirecting now. Refresh your dashboard if your subscription isn't showing.");
+      setTimeout(() => router.push('/dashboard'), 2000);
+    }, TIMEOUT_MS);
+
+    return () => {
+      clearInterval(pollInterval);
+      clearInterval(progressInterval);
+      clearTimeout(fallbackTimeout);
+    };
+  }, [sessionId, router]);
+
+  const progressPct = (elapsed / TIMEOUT_MS) * 100;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
@@ -44,13 +82,16 @@ function PaymentProcessingContent() {
           Payment Successful!
         </h1>
         <p className="text-gray-600 mb-4">
-          Thank you for your subscription. Redirecting you to your dashboard...
+          {statusMessage}
         </p>
         <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-          <div className="bg-green-600 h-2 rounded-full animate-pulse w-full" />
+          <div
+            className="bg-green-600 h-2 rounded-full transition-all duration-100"
+            style={{ width: `${progressPct}%` }}
+          />
         </div>
         <p className="text-sm text-gray-500">
-          You will be redirected automatically.
+          Please wait while we confirm your payment...
         </p>
       </div>
     </div>
