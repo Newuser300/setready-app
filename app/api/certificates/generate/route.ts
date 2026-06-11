@@ -51,17 +51,6 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Fallback to cookie auth
-    if (!user) {
-      const { data: { user: cookieUser }, error: cookieError } = await supabaseAdmin.auth.getUser();
-      if (!cookieError && cookieUser) {
-        user = cookieUser;
-        console.log('✅ Authenticated via cookie, user ID:', user.id);
-      } else {
-        console.error('Cookie auth error:', cookieError?.message);
-      }
-    }
-    
     if (!user) {
       console.error('❌ No user found - authentication failed');
       return NextResponse.json(
@@ -145,23 +134,24 @@ export async function POST(request: NextRequest) {
     }
     
     // Attempt upload
-    const { error: bucketError } = await supabaseAdmin.storage
+    const { data: uploadData, error: bucketError } = await supabaseAdmin.storage
       .from('certificates')
       .upload(fileName, pdfBuffer, {
         contentType: 'application/pdf',
         cacheControl: '3600',
         upsert: true
       });
-    
+
+    console.log('Storage upload:', uploadData, bucketError);
+
     if (bucketError) {
-      console.error('❌ Upload error:', bucketError);
-      console.error('Error details - name:', bucketError.name, 'message:', bucketError.message);
+      console.error('❌ Upload error:', bucketError.name, bucketError.message);
       return NextResponse.json(
         { error: `Failed to upload certificate: ${bucketError.message}` },
         { status: 500 }
       );
     }
-    
+
     console.log('✅ Upload successful!');
     
     // 8. Get public URL
@@ -181,22 +171,28 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (existingCert) {
-      const { error: updateError } = await supabaseAdmin
+      const { data: updateData, error: updateError } = await supabaseAdmin
         .from('certificates')
         .update({
           score: score,
           pdf_url: publicUrl,
           issued_at: new Date().toISOString()
         })
-        .eq('id', existingCert.id);
-      
+        .eq('id', existingCert.id)
+        .select();
+
+      console.log('Certificate updated:', updateData, updateError);
+
       if (updateError) {
-        console.error('Update error:', updateError);
-      } else {
-        console.log('✅ Updated existing certificate record');
+        console.error('❌ Update failed:', updateError.message);
+        return NextResponse.json(
+          { error: `Failed to update certificate: ${updateError.message}` },
+          { status: 500 }
+        );
       }
+      console.log('✅ Updated existing certificate record');
     } else {
-      const { error: insertError } = await supabaseAdmin
+      const { data: insertData, error: insertError } = await supabaseAdmin
         .from('certificates')
         .insert({
           user_id: user.id,
@@ -207,13 +203,20 @@ export async function POST(request: NextRequest) {
           score: score,
           certificate_hash: certificateHash,
           pdf_url: publicUrl,
-        });
-      
+          issued_at: new Date().toISOString(),
+        })
+        .select();
+
+      console.log('Certificate saved:', insertData, insertError);
+
       if (insertError) {
-        console.error('Insert error:', insertError);
-      } else {
-        console.log('✅ Created new certificate record');
+        console.error('❌ Insert failed:', insertError.message);
+        return NextResponse.json(
+          { error: `Failed to save certificate: ${insertError.message}` },
+          { status: 500 }
+        );
       }
+      console.log('✅ Created new certificate record');
     }
     
     console.log('=== CERTIFICATE GENERATION COMPLETED SUCCESSFULLY ===');

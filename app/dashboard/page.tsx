@@ -354,12 +354,13 @@ export default function Dashboard() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
     setLoadingCertificates(true);
-    const { data } = await supabase
+    const { data: certData, error: certError } = await supabase
       .from('certificates')
       .select('*')
       .eq('user_id', session.user.id)
-      .order('created_at', { ascending: false });
-    setCertificates(data || []);
+      .order('issued_at', { ascending: false });
+    console.log('Certificates found:', certData?.length, certError);
+    setCertificates(certData || []);
     setLoadingCertificates(false);
   }
 
