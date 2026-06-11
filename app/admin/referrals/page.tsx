@@ -157,6 +157,20 @@ export default function AdminReferralsPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
 
+        {/* PAYOUT POLICY NOTICE */}
+        <div className="bg-amber-50 border border-amber-300 rounded-xl px-5 py-4 flex items-start gap-3">
+          <span className="text-2xl mt-0.5">📋</span>
+          <div>
+            <p className="font-semibold text-amber-900 mb-1">Payout Policy Reminder</p>
+            <ul className="text-sm text-amber-800 space-y-0.5 list-disc pl-4">
+              <li>Minimum payout threshold is <strong>$10.00 CAD</strong> — do not process requests below this amount</li>
+              <li>Verify the referral commission balance matches the requested amount before sending</li>
+              <li>Payments are sent via Interac e-Transfer to the email shown in the request</li>
+              <li>Commission is only valid on successful, non-refunded transactions</li>
+            </ul>
+          </div>
+        </div>
+
         {/* SECTION A — Summary Cards */}
         {summary && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

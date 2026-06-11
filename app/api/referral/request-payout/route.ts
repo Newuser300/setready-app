@@ -34,6 +34,14 @@ export async function POST(request: Request) {
 
   const available = (commissions || []).reduce((sum, c) => sum + (c.commission_amount || 0), 0);
 
+  if (available < 10.00) {
+    return NextResponse.json({
+      error: 'Minimum payout threshold not met',
+      minimum: 10.00,
+      current: available,
+    }, { status: 400 });
+  }
+
   if (parsedAmount > available) {
     return NextResponse.json({
       error: `Insufficient balance. Available: $${available.toFixed(2)}`

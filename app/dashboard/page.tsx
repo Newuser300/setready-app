@@ -1117,7 +1117,7 @@ export default function Dashboard() {
                     <li>2. Your friend signs up using your link</li>
                     <li>3. Your friend subscribes to SetReady</li>
                     <li>4. You earn 20% of their subscription fee</li>
-                    <li>5. Request your payout anytime from this page, or email us directly at <a href="mailto:setready@mail.com" className="text-blue-600 hover:underline">setready@mail.com</a> with your referral code and e-transfer email address.</li>
+                    <li>5. Once you reach $10.00 in commissions, request your payout from this page. Payments are sent monthly via e-transfer to <a href="mailto:setready@mail.com" className="text-blue-600 hover:underline">setready@mail.com</a></li>
                   </ol>
                 </div>
 
@@ -1126,7 +1126,7 @@ export default function Dashboard() {
                   <div className="text-center py-6 text-gray-400 text-sm">Loading referral stats...</div>
                 ) : referralStats ? (
                   <>
-                    <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="grid grid-cols-3 gap-4 mb-4">
                       <div className="bg-white rounded-xl p-4 border border-gray-200 text-center shadow-sm">
                         <p className="text-2xl font-bold text-gray-800">{referralStats.totalReferrals}</p>
                         <p className="text-xs text-gray-500 mt-1">Total Referrals</p>
@@ -1138,6 +1138,15 @@ export default function Dashboard() {
                       <div className="bg-white rounded-xl p-4 border border-gray-200 text-center shadow-sm">
                         <p className="text-2xl font-bold text-green-600">${referralStats.totalEarned.toFixed(2)}</p>
                         <p className="text-xs text-gray-500 mt-1">Total Earned</p>
+                      </div>
+                    </div>
+
+                    {/* Minimum payout threshold notice */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-6 flex items-start gap-2">
+                      <span className="text-lg mt-0.5">💰</span>
+                      <div>
+                        <p className="text-sm font-semibold text-blue-800">Minimum payout threshold: $10.00</p>
+                        <p className="text-xs text-blue-700 mt-0.5">Commissions are paid monthly via e-transfer. Once you reach $10.00 in pending commissions, you can request your payout.</p>
                       </div>
                     </div>
 
@@ -1188,11 +1197,19 @@ export default function Dashboard() {
                             setPayoutMessage('');
                             setShowPayoutForm(true);
                           }}
-                          disabled={referralStats.pendingCommission <= 0}
+                          disabled={referralStats.pendingCommission < 10.00}
+                          title={referralStats.pendingCommission < 10.00
+                            ? `Minimum payout is $10.00. You have $${referralStats.pendingCommission.toFixed(2)} pending.`
+                            : undefined}
                           className="px-5 py-2 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition disabled:opacity-40 disabled:cursor-not-allowed text-sm"
                         >
                           💸 Request E-Transfer Payout
                         </button>
+                        {referralStats.pendingCommission < 10.00 && referralStats.pendingCommission > 0 && (
+                          <p className="mt-2 text-xs text-gray-500">
+                            Minimum payout is $10.00. You have ${referralStats.pendingCommission.toFixed(2)} pending.
+                          </p>
+                        )}
                         {payoutMessage && (
                           <p className="mt-2 text-sm text-green-700">{payoutMessage}</p>
                         )}

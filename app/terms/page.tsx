@@ -108,6 +108,17 @@ export default function TermsPage() {
         
         <h3 className="font-semibold mt-3">6.5 Restoring Purchases</h3>
         <p>If you upgrade to a new device or reinstall the App, you may restore your previous purchases. For App Store purchases, tap <strong>"Restore Purchases"</strong> in the app's Settings. For Google Play Store purchases, restoration is automatic upon reinstalling.</p>
+
+        <h3 className="font-semibold mt-3">6.6 Referral Program Terms</h3>
+        <ul className="list-disc pl-6 mt-1 space-y-1 text-gray-700">
+          <li>Users earn 20% commission on referrals when a referred user completes a paid subscription</li>
+          <li>Minimum payout threshold is $10.00 CAD — commissions below this amount cannot be requested until the threshold is reached</li>
+          <li>Commissions are paid monthly via Interac e-Transfer to the email address provided at time of request</li>
+          <li>SetReady reserves the right to verify referrals before processing payment</li>
+          <li>Commission is only earned on successful payments — refunded or disputed transactions do not qualify</li>
+          <li>Referral codes are non-transferable and may only be used by the account holder</li>
+          <li>SetReady reserves the right to suspend or terminate referral privileges for accounts found to be abusing the referral system</li>
+        </ul>
       </section>
 
       <section className="mb-8">
