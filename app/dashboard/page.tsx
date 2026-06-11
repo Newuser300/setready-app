@@ -129,6 +129,7 @@ export default function Dashboard() {
   const [showPayoutForm, setShowPayoutForm] = useState(false);
   const [payoutEmail, setPayoutEmail] = useState('');
   const [payoutAmount, setPayoutAmount] = useState('');
+  const [payoutNote, setPayoutNote] = useState('');
   const [payoutLoading, setPayoutLoading] = useState(false);
   const [payoutMessage, setPayoutMessage] = useState('');
   const [copiedText, setCopiedText] = useState('');
@@ -322,7 +323,7 @@ export default function Dashboard() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token}`,
         },
-        body: JSON.stringify({ etransferEmail: payoutEmail, amount: parseFloat(payoutAmount) }),
+        body: JSON.stringify({ etransferEmail: payoutEmail, amount: parseFloat(payoutAmount), referralCode, note: payoutNote }),
       });
       const data = await response.json();
       if (response.ok) {
@@ -330,6 +331,7 @@ export default function Dashboard() {
         setShowPayoutForm(false);
         setPayoutEmail('');
         setPayoutAmount('');
+        setPayoutNote('');
       } else {
         setPayoutMessage(data.error || 'Failed to submit request.');
       }
@@ -844,7 +846,7 @@ export default function Dashboard() {
           {/* QUICK ACTION BUTTONS */}
           <div className="flex flex-wrap gap-3 mb-6">
             <button
-              onClick={() => toast('Work Log coming soon!')}
+              onClick={() => document.getElementById('work-log-section')?.scrollIntoView({ behavior: 'smooth' })}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
             >
               📋 Work Log
@@ -1115,7 +1117,7 @@ export default function Dashboard() {
                     <li>2. Your friend signs up using your link</li>
                     <li>3. Your friend subscribes to SetReady</li>
                     <li>4. You earn 20% of their subscription fee</li>
-                    <li>5. Request your payout anytime from this page</li>
+                    <li>5. Request your payout anytime from this page, or email us directly at <a href="mailto:setready@mail.com" className="text-blue-600 hover:underline">setready@mail.com</a> with your referral code and e-transfer email address.</li>
                   </ol>
                 </div>
 
@@ -1200,6 +1202,15 @@ export default function Dashboard() {
                         <h3 className="font-semibold text-gray-800 mb-4">Request E-Transfer Payout</h3>
                         <div className="space-y-3 mb-4">
                           <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Your Referral Code</label>
+                            <input
+                              type="text"
+                              value={referralCode}
+                              readOnly
+                              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-700 font-mono tracking-widest"
+                            />
+                          </div>
+                          <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">E-Transfer Email</label>
                             <input
                               type="email"
@@ -1221,6 +1232,16 @@ export default function Dashboard() {
                               className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
                             />
                           </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Note (optional)</label>
+                            <textarea
+                              value={payoutNote}
+                              onChange={(e) => setPayoutNote(e.target.value)}
+                              placeholder="Any additional details..."
+                              rows={2}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:outline-none resize-none"
+                            />
+                          </div>
                         </div>
                         {payoutMessage && (
                           <p className={`text-sm mb-3 ${payoutMessage.includes('ubmitted') ? 'text-green-700' : 'text-red-600'}`}>
@@ -1236,7 +1257,7 @@ export default function Dashboard() {
                             {payoutLoading ? 'Submitting...' : 'Submit Request'}
                           </button>
                           <button
-                            onClick={() => { setShowPayoutForm(false); setPayoutMessage(''); }}
+                            onClick={() => { setShowPayoutForm(false); setPayoutMessage(''); setPayoutNote(''); }}
                             className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition text-sm"
                           >
                             Cancel
@@ -1260,7 +1281,7 @@ export default function Dashboard() {
           {/* ===================================================== */}
           {/* WORK LOG SECTION */}
           {/* ===================================================== */}
-          <div>
+          <div id="work-log-section">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="text-3xl">📋💰</div>
