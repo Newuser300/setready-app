@@ -113,29 +113,38 @@ export default function Home() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,rgba(245,158,11,0.06)_0%,transparent_70%)]" />
 
         <div className="relative z-10 max-w-4xl mx-auto">
-          {/* Pill badge */}
+          {/* Pill badge — CHANGE 1: removed "#1" claim */}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-50 text-amber-600 text-xs font-semibold mb-8 animate-fade-in">
-            🎬 Canada&apos;s #1 Background Performer Training
+            🎬 Professional Background Performer Training
           </div>
 
           {/* Headline */}
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight animate-fade-in-up">
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-gray-900 mb-4 leading-tight animate-fade-in-up">
             Your Career<br />
             <span className="text-amber-500">Starts Here</span>
           </h1>
 
-          {/* Sub-headline */}
+          {/* CHANGE 6: 5-star rating below headline */}
+          <div
+            className="flex flex-col items-center gap-1 mb-6 animate-fade-in-up"
+            style={{ animationDelay: '0.1s' }}
+          >
+            <span className="text-amber-500 text-2xl tracking-widest">★★★★★</span>
+            <span className="text-gray-400 text-sm">5/5 from our performers</span>
+          </div>
+
+          {/* Sub-headline — CHANGE 2: removed "acting" */}
           <p
             className="text-lg sm:text-xl text-gray-500 mb-10 max-w-2xl mx-auto animate-fade-in-up"
-            style={{ animationDelay: '0.15s' }}
+            style={{ animationDelay: '0.2s' }}
           >
-            Professional acting training trusted by background performers across Canada
+            Professional training trusted by background performers across Canada
           </p>
 
           {/* CTA buttons */}
           <div
-            className="flex flex-col sm:flex-row gap-4 justify-center mb-12 animate-fade-in-up"
-            style={{ animationDelay: '0.3s' }}
+            className="flex flex-col sm:flex-row gap-4 justify-center mb-10 animate-fade-in-up"
+            style={{ animationDelay: '0.35s' }}
           >
             <button
               onClick={() => router.push('/preview')}
@@ -151,16 +160,14 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Trust badges */}
+          {/* Trust badge — CHANGE 3: kept only "Cancel Anytime" */}
           <div
-            className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-gray-500 animate-fade-in-up"
-            style={{ animationDelay: '0.45s' }}
+            className="flex justify-center animate-fade-in-up"
+            style={{ animationDelay: '0.5s' }}
           >
-            {['Cancel Anytime', '30-Day Guarantee', 'Industry Certified', 'Mobile Friendly'].map(b => (
-              <span key={b} className="flex items-center gap-1.5">
-                <span className="text-green-500 font-bold">✓</span> {b}
-              </span>
-            ))}
+            <span className="flex items-center gap-1.5 text-sm text-gray-500">
+              <span className="text-green-500 font-bold">✓</span> Cancel Anytime
+            </span>
           </div>
         </div>
 
@@ -172,21 +179,21 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── SOCIAL PROOF MARQUEE ───────────────────────────── */}
+      {/* ── SOCIAL PROOF MARQUEE — CHANGE 8: removed unverified claims ── */}
       <section className="bg-gray-100 border-y border-gray-200 py-4 overflow-hidden select-none">
         <div className="flex animate-marquee whitespace-nowrap">
           {[0, 1].map(i => (
             <div key={i} className="flex items-center gap-10 px-10 shrink-0">
-              <span className="text-amber-600 text-sm font-semibold">500+ Performers Trained</span>
+              <span className="text-amber-600 text-sm font-semibold">Professional Training</span>
               <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0" />
               <span className="text-gray-500 text-sm">9 Professional Modules</span>
               <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0" />
               <span className="text-gray-500 text-sm">Industry Expert Content</span>
               <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0" />
               <span className="text-amber-500 text-sm tracking-wider">★★★★★</span>
-              <span className="text-gray-500 text-sm">4.9 Average Rating</span>
+              <span className="text-gray-500 text-sm">5/5 Rated</span>
               <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0" />
-              <span className="text-gray-500 text-sm">30-Day Guarantee</span>
+              <span className="text-gray-500 text-sm">Cancel Anytime</span>
               <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0" />
             </div>
           ))}
@@ -396,7 +403,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── FEATURES ───────────────────────────────────────── */}
+      {/* ── FEATURES — CHANGE 5: removed Agency Connect ────────── */}
       <section className="bg-white py-20 px-4">
         <div className="max-w-6xl mx-auto">
           <FadeIn>
@@ -411,9 +418,9 @@ export default function Home() {
               { icon: '🎓', title: 'Professional Certificates', desc: 'Earn industry certificates for every module you complete' },
               { icon: '📊', title: 'Progress Tracking',         desc: 'Track every module, quiz score, and daily streak' },
               { icon: '📅', title: 'Work Log',                  desc: 'Log your bookings, pay rates, and production details' },
-              { icon: '🔗', title: 'Agency Connect',            desc: 'Direct link to Agency Click for background availability' },
               { icon: '💰', title: 'Referral Rewards',          desc: 'Earn 20% commission on every friend you refer' },
               { icon: '📱', title: 'Mobile Ready',              desc: 'Fully optimized for phones — train anywhere, anytime' },
+              { icon: '📚', title: 'Expert Curriculum',         desc: 'Built on proven methods from world-renowned acting teachers' },
             ].map((f, i) => (
               <FadeIn key={f.title} delay={i * 60}>
                 <div className="bg-white rounded-2xl p-6 border border-gray-200 hover:border-amber-300 transition-all duration-200 h-full shadow-sm hover:shadow-md">
@@ -427,7 +434,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── TESTIMONIALS ───────────────────────────────────── */}
+      {/* ── TESTIMONIALS — CHANGE 7: stars stay ★★★★★, quotes clean ── */}
       <section className="bg-[#F9FAFB] py-20 px-4">
         <div className="max-w-6xl mx-auto">
           <FadeIn>
@@ -458,7 +465,10 @@ export default function Home() {
             ].map((t, i) => (
               <FadeIn key={t.name} delay={i * 100}>
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-4 h-full">
-                  <p className="text-amber-500 text-lg tracking-wider">★★★★★</p>
+                  <div>
+                    <p className="text-amber-500 text-lg tracking-wider">★★★★★</p>
+                    <p className="text-xs text-gray-400 mt-0.5">5/5</p>
+                  </div>
                   <p className="text-gray-700 text-sm leading-relaxed flex-1">&ldquo;{t.quote}&rdquo;</p>
                   <div>
                     <p className="text-gray-900 font-semibold text-sm">— {t.name}</p>
@@ -471,27 +481,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── GUARANTEE ──────────────────────────────────────── */}
-      <section className="bg-amber-500 py-16 px-4">
-        <FadeIn>
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="text-6xl mb-5">🛡️</div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-black mb-4">
-              30-Day Money Back Guarantee
-            </h2>
-            <p className="text-black/70 text-base sm:text-lg max-w-xl mx-auto mb-8 leading-relaxed">
-              If you complete less than 10% of the content and feel SetReady isn&apos;t right for you,
-              we will refund your subscription. No questions asked.
-            </p>
-            <button
-              onClick={() => router.push('/preview')}
-              className="px-8 py-4 bg-black text-white font-bold rounded-xl hover:bg-gray-900 hover:scale-105 transition-all duration-200 shadow-lg"
-            >
-              Start Risk Free →
-            </button>
-          </div>
-        </FadeIn>
-      </section>
+      {/* CHANGE 4: 30-Day Guarantee section removed entirely */}
 
       {/* ── REFERRAL SLIM BANNER ───────────────────────────── */}
       <div className="bg-gray-50 border-y border-gray-200 py-3 text-center px-4">
