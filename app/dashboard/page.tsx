@@ -1088,22 +1088,6 @@ export default function Dashboard() {
                       {copiedText === 'link' ? '✓ Copied!' : 'Copy Link'}
                     </button>
                   </div>
-                  <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-blue-200">
-                    <a
-                      href={`mailto:?subject=Join me on SetReady!&body=${encodeURIComponent(`Hey! I've been using SetReady to advance my acting career. Use my referral code ${referralCode} when you sign up and we both benefit! Sign up here: https://www.setready.site/auth/sign-up?ref=${referralCode}`)}`}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-300 text-blue-700 text-xs rounded-lg hover:bg-blue-50 transition font-medium"
-                    >
-                      ✉️ Share via Email
-                    </a>
-                    <a
-                      href={`https://wa.me/?text=${encodeURIComponent(`Hey! I've been using SetReady to advance my acting career. Use my referral code ${referralCode} when you sign up and we both benefit! Sign up here: https://www.setready.site/auth/sign-up?ref=${referralCode}`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-green-300 text-green-700 text-xs rounded-lg hover:bg-green-50 transition font-medium"
-                    >
-                      💬 Share via WhatsApp
-                    </a>
-                  </div>
                 </div>
 
                 {/* How it works */}
