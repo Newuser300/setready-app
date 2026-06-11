@@ -109,38 +109,12 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Referral Program Section */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 sm:p-10 text-white text-center">
-          <div className="text-4xl mb-4">🤝</div>
-          <h2 className="text-2xl sm:text-3xl font-bold mb-3">Refer a Friend, Earn 20% Commission</h2>
-          <p className="text-blue-100 mb-6 max-w-xl mx-auto">
-            Every SetReady member gets a unique referral code. Share it — when your referral subscribes, you earn 20% of their payment, paid monthly via Interac e-Transfer.
-          </p>
-          <div className="grid sm:grid-cols-3 gap-4 max-w-2xl mx-auto mb-6 text-sm">
-            <div className="bg-white/10 rounded-lg p-4">
-              <div className="text-2xl mb-2">🔗</div>
-              <p className="font-semibold">Share your link</p>
-              <p className="text-blue-200 text-xs mt-1">Every member gets a unique referral code automatically</p>
-            </div>
-            <div className="bg-white/10 rounded-lg p-4">
-              <div className="text-2xl mb-2">✅</div>
-              <p className="font-semibold">Friend subscribes</p>
-              <p className="text-blue-200 text-xs mt-1">20% commission tracked automatically on every payment</p>
-            </div>
-            <div className="bg-white/10 rounded-lg p-4">
-              <div className="text-2xl mb-2">💸</div>
-              <p className="font-semibold">Get paid monthly</p>
-              <p className="text-blue-200 text-xs mt-1">Request your payout via Interac e-Transfer from your dashboard</p>
-            </div>
-          </div>
-          <button
-            onClick={goToSignUp}
-            className="px-6 py-2.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition font-semibold"
-          >
-            Sign Up and Get Your Code →
-          </button>
-        </div>
+      {/* Referral Program Banner */}
+      <div className="border-t border-b border-white/20 bg-white/5 py-3 text-center px-4">
+        <p className="text-sm text-blue-100">Refer a friend and earn 20% commission. <span className="text-blue-200">Share your unique code when friends subscribe.</span></p>
+        <p className="text-xs text-blue-300 mt-0.5">
+          <button onClick={goToSignUp} className="underline hover:text-white transition">Learn more after signing up →</button>
+        </p>
       </div>
 
       {/* Call to Action Footer */}
