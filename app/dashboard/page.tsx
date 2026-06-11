@@ -28,6 +28,7 @@ type Certificate = {
   section_name: string | null;
   score: number;
   created_at: string;
+  issued_at?: string;
   pdf_url?: string;
 };
 
@@ -360,6 +361,7 @@ export default function Dashboard() {
       .eq('user_id', session.user.id)
       .order('issued_at', { ascending: false });
     console.log('Certificates found:', certData?.length, certError);
+    console.log('Certificate issued_at:', certData?.[0]?.issued_at);
     setCertificates(certData || []);
     setLoadingCertificates(false);
   }
@@ -800,6 +802,18 @@ export default function Dashboard() {
   const completedCount = section1Modules.filter(m => progress[m.id]?.completed).length;
   const progressPercentage = (completedCount / section1Modules.length) * 100;
 
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return 'Date unavailable';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Date unavailable';
+    return date.toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
+  const shortName = (name: string | null) => {
+    if (!name) return 'Certificate';
+    return name.includes(':') ? name.split(':')[1].trim() : name;
+  };
+
   return (
     <>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -1026,25 +1040,27 @@ export default function Dashboard() {
                 <p className="text-gray-500">Complete modules to earn certificates</p>
               </div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {certificates.map((cert) => (
-                  <div key={cert.id} className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-bold text-gray-800">{cert.module_name ?? cert.section_name ?? 'Certificate'}</p>
-                        <p className="text-sm text-gray-500 mt-1">Score: {cert.score}%</p>
-                        <p className="text-xs text-gray-400 mt-1">{new Date(cert.created_at).toLocaleDateString()}</p>
-                      </div>
-                      <div className="text-3xl">🏆</div>
+                  <div key={cert.id} className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm flex flex-col gap-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-semibold text-gray-800 text-sm leading-snug">
+                        {shortName(cert.module_name ?? cert.section_name)}
+                      </p>
+                      <span className="text-2xl flex-shrink-0">🏆</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-gray-500">
+                      <span className="bg-green-100 text-green-700 font-medium px-2 py-0.5 rounded-full">{cert.score}%</span>
+                      <span>{formatDate(cert.issued_at)}</span>
                     </div>
                     {cert.pdf_url && (
                       <a
                         href={cert.pdf_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-3 inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                        className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
                       >
-                        ⬇️ Download Certificate
+                        ⬇️ Download
                       </a>
                     )}
                   </div>
