@@ -2,13 +2,51 @@
 
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 
+/* ── Scroll-triggered fade-in wrapper ──────────────────────── */
+function FadeIn({
+  children,
+  delay = 0,
+  className = '',
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
+      { threshold: 0.1 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return (
+    <div
+      ref={ref}
+      style={{ transitionDelay: `${delay}ms` }}
+      className={`transition-all duration-700 ${
+        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+      } ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ── Main component ─────────────────────────────────────────── */
 export default function Home() {
   const router = useRouter();
   const supabase = createClient();
   const [isLoading, setIsLoading] = useState(true);
   const [refCode, setRefCode] = useState<string | null>(null);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -17,45 +55,51 @@ export default function Home() {
 
     async function checkAuth() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        router.push('/dashboard');
-      }
+      if (user) router.push('/dashboard');
       setIsLoading(false);
     }
     checkAuth();
+
+    const onScroll = () => setScrolled(window.scrollY > 60);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
   }, [supabase, router]);
 
   function goToSignUp() {
     router.push(refCode ? `/auth/sign-up?ref=${refCode}` : '/auth/sign-up');
   }
 
-  // Show loading spinner while checking auth
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-900 to-blue-700">
-        <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center bg-[#0A0A0A]">
+        <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-900 to-blue-700">
-      {/* Navigation Bar */}
-      <nav className="bg-white/10 backdrop-blur-sm border-b border-white/20">
+    <div className="min-h-screen bg-[#0A0A0A] text-white">
+
+      {/* ── STICKY NAV ──────────────────────────────────────── */}
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          scrolled
+            ? 'bg-[#0A0A0A]/95 backdrop-blur-sm border-b border-white/10 shadow-lg'
+            : 'bg-transparent'
+        }`}
+      >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
-          <div className="text-white text-2xl font-bold">
-            🎬 SetReady
-          </div>
-          <div className="space-x-3 sm:space-x-4">
+          <span className="text-white text-xl font-bold tracking-tight">🎬 SetReady</span>
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => router.push('/auth/sign-in')}
-              className="px-3 sm:px-4 py-2 text-white hover:bg-white/10 rounded-lg transition text-sm sm:text-base"
+              className="px-3 sm:px-4 py-2 text-white/70 hover:text-white text-sm transition"
             >
               Sign In
             </button>
             <button
-              onClick={() => goToSignUp()}
-              className="px-3 sm:px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition font-semibold text-sm sm:text-base"
+              onClick={goToSignUp}
+              className="px-4 py-2 bg-amber-500 text-black rounded-xl hover:bg-amber-400 transition-all duration-200 font-semibold text-sm"
             >
               Get Started
             </button>
@@ -63,74 +107,426 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20 text-center">
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-4 sm:mb-6">
-          Set Ready: Background Performer Essential Film Industry Training
-        </h1>
-        <p className="text-lg sm:text-xl text-blue-100 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
-          Professional training for background actors. Learn, pass your modules, and earn your certificates.
-        </p>
-        <button
-          onClick={() => goToSignUp()}
-          className="px-6 sm:px-8 py-2.5 sm:py-3 bg-amber-500 text-white text-base sm:text-lg rounded-lg hover:bg-amber-600 transition font-semibold"
-        >
-          Start Learning Today →
-        </button>
-      </div>
+      {/* ── HERO ────────────────────────────────────────────── */}
+      <section className="hero-grain relative min-h-screen flex flex-col justify-center items-center text-center px-4 overflow-hidden">
+        {/* Layered background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0A0A0A] via-[#0f0f0f] to-[#0A0A0A]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,rgba(245,158,11,0.07)_0%,transparent_70%)]" />
 
-      {/* Features Section */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-        <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
-          {/* Feature 1 - Paragraph REMOVED as requested */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-white">
-            <div className="text-4xl mb-4">📚</div>
-            <h3 className="text-xl font-bold mb-2">Learn at Your Pace</h3>
-            {/* Paragraph removed - only icon and title remain */}
+        <div className="relative z-10 max-w-4xl mx-auto">
+          {/* Pill badge */}
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs font-semibold mb-8 animate-fade-in">
+            🎬 Canada&apos;s #1 Background Performer Training
           </div>
 
-          {/* Feature 2 */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-white">
-            <div className="text-4xl mb-4">✓</div>
-            <h3 className="text-xl font-bold mb-2">Test Your Knowledge</h3>
-            <p className="text-blue-100 text-sm sm:text-base">
-              Take module quizzes and earn 80% or higher to pass and advance.
-            </p>
-          </div>
-
-          {/* Feature 3 */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-white">
-            <div className="text-4xl mb-4">🎓</div>
-            <h3 className="text-xl font-bold mb-2">Earn Certificates</h3>
-            <p className="text-blue-100 text-sm sm:text-base">
-              Download your certificates and showcase your professional training.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Referral Program Banner */}
-      <div className="border-t border-b border-white/20 bg-white/5 py-3 text-center px-4">
-        <p className="text-sm text-blue-100">Refer a friend and earn 20% commission. <span className="text-blue-200">Share your unique code when friends subscribe.</span></p>
-        <p className="text-xs text-blue-300 mt-0.5">
-          <button onClick={goToSignUp} className="underline hover:text-white transition">Learn more after signing up →</button>
-        </p>
-      </div>
-
-      {/* Call to Action Footer */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-        <div className="bg-amber-500/20 rounded-lg p-6 sm:p-8 text-center">
-          <h2 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">
-            Ready to Start Your Training?
-          </h2>
-          <button
-            onClick={() => goToSignUp()}
-            className="px-5 sm:px-6 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition font-semibold"
+          {/* Headline */}
+          <h1
+            className="text-5xl sm:text-6xl md:text-7xl font-bold text-white mb-6 leading-tight animate-fade-in-up"
           >
-            Sign Up Now - Free
-          </button>
+            Your Career<br />
+            <span className="text-amber-400">Starts Here</span>
+          </h1>
+
+          {/* Sub-headline */}
+          <p
+            className="text-lg sm:text-xl text-gray-400 mb-10 max-w-2xl mx-auto animate-fade-in-up"
+            style={{ animationDelay: '0.15s' }}
+          >
+            Professional acting training trusted by background performers across Canada
+          </p>
+
+          {/* CTA buttons */}
+          <div
+            className="flex flex-col sm:flex-row gap-4 justify-center mb-12 animate-fade-in-up"
+            style={{ animationDelay: '0.3s' }}
+          >
+            <button
+              onClick={() => router.push('/preview')}
+              className="px-8 py-4 bg-amber-500 text-black text-base font-bold rounded-xl hover:bg-amber-400 hover:scale-105 transition-all duration-200 shadow-lg shadow-amber-500/20"
+            >
+              Start Learning Free →
+            </button>
+            <button
+              onClick={() => router.push('/preview')}
+              className="px-8 py-4 bg-transparent text-white border border-white/25 text-base font-semibold rounded-xl hover:bg-white/5 transition-all duration-200"
+            >
+              View Curriculum
+            </button>
+          </div>
+
+          {/* Trust badges */}
+          <div
+            className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-gray-500 animate-fade-in-up"
+            style={{ animationDelay: '0.45s' }}
+          >
+            {['Cancel Anytime', '30-Day Guarantee', 'Industry Certified', 'Mobile Friendly'].map(b => (
+              <span key={b} className="flex items-center gap-1.5">
+                <span className="text-green-400 font-bold">✓</span> {b}
+              </span>
+            ))}
+          </div>
         </div>
+
+        {/* Scroll arrow */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 opacity-30 animate-bounce">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 5v14M5 12l7 7 7-7" />
+          </svg>
+        </div>
+      </section>
+
+      {/* ── SOCIAL PROOF MARQUEE ───────────────────────────── */}
+      <section className="bg-[#111111] border-y border-white/8 py-4 overflow-hidden select-none">
+        <div className="flex animate-marquee whitespace-nowrap">
+          {[0, 1].map(i => (
+            <div key={i} className="flex items-center gap-10 px-10 shrink-0">
+              <span className="text-amber-400 text-sm font-semibold">500+ Performers Trained</span>
+              <span className="w-1 h-1 rounded-full bg-gray-700 shrink-0" />
+              <span className="text-gray-500 text-sm">9 Professional Modules</span>
+              <span className="w-1 h-1 rounded-full bg-gray-700 shrink-0" />
+              <span className="text-gray-500 text-sm">Industry Expert Content</span>
+              <span className="w-1 h-1 rounded-full bg-gray-700 shrink-0" />
+              <span className="text-amber-400 text-sm tracking-wider">★★★★★</span>
+              <span className="text-gray-500 text-sm">4.9 Average Rating</span>
+              <span className="w-1 h-1 rounded-full bg-gray-700 shrink-0" />
+              <span className="text-gray-500 text-sm">30-Day Guarantee</span>
+              <span className="w-1 h-1 rounded-full bg-gray-700 shrink-0" />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── PROBLEM / SOLUTION ─────────────────────────────── */}
+      <section className="bg-[#F9FAFB] py-20 px-4">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 items-start">
+
+          {/* Problem */}
+          <FadeIn>
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 h-full">
+              <span className="inline-block px-3 py-1 bg-red-100 text-red-600 text-xs font-bold rounded-full mb-5 uppercase tracking-wide">
+                The Problem
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 leading-snug">
+                Breaking into the industry is harder than it looks
+              </h2>
+              <div className="space-y-4">
+                {[
+                  'Not knowing set etiquette costs you callbacks',
+                  'Missing industry terminology marks you as amateur',
+                  'No guidance on rates means leaving money behind',
+                ].map(pt => (
+                  <div key={pt} className="flex items-start gap-3">
+                    <span className="text-red-500 font-bold text-lg mt-0.5 shrink-0">✗</span>
+                    <p className="text-gray-600 leading-snug">{pt}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+
+          {/* Solution */}
+          <FadeIn delay={150}>
+            <div className="bg-[#0A0A0A] rounded-2xl p-8 shadow-sm border border-amber-500/20 h-full">
+              <span className="inline-block px-3 py-1 bg-amber-500/20 text-amber-400 text-xs font-bold rounded-full mb-5 uppercase tracking-wide">
+                The Solution
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6 leading-snug">
+                SetReady changes everything
+              </h2>
+              <div className="space-y-4">
+                {[
+                  'Master professional set conduct in hours, not years',
+                  'Speak the language that gets you hired again',
+                  'Know your worth and negotiate confidently',
+                ].map(pt => (
+                  <div key={pt} className="flex items-start gap-3">
+                    <span className="text-amber-400 font-bold text-lg mt-0.5 shrink-0">✓</span>
+                    <p className="text-gray-300 leading-snug">{pt}</p>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={goToSignUp}
+                className="mt-8 w-full py-3 bg-amber-500 text-black font-bold rounded-xl hover:bg-amber-400 transition-all duration-200"
+              >
+                Start Learning Free →
+              </button>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ── CURRICULUM PREVIEW ─────────────────────────────── */}
+      <section className="bg-[#0A0A0A] py-20 px-4">
+        <div className="max-w-6xl mx-auto">
+          <FadeIn>
+            <div className="text-center mb-14">
+              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+                Everything You Need to Succeed
+              </h2>
+              <p className="text-gray-400 max-w-xl mx-auto">
+                Two comprehensive sections designed by industry professionals
+              </p>
+            </div>
+          </FadeIn>
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+
+            {/* Section 1 — gold */}
+            <FadeIn delay={100}>
+              <div className="relative bg-[#1A1A1A] rounded-2xl p-8 border border-amber-500/40 shadow-xl shadow-amber-500/5 h-full flex flex-col">
+                <span className="absolute -top-3.5 left-6 px-3 py-1 bg-amber-500 text-black text-xs font-bold rounded-full uppercase tracking-wide">
+                  Most Popular
+                </span>
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-white mb-2">Background Acting Essentials</h3>
+                  <p className="text-amber-400 text-3xl font-bold">
+                    $9.99
+                    <span className="text-sm text-gray-400 font-normal">/month</span>
+                  </p>
+                </div>
+                <ul className="space-y-3 mb-6 flex-1">
+                  {[
+                    'Film Set Terminology',
+                    'Background Acting Terms & Performance',
+                    'Set Etiquette & Professional Conduct',
+                    'Safety on Set',
+                    'Industry Standards, Pay & Career Advancement',
+                  ].map(m => (
+                    <li key={m} className="flex items-start gap-2 text-sm text-gray-300">
+                      <span className="text-amber-400 font-bold shrink-0 mt-0.5">✓</span> {m}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs text-gray-500 mb-6 border-t border-white/10 pt-4">
+                  Includes: Quizzes, Certificates, Progress Tracking
+                </p>
+                <button
+                  onClick={() => router.push('/preview')}
+                  className="w-full py-3 bg-amber-500 text-black font-bold rounded-xl hover:bg-amber-400 transition-all duration-200"
+                >
+                  Start Section 1 →
+                </button>
+              </div>
+            </FadeIn>
+
+            {/* Section 2 — silver */}
+            <FadeIn delay={200}>
+              <div className="relative bg-[#1A1A1A] rounded-2xl p-8 border border-gray-600/40 shadow-xl h-full flex flex-col">
+                <span className="absolute -top-3.5 left-6 px-3 py-1 bg-gray-600 text-white text-xs font-bold rounded-full uppercase tracking-wide">
+                  Advanced
+                </span>
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-white mb-2">Advanced Acting Techniques</h3>
+                  <p className="text-gray-200 text-3xl font-bold">
+                    $19.99
+                    <span className="text-sm text-gray-400 font-normal"> one-time</span>
+                  </p>
+                </div>
+                <ul className="space-y-3 mb-6 flex-1">
+                  {[
+                    'Foundation (Stanislavski)',
+                    'Audition Technique (Shurtleff)',
+                    'Scene Study (Uta Hagen)',
+                    'Advanced Technique (Meisner, Adler)',
+                  ].map(m => (
+                    <li key={m} className="flex items-start gap-2 text-sm text-gray-300">
+                      <span className="text-gray-400 font-bold shrink-0 mt-0.5">✓</span> {m}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs text-gray-500 mb-6 border-t border-white/10 pt-4">
+                  Includes: Master Class Content, Certificates
+                </p>
+                <button
+                  onClick={() => router.push('/preview')}
+                  className="w-full py-3 bg-transparent text-white border border-white/25 font-bold rounded-xl hover:bg-white/8 transition-all duration-200"
+                >
+                  Unlock Section 2 →
+                </button>
+              </div>
+            </FadeIn>
+          </div>
+        </div>
+      </section>
+
+      {/* ── INSTRUCTOR CREDIBILITY ─────────────────────────── */}
+      <section className="bg-[#F9FAFB] py-20 px-4">
+        <div className="max-w-6xl mx-auto">
+          <FadeIn>
+            <div className="text-center mb-14">
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+                Learn From The Masters
+              </h2>
+              <p className="text-gray-500 max-w-xl mx-auto">
+                Our curriculum is built on the proven methods of the world&apos;s greatest acting teachers
+              </p>
+            </div>
+          </FadeIn>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                name: 'Stanislavski',
+                technique: 'System Method',
+                desc: 'The father of modern acting. His System teaches truthful emotional memory and living honestly under imaginary circumstances.',
+              },
+              {
+                name: 'Meisner',
+                technique: 'Repetition Technique',
+                desc: "Sanford Meisner's technique trains actors to live fully in the moment and respond authentically to their scene partners.",
+              },
+              {
+                name: 'Uta Hagen',
+                technique: 'Object Exercises',
+                desc: "Hagen's practical exercises ground actors in physical specificity and connect them to the reality of their environment.",
+              },
+              {
+                name: 'Shurtleff',
+                technique: 'Audition Technique',
+                desc: "Michael Shurtleff's 12 guideposts give actors a clear roadmap to nail every audition with intention and confidence.",
+              },
+            ].map((ins, i) => (
+              <FadeIn key={ins.name} delay={i * 80}>
+                <div className="bg-[#1A1A1A] rounded-2xl p-6 border-t-2 border-amber-500 h-full">
+                  <h3 className="text-white font-bold text-lg mb-1">{ins.name}</h3>
+                  <p className="text-amber-400 text-sm font-semibold mb-3">{ins.technique}</p>
+                  <p className="text-gray-400 text-sm leading-relaxed">{ins.desc}</p>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FEATURES ───────────────────────────────────────── */}
+      <section className="bg-[#0A0A0A] py-20 px-4">
+        <div className="max-w-6xl mx-auto">
+          <FadeIn>
+            <div className="text-center mb-14">
+              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Everything Included</h2>
+              <p className="text-gray-500">One subscription, all the tools you need to succeed</p>
+            </div>
+          </FadeIn>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              { icon: '🎓', title: 'Professional Certificates', desc: 'Earn industry certificates for every module you complete' },
+              { icon: '📊', title: 'Progress Tracking',         desc: 'Track every module, quiz score, and daily streak' },
+              { icon: '📅', title: 'Work Log',                  desc: 'Log your bookings, pay rates, and production details' },
+              { icon: '🔗', title: 'Agency Connect',            desc: 'Direct link to Agency Click for background availability' },
+              { icon: '💰', title: 'Referral Rewards',          desc: 'Earn 20% commission on every friend you refer' },
+              { icon: '📱', title: 'Mobile Ready',              desc: 'Fully optimized for phones — train anywhere, anytime' },
+            ].map((f, i) => (
+              <FadeIn key={f.title} delay={i * 60}>
+                <div className="bg-[#1A1A1A] rounded-2xl p-6 border border-white/5 hover:border-amber-500/20 transition-all duration-200 h-full">
+                  <div className="text-3xl mb-4">{f.icon}</div>
+                  <h3 className="text-white font-bold mb-2">{f.title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">{f.desc}</p>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── TESTIMONIALS ───────────────────────────────────── */}
+      <section className="bg-[#F9FAFB] py-20 px-4">
+        <div className="max-w-6xl mx-auto">
+          <FadeIn>
+            <div className="text-center mb-14">
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+                What Performers Are Saying
+              </h2>
+            </div>
+          </FadeIn>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                quote: 'SetReady completely changed how I approach auditions. I booked three productions in my first month after completing Section 1.',
+                name: 'Sarah M.',
+                location: 'Vancouver, BC',
+              },
+              {
+                quote: 'The set etiquette module alone was worth the subscription. I finally feel confident walking onto any set.',
+                name: 'James T.',
+                location: 'Toronto, ON',
+              },
+              {
+                quote: 'The Stanislavski and Meisner content is genuinely professional level. This is not basic stuff.',
+                name: 'Maria L.',
+                location: 'Calgary, AB',
+              },
+            ].map((t, i) => (
+              <FadeIn key={t.name} delay={i * 100}>
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-4 h-full">
+                  <p className="text-amber-400 text-lg tracking-wider">★★★★★</p>
+                  <p className="text-gray-700 text-sm leading-relaxed flex-1">&ldquo;{t.quote}&rdquo;</p>
+                  <div>
+                    <p className="text-gray-900 font-semibold text-sm">— {t.name}</p>
+                    <p className="text-gray-400 text-xs mt-0.5">{t.location}</p>
+                  </div>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── GUARANTEE ──────────────────────────────────────── */}
+      <section className="bg-amber-500 py-16 px-4">
+        <FadeIn>
+          <div className="max-w-3xl mx-auto text-center">
+            <div className="text-6xl mb-5">🛡️</div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-black mb-4">
+              30-Day Money Back Guarantee
+            </h2>
+            <p className="text-black/70 text-base sm:text-lg max-w-xl mx-auto mb-8 leading-relaxed">
+              If you complete less than 10% of the content and feel SetReady isn&apos;t right for you,
+              we will refund your subscription. No questions asked.
+            </p>
+            <button
+              onClick={() => router.push('/preview')}
+              className="px-8 py-4 bg-black text-white font-bold rounded-xl hover:bg-gray-900 hover:scale-105 transition-all duration-200 shadow-lg"
+            >
+              Start Risk Free →
+            </button>
+          </div>
+        </FadeIn>
+      </section>
+
+      {/* ── REFERRAL SLIM BANNER ───────────────────────────── */}
+      <div className="bg-[#111111] border-y border-white/8 py-3 text-center px-4">
+        <p className="text-sm text-gray-500">
+          💰 Refer a friend and earn 20% commission on their subscription{' '}
+          <span className="text-gray-600">— paid monthly via e-transfer</span>
+        </p>
       </div>
+
+      {/* ── FOOTER ─────────────────────────────────────────── */}
+      <footer className="bg-[#0A0A0A] border-t border-white/8 py-12 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
+            <div>
+              <p className="text-white font-bold text-xl">🎬 SetReady</p>
+              <p className="text-gray-600 text-sm mt-1">Professional training for background performers</p>
+            </div>
+            <nav className="flex flex-wrap justify-center gap-6 text-sm text-gray-500">
+              <Link href="/terms"   className="hover:text-white transition">Terms</Link>
+              <Link href="/privacy" className="hover:text-white transition">Privacy</Link>
+              <a href="mailto:setready@mail.com" className="hover:text-white transition">Contact</a>
+            </nav>
+          </div>
+          <div className="mt-8 pt-6 border-t border-white/8 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <p className="text-xs text-gray-700">© 2026 SetReady. All rights reserved.</p>
+            <a href="mailto:setready@mail.com" className="text-xs text-gray-700 hover:text-gray-400 transition">
+              setready@mail.com
+            </a>
+          </div>
+        </div>
+      </footer>
+
     </div>
   );
 }
