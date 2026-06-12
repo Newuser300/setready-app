@@ -161,9 +161,6 @@ export default function SignUpModal({ onClose }: SignUpModalProps) {
             <p style={{ fontSize: '0.875rem', color: '#374151', marginBottom: '0.375rem' }}>
               Section 1:{' '}
               <span style={{ fontWeight: '600', color: '#111827' }}>$9.99/month</span>
-              {'  •  '}
-              Section 2:{' '}
-              <span style={{ fontWeight: '600', color: '#111827' }}>$19.99 once</span>
             </p>
             <p style={{ fontSize: '0.75rem', color: '#6B7280' }}>
               ✓ Cancel anytime{'  •  '}✓ No hidden fees

@@ -336,58 +336,73 @@ export default function PreviewPage() {
               {[
                 {
                   icon: '📋',
-                  title: 'Work Log',
-                  desc: 'Log every booking, production name, location, and pay rate. Track your career growth.',
+                  title: 'Work Log & Earnings Tracker',
+                  desc: 'Track every booking — production name, role type, hours worked and total pay. Your complete film industry work history in one place.',
+                },
+                {
+                  icon: '💰',
+                  title: 'Rate Calculator',
+                  desc: 'Calculate your exact pay for any booking. Union and non-union rates based on the official 2025-2028 UBCP/ACTRA agreement.',
+                },
+                {
+                  icon: '📄',
+                  title: 'Upload Work Vouchers',
+                  desc: 'Photograph and store your union and non-union work vouchers directly inside each work log entry. Always have proof of your work days ready.',
                 },
                 {
                   icon: '🏆',
                   title: 'Certificates',
-                  desc: 'Earn professional certificates for each completed module. Download and share anywhere.',
-                },
-                {
-                  icon: '💰',
-                  title: 'Referrals',
-                  desc: 'Earn 20% commission on every friend you refer. Paid monthly via Interac e-Transfer.',
-                },
-                {
-                  icon: '💰',
-                  title: 'Calculate Your Earnings',
-                  desc: 'Instantly calculate your gross and net pay for any booking using union or non-union rates.',
-                },
-                {
-                  icon: '📄',
-                  title: 'Upload Your Vouchers',
-                  desc: 'Attach your union or non-union vouchers directly to each work log entry for safekeeping.',
+                  desc: 'Earn a certificate for every module you complete. Download and share your achievements with agents and casting directors.',
                 },
                 {
                   icon: '🤝',
-                  title: 'Find an Agent',
-                  desc: 'Browse a curated list of background talent agencies across Canada and find your match.',
+                  title: 'Referrals',
+                  desc: 'Refer friends and earn 20% commission on every subscription. Request payouts directly through the app.',
+                },
+                {
+                  icon: '🎭',
+                  title: 'Set Etiquette Simulator',
+                  desc: 'Test your on-set knowledge with 10 real scenarios. Learn how to handle tricky situations before they happen on a real set.',
+                },
+                {
+                  icon: '📖',
+                  title: 'Glossary',
+                  desc: 'A to Z reference of every film set term you need to know. Search instantly while you are on set.',
+                },
+                {
+                  icon: '🎯',
+                  title: 'Goal Tracking',
+                  desc: 'Set career goals and track your progress. Days worked, agencies registered, vouchers earned and more.',
+                },
+                {
+                  icon: '👥',
+                  title: 'Film Contacts',
+                  desc: 'Build your industry contact list. Save details for directors, ADs, agents, makeup artists and fellow performers you meet on set.',
+                },
+                {
+                  icon: '📔',
+                  title: 'On-Set Journal',
+                  desc: 'Record your experiences after every booking. Who you met, what you learned and memorable moments — with photo upload.',
+                },
+                {
+                  icon: '📋',
+                  title: 'Proof of Residency',
+                  desc: 'Store your residency documents securely. Email them to production directly from the app when requested on set.',
+                },
+                {
+                  icon: '👔',
+                  title: 'What to Wear on Set',
+                  desc: 'A complete background performer clothing guide. Know exactly what to wear and what to avoid before every booking.',
                 },
                 {
                   icon: '🎬',
                   title: 'Discover What\'s Filming',
-                  desc: 'Stay up to date with current and upcoming productions filming in British Columbia.',
+                  desc: 'Direct link to the UBCP/ACTRA production list — see every active production currently filming in BC.',
                 },
                 {
-                  icon: '👥',
-                  title: 'Build a Contact List',
-                  desc: 'Save directors, ADs, casting directors, and fellow performers you meet on set.',
-                },
-                {
-                  icon: '🎭',
-                  title: 'Run Through Simulations',
-                  desc: 'Practice real on-set scenarios and test your knowledge before your next booking.',
-                },
-                {
-                  icon: '🎯',
-                  title: 'Track Your Goals',
-                  desc: 'Set career milestones and track your progress as a background performer.',
-                },
-                {
-                  icon: '📔',
-                  title: 'Journal Your Journey',
-                  desc: 'Record every shoot day — what you learned, who you met, and how it went.',
+                  icon: '🤝',
+                  title: 'Find an Agent',
+                  desc: 'Browse our directory of background performer agencies across Canada organized by city and province.',
                 },
               ].map((f, i) => (
                 <FadeIn key={f.title} delay={i * 60} className="snap-start shrink-0 w-72 sm:w-auto">
