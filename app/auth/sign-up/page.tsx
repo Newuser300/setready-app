@@ -80,32 +80,33 @@ export default function SignUp() {
     }
 
     if (data.user) {
-      const profileData: Record<string, unknown> = {
-        id: data.user.id,
-        email: email,
-        name: name,
-        province: province,
-        subscription_status: 'inactive',
-        section2_unlocked: false,
-        total_points: 0,
-        section1_completed: false,
-      };
+      const token = data.session?.access_token;
 
-      if (referralCode) {
-        profileData.referred_by = referralCode;
+      const res = await fetch('/api/auth/create-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          id: data.user.id,
+          email,
+          name,
+          province,
+          referred_by: referralCode || null,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        console.error('Failed to create user profile:', errData);
+        setError('Account created but profile setup failed: ' + (errData.error || 'Unknown error'));
+        setLoading(false);
+        return;
       }
 
-      const { error: profileError } = await supabase
-        .from('users')
-        .upsert(profileData, { onConflict: 'id' });
-
-      if (profileError) {
-        console.error('Failed to create user profile:', profileError);
-        setError('Account created but profile setup failed. Please contact support.');
-      } else {
-        sessionStorage.removeItem('referral_code');
-        router.push('/dashboard');
-      }
+      sessionStorage.removeItem('referral_code');
+      router.push('/dashboard');
     } else {
       setError('Sign up failed. Please try again.');
     }
