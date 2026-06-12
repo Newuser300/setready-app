@@ -21,7 +21,7 @@ const MODULE_NAMES: Record<number, string> = {
 };
 
 function getAdminEmails(): string[] {
-  return (process.env.ADMIN_EMAILS || '')
+  return (process.env.ADMIN_EMAILS || 'mikebhangu@gmail.com')
     .split(',')
     .map(e => e.trim().toLowerCase())
     .filter(Boolean);

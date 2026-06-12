@@ -537,7 +537,7 @@ export default function Dashboard() {
       const user = session.user;
       setUser(user);
 
-      const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+      const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || 'mikebhangu@gmail.com').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
       setIsAdmin(adminEmails.includes(user.email?.toLowerCase() || ''));
 
       const { data } = await supabase
@@ -1018,12 +1018,6 @@ export default function Dashboard() {
               💰 Rate Calculator
             </button>
             <button
-              onClick={() => router.push('/simulator')}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
-            >
-              🎭 Scenario Simulator
-            </button>
-            <button
               onClick={() => router.push('/glossary')}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
             >
@@ -1156,6 +1150,22 @@ export default function Dashboard() {
                 </Link>
               );
             })}
+          </div>
+
+          {/* ── Scenario Simulator Banner ── */}
+          <div className="my-8 rounded-2xl overflow-hidden shadow-lg" style={{ backgroundColor: '#F59E0B' }}>
+            <div className="px-6 py-7 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-tight">🎭 Set Etiquette Simulator</h2>
+                <p className="text-gray-800 font-medium mt-1 text-base">Test your on-set knowledge with real scenarios</p>
+              </div>
+              <Link
+                href="/simulator"
+                className="shrink-0 px-7 py-3 bg-gray-900 text-white font-bold text-base rounded-xl hover:bg-gray-800 active:scale-95 transition shadow-md"
+              >
+                Launch Simulator →
+              </Link>
+            </div>
           </div>
 
           {/* Secret Section 2 - LOCKED until all Section 1 complete */}
