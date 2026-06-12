@@ -878,6 +878,14 @@ export default function Dashboard() {
             >
               🍁 Find Agencies
             </button>
+            <a
+              href="https://ubcpactra.ca/agreements/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
+            >
+              ⚖️ Know Your Rights – UBCP
+            </a>
           </div>
 
           {/* PAYMENT STATUS CARDS - UPDATED to use Stripe functions */}
