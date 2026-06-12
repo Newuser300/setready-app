@@ -38,7 +38,7 @@ export async function GET(request: Request) {
       .select('id, email, name, subscription_status, section2_unlocked, referral_code, referred_by, created_at')
       .order('created_at', { ascending: false })
       .limit(20),
-    supabaseAdmin.from('user_progress').select('module_id, score').eq('completed', true),
+    supabaseAdmin.from('user_progress').select('user_id, module_id, score').eq('completed', true),
     supabaseAdmin.from('modules').select('id, module_number, title').order('module_number'),
     supabaseAdmin.from('certificates').select('module_id').eq('certificate_type', 'module'),
   ]);
@@ -49,6 +49,34 @@ export async function GET(request: Request) {
   const allProgress = allProgressResult.data || [];
   const modules = modulesResult.data || [];
 
+  // Per-user completed module count for the Progress column
+  const progressByUserId: Record<string, number> = {};
+  allProgress.forEach((p: { user_id: string; module_id: string; score: number }) => {
+    if (p.user_id) progressByUserId[p.user_id] = (progressByUserId[p.user_id] || 0) + 1;
+  });
+
+  // Look up referrer emails for the Referred By column
+  const referrerIds = (recentUsersResult.data || [])
+    .filter(u => u.referred_by)
+    .map(u => u.referred_by as string);
+
+  const referrerEmailMap: Record<string, string> = {};
+  if (referrerIds.length > 0) {
+    const { data: referrers } = await supabaseAdmin
+      .from('users')
+      .select('id, email')
+      .in('id', referrerIds);
+    (referrers || []).forEach((r: { id: string; email: string }) => {
+      referrerEmailMap[r.id] = r.email;
+    });
+  }
+
+  const recentUsersEnriched = (recentUsersResult.data || []).map(u => ({
+    ...u,
+    referrer_email: u.referred_by ? (referrerEmailMap[u.referred_by] || null) : null,
+    progress_count: progressByUserId[u.id] || 0,
+  }));
+
   const certCountByModuleNumber: Record<number, number> = {};
   (certsByModuleResult.data || []).forEach((c: { module_id: number }) => {
     if (c.module_id != null) {
@@ -57,7 +85,7 @@ export async function GET(request: Request) {
   });
 
   const progressByModuleId: Record<string, { count: number; totalScore: number }> = {};
-  allProgress.forEach((p: { module_id: string; score: number }) => {
+  allProgress.forEach((p: { user_id: string; module_id: string; score: number }) => {
     if (!progressByModuleId[p.module_id]) progressByModuleId[p.module_id] = { count: 0, totalScore: 0 };
     progressByModuleId[p.module_id].count++;
     progressByModuleId[p.module_id].totalScore += p.score || 0;
@@ -87,7 +115,7 @@ export async function GET(request: Request) {
       pendingPayouts: pendingPayouts.length,
       pendingPayoutAmount,
     },
-    recentUsers: recentUsersResult.data || [],
+    recentUsers: recentUsersEnriched,
     moduleStats,
     systemInfo: {
       stripeMode,

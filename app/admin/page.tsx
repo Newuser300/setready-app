@@ -23,7 +23,29 @@ type RecentUser = {
   section2_unlocked: boolean;
   referral_code: string | null;
   referred_by: string | null;
+  referrer_email: string | null;
+  progress_count: number;
   created_at: string;
+};
+
+type IssuedCert = {
+  id: string;
+  user_id: string;
+  user_email: string;
+  user_name: string | null;
+  certificate_type: string;
+  module_id: number | null;
+  module_name: string | null;
+  score: number;
+  issued_at: string;
+};
+
+type InProgressUser = {
+  user_id: string;
+  email: string;
+  name: string | null;
+  completed_count: number;
+  cert_count: number;
 };
 
 type ModuleStat = {
@@ -84,6 +106,25 @@ export default function AdminPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [backfillResults, setBackfillResults] = useState<any>(null);
   const [backfillError, setBackfillError] = useState('');
+
+  // Certificates tab
+  const [certsLoading, setCertsLoading] = useState(false);
+  const [issuedCerts, setIssuedCerts] = useState<IssuedCert[]>([]);
+  const [inProgressUsers, setInProgressUsers] = useState<InProgressUser[]>([]);
+  const [certsLoaded, setCertsLoaded] = useState(false);
+
+  // Remove user modal
+  const [showRemoveUser, setShowRemoveUser] = useState(false);
+  const [removeUserEmail, setRemoveUserEmail] = useState('');
+  const [removeUserLoading, setRemoveUserLoading] = useState(false);
+  const [removeUserInfo, setRemoveUserInfo] = useState<{
+    id: string; email: string; name: string | null;
+    subscription_status: string | null; stripe_subscription_id: string | null;
+    created_at: string; completed_modules: number; certificates: number;
+  } | null>(null);
+  const [removeUserError, setRemoveUserError] = useState('');
+  const [removeUserDone, setRemoveUserDone] = useState<string[] | null>(null);
+  const [confirmDeleteUser, setConfirmDeleteUser] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -240,6 +281,73 @@ export default function AdminPage() {
     setBackfillLoading(false);
   }
 
+  // ── Certificates helpers ───────────────────────────────────────────────────
+
+  async function loadCertificates() {
+    if (certsLoaded) return;
+    setCertsLoading(true);
+    const res = await fetch('/api/admin/certificates', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setIssuedCerts(data.issuedCerts || []);
+      setInProgressUsers(data.inProgress || []);
+      setCertsLoaded(true);
+    }
+    setCertsLoading(false);
+  }
+
+  // ── Remove user helpers ────────────────────────────────────────────────────
+
+  function openRemoveUser() {
+    setShowRemoveUser(true);
+    setRemoveUserEmail('');
+    setRemoveUserInfo(null);
+    setRemoveUserError('');
+    setRemoveUserDone(null);
+    setConfirmDeleteUser(false);
+  }
+
+  function closeRemoveUser() {
+    setShowRemoveUser(false);
+    setRemoveUserEmail('');
+    setRemoveUserInfo(null);
+    setRemoveUserError('');
+    setRemoveUserDone(null);
+    setConfirmDeleteUser(false);
+  }
+
+  async function findRemoveUser() {
+    if (!removeUserEmail.trim()) return;
+    setRemoveUserLoading(true);
+    setRemoveUserError('');
+    setRemoveUserInfo(null);
+    const res = await fetch(`/api/admin/remove-user?email=${encodeURIComponent(removeUserEmail.trim())}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const data = await res.json();
+    if (!res.ok) setRemoveUserError(data.error || 'User not found.');
+    else setRemoveUserInfo(data);
+    setRemoveUserLoading(false);
+  }
+
+  async function executeRemoveUser() {
+    if (!removeUserInfo) return;
+    setRemoveUserLoading(true);
+    setRemoveUserError('');
+    const res = await fetch('/api/admin/remove-user', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ userId: removeUserInfo.id }),
+    });
+    const data = await res.json();
+    if (!res.ok) setRemoveUserError(data.error || 'Deletion failed.');
+    else setRemoveUserDone(data.log || []);
+    setRemoveUserLoading(false);
+    setConfirmDeleteUser(false);
+  }
+
   async function runBackfill() {
     if (!backfillUserInfo?.userId) return;
     setBackfillLoading(true);
@@ -314,6 +422,9 @@ export default function AdminPage() {
                 setActiveSection(item.key);
                 if (item.key === 'admins' && envAdmins.length === 0 && dbAdmins.length === 0) {
                   loadAdmins();
+                }
+                if (item.key === 'certificates') {
+                  loadCertificates();
                 }
               }}
               className={`px-4 py-3 text-sm font-medium transition border-b-2 whitespace-nowrap ${
@@ -444,7 +555,7 @@ export default function AdminPage() {
                 <table className="min-w-full divide-y divide-gray-200 text-sm">
                   <thead className="bg-gray-50">
                     <tr>
-                      {['Email', 'Name', 'Joined', 'Status', 'Section 2', 'Referral Code', 'Referred By'].map(h => (
+                      {['Email', 'Name', 'Joined', 'Subscription', 'Progress', 'Section 2', 'Referral Code', 'Referred By'].map(h => (
                         <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -461,8 +572,19 @@ export default function AdminPage() {
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
                             u.subscription_status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
                           }`}>
-                            {u.subscription_status || 'none'}
+                            {u.subscription_status === 'active' ? '✓ Active' : 'Not Subscribed'}
                           </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {u.progress_count > 0 ? (
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
+                              u.progress_count >= 9 ? 'bg-green-100 text-green-700'
+                              : u.progress_count >= 5 ? 'bg-blue-100 text-blue-700'
+                              : 'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {u.progress_count}/9 modules
+                            </span>
+                          ) : <span className="text-gray-400 text-xs">—</span>}
                         </td>
                         <td className="px-4 py-3">
                           {u.section2_unlocked
@@ -475,14 +597,14 @@ export default function AdminPage() {
                             : <span className="text-gray-400 text-xs">—</span>}
                         </td>
                         <td className="px-4 py-3">
-                          {u.referred_by
-                            ? <code className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-mono">{u.referred_by}</code>
+                          {u.referrer_email
+                            ? <span className="text-xs text-gray-700">{u.referrer_email}</span>
                             : <span className="text-gray-400 text-xs">—</span>}
                         </td>
                       </tr>
                     ))}
                     {recentUsers.length === 0 && (
-                      <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">No users found.</td></tr>
+                      <tr><td colSpan={8} className="px-4 py-10 text-center text-gray-400">No users found.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -520,40 +642,113 @@ export default function AdminPage() {
             CERTIFICATES
         ══════════════════════════════════════ */}
         {activeSection === 'certificates' && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-bold text-gray-800">Module Completion Stats</h2>
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      {['#', 'Module', 'Completions', 'Avg Score', 'Certificates'].map(h => (
-                        <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
-                    {moduleStats.map(m => (
-                      <tr key={m.moduleNumber} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-gray-400 font-mono text-xs">{m.moduleNumber}</td>
-                        <td className="px-4 py-3 text-gray-800 font-medium">{m.title}</td>
-                        <td className="px-4 py-3 font-bold text-blue-700">{m.completions}</td>
-                        <td className="px-4 py-3">
-                          {m.completions > 0
-                            ? <span className={`font-semibold ${m.avgScore >= 80 ? 'text-green-600' : m.avgScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>{m.avgScore}%</span>
-                            : <span className="text-gray-400">—</span>}
-                        </td>
-                        <td className="px-4 py-3 font-bold text-yellow-600">{m.certificates}</td>
-                      </tr>
-                    ))}
-                    {moduleStats.length === 0 && (
-                      <tr><td colSpan={5} className="px-4 py-10 text-center text-gray-400">No module data.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+          <div className="space-y-8">
+
+            {/* Section A: Issued Certificates */}
+            <div>
+              <h2 className="text-xl font-bold text-gray-800 mb-1">Section A — Issued Certificates</h2>
+              <p className="text-sm text-gray-500 mb-4">All certificates awarded to users.</p>
+              {certsLoading ? (
+                <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
+                  <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                  <p className="text-gray-500 text-sm">Loading certificates...</p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          {['User', 'Type', 'Module', 'Score', 'Issued'].map(h => (
+                            <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase whitespace-nowrap">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 bg-white">
+                        {issuedCerts.map(c => (
+                          <tr key={c.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3">
+                              <p className="text-gray-800 font-medium text-xs">{c.user_email}</p>
+                              {c.user_name && <p className="text-gray-400 text-xs">{c.user_name}</p>}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                c.certificate_type === 'module' ? 'bg-blue-100 text-blue-700'
+                                : c.certificate_type === 'section1' ? 'bg-green-100 text-green-700'
+                                : 'bg-purple-100 text-purple-700'
+                              }`}>{c.certificate_type}</span>
+                            </td>
+                            <td className="px-4 py-3 text-gray-600 text-xs">{c.module_id ? `Module ${c.module_id}` : '—'}</td>
+                            <td className="px-4 py-3">
+                              <span className={`text-xs font-semibold ${c.score >= 80 ? 'text-green-600' : c.score >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                {c.score}%
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
+                              {c.issued_at ? new Date(c.issued_at).toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
+                            </td>
+                          </tr>
+                        ))}
+                        {issuedCerts.length === 0 && (
+                          <tr><td colSpan={5} className="px-4 py-10 text-center text-gray-400">No certificates issued yet.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
 
+            {/* Section B: In-Progress Users */}
+            <div>
+              <h2 className="text-xl font-bold text-gray-800 mb-1">Section B — In Progress</h2>
+              <p className="text-sm text-gray-500 mb-4">Users who completed at least one module but have not finished all 9.</p>
+              {certsLoading ? (
+                <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
+                  <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                  <p className="text-gray-500 text-sm">Loading...</p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          {['User', 'Modules Completed', 'Certs Issued'].map(h => (
+                            <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase whitespace-nowrap">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 bg-white">
+                        {inProgressUsers.map(u => (
+                          <tr key={u.user_id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3">
+                              <p className="text-gray-800 font-medium text-xs">{u.email}</p>
+                              {u.name && <p className="text-gray-400 text-xs">{u.name}</p>}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                u.completed_count >= 7 ? 'bg-green-100 text-green-700'
+                                : u.completed_count >= 4 ? 'bg-blue-100 text-blue-700'
+                                : 'bg-yellow-100 text-yellow-700'
+                              }`}>
+                                {u.completed_count}/9
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-gray-600 text-xs">{u.cert_count}</td>
+                          </tr>
+                        ))}
+                        {inProgressUsers.length === 0 && (
+                          <tr><td colSpan={3} className="px-4 py-10 text-center text-gray-400">No users currently in progress.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Backfill hint */}
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 flex items-start gap-3">
               <span className="text-2xl">🔧</span>
               <div>
@@ -601,6 +796,18 @@ export default function AdminPage() {
                 >
                   Go to Referrals Panel →
                 </Link>
+              </div>
+
+              <div className="bg-white rounded-xl border border-red-200 shadow-sm p-6">
+                <div className="text-3xl mb-3">🗑️</div>
+                <h3 className="font-bold text-gray-800 mb-1">Remove User Account</h3>
+                <p className="text-sm text-gray-500 mb-4">Permanently delete a user: cancel their Stripe subscription with prorated refund, then remove all their data.</p>
+                <button
+                  onClick={openRemoveUser}
+                  className="w-full px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition"
+                >
+                  Open Remove Tool
+                </button>
               </div>
 
               {systemInfo && (
@@ -809,6 +1016,126 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+
+      {/* ══════════════════════════════════════
+          REMOVE USER MODAL
+      ══════════════════════════════════════ */}
+      {showRemoveUser && (
+        <div
+          style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+          onClick={e => { if (e.target === e.currentTarget) closeRemoveUser(); }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-gray-800">🗑️ Remove User Account</h2>
+                <p className="text-xs text-gray-500">Permanently delete a user and cancel their subscription</p>
+              </div>
+              <button onClick={closeRemoveUser} className="text-gray-400 hover:text-gray-600 text-xl font-bold leading-none">×</button>
+            </div>
+
+            <div className="px-6 py-5 space-y-4">
+              {removeUserError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{removeUserError}</div>
+              )}
+
+              {!removeUserInfo && !removeUserDone && (
+                <div className="space-y-3">
+                  <label className="block text-sm font-semibold text-gray-700">User Email</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={removeUserEmail}
+                      onChange={e => setRemoveUserEmail(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') findRemoveUser(); }}
+                      placeholder="user@example.com"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                    <button
+                      onClick={findRemoveUser}
+                      disabled={removeUserLoading || !removeUserEmail.trim()}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold text-sm hover:bg-blue-700 transition disabled:opacity-50"
+                    >
+                      {removeUserLoading ? '...' : 'Find User'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {removeUserInfo && !removeUserDone && (
+                <div className="space-y-4">
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-1.5 text-sm">
+                    <p><span className="font-semibold text-gray-600">Email:</span> {removeUserInfo.email}</p>
+                    <p><span className="font-semibold text-gray-600">Name:</span> {removeUserInfo.name || '—'}</p>
+                    <p><span className="font-semibold text-gray-600">Status:</span> {removeUserInfo.subscription_status || 'none'}</p>
+                    <p><span className="font-semibold text-gray-600">Joined:</span> {new Date(removeUserInfo.created_at).toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                    <p><span className="font-semibold text-gray-600">Completed Modules:</span> {removeUserInfo.completed_modules}</p>
+                    <p><span className="font-semibold text-gray-600">Certificates:</span> {removeUserInfo.certificates}</p>
+                    {removeUserInfo.stripe_subscription_id && (
+                      <p className="text-orange-700 font-semibold text-xs mt-2">⚠ Active subscription will be cancelled with prorated refund</p>
+                    )}
+                  </div>
+
+                  {!confirmDeleteUser ? (
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setConfirmDeleteUser(true)}
+                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold text-sm hover:bg-red-700 transition"
+                      >
+                        Delete This Account
+                      </button>
+                      <button
+                        onClick={() => { setRemoveUserInfo(null); setRemoveUserEmail(''); setRemoveUserError(''); }}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+                      >
+                        Back
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="bg-red-50 border border-red-300 rounded-lg p-4 space-y-3">
+                      <p className="text-sm font-bold text-red-800">This cannot be undone. Permanently delete <span className="underline">{removeUserInfo.email}</span>?</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={executeRemoveUser}
+                          disabled={removeUserLoading}
+                          className="flex-1 px-4 py-2 bg-red-700 text-white rounded-lg font-semibold text-sm hover:bg-red-800 transition disabled:opacity-50"
+                        >
+                          {removeUserLoading ? 'Deleting...' : 'Yes, Permanently Delete'}
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteUser(false)}
+                          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {removeUserDone && (
+                <div className="space-y-3">
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="font-semibold text-green-800 text-sm">✅ User account deleted successfully</p>
+                  </div>
+                  <div className="space-y-1">
+                    {removeUserDone.map((line, i) => (
+                      <p key={i} className="text-xs text-gray-600">• {line}</p>
+                    ))}
+                  </div>
+                  <button
+                    onClick={closeRemoveUser}
+                    className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ══════════════════════════════════════
           CERTIFICATE BACKFILL MODAL
