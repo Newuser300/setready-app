@@ -272,9 +272,10 @@ export default function Dashboard() {
       const res = await fetch('/api/referral/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ code: preCheckoutCode.trim() }),
+        body: JSON.stringify({ code: preCheckoutCode.trim().toUpperCase() }),
       });
       const data = await res.json();
+      console.log('Referral apply response:', res.status, data);
       if (!res.ok) {
         setPreCheckoutError(data.error || 'Invalid code. Please check and try again.');
         return;

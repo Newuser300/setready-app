@@ -1,57 +1,64 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
+import { supabaseAdmin } from '@/utils/isAdmin';
 
 async function getUser(req: Request) {
   const token = req.headers.get('authorization')?.replace('Bearer ', '') ?? null;
   if (!token) return null;
-  const { data: { user }, error } = await admin.auth.getUser(token);
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
   return error ? null : user;
 }
 
 export async function POST(req: Request) {
+  console.log('=== Referral Apply Route Called ===');
+
   const user = await getUser(req);
+  console.log('Auth user:', user?.email ?? 'null');
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { code } = await req.json();
-  if (!code?.trim()) return NextResponse.json({ error: 'Missing code' }, { status: 400 });
+  let code: string;
+  try {
+    const body = await req.json();
+    code = body.code?.trim().toUpperCase() ?? '';
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+  }
 
-  const normalizedCode = code.trim().toUpperCase();
+  console.log('Code to apply:', code);
+  if (!code) return NextResponse.json({ error: 'Missing code' }, { status: 400 });
 
-  // Fetch current user's profile
-  const { data: currentUser } = await admin
+  // Fetch current user profile
+  const { data: currentUser, error: userError } = await supabaseAdmin
     .from('users')
     .select('referred_by, referral_code')
     .eq('id', user.id)
     .maybeSingle();
 
-  // Already applied — cannot change
+  console.log('Current user:', JSON.stringify(currentUser));
+  if (userError) console.error('User fetch error:', JSON.stringify(userError));
+
+  // Already has a referral applied — treat as success so checkout proceeds
   if (currentUser?.referred_by) {
-    return NextResponse.json(
-      { error: 'You have already applied a referral code. Referral codes cannot be changed.' },
-      { status: 403 }
-    );
+    console.log('User already has referral code:', currentUser.referred_by);
+    return NextResponse.json({ success: true, alreadyApplied: true });
   }
 
   // Cannot use own code
-  if (currentUser?.referral_code === normalizedCode) {
+  if (currentUser?.referral_code === code) {
     return NextResponse.json(
       { error: 'You cannot use your own referral code.' },
       { status: 400 }
     );
   }
 
-  // Find the referrer by code
-  const { data: referrer } = await admin
+  // Verify the referrer exists
+  const { data: referrer, error: referrerError } = await supabaseAdmin
     .from('users')
     .select('id')
-    .eq('referral_code', normalizedCode)
+    .eq('referral_code', code)
     .maybeSingle();
+
+  console.log('Referrer:', referrer?.id ?? 'null');
+  if (referrerError) console.error('Referrer lookup error:', JSON.stringify(referrerError));
 
   if (!referrer) {
     return NextResponse.json(
@@ -60,7 +67,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // Double-check: referrer cannot be the current user
   if (referrer.id === user.id) {
     return NextResponse.json(
       { error: 'You cannot use your own referral code.' },
@@ -69,15 +75,24 @@ export async function POST(req: Request) {
   }
 
   // Apply the code
-  const { error: updateError } = await admin
+  const { error: updateError } = await supabaseAdmin
     .from('users')
-    .update({ referred_by: normalizedCode })
+    .update({ referred_by: code })
     .eq('id', user.id);
 
   if (updateError) {
-    console.error('Error applying referral code:', updateError);
-    return NextResponse.json({ error: 'Failed to apply code. Please try again.' }, { status: 500 });
+    console.error('Referral update error:', {
+      message: updateError.message,
+      code: updateError.code,
+      details: updateError.details,
+      hint: updateError.hint,
+    });
+    return NextResponse.json(
+      { error: updateError.message || 'Failed to save referral code.' },
+      { status: 500 }
+    );
   }
 
+  console.log('Referral code applied successfully:', code, 'for', user.email);
   return NextResponse.json({ success: true });
 }
