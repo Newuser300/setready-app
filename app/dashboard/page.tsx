@@ -696,7 +696,7 @@ export default function Dashboard() {
       fd.append('file', file);
       fd.append('workLogId', logId);
       if (voucherType) fd.append('voucherType', voucherType);
-      const res = await fetch('/api/vouchers', {
+      const res = await fetch('/api/work-log/voucher', {
         method: 'POST',
         headers: { Authorization: `Bearer ${session.access_token}` },
         body: fd,
@@ -720,7 +720,7 @@ export default function Dashboard() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) { alert('Please sign in again'); return; }
-      const res = await fetch(`/api/vouchers?id=${logId}`, {
+      const res = await fetch(`/api/work-log/voucher?id=${logId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
@@ -734,7 +734,7 @@ export default function Dashboard() {
   async function viewVoucher(logId: string) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) { alert('Please sign in again'); return; }
-    const res = await fetch(`/api/vouchers/signed-url?workLogId=${logId}`, {
+    const res = await fetch(`/api/work-log/voucher/view?workLogId=${logId}`, {
       headers: { Authorization: `Bearer ${session.access_token}` },
     });
     if (res.ok) {
@@ -1756,7 +1756,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Work Logs Table */}
+            {/* Work Log Cards */}
             {workLogs.length === 0 ? (
               <div className="bg-white rounded-2xl p-8 text-center border border-gray-200">
                 <div className="text-5xl mb-3">📋</div>
@@ -1764,143 +1764,138 @@ export default function Dashboard() {
                 <p className="text-sm text-gray-400">Click "Add Work Entry" to start tracking your film industry work.</p>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">📅 Date</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">🎬 Production</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">📍 Location</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Role</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Character</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">⏱️ Hours</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">🎭 Union</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">💰 Gross</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">💵 Final</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">✅ Paid</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">📎 Voucher</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {workLogs.map((log) => (
-                        <tr key={log.id} className="hover:bg-gray-50 transition">
-                          <td className="px-4 py-3 text-sm text-gray-700">{new Date(log.work_date).toLocaleDateString()}</td>
-                          <td className="px-4 py-3 text-sm font-medium text-gray-800">{log.production_name}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{log.location || '—'}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{log.role || '—'}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{log.character_name || '—'}</td>
-                          <td className="px-4 py-3 text-sm text-gray-700">{log.hours_worked}h</td>
-                          <td className="px-4 py-3 text-sm">
-                            {log.is_union ? (
-                              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">Union</span>
-                            ) : (
-                              <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">Non-Union</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-700">${log.gross_pay?.toFixed(2)}</td>
-                          <td className="px-4 py-3 text-sm font-semibold text-gray-800">${log.final_pay?.toFixed(2)}</td>
-                          <td className="px-4 py-3 text-sm">
-                            {log.paid ? (
-                              <span className="text-green-600 font-medium">✓ Yes</span>
-                            ) : (
-                              <span className="text-red-500">✗ No</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            {uploadingLogId === log.id ? (
-                              <span className="text-xs text-blue-600 animate-pulse">Uploading…</span>
-                            ) : removingLogId === log.id ? (
-                              <span className="text-xs text-red-400 animate-pulse">Removing…</span>
-                            ) : log.voucher_filename ? (
-                              <div className="flex flex-col gap-1.5">
-                                {log.voucher_type && (
-                                  <span className={`text-xs px-1.5 py-0.5 rounded-full w-fit font-semibold ${log.voucher_type === 'Union Voucher' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
-                                    {log.voucher_type}
-                                  </span>
-                                )}
-                                <span className="text-xs text-gray-600 truncate max-w-[130px]" title={log.voucher_filename}>
-                                  📄 {log.voucher_filename}
-                                </span>
-                                <div className="flex gap-1 items-center">
-                                  <button onClick={() => viewVoucher(log.id)} className="text-xs text-blue-600 hover:underline">👁 View</button>
-                                  <span className="text-gray-300">|</span>
-                                  {confirmRemoveVoucherId === log.id ? (
-                                    <>
-                                      <button onClick={() => removeVoucher(log.id)} className="text-xs text-red-600 font-semibold hover:underline">Yes</button>
-                                      <button onClick={() => setConfirmRemoveVoucherId(null)} className="text-xs text-gray-400 hover:underline ml-0.5">No</button>
-                                    </>
-                                  ) : (
-                                    <button onClick={() => setConfirmRemoveVoucherId(log.id)} className="text-xs text-red-500 hover:underline">🗑 Remove</button>
-                                  )}
-                                </div>
-                              </div>
-                            ) : voucherUploadId === log.id ? (
-                              <div className="space-y-1.5 min-w-[160px]">
-                                <select
-                                  value={pendingVoucherType}
-                                  onChange={e => setPendingVoucherType(e.target.value)}
-                                  className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-400"
-                                  autoFocus
-                                >
-                                  <option value="">Select type…</option>
-                                  <option value="Union Voucher">Union Voucher</option>
-                                  <option value="Non-Union Voucher">Non-Union Voucher</option>
-                                </select>
-                                <label className={`flex items-center justify-center gap-1 w-full px-2 py-1.5 text-xs font-semibold rounded-lg transition ${pendingVoucherType ? 'bg-blue-600 text-white cursor-pointer hover:bg-blue-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
-                                  📁 Choose File
-                                  <input
-                                    type="file"
-                                    className="hidden"
-                                    disabled={!pendingVoucherType}
-                                    accept=".jpg,.jpeg,.png,.heic,.heif,.pdf"
-                                    onChange={e => {
-                                      const file = e.target.files?.[0];
-                                      if (file && pendingVoucherType) uploadVoucher(log.id, file, pendingVoucherType);
-                                      e.target.value = '';
-                                    }}
-                                  />
-                                </label>
-                                <button
-                                  onClick={() => { setVoucherUploadId(null); setPendingVoucherType(''); }}
-                                  className="text-xs text-gray-400 hover:text-gray-600 w-full text-center"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            ) : (
+              <div className="space-y-4">
+                {workLogs.map((log) => (
+                  <div key={log.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+
+                    {/* Entry details */}
+                    <div className="px-5 pt-4 pb-4">
+                      {/* Top row: date, production, badges, actions */}
+                      <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-base font-bold text-gray-900">
+                            {new Date(log.work_date).toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })}
+                          </span>
+                          <span className="text-base font-semibold text-gray-700">{log.production_name}</span>
+                          {log.is_union ? (
+                            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">Union</span>
+                          ) : (
+                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">Non-Union</span>
+                          )}
+                          {log.paid ? (
+                            <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">✓ Paid</span>
+                          ) : (
+                            <span className="px-2 py-0.5 bg-red-50 text-red-500 rounded-full text-xs font-medium">Unpaid</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => editWorkLog(log)}
+                            title="Edit"
+                            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 transition"
+                          >✏️</button>
+                          <button
+                            onClick={() => deleteWorkLog(log.id)}
+                            title="Delete"
+                            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 transition"
+                          >🗑️</button>
+                        </div>
+                      </div>
+
+                      {/* Details row */}
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 mb-3">
+                        {log.location && <span>📍 {log.location}</span>}
+                        {log.role && <span>🎭 {log.role}</span>}
+                        {log.character_name && <span>🎬 {log.character_name}</span>}
+                        <span>⏱ {log.hours_worked}h</span>
+                      </div>
+
+                      {/* Earnings row */}
+                      <div className="flex flex-wrap gap-x-6 text-sm">
+                        <span className="text-gray-500">Gross: <span className="font-medium text-gray-700">${log.gross_pay?.toFixed(2)}</span></span>
+                        <span className="text-gray-500">Final Pay: <span className="font-bold text-gray-900">${log.final_pay?.toFixed(2)}</span></span>
+                      </div>
+                    </div>
+
+                    {/* ── Voucher section ── */}
+                    <div className="border-t border-gray-100 bg-gray-50 px-5 py-4">
+                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-3">📄 Work Voucher</p>
+
+                      {uploadingLogId === log.id ? (
+                        <p className="text-sm text-blue-500 animate-pulse">Uploading voucher…</p>
+                      ) : removingLogId === log.id ? (
+                        <p className="text-sm text-red-400 animate-pulse">Removing voucher…</p>
+                      ) : log.voucher_filename ? (
+                        /* Has voucher uploaded */
+                        <div className="flex flex-wrap items-center gap-3">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${log.voucher_type === 'Union Voucher' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-700'}`}>
+                            ✅ {log.voucher_type || 'Voucher'}
+                          </span>
+                          <span className="text-sm text-gray-600 truncate max-w-[200px]" title={log.voucher_filename}>
+                            {log.voucher_filename}
+                          </span>
+                          <button
+                            onClick={() => viewVoucher(log.id)}
+                            className="px-3 py-1.5 text-xs font-semibold bg-white border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition"
+                          >
+                            👁 View
+                          </button>
+                          {confirmRemoveVoucherId === log.id ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500">Remove voucher?</span>
                               <button
-                                onClick={() => { setVoucherUploadId(log.id); setPendingVoucherType(''); }}
-                                className="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600 font-medium border border-gray-200 hover:border-blue-300 px-2 py-1 rounded-lg transition whitespace-nowrap"
-                              >
-                                📄 Add Voucher
-                              </button>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            <div className="flex gap-2">
+                                onClick={() => removeVoucher(log.id)}
+                                className="px-3 py-1.5 text-xs font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                              >Yes, remove</button>
                               <button
-                                onClick={() => editWorkLog(log)}
-                                className="text-blue-600 hover:text-blue-800 transition"
-                                title="Edit"
-                              >
-                                ✏️
-                              </button>
-                              <button
-                                onClick={() => deleteWorkLog(log.id)}
-                                className="text-red-600 hover:text-red-800 transition"
-                                title="Delete"
-                              >
-                                🗑️
-                              </button>
+                                onClick={() => setConfirmRemoveVoucherId(null)}
+                                className="px-3 py-1.5 text-xs font-medium bg-white border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition"
+                              >Cancel</button>
                             </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                          ) : (
+                            <button
+                              onClick={() => setConfirmRemoveVoucherId(log.id)}
+                              className="px-3 py-1.5 text-xs font-semibold bg-white border border-red-200 text-red-500 rounded-lg hover:bg-red-50 transition"
+                            >
+                              🗑 Remove
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        /* No voucher — two type buttons that directly open the file picker */
+                        <div className="flex flex-wrap gap-3">
+                          <label className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl cursor-pointer transition select-none shadow-sm">
+                            🎭 Union Voucher
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept=".jpg,.jpeg,.png,.heic,.heif,.pdf"
+                              onChange={e => {
+                                const f = e.target.files?.[0];
+                                if (f) uploadVoucher(log.id, f, 'Union Voucher');
+                                e.target.value = '';
+                              }}
+                            />
+                          </label>
+                          <label className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 text-sm font-semibold rounded-xl cursor-pointer transition select-none shadow-sm">
+                            📋 Non-Union Voucher
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept=".jpg,.jpeg,.png,.heic,.heif,.pdf"
+                              onChange={e => {
+                                const f = e.target.files?.[0];
+                                if (f) uploadVoucher(log.id, f, 'Non-Union Voucher');
+                                e.target.value = '';
+                              }}
+                            />
+                          </label>
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                ))}
               </div>
             )}
           </div>
