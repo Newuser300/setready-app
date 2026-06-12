@@ -5,7 +5,7 @@ export async function GET(request: Request) {
   const admin = await verifyAdminRequest(request);
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const [certsResult, progressResult] = await Promise.all([
+  const [certsResult, progressResult, modulesResult] = await Promise.all([
     supabaseAdmin
       .from('certificates')
       .select('id, user_id, certificate_type, module_id, module_name, section_name, score, issued_at')
@@ -14,10 +14,20 @@ export async function GET(request: Request) {
       .from('user_progress')
       .select('user_id, module_id')
       .eq('completed', true),
+    supabaseAdmin
+      .from('modules')
+      .select('id, module_number')
+      .order('module_number'),
   ]);
 
   const certs = certsResult.data || [];
   const progress = progressResult.data || [];
+
+  // module UUID → module number
+  const moduleNumberMap: Record<string, number> = {};
+  (modulesResult.data || []).forEach((m: { id: string; module_number: number }) => {
+    moduleNumberMap[m.id] = m.module_number;
+  });
 
   // Collect all relevant user IDs
   const certUserIds = certs.map(c => c.user_id);
@@ -53,22 +63,29 @@ export async function GET(request: Request) {
     certCountByUser[c.user_id] = (certCountByUser[c.user_id] || 0) + 1;
   });
 
-  // Completed module count per user
+  // Completed module UUIDs per user
   const progressByUser: Record<string, Set<string>> = {};
   progress.forEach(p => {
     if (!progressByUser[p.user_id]) progressByUser[p.user_id] = new Set();
     progressByUser[p.user_id].add(p.module_id);
   });
 
-  // In-progress: has at least 1 completed module but fewer than 9
+  // In-progress: has 1–8 completed modules; include which module numbers they completed
   const inProgress = Object.entries(progressByUser)
-    .map(([userId, moduleSet]) => ({
-      user_id: userId,
-      email: userMap[userId]?.email || 'Unknown',
-      name: userMap[userId]?.name || null,
-      completed_count: moduleSet.size,
-      cert_count: certCountByUser[userId] || 0,
-    }))
+    .map(([userId, moduleUUIDs]) => {
+      const moduleNumbers = [...moduleUUIDs]
+        .map(uuid => moduleNumberMap[uuid])
+        .filter((n): n is number => n !== undefined)
+        .sort((a, b) => a - b);
+      return {
+        user_id: userId,
+        email: userMap[userId]?.email || 'Unknown',
+        name: userMap[userId]?.name || null,
+        completed_count: moduleUUIDs.size,
+        cert_count: certCountByUser[userId] || 0,
+        module_numbers: moduleNumbers,
+      };
+    })
     .filter(u => u.completed_count < 9 && u.completed_count > 0)
     .sort((a, b) => b.completed_count - a.completed_count);
 

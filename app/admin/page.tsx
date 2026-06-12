@@ -46,6 +46,7 @@ type InProgressUser = {
   name: string | null;
   completed_count: number;
   cert_count: number;
+  module_numbers: number[];
 };
 
 type ModuleStat = {
@@ -112,6 +113,7 @@ export default function AdminPage() {
   const [issuedCerts, setIssuedCerts] = useState<IssuedCert[]>([]);
   const [inProgressUsers, setInProgressUsers] = useState<InProgressUser[]>([]);
   const [certsLoaded, setCertsLoaded] = useState(false);
+  const [showInProgress, setShowInProgress] = useState(false);
 
   // Remove user modal
   const [showRemoveUser, setShowRemoveUser] = useState(false);
@@ -385,6 +387,35 @@ export default function AdminPage() {
     );
   }
 
+  // ── Certificates: group by user for compact display ───────────────────────
+  const CERT_MODULE_NAMES: Record<number, string> = {
+    1: 'Film Set Terminology',
+    2: 'Background Acting Terms & Performance',
+    3: 'Set Etiquette & Professional Conduct',
+    4: 'Safety on Set',
+    5: 'Industry Standards, Pay & Career Advancement',
+    6: 'Foundation (Stanislavski)',
+    7: 'Audition Technique (Shurtleff)',
+    8: 'Scene Study (Hagen)',
+    9: 'Advanced Technique (Meisner, Adler)',
+  };
+
+  type CertGroup = { email: string; name: string | null; certs: IssuedCert[]; lastEarned: string };
+  const certsByUser: Record<string, CertGroup> = {};
+  issuedCerts.forEach(cert => {
+    if (!certsByUser[cert.user_email]) {
+      certsByUser[cert.user_email] = { email: cert.user_email, name: cert.user_name, certs: [], lastEarned: cert.issued_at || '' };
+    }
+    certsByUser[cert.user_email].certs.push(cert);
+    if (cert.issued_at && cert.issued_at > certsByUser[cert.user_email].lastEarned) {
+      certsByUser[cert.user_email].lastEarned = cert.issued_at;
+    }
+  });
+  const groupedCertUsers = Object.values(certsByUser).sort((a, b) => b.certs.length - a.certs.length);
+  const usersWithAllSection1 = groupedCertUsers.filter(u =>
+    [1, 2, 3, 4, 5].every(n => u.certs.some(c => c.module_id === n))
+  ).length;
+
   const navItems: { key: NavSection; label: string; icon: string }[] = [
     { key: 'overview',     label: 'Overview',     icon: '📊' },
     { key: 'users',        label: 'Users',         icon: '👥' },
@@ -642,125 +673,202 @@ export default function AdminPage() {
             CERTIFICATES
         ══════════════════════════════════════ */}
         {activeSection === 'certificates' && (
-          <div className="space-y-8">
+          <div className="space-y-5">
 
-            {/* Section A: Issued Certificates */}
-            <div>
-              <h2 className="text-xl font-bold text-gray-800 mb-1">Section A — Issued Certificates</h2>
-              <p className="text-sm text-gray-500 mb-4">All certificates awarded to users.</p>
-              {certsLoading ? (
-                <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
-                  <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                  <p className="text-gray-500 text-sm">Loading certificates...</p>
-                </div>
-              ) : (
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          {['User', 'Type', 'Module', 'Score', 'Issued'].map(h => (
-                            <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase whitespace-nowrap">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200 bg-white">
-                        {issuedCerts.map(c => (
-                          <tr key={c.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-3">
-                              <p className="text-gray-800 font-medium text-xs">{c.user_email}</p>
-                              {c.user_name && <p className="text-gray-400 text-xs">{c.user_name}</p>}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                c.certificate_type === 'module' ? 'bg-blue-100 text-blue-700'
-                                : c.certificate_type === 'section1' ? 'bg-green-100 text-green-700'
-                                : 'bg-purple-100 text-purple-700'
-                              }`}>{c.certificate_type}</span>
-                            </td>
-                            <td className="px-4 py-3 text-gray-600 text-xs">{c.module_id ? `Module ${c.module_id}` : '—'}</td>
-                            <td className="px-4 py-3">
-                              <span className={`text-xs font-semibold ${c.score >= 80 ? 'text-green-600' : c.score >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                {c.score}%
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
-                              {c.issued_at ? new Date(c.issued_at).toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
-                            </td>
-                          </tr>
-                        ))}
-                        {issuedCerts.length === 0 && (
-                          <tr><td colSpan={5} className="px-4 py-10 text-center text-gray-400">No certificates issued yet.</td></tr>
-                        )}
-                      </tbody>
-                    </table>
+            {/* Summary stats */}
+            {!certsLoading && certsLoaded && (
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { value: groupedCertUsers.length, label: 'Users with certificates', color: 'text-blue-600' },
+                  { value: issuedCerts.length,       label: 'Total certificates issued', color: 'text-yellow-600' },
+                  { value: usersWithAllSection1,     label: 'Completed all Section 1',   color: 'text-green-600' },
+                ].map(s => (
+                  <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+                    <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+                    <p className="text-xs text-gray-500 mt-1">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Grouped certs table */}
+            {certsLoading ? (
+              <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
+                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                <p className="text-gray-500 text-sm">Loading certificates...</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="font-bold text-gray-800 text-sm">Certificates by User</h3>
+                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <span className="flex items-center gap-1">
+                      <span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: 3, backgroundColor: '#1a1a2e' }} />
+                      Section 1 (1–5)
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: 3, backgroundColor: '#7c3aed' }} />
+                      Section 2 (6–9)
+                    </span>
                   </div>
                 </div>
-              )}
-            </div>
-
-            {/* Section B: In-Progress Users */}
-            <div>
-              <h2 className="text-xl font-bold text-gray-800 mb-1">Section B — In Progress</h2>
-              <p className="text-sm text-gray-500 mb-4">Users who completed at least one module but have not finished all 9.</p>
-              {certsLoading ? (
-                <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
-                  <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                  <p className="text-gray-500 text-sm">Loading...</p>
-                </div>
-              ) : (
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          {['User', 'Modules Completed', 'Certs Issued'].map(h => (
-                            <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase whitespace-nowrap">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200 bg-white">
-                        {inProgressUsers.map(u => (
-                          <tr key={u.user_id} className="hover:bg-gray-50">
-                            <td className="px-4 py-3">
-                              <p className="text-gray-800 font-medium text-xs">{u.email}</p>
-                              {u.name && <p className="text-gray-400 text-xs">{u.name}</p>}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                u.completed_count >= 7 ? 'bg-green-100 text-green-700'
-                                : u.completed_count >= 4 ? 'bg-blue-100 text-blue-700'
-                                : 'bg-yellow-100 text-yellow-700'
-                              }`}>
-                                {u.completed_count}/9
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-gray-600 text-xs">{u.cert_count}</td>
-                          </tr>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        {['Email', 'Certificates Earned', 'Count', 'Last Earned'].map(h => (
+                          <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase whitespace-nowrap">{h}</th>
                         ))}
-                        {inProgressUsers.length === 0 && (
-                          <tr><td colSpan={3} className="px-4 py-10 text-center text-gray-400">No users currently in progress.</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 bg-white">
+                      {groupedCertUsers.map(u => (
+                        <tr key={u.email} className="hover:bg-gray-50">
+                          <td className="px-4 py-2.5">
+                            <p className="text-gray-800 text-xs font-medium">{u.email}</p>
+                            {u.name && <p className="text-gray-400 text-xs">{u.name}</p>}
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <div className="flex flex-wrap gap-px">
+                              {u.certs
+                                .filter(c => c.certificate_type === 'module' && c.module_id != null)
+                                .sort((a, b) => (a.module_id ?? 0) - (b.module_id ?? 0))
+                                .map(c => (
+                                  <span
+                                    key={c.id}
+                                    title={`${CERT_MODULE_NAMES[c.module_id!] || `Module ${c.module_id}`} — ${c.score}%`}
+                                    style={{
+                                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                      width: 28, height: 22, borderRadius: 4,
+                                      fontSize: 11, fontWeight: 700, color: '#fff', cursor: 'default',
+                                      backgroundColor: (c.module_id ?? 0) >= 6 ? '#7c3aed' : '#1a1a2e',
+                                    }}
+                                  >
+                                    {c.module_id}
+                                  </span>
+                                ))
+                              }
+                              {u.certs
+                                .filter(c => c.certificate_type !== 'module')
+                                .map(c => (
+                                  <span
+                                    key={c.id}
+                                    title={`${c.certificate_type} — ${c.score}%`}
+                                    style={{
+                                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                      padding: '0 5px', height: 22, borderRadius: 4,
+                                      fontSize: 10, fontWeight: 700, color: '#fff', cursor: 'default',
+                                      backgroundColor: '#059669',
+                                    }}
+                                  >
+                                    {c.certificate_type === 'section1' ? 'S1' : c.certificate_type === 'section2' ? 'S2' : c.certificate_type.substring(0, 3).toUpperCase()}
+                                  </span>
+                                ))
+                              }
+                            </div>
+                          </td>
+                          <td className="px-4 py-2.5 text-gray-700 font-semibold text-sm">{u.certs.length}</td>
+                          <td className="px-4 py-2.5 text-gray-500 text-xs whitespace-nowrap">
+                            {u.lastEarned ? new Date(u.lastEarned).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                      {groupedCertUsers.length === 0 && (
+                        <tr><td colSpan={4} className="px-4 py-10 text-center text-gray-400">No certificates issued yet.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
+              </div>
+            )}
+
+            {/* In Progress — collapsible */}
+            <div>
+              <button
+                onClick={() => setShowInProgress(p => !p)}
+                className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-800 transition mb-3"
+              >
+                <span className="text-xs">{showInProgress ? '▲' : '▼'}</span>
+                {showInProgress ? 'Hide' : 'Show'} In Progress ({inProgressUsers.length} users)
+              </button>
+
+              {showInProgress && (
+                certsLoading ? (
+                  <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                    <div className="w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            {['Email', 'Modules Completed', 'Count'].map(h => (
+                              <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase whitespace-nowrap">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 bg-white">
+                          {inProgressUsers.map(u => (
+                            <tr key={u.user_id} className="hover:bg-gray-50">
+                              <td className="px-4 py-2.5">
+                                <p className="text-gray-800 text-xs font-medium">{u.email}</p>
+                                {u.name && <p className="text-gray-400 text-xs">{u.name}</p>}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <div className="flex flex-wrap gap-px">
+                                  {(u.module_numbers || []).map(n => (
+                                    <span
+                                      key={n}
+                                      title={CERT_MODULE_NAMES[n] || `Module ${n}`}
+                                      style={{
+                                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                        width: 28, height: 22, borderRadius: 4,
+                                        fontSize: 11, fontWeight: 700, color: '#fff', cursor: 'default',
+                                        backgroundColor: n >= 6 ? '#7c3aed' : '#1a1a2e',
+                                        opacity: 0.65,
+                                      }}
+                                    >
+                                      {n}
+                                    </span>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                                  u.completed_count >= 7 ? 'bg-green-100 text-green-700'
+                                  : u.completed_count >= 4 ? 'bg-blue-100 text-blue-700'
+                                  : 'bg-yellow-100 text-yellow-700'
+                                }`}>
+                                  {u.completed_count}/9
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                          {inProgressUsers.length === 0 && (
+                            <tr><td colSpan={3} className="px-4 py-10 text-center text-gray-400">No users currently in progress.</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )
               )}
             </div>
 
             {/* Backfill hint */}
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 flex items-start gap-3">
-              <span className="text-2xl">🔧</span>
-              <div>
-                <p className="font-semibold text-amber-900 mb-1">Missing a certificate?</p>
-                <p className="text-sm text-amber-700 mb-3">Use the Certificate Backfill Tool to generate missing certificates for any user.</p>
-                <button
-                  onClick={() => { openBackfill(); setActiveSection('tools'); }}
-                  className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 transition"
-                >
-                  Open Backfill Tool →
-                </button>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
+              <span className="text-xl shrink-0">🔧</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-amber-900 text-sm">Missing a certificate?</p>
+                <p className="text-xs text-amber-700">Use the Backfill Tool to regenerate certificates for any user.</p>
               </div>
+              <button
+                onClick={() => { openBackfill(); setActiveSection('tools'); }}
+                className="px-3 py-2 bg-amber-600 text-white rounded-lg text-xs font-semibold hover:bg-amber-700 transition shrink-0"
+              >
+                Open Backfill →
+              </button>
             </div>
           </div>
         )}
