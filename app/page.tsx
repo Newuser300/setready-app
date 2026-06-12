@@ -192,12 +192,12 @@ export default function Home() {
                 The Problem
               </span>
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 leading-snug">
-                Breaking into the industry is harder than it looks
+                Breaking into the industry is harder than it looks.
               </h2>
               <div className="space-y-4">
                 {[
-                  'Not knowing set etiquette costs you callbacks',
-                  'Missing industry terminology marks you as amateur',
+                  'Not knowing set etiquette costs you callbacks.',
+                  'Missing industry terminology marks you as amateur.',
                   'Not knowing what to do can be stressful.',
                 ].map(pt => (
                   <div key={pt} className="flex items-start gap-3">
@@ -224,7 +224,8 @@ export default function Home() {
                   'Speak the language that gets you hired again.',
                   'Log your work. Upload your vouchers. Calculate your earnings.',
                   'Find an Agent. Discover what\'s filming. Journal your on-set journey.',
-                  'Build a contact list. Run through simulations. Track your goals.',
+                  'Build a contact list. Run through simulations. Know what to wear.',
+                  'Store Residency Docs. Save work vouchers. Calculate your earnings.',
                 ].map(pt => (
                   <div key={pt} className="flex items-start gap-3">
                     <span className="text-amber-500 font-bold text-lg mt-0.5 shrink-0">✓</span>
@@ -252,7 +253,7 @@ export default function Home() {
                 Everything You Need to Succeed
               </h2>
               <p className="text-gray-500 max-w-xl mx-auto">
-                Two comprehensive sections designed by industry professionals
+                Two comprehensive sections designed by industry professionals, and much more.
               </p>
             </div>
           </FadeIn>
@@ -339,53 +340,6 @@ export default function Home() {
       {/* CHANGE 4: "Learn From The Masters" instructor section removed entirely */}
 
       {/* CHANGE 5: "Everything Included" features section removed entirely */}
-
-      {/* ── TESTIMONIALS ───────────────────────────────────── */}
-      <section className="bg-[#F9FAFB] py-20 px-4">
-        <div className="max-w-6xl mx-auto">
-          <FadeIn>
-            <div className="text-center mb-14">
-              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-                What Performers Are Saying
-              </h2>
-            </div>
-          </FadeIn>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                quote: 'SetReady is perfect. I learned everything I needed to be a Background Performer.',
-                name: 'Sarah M.',
-                location: 'Vancouver, BC',
-              },
-              {
-                quote: 'The set etiquette module alone was worth the subscription. I finally feel confident walking onto any set.',
-                name: 'James T.',
-                location: 'Vancouver, BC',
-              },
-              {
-                quote: 'Section 2 was worth it.',
-                name: 'Maria L.',
-                location: 'Vancouver, BC',
-              },
-            ].map((t, i) => (
-              <FadeIn key={t.name} delay={i * 100}>
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-4 h-full">
-                  <div>
-                    <p className="text-amber-500 text-lg tracking-wider">★★★★★</p>
-                    <p className="text-xs text-gray-400 mt-0.5">5/5</p>
-                  </div>
-                  <p className="text-gray-700 text-sm leading-relaxed flex-1">&ldquo;{t.quote}&rdquo;</p>
-                  <div>
-                    <p className="text-gray-900 font-semibold text-sm">— {t.name}</p>
-                    <p className="text-gray-400 text-xs mt-0.5">{t.location}</p>
-                  </div>
-                </div>
-              </FadeIn>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ── REFERRAL SLIM BANNER ───────────────────────────── */}
       <div className="bg-gray-50 border-y border-gray-200 py-3 text-center px-4">
