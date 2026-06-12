@@ -69,26 +69,10 @@ const section1Modules = [
 ];
 
 const section2Modules = [
-  {
-    num: '06',
-    title: 'Foundation (Stanislavski)',
-    desc: 'The System Method that launched modern acting. Emotional memory and living truthfully.',
-  },
-  {
-    num: '07',
-    title: 'Audition Technique (Shurtleff)',
-    desc: "Shurtleff's 12 guideposts. Walk into every audition room with clarity and confidence.",
-  },
-  {
-    num: '08',
-    title: 'Scene Study (Uta Hagen)',
-    desc: 'Object exercises and substitution from one of the greatest acting teachers of all time.',
-  },
-  {
-    num: '09',
-    title: 'Advanced Technique (Meisner, Adler)',
-    desc: 'Meisner repetition and Adler imagination — creating truthful, compelling characters.',
-  },
+  { num: '06', title: 'Foundation' },
+  { num: '07', title: 'Audition Technique' },
+  { num: '08', title: 'Scene Study' },
+  { num: '09', title: 'Advanced Technique' },
 ];
 
 /* ── Locked module card ─────────────────────────────────────── */
@@ -101,7 +85,7 @@ function LockedCard({
 }: {
   num: string;
   title: string;
-  desc: string;
+  desc?: string;
   accent: 'gold' | 'silver';
   onUnlock: () => void;
 }) {
@@ -129,7 +113,7 @@ function LockedCard({
       <h3 className="text-gray-800 font-bold text-base mb-2 pr-6 leading-snug">{title}</h3>
 
       {/* Description */}
-      <p className="text-gray-500 text-sm leading-relaxed mb-4">{desc}</p>
+      {desc && <p className="text-gray-500 text-sm leading-relaxed mb-4">{desc}</p>}
 
       {/* Footer */}
       <p className={`text-xs font-medium ${isGold ? 'text-amber-600' : 'text-gray-500'}`}>

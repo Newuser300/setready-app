@@ -303,17 +303,13 @@ export default function Home() {
                 </span>
                 <div className="mb-6">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Advanced Acting Techniques</h3>
-                  <p className="text-gray-900 text-3xl font-bold">
-                    $19.99
-                    <span className="text-sm text-gray-500 font-normal"> one-time</span>
-                  </p>
                 </div>
                 <ul className="space-y-3 mb-6 flex-1">
                   {[
-                    'Foundation (Stanislavski)',
-                    'Audition Technique (Shurtleff)',
-                    'Scene Study (Uta Hagen)',
-                    'Advanced Technique (Meisner, Adler)',
+                    'Foundation',
+                    'Audition Technique',
+                    'Scene Study',
+                    'Advanced Technique',
                   ].map(m => (
                     <li key={m} className="flex items-start gap-2 text-sm text-gray-600">
                       <span className="text-gray-400 font-bold shrink-0 mt-0.5">✓</span> {m}
