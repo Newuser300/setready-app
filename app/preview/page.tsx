@@ -358,13 +358,21 @@ export default function PreviewPage() {
               <p className="text-gray-500 text-sm mb-10">Then subscribe from $9.99/month</p>
 
               {/* Trust badges */}
-              <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-gray-500">
+              <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-gray-500 mb-8">
                 {['Cancel Anytime', '30-Day Guarantee', 'Secure Payment'].map(b => (
                   <span key={b} className="flex items-center gap-1.5">
                     <span className="text-green-500 font-bold">✓</span> {b}
                   </span>
                 ))}
               </div>
+
+              {/* Agencies link */}
+              <a
+                href="/agencies"
+                className="text-sm text-amber-600 hover:text-amber-700 font-medium transition"
+              >
+                🍁 Find Background Agencies in Canada →
+              </a>
             </div>
           </FadeIn>
         </section>

@@ -872,6 +872,12 @@ export default function Dashboard() {
             >
               🎭 Background Availability – Agency Click
             </button>
+            <button
+              onClick={() => router.push('/agencies')}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
+            >
+              🍁 Find Agencies
+            </button>
           </div>
 
           {/* PAYMENT STATUS CARDS - UPDATED to use Stripe functions */}

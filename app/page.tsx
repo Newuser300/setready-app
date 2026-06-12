@@ -403,8 +403,9 @@ export default function Home() {
               <p className="text-gray-400 text-sm mt-1">Professional training for background performers</p>
             </div>
             <nav className="flex flex-wrap justify-center gap-6 text-sm text-gray-400">
-              <Link href="/terms"   className="hover:text-white transition">Terms</Link>
-              <Link href="/privacy" className="hover:text-white transition">Privacy</Link>
+              <Link href="/agencies" className="hover:text-white transition">Find Background Agencies in Canada →</Link>
+              <Link href="/terms"    className="hover:text-white transition">Terms</Link>
+              <Link href="/privacy"  className="hover:text-white transition">Privacy</Link>
               <a href="mailto:setready@mail.com" className="hover:text-white transition">Contact</a>
             </nav>
           </div>
