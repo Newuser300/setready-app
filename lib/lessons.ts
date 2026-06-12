@@ -254,6 +254,8 @@ Your call time is when you must be *ready to work*, not when you arrive. Profess
 
 **Lesson 3.6: Wardrobe and Props – Professional Handling**
 
+**Section A: On-Set Wardrobe and Props Protocol**
+
 **Wardrobe Protocol:**
 • Return all wardrobe at end of day
 • Report any damage immediately
@@ -263,6 +265,56 @@ Your call time is when you must be *ready to work*, not when you arrive. Profess
 • **Do not take props home** – this is theft
 • **Hero props** are valuable – handle with extreme care
 • **Weapons** – never touch without direction
+
+---
+
+**Section B: What to Wear to Set (From Home)**
+
+When the production does not provide your wardrobe, you are expected to show up camera-ready in appropriate clothing. Your outfit can make or break your booking.
+
+**❌ AVOID THESE:**
+• Logos, brand names, or large text (trademark issues on camera)
+• Bright white (it blows out under set lighting)
+• Neon or fluorescent colours (they bleed on camera)
+• Tight patterns or stripes (causes moiré effect on screen)
+• All-black outfits when told to wear black (you'll blend into the crew)
+
+**✅ ALWAYS BRING:**
+• 2–3 neutral outfit options (let Wardrobe choose)
+• Comfortable shoes you can stand in for 12+ hours
+• Layers – sets are often very cold (especially stages)
+• The same outfit from the previous day if returning for continuity
+
+**🧳 BUILD YOUR WARDROBE KIT:**
+
+| Item | Why |
+|------|-----|
+| 2–3 neutral shirts (grey, muted tones) | Versatile, camera-friendly |
+| Neutral trousers or skirts | Easy to match with tops |
+| Clean dress shoes + casual shoes | Different looks covered |
+| A simple blazer or cardigan | Elevates any look quickly |
+| Minimal, neutral accessories | Adds polish without distraction |
+| Period-appropriate items (if applicable) | For period productions |
+
+**🎬 PERIOD PRODUCTIONS:**
+If you're booked on a period production (historical drama, 1950s series, etc.), Wardrobe typically provides everything. However:
+• Never wear modern underwear visible above the neckline or waistband
+• Remove modern jewellery and watches before arriving
+• Avoid nail polish unless told otherwise
+• Ask if any modern items (glasses, hearing aids) need to be adjusted or covered
+
+**⚠️ IF WARDROBE REJECTS YOUR OUTFIT:**
+• Stay calm – it is not personal
+• Return to your bag and offer your other options
+• Wardrobe may have a replacement available on set
+• This is why you always bring multiple choices
+
+**🦶 COMFORT FOR LONG DAYS:**
+Film days regularly run 10–14 hours on your feet. Prioritize:
+• Broken-in shoes (never wear new shoes to set)
+• Moisture-wicking socks
+• Insoles if needed
+• Layers you can add or remove quickly between takes
 
 ---
 
@@ -1404,7 +1456,83 @@ The 12 Guideposts are not theoretical – they are practical tools for audition 
 | 11 | **Game Playing and Role Playing** | Who is pretending? | Find the mask and what's beneath |
 | 12 | **Mystery and Secret** | What is unsaid? | The unspoken is the whole scene |
 
-📖 **Required Reading:** *Audition: Everything an Actor Needs to Know to Get the Part* by Michael Shurtleff (1978)`,
+📖 **Required Reading:** *Audition: Everything an Actor Needs to Know to Get the Part* by Michael Shurtleff (1978)
+
+---
+
+**Lesson 7.15: Audition Formats – Cold Reading, Monologue, and Self-Tape**
+
+Understanding the format of an audition is as important as your preparation. Different formats demand different skills.
+
+---
+
+**Cold Reading**
+
+A **cold reading** is when you receive the sides immediately before or during the audition — sometimes with only minutes to prepare.
+
+**How to Prepare for a Cold Reading:**
+1. **Scan the scene** – Get the gist before reading line by line
+2. **Identify your character's want** – What do they need from this scene?
+3. **Find the top of the scene** – What is your character doing before the scene starts?
+4. **Pick one strong choice** – Commit to it. Don't hedge.
+5. **Hold the page at 45°** – So you can look up and make eye contact
+
+**Cold Reading Tips:**
+
+| Do | Don't |
+|----|-------|
+| Hold the sides — it's expected | Try to memorize everything in 5 minutes |
+| Glance up on emotional moments | Keep your eyes buried in the page |
+| Make a strong, specific choice | Play it safe and neutral |
+| Listen to your reader | Rush through to prove you know the lines |
+| Take a breath before starting | Jump in before you've settled |
+
+> 📖 **Pro Insight:** Casting directors know it's a cold read. They're watching *how* you make choices under pressure — not whether you have the lines memorized.
+
+---
+
+**Monologue Length**
+
+For auditions that require a prepared monologue:
+
+• **Target length: 60–90 seconds** (approximately 150–200 words spoken at a natural pace)
+• Under 60 seconds = too short to show range
+• Over 2 minutes = risks losing the casting director's attention
+• For student films and non-union work: 60–90 seconds is universally appropriate
+• For principal auditions with larger agencies: confirm the expected length in advance
+
+**Choosing Your Monologue:**
+- Contemporary is usually preferred over classical (unless casting specifically requires it)
+- Choose material that suits your current age range and casting type
+- Avoid overdone monologues unless you have a truly fresh take
+- Pick material that gives you something to *do*, not just *feel*
+
+---
+
+**Self-Tape Auditions**
+
+Self-tape is now the **most common audition format** in the Canadian film industry. Most initial auditions — especially for background-to-principal upgrades and principal roles — begin as self-tapes.
+
+**Standard Self-Tape Format:**
+
+| Element | Requirement |
+|---------|-------------|
+| Background | Neutral, uncluttered wall (grey, white, light blue) |
+| Lighting | Soft front light on your face — no harsh shadows |
+| Framing | Mid-shot: top of head to mid-chest |
+| Sound | Quiet room, no echo, external mic recommended |
+| Reader | Off-camera, consistent tone, not acting |
+| Slating | State your name and role at the start |
+| File format | MP4, under 500MB, labelled: LastName_FirstName_Role |
+
+**Self-Tape Tips:**
+• Film multiple takes and send your best — not your first
+• Wear character-appropriate clothing (refer to Lesson 3.6 for wardrobe guidance)
+• Submit same day unless given a deadline — early submissions are noticed
+• Review your tape before sending: check sound, framing, and performance
+• Do not add music, titles, or effects
+
+> 🎬 **Industry Reality:** A strong self-tape that arrives same-day beats a perfect tape that arrives late. Responsiveness signals professionalism.`,
 
   8: `Scene Study (Hagen) – The Actor's Craft
 

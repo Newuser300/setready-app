@@ -526,6 +526,18 @@ export const QUESTIONS: Question[] = [
     province_id: null
   },
 
+  {
+    module_id: 'e5b51522-90b4-4341-b082-ea667bb14ff1',
+    question_text: 'Which of the following should you AVOID wearing as a background performer?',
+    option_a: 'A plain grey t-shirt',
+    option_b: 'A shirt with a large visible brand logo',
+    option_c: 'Neutral trousers',
+    option_d: 'Comfortable broken-in shoes',
+    correct_answer: 'b',
+    explanation: 'Lesson 3.6: Logos and brand names cause trademark issues on camera and should always be avoided. Wardrobe departments will reject outfits with visible branding.',
+    province_id: null
+  },
+
   // =====================================================
   // MODULE 4: Safety on Set (15 questions)
   // UUID: 762fb8fb-5189-4943-adaa-92f4c16fac4f
