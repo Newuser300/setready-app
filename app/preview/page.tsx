@@ -132,32 +132,28 @@ export default function PreviewPage() {
     <div className="min-h-screen bg-white text-gray-900">
       {showModal && <SignUpModal onClose={() => setShowModal(false)} />}
 
-      {/* ── STICKY TOP BANNER (dark is intentional) ─────────── */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-gray-700 shadow-md">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-sm text-gray-300 truncate">
-              🎬 <span className="hidden sm:inline">Preview Mode — </span>Sign up to unlock full access
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
+      {/* ── STICKY NAV ──────────────────────────────────────── */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#1a1a2e] border-b border-gray-800 shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
+          <span className="text-white text-xl font-bold tracking-tight">🎬 SetReady</span>
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => router.push('/auth/sign-in')}
-              className="px-3 py-1.5 text-sm text-white/60 hover:text-white transition"
+              className="px-3 sm:px-4 py-2 text-gray-300 hover:text-white text-sm transition"
             >
               Sign In
             </button>
             <button
               onClick={() => setShowModal(true)}
-              className="px-4 py-1.5 text-sm bg-amber-500 text-black font-bold rounded-lg hover:bg-amber-400 transition-all duration-200"
+              className="px-4 py-2 bg-amber-500 text-black rounded-xl hover:bg-amber-400 transition-all duration-200 font-semibold text-sm"
             >
-              Create Account
+              Get Started
             </button>
           </div>
         </div>
-      </div>
+      </nav>
 
-      {/* offset for fixed banner */}
+      {/* offset for fixed nav */}
       <div className="pt-[52px]">
 
         {/* ── HERO AREA ───────────────────────────────────────── */}
