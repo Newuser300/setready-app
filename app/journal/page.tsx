@@ -68,13 +68,18 @@ export default function JournalPage() {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate]   = useState('');
 
-  // Photo state
-  // signedUrls: entryId → { photoId → signedUrl }
+  // Photo state for existing entries
   const [signedUrls, setSignedUrls] = useState<Record<string, Record<string, string>>>({});
-  const [loadingPhotos, setLoadingPhotos] = useState<string | null>(null); // entryId being loaded
+  const [loadingPhotos, setLoadingPhotos] = useState<string | null>(null);
   const [uploadingEntry, setUploadingEntry] = useState<string | null>(null);
   const [removingPhoto, setRemovingPhoto] = useState<string | null>(null);
-  const [lightbox, setLightbox] = useState<string | null>(null); // signed URL to show full-size
+
+  // Lightbox: list of signed URLs + current index
+  const [lightbox, setLightbox] = useState<{ urls: string[]; index: number } | null>(null);
+
+  // In-modal photo staging
+  const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
+  const [pendingPreviews, setPendingPreviews] = useState<string[]>([]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -94,10 +99,23 @@ export default function JournalPage() {
 
   useEffect(() => { if (token) fetchEntries(); }, [token, fetchEntries]);
 
-  // Fetch signed URLs for an entry's photos when it expands
+  // Keyboard nav for lightbox
+  useEffect(() => {
+    if (!lightbox) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'ArrowLeft')
+        setLightbox(prev => prev && prev.index > 0 ? { ...prev, index: prev.index - 1 } : prev);
+      if (e.key === 'ArrowRight')
+        setLightbox(prev => prev && prev.index < prev.urls.length - 1 ? { ...prev, index: prev.index + 1 } : prev);
+      if (e.key === 'Escape') setLightbox(null);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightbox]);
+
   async function loadSignedUrls(entryId: string, photos: PhotoMeta[]) {
     if (!token || photos.length === 0) return;
-    if (signedUrls[entryId]) return; // already loaded
+    if (signedUrls[entryId]) return;
     setLoadingPhotos(entryId);
     try {
       const res = await fetch(`/api/journal-photos/signed-url?entryId=${entryId}`, {
@@ -120,6 +138,15 @@ export default function JournalPage() {
     if (next && entry.photos.length > 0) loadSignedUrls(entry.id, entry.photos);
   }
 
+  function openLightbox(entryId: string, photoId: string) {
+    const urlMap = signedUrls[entryId];
+    const entry = entries.find(e => e.id === entryId);
+    if (!urlMap || !entry) return;
+    const urls = entry.photos.map(p => urlMap[p.id]).filter(Boolean) as string[];
+    const idx = entry.photos.findIndex(p => p.id === photoId);
+    setLightbox({ urls, index: Math.max(0, idx) });
+  }
+
   async function uploadPhoto(entryId: string, file: File) {
     if (!token) return;
     setUploadingEntry(entryId);
@@ -134,17 +161,13 @@ export default function JournalPage() {
       });
       if (res.ok) {
         const newPhoto: PhotoMeta = await res.json();
-        // Optimistically add photo to entry
         setEntries(prev => prev.map(e =>
           e.id === entryId ? { ...e, photos: [...e.photos, newPhoto] } : e
         ));
-        // Clear cached signed URLs so they reload fresh with new photo included
         setSignedUrls(prev => { const next = { ...prev }; delete next[entryId]; return next; });
-        // Reload signed URLs now
         const entry = entries.find(e => e.id === entryId);
         if (entry) {
           const updated = [...entry.photos, newPhoto];
-          // Small delay so state settles
           setTimeout(() => loadSignedUrls(entryId, updated), 100);
         }
       } else {
@@ -185,9 +208,32 @@ export default function JournalPage() {
     }
   }
 
+  function addPendingPhoto(file: File) {
+    const existingCount = editEntry ? editEntry.photos.length : 0;
+    if (existingCount + pendingPhotos.length >= 5) return;
+    if (file.size > 5 * 1024 * 1024) { alert('File too large. Max 5 MB per photo.'); return; }
+    const preview = file.type.startsWith('image/') ? URL.createObjectURL(file) : '';
+    setPendingPhotos(prev => [...prev, file]);
+    setPendingPreviews(prev => [...prev, preview]);
+  }
+
+  function removePendingPhoto(index: number) {
+    const url = pendingPreviews[index];
+    if (url) URL.revokeObjectURL(url);
+    setPendingPhotos(prev => prev.filter((_, i) => i !== index));
+    setPendingPreviews(prev => prev.filter((_, i) => i !== index));
+  }
+
+  function clearPendingPhotos() {
+    pendingPreviews.forEach(p => { if (p) URL.revokeObjectURL(p); });
+    setPendingPhotos([]);
+    setPendingPreviews([]);
+  }
+
   function openAdd() {
     setEditEntry(null);
     setForm(EMPTY_FORM);
+    clearPendingPhotos();
     setShowModal(true);
   }
 
@@ -204,6 +250,8 @@ export default function JournalPage() {
       memorable_moments:  e.memorable_moments  ?? '',
       rating:             e.rating             ?? 5,
     });
+    clearPendingPhotos();
+    if (e.photos.length > 0 && token) loadSignedUrls(e.id, e.photos);
     setShowModal(true);
   }
 
@@ -218,10 +266,28 @@ export default function JournalPage() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
       });
-      if (res.ok) {
-        setShowModal(false);
-        fetchEntries();
+      if (!res.ok) return;
+      const saved = await res.json();
+      const entryId = editEntry ? editEntry.id : saved.id;
+
+      // Upload staged photos
+      let uploadErrors = 0;
+      for (const file of pendingPhotos) {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('entryId', entryId);
+        const upRes = await fetch('/api/journal-photos', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        });
+        if (!upRes.ok) uploadErrors++;
       }
+
+      clearPendingPhotos();
+      setShowModal(false);
+      fetchEntries();
+      if (uploadErrors > 0) alert(`Entry saved but ${uploadErrors} photo(s) failed to upload.`);
     } finally {
       setSaving(false);
     }
@@ -250,6 +316,8 @@ export default function JournalPage() {
     if (toDate   && e.date > toDate)   return false;
     return true;
   });
+
+  const totalModalPhotos = (editEntry ? editEntry.photos.length : 0) + pendingPhotos.length;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -388,7 +456,6 @@ export default function JournalPage() {
                     <p className="text-xs text-gray-400 animate-pulse">Loading photos…</p>
                   )}
 
-                  {/* Thumbnail grid */}
                   {entry.photos.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-3">
                       {entry.photos.map(photo => {
@@ -397,7 +464,7 @@ export default function JournalPage() {
                           <div key={photo.id} className="relative group">
                             {url ? (
                               <button
-                                onClick={() => setLightbox(url)}
+                                onClick={() => openLightbox(entry.id, photo.id)}
                                 className="block w-20 h-20 rounded-lg overflow-hidden border border-gray-200 hover:border-amber-400 transition"
                               >
                                 <img
@@ -411,7 +478,6 @@ export default function JournalPage() {
                                 <span className="text-xl">📷</span>
                               </div>
                             )}
-                            {/* Remove button */}
                             <button
                               onClick={() => removePhoto(entry.id, photo.id)}
                               disabled={removingPhoto === photo.id}
@@ -426,7 +492,6 @@ export default function JournalPage() {
                     </div>
                   )}
 
-                  {/* Add photo button — hidden when at limit */}
                   {entry.photos.length < 5 && (
                     <label className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition cursor-pointer ${
                       uploadingEntry === entry.id
@@ -479,18 +544,47 @@ export default function JournalPage() {
       {/* Lightbox */}
       {lightbox && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
           onClick={() => setLightbox(null)}
         >
+          {/* Prev */}
+          {lightbox.urls.length > 1 && lightbox.index > 0 && (
+            <button
+              onClick={e => { e.stopPropagation(); setLightbox(prev => prev ? { ...prev, index: prev.index - 1 } : null); }}
+              style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'white', fontSize: '3rem', lineHeight: 1, background: 'rgba(0,0,0,0.4)', border: 'none', cursor: 'pointer', borderRadius: '50%', width: '3rem', height: '3rem', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}
+            >
+              ‹
+            </button>
+          )}
+
           <img
-            src={lightbox}
+            src={lightbox.urls[lightbox.index]}
             alt="Journal photo"
-            style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: '8px', objectFit: 'contain' }}
+            style={{ maxWidth: '100%', maxHeight: '85vh', borderRadius: '8px', objectFit: 'contain' }}
             onClick={e => e.stopPropagation()}
           />
+
+          {/* Next */}
+          {lightbox.urls.length > 1 && lightbox.index < lightbox.urls.length - 1 && (
+            <button
+              onClick={e => { e.stopPropagation(); setLightbox(prev => prev ? { ...prev, index: prev.index + 1 } : null); }}
+              style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'white', fontSize: '3rem', lineHeight: 1, background: 'rgba(0,0,0,0.4)', border: 'none', cursor: 'pointer', borderRadius: '50%', width: '3rem', height: '3rem', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}
+            >
+              ›
+            </button>
+          )}
+
+          {/* Counter */}
+          {lightbox.urls.length > 1 && (
+            <div style={{ position: 'absolute', bottom: '1.5rem', left: '50%', transform: 'translateX(-50%)', color: 'white', fontSize: '0.875rem', background: 'rgba(0,0,0,0.55)', padding: '0.25rem 0.875rem', borderRadius: '999px', whiteSpace: 'nowrap' }}>
+              {lightbox.index + 1} of {lightbox.urls.length}
+            </div>
+          )}
+
+          {/* Close */}
           <button
             onClick={() => setLightbox(null)}
-            style={{ position: 'absolute', top: '1rem', right: '1rem', color: 'white', fontSize: '2rem', lineHeight: 1, background: 'none', border: 'none', cursor: 'pointer' }}
+            style={{ position: 'absolute', top: '1rem', right: '1rem', color: 'white', fontSize: '2rem', lineHeight: 1, background: 'rgba(0,0,0,0.4)', border: 'none', cursor: 'pointer', borderRadius: '50%', width: '2.5rem', height: '2.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             ×
           </button>
@@ -505,7 +599,7 @@ export default function JournalPage() {
             overflowY: 'auto', display: 'flex', alignItems: 'flex-start',
             justifyContent: 'center', padding: '2rem 1rem',
           }}
-          onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}
+          onClick={e => { if (e.target === e.currentTarget) { clearPendingPhotos(); setShowModal(false); } }}
         >
           <div style={{
             background: '#fff', borderRadius: '1rem', width: '100%', maxWidth: '540px',
@@ -515,7 +609,7 @@ export default function JournalPage() {
               <h2 className="text-lg font-bold text-gray-900">
                 {editEntry ? 'Edit Entry' : 'New Entry'}
               </h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-900 text-2xl font-bold leading-none">×</button>
+              <button onClick={() => { clearPendingPhotos(); setShowModal(false); }} className="text-gray-400 hover:text-gray-900 text-2xl font-bold leading-none">×</button>
             </div>
 
             <div className="space-y-3 max-h-[62vh] overflow-y-auto pr-1">
@@ -610,11 +704,106 @@ export default function JournalPage() {
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none"
                 />
               </div>
+
+              {/* ── PHOTOS SECTION ── */}
+              <div className="border-t border-gray-100 pt-3">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">📸 Photos (Optional)</label>
+                  <span className="text-xs text-gray-400">{totalModalPhotos} of 5</span>
+                </div>
+
+                {/* Existing photos in edit mode */}
+                {editEntry && editEntry.photos.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {editEntry.photos.map(photo => {
+                      const url = signedUrls[editEntry.id]?.[photo.id];
+                      return (
+                        <div key={photo.id} className="relative group">
+                          {url ? (
+                            <img
+                              src={url}
+                              alt={photo.filename}
+                              className="w-16 h-16 rounded-lg object-cover border border-gray-200"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center">
+                              <span className="text-lg">📷</span>
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removePhoto(editEntry.id, photo.id)}
+                            disabled={removingPhoto === photo.id}
+                            className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition hover:bg-red-600 disabled:opacity-50"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Staged (pending) photos */}
+                {pendingPhotos.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {pendingPreviews.map((preview, i) => (
+                      <div key={i} className="relative group">
+                        {preview ? (
+                          <img
+                            src={preview}
+                            alt={pendingPhotos[i].name}
+                            className="w-16 h-16 rounded-lg object-cover border-2 border-amber-300"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 rounded-lg bg-amber-50 border-2 border-amber-300 flex flex-col items-center justify-center gap-0.5">
+                            <span className="text-lg">📷</span>
+                            <span className="text-[9px] text-gray-500 px-1 text-center leading-tight truncate w-full">{pendingPhotos[i].name.slice(0, 10)}</span>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removePendingPhoto(i)}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition hover:bg-red-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add button */}
+                {totalModalPhotos < 5 ? (
+                  <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-500 hover:border-amber-400 hover:text-amber-600 transition cursor-pointer">
+                    📷 {totalModalPhotos === 0 ? 'Add Photos' : 'Add More Photos'}
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".jpg,.jpeg,.png,.heic,.heif"
+                      multiple
+                      onChange={e => {
+                        const files = Array.from(e.target.files ?? []);
+                        files.forEach(addPendingPhoto);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                ) : (
+                  <p className="text-xs text-gray-400 text-center">Maximum 5 photos reached.</p>
+                )}
+
+                {pendingPhotos.length > 0 && (
+                  <p className="text-xs text-gray-400 mt-1.5 text-center">
+                    {pendingPhotos.length} photo{pendingPhotos.length !== 1 ? 's' : ''} will upload when you save
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="flex gap-2 mt-4">
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => { clearPendingPhotos(); setShowModal(false); }}
                 className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
               >
                 Cancel
