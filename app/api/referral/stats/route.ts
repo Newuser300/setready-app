@@ -44,10 +44,11 @@ export async function GET(request: Request) {
     }
   }
 
+  // referred_by stores the referrer's UUID — count users whose referred_by = current user's id
   const { count: totalReferrals } = await supabaseAdmin
     .from('users')
     .select('*', { count: 'exact', head: true })
-    .eq('referred_by', referralCode || '___no_match___');
+    .eq('referred_by', user.id);
 
   const { data: commissions } = await supabaseAdmin
     .from('referral_commissions')

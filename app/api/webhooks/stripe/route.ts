@@ -211,12 +211,13 @@ export async function POST(request: Request) {
 
       // ── Commission tracking ──────────────────────────────────────────────────
       if (userData.referred_by) {
-        console.log(`🤝 User was referred by code: ${userData.referred_by} — calculating commission...`);
+        console.log(`🤝 User referred_by UUID: ${userData.referred_by} — calculating commission...`);
 
+        // referred_by stores the referrer's user UUID directly
         const { data: referrer } = await supabaseAdmin
           .from('users')
           .select('id')
-          .eq('referral_code', userData.referred_by)
+          .eq('id', userData.referred_by)
           .maybeSingle();
 
         if (referrer) {

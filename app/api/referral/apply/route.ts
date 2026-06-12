@@ -38,7 +38,7 @@ export async function POST(req: Request) {
 
   // Already has a referral applied — treat as success so checkout proceeds
   if (currentUser?.referred_by) {
-    console.log('User already has referral code:', currentUser.referred_by);
+    console.log('User already has referral applied');
     return NextResponse.json({ success: true, alreadyApplied: true });
   }
 
@@ -50,14 +50,14 @@ export async function POST(req: Request) {
     );
   }
 
-  // Verify the referrer exists
+  // Look up referrer by their referral_code column — get their UUID
   const { data: referrer, error: referrerError } = await supabaseAdmin
     .from('users')
     .select('id')
     .eq('referral_code', code)
     .maybeSingle();
 
-  console.log('Referrer:', referrer?.id ?? 'null');
+  console.log('Referrer UUID:', referrer?.id ?? 'null');
   if (referrerError) console.error('Referrer lookup error:', JSON.stringify(referrerError));
 
   if (!referrer) {
@@ -74,10 +74,10 @@ export async function POST(req: Request) {
     );
   }
 
-  // Apply the code
+  // Store the referrer's UUID in referred_by (NOT the code string — referred_by is UUID type)
   const { error: updateError } = await supabaseAdmin
     .from('users')
-    .update({ referred_by: code })
+    .update({ referred_by: referrer.id })
     .eq('id', user.id);
 
   if (updateError) {
@@ -93,6 +93,6 @@ export async function POST(req: Request) {
     );
   }
 
-  console.log('Referral code applied successfully:', code, 'for', user.email);
+  console.log('Referral applied: user', user.email, '→ referrer', referrer.id);
   return NextResponse.json({ success: true });
 }

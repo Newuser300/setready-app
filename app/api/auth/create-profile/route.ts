@@ -38,7 +38,18 @@ export async function POST(req: Request) {
   };
 
   if (province) profileData.province = province;
-  if (referred_by) profileData.referred_by = referred_by;
+
+  // referred_by column is UUID type — look up the referrer's UUID from their referral code
+  if (referred_by) {
+    const { data: referrer } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('referral_code', referred_by)
+      .maybeSingle();
+    if (referrer?.id) {
+      profileData.referred_by = referrer.id;
+    }
+  }
 
   const { error } = await supabaseAdmin
     .from('users')
