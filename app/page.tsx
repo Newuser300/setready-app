@@ -46,7 +46,6 @@ export default function Home() {
   const supabase = createClient();
   const [isLoading, setIsLoading] = useState(true);
   const [refCode, setRefCode] = useState<string | null>(null);
-  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -59,10 +58,6 @@ export default function Home() {
       setIsLoading(false);
     }
     checkAuth();
-
-    const onScroll = () => setScrolled(window.scrollY > 60);
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
   }, [supabase, router]);
 
   function goToSignUp() {
@@ -81,19 +76,13 @@ export default function Home() {
     <div className="min-h-screen bg-white text-gray-900">
 
       {/* ── STICKY NAV ──────────────────────────────────────── */}
-      <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled
-            ? 'bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm'
-            : 'bg-transparent'
-        }`}
-      >
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#1a1a2e] border-b border-gray-800 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
-          <span className="text-gray-900 text-xl font-bold tracking-tight">🎬 SetReady</span>
+          <span className="text-white text-xl font-bold tracking-tight">🎬 SetReady</span>
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => router.push('/auth/sign-in')}
-              className="px-3 sm:px-4 py-2 text-gray-600 hover:text-gray-900 text-sm transition"
+              className="px-3 sm:px-4 py-2 text-gray-300 hover:text-white text-sm transition"
             >
               Sign In
             </button>
@@ -118,27 +107,16 @@ export default function Home() {
             🎬 Professional Background Performer Training
           </div>
 
-          {/* Headline — CHANGE 2: "Your Acting Career Starts Here" */}
           <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-gray-900 mb-4 leading-tight animate-fade-in-up">
-            Your Acting Career<br />
-            <span className="text-amber-500">Starts Here</span>
+            Everything a background performer needs. One app.
           </h1>
-
-          {/* 5-star rating */}
-          <div
-            className="flex flex-col items-center gap-1 mb-6 animate-fade-in-up"
-            style={{ animationDelay: '0.1s' }}
-          >
-            <span className="text-amber-500 text-2xl tracking-widest">★★★★★</span>
-            <span className="text-gray-400 text-sm">5/5 from our performers</span>
-          </div>
 
           {/* Sub-headline */}
           <p
             className="text-lg sm:text-xl text-gray-500 mb-10 max-w-2xl mx-auto animate-fade-in-up"
             style={{ animationDelay: '0.2s' }}
           >
-            Professional training trusted by background performers across Canada
+            From your first call time to your hundredth set.
           </p>
 
           {/* CTA buttons — CHANGE 1: "Start Learning Free" → "Start Learning" */}
@@ -207,16 +185,15 @@ export default function Home() {
                 The Solution
               </span>
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 leading-snug">
-                SetReady changes everything
+                SetReady has you covered.
               </h2>
               <div className="space-y-4">
                 {[
                   'Master professional set conduct in hours, not years.',
                   'Speak the language that gets you hired again.',
-                  'Log your work. Upload your vouchers. Calculate your earnings.',
-                  'Find an Agent. Discover what\'s filming. Journal your on-set journey.',
-                  'Build a contact list. Run through simulations. Know what to wear.',
-                  'Store Residency Docs. Save work vouchers. Calculate your earnings.',
+                  'Log your work. Upload vouchers. Track your earnings.',
+                  'Store residency docs. Build contacts. Know what to wear.',
+                  'Find an agent. Discover what\'s filming. Journal your journey.',
                 ].map(pt => (
                   <div key={pt} className="flex items-start gap-3">
                     <span className="text-amber-500 font-bold text-lg mt-0.5 shrink-0">✓</span>
@@ -278,7 +255,7 @@ export default function Home() {
                   ))}
                 </ul>
                 <p className="text-xs text-gray-400 mb-6 border-t border-gray-100 pt-4">
-                  Includes: Quizzes, Certificates, Progress Tracking
+                  Includes: Quizzes, Certificates, 14 Career Tools
                 </p>
                 <button
                   onClick={() => router.push('/preview')}
@@ -335,10 +312,22 @@ export default function Home() {
       {/* ── REFERRAL SLIM BANNER ───────────────────────────── */}
       <div className="bg-gray-50 border-y border-gray-200 py-3 text-center px-4">
         <p className="text-sm text-gray-500">
-          💰 Refer a friend and earn 20% commission on their subscription{' '}
-          <span className="text-gray-400">— paid monthly via e-transfer</span>
+          💰 Know another performer? Refer them and earn 20% commission{' '}
+          <span className="text-gray-400">— paid monthly via e-transfer.</span>
         </p>
       </div>
+
+      {/* ── BOLD STATEMENT ─────────────────────────────────── */}
+      <section style={{ backgroundColor: '#1a1a2e' }} className="py-10 px-4 text-center">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+            Not just a course.<br />Your complete career companion.
+          </h2>
+          <p className="text-gray-400 text-base leading-relaxed">
+            Most background performers learn through costly mistakes on the job. SetReady performers arrive prepared, professional and confident — from day one.
+          </p>
+        </div>
+      </section>
 
       {/* ── MORE TOOLS INCLUDED ────────────────────────────── */}
       <section className="bg-white py-20 px-4">
@@ -346,10 +335,10 @@ export default function Home() {
           <FadeIn>
             <div className="text-center mb-14">
               <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-                More Tools Included
+                More Than a Course — A Complete Career Platform
               </h2>
               <p className="text-gray-500 max-w-xl mx-auto">
-                Everything you need to manage your career, all in one place
+                Every tool a working background performer actually needs. Included with your subscription.
               </p>
             </div>
           </FadeIn>
@@ -448,9 +437,8 @@ export default function Home() {
               <p className="text-gray-400 text-sm mt-1">Professional training for background performers</p>
             </div>
             <nav className="flex flex-wrap justify-center gap-6 text-sm text-gray-400">
-              <Link href="/agencies" className="hover:text-white transition">Find Background Agencies in Canada →</Link>
-              <Link href="/terms"    className="hover:text-white transition">Terms</Link>
-              <Link href="/privacy"  className="hover:text-white transition">Privacy</Link>
+              <Link href="/terms"   className="hover:text-white transition">Terms</Link>
+              <Link href="/privacy" className="hover:text-white transition">Privacy</Link>
               <a href="mailto:setready@mail.com" className="hover:text-white transition">Contact</a>
             </nav>
           </div>

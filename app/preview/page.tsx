@@ -202,14 +202,17 @@ export default function PreviewPage() {
                   <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
                     Section 1: Background Acting Essentials
                   </h2>
-                  <p className="text-gray-500 text-sm mt-1">$9.99/month • 30-day minimum commitment</p>
+                  <p className="text-gray-500 text-sm mt-1">$9.99/month • Instant access to all 5 modules, quizzes, certificates, and all the tools you need to succeed.</p>
                 </div>
-                <button
-                  onClick={() => setShowModal(true)}
-                  className="shrink-0 px-6 py-2.5 bg-amber-500 text-black font-bold rounded-xl hover:bg-amber-400 hover:scale-105 transition-all duration-200 text-sm shadow-sm"
-                >
-                  Unlock Full Access →
-                </button>
+                <div className="shrink-0 flex flex-col items-center gap-2">
+                  <p className="text-xs text-gray-400 italic text-center">Join performers across Canada who are showing up to set prepared and professional.</p>
+                  <button
+                    onClick={() => setShowModal(true)}
+                    className="px-6 py-2.5 bg-amber-500 text-black font-bold rounded-xl hover:bg-amber-400 hover:scale-105 transition-all duration-200 text-sm shadow-sm"
+                  >
+                    Unlock Full Access →
+                  </button>
+                </div>
               </div>
             </FadeIn>
 
@@ -326,8 +329,8 @@ export default function PreviewPage() {
           <div className="max-w-6xl mx-auto">
             <FadeIn>
               <div className="mb-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-1">More Tools Included</h2>
-                <p className="text-gray-500 text-sm">Everything you need to manage your career, all in one place</p>
+                <h2 className="text-xl font-bold text-gray-900 mb-1">More Than a Course — A Complete Career Platform</h2>
+                <p className="text-gray-500 text-sm">Every tool a working background performer actually needs. All included.</p>
               </div>
             </FadeIn>
 
@@ -443,24 +446,17 @@ export default function PreviewPage() {
               >
                 Create Free Account
               </button>
-              <p className="text-gray-500 text-sm mb-10">Then subscribe from $9.99/month • 30-day minimum commitment</p>
+              <p className="text-gray-500 text-sm mb-10">Subscribe from $9.99/month. Cancel after 30 days.</p>
 
               {/* Trust badges */}
               <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-gray-500 mb-8">
-                {['Cancel Anytime', '30-Day Guarantee', 'Secure Payment'].map(b => (
+                {['Cancel Anytime after 30 days', 'Instant Access', 'Secure Payment'].map(b => (
                   <span key={b} className="flex items-center gap-1.5">
                     <span className="text-green-500 font-bold">✓</span> {b}
                   </span>
                 ))}
               </div>
 
-              {/* Agencies link */}
-              <a
-                href="/agencies"
-                className="text-sm text-amber-600 hover:text-amber-700 font-medium transition"
-              >
-                🍁 Find Background Agencies in Canada →
-              </a>
             </div>
           </FadeIn>
         </section>
