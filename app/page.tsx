@@ -160,15 +160,6 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Trust badge */}
-          <div
-            className="flex justify-center animate-fade-in-up"
-            style={{ animationDelay: '0.5s' }}
-          >
-            <span className="flex items-center gap-1.5 text-sm text-gray-500">
-              <span className="text-green-500 font-bold">✓</span> 30-Day Minimum Commitment
-            </span>
-          </div>
         </div>
 
         {/* Scroll arrow */}
@@ -348,6 +339,105 @@ export default function Home() {
           <span className="text-gray-400">— paid monthly via e-transfer</span>
         </p>
       </div>
+
+      {/* ── MORE TOOLS INCLUDED ────────────────────────────── */}
+      <section className="bg-white py-20 px-4">
+        <div className="max-w-6xl mx-auto">
+          <FadeIn>
+            <div className="text-center mb-14">
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+                More Tools Included
+              </h2>
+              <p className="text-gray-500 max-w-xl mx-auto">
+                Everything you need to manage your career, all in one place
+              </p>
+            </div>
+          </FadeIn>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              {
+                icon: '📋',
+                title: 'Work Log & Earnings Tracker',
+                desc: 'Track every booking — production name, role type, hours worked and total pay. Your complete film industry work history in one place.',
+              },
+              {
+                icon: '💰',
+                title: 'Rate Calculator',
+                desc: 'Calculate your exact pay for any booking. Union and non-union rates based on the official 2025-2028 UBCP/ACTRA agreement.',
+              },
+              {
+                icon: '📄',
+                title: 'Upload Work Vouchers',
+                desc: 'Photograph and store your union and non-union work vouchers directly inside each work log entry. Always have proof of your work days ready.',
+              },
+              {
+                icon: '🏆',
+                title: 'Certificates',
+                desc: 'Earn a certificate for every module you complete. Download and share your achievements with agents and casting directors.',
+              },
+              {
+                icon: '🤝',
+                title: 'Referrals',
+                desc: 'Refer friends and earn 20% commission on every subscription. Request payouts directly through the app.',
+              },
+              {
+                icon: '🎭',
+                title: 'Set Etiquette Simulator',
+                desc: 'Test your on-set knowledge with 10 real scenarios. Learn how to handle tricky situations before they happen on a real set.',
+              },
+              {
+                icon: '📖',
+                title: 'Glossary',
+                desc: 'A to Z reference of every film set term you need to know. Search instantly while you are on set.',
+              },
+              {
+                icon: '🎯',
+                title: 'Goal Tracking',
+                desc: 'Set career goals and track your progress. Days worked, agencies registered, vouchers earned and more.',
+              },
+              {
+                icon: '👥',
+                title: 'Film Contacts',
+                desc: 'Build your industry contact list. Save details for directors, ADs, agents, makeup artists and fellow performers you meet on set.',
+              },
+              {
+                icon: '📔',
+                title: 'On-Set Journal',
+                desc: 'Record your experiences after every booking. Who you met, what you learned and memorable moments — with photo upload.',
+              },
+              {
+                icon: '📋',
+                title: 'Proof of Residency',
+                desc: 'Store your residency documents securely. Email them to production directly from the app when requested on set.',
+              },
+              {
+                icon: '👔',
+                title: 'What to Wear on Set',
+                desc: 'A complete background performer clothing guide. Know exactly what to wear and what to avoid before every booking.',
+              },
+              {
+                icon: '🎬',
+                title: "Discover What's Filming",
+                desc: 'Direct link to the UBCP/ACTRA production list — see every active production currently filming in BC.',
+              },
+              {
+                icon: '🤝',
+                title: 'Find an Agent',
+                desc: 'Browse our directory of background performer agencies across Canada organized by city and province.',
+              },
+            ].map((f, i) => (
+              <FadeIn key={f.title} delay={i * 50}>
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm h-full">
+                  <span className="text-3xl mb-4 block">{f.icon}</span>
+                  <h3 className="text-gray-900 font-bold mb-2">{f.title}</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ── FOOTER ─────────────────────────────────────────── */}
       <footer className="bg-gray-900 border-t border-gray-800 py-12 px-4">
