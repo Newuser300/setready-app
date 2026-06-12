@@ -49,6 +49,9 @@ type WorkLog = {
   paid: boolean;
   notes: string;
   created_at: string;
+  voucher_url?: string | null;
+  voucher_filename?: string | null;
+  voucher_type?: string | null;
 };
 
 // Module icons
@@ -152,43 +155,39 @@ export default function Dashboard() {
     deductions: '0',
     paid: false,
     notes: '',
+    voucher_type: '',
   });
   const [workLogLoading, setWorkLogLoading] = useState(false);
+  const [uploadingLogId, setUploadingLogId] = useState<string | null>(null);
+  const [removingLogId, setRemovingLogId] = useState<string | null>(null);
+
+  // PRE-CHECKOUT REFERRAL MODAL STATE (Feature 4)
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [checkoutTarget, setCheckoutTarget] = useState<'section1' | 'section2'>('section1');
+  const [preCheckoutCode, setPreCheckoutCode] = useState('');
+  const [preCheckoutError, setPreCheckoutError] = useState('');
+  const [preCheckoutValidating, setPreCheckoutValidating] = useState(false);
+  const [userHasReferral, setUserHasReferral] = useState(false);
 
   // Locks to prevent concurrent auth calls
   let isCheckingUser = false;
   let isRefreshingProgress = false;
 
-  // STRIPE PAYMENT FUNCTIONS - Replacing LemonSqueezy
-  async function handleSection1Checkout() {
+  // STRIPE PAYMENT FUNCTIONS
+  // Inner functions that actually call Stripe — called after referral check is done
+  async function runSection1Checkout() {
     setLoadingPayment(true);
     try {
-      // Get the access token from the session
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
-      
-      if (!accessToken) {
-        alert('Please sign in again');
-        setLoadingPayment(false);
-        return;
-      }
-      
+      if (!accessToken) { alert('Please sign in again'); setLoadingPayment(false); return; }
       const response = await fetch('/api/checkout/section1', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
       });
-      
       const result = await response.json();
-      
-      if (result.url) {
-        // Redirect to Stripe Checkout
-        window.location.href = result.url;
-      } else if (result.error) {
-        alert(result.error || 'Error starting checkout');
-      }
+      if (result.url) { window.location.href = result.url; }
+      else if (result.error) { alert(result.error || 'Error starting checkout'); }
     } catch (error) {
       console.error('Checkout error:', error);
       alert('Error starting checkout. Please try again.');
@@ -196,39 +195,83 @@ export default function Dashboard() {
     setLoadingPayment(false);
   }
 
-  async function handleSection2Checkout() {
+  async function runSection2Checkout() {
     setLoadingPayment(true);
     try {
-      // Get the access token from the session
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
-      
-      if (!accessToken) {
-        alert('Please sign in again');
-        setLoadingPayment(false);
-        return;
-      }
-      
+      if (!accessToken) { alert('Please sign in again'); setLoadingPayment(false); return; }
       const response = await fetch('/api/checkout/section2', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
       });
-      
       const result = await response.json();
-      
-      if (result.url) {
-        window.location.href = result.url;
-      } else {
-        alert(result.error || 'Error starting checkout');
-      }
+      if (result.url) { window.location.href = result.url; }
+      else { alert(result.error || 'Error starting checkout'); }
     } catch (error) {
       console.error('Checkout error:', error);
       alert('Error starting checkout. Please try again.');
     }
     setLoadingPayment(false);
+  }
+
+  // Public handlers — show referral modal first if user has no referred_by
+  async function handleSection1Checkout() {
+    if (!userHasReferral) {
+      setCheckoutTarget('section1');
+      setPreCheckoutCode('');
+      setPreCheckoutError('');
+      setShowCheckoutModal(true);
+      return;
+    }
+    await runSection1Checkout();
+  }
+
+  async function handleSection2Checkout() {
+    if (!userHasReferral) {
+      setCheckoutTarget('section2');
+      setPreCheckoutCode('');
+      setPreCheckoutError('');
+      setShowCheckoutModal(true);
+      return;
+    }
+    await runSection2Checkout();
+  }
+
+  // Modal actions
+  async function applyCodeAndSubscribe() {
+    if (!preCheckoutCode.trim()) {
+      setPreCheckoutError('Please enter a code or click "Skip and Subscribe".');
+      return;
+    }
+    setPreCheckoutValidating(true);
+    setPreCheckoutError('');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) { alert('Please sign in again'); return; }
+      const res = await fetch('/api/referral/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ code: preCheckoutCode.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPreCheckoutError(data.error || 'Invalid code. Please check and try again.');
+        return;
+      }
+      setUserHasReferral(true);
+      setShowCheckoutModal(false);
+      if (checkoutTarget === 'section1') await runSection1Checkout();
+      else await runSection2Checkout();
+    } finally {
+      setPreCheckoutValidating(false);
+    }
+  }
+
+  function skipAndSubscribe() {
+    setShowCheckoutModal(false);
+    if (checkoutTarget === 'section1') runSection1Checkout();
+    else runSection2Checkout();
   }
 
   // CUSTOMER PORTAL FUNCTION - Updated with authorization header
@@ -495,7 +538,7 @@ export default function Dashboard() {
       
       const { data } = await supabase
         .from('users')
-        .select('section1_completed, subscription_status, section2_unlocked, referral_code')
+        .select('section1_completed, subscription_status, section2_unlocked, referral_code, referred_by')
         .eq('id', user.id)
         .single();
 
@@ -504,6 +547,7 @@ export default function Dashboard() {
         setIsSubscribed(data.subscription_status === 'active');
         setSection2Unlocked(data.section2_unlocked || false);
         if (data.referral_code) setReferralCode(data.referral_code);
+        setUserHasReferral(!!data.referred_by);
         console.log('User subscription status:', data.subscription_status);
       }
     } catch (error) {
@@ -622,6 +666,64 @@ export default function Dashboard() {
     }
   }
 
+  // VOUCHER FUNCTIONS (Feature 1)
+  async function uploadVoucher(logId: string, file: File) {
+    setUploadingLogId(logId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) { alert('Please sign in again'); return; }
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('workLogId', logId);
+      const res = await fetch('/api/vouchers', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: fd,
+      });
+      if (res.ok) {
+        loadWorkLogs();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Upload failed. Please try again.');
+      }
+    } catch {
+      alert('Upload error. Please try again.');
+    } finally {
+      setUploadingLogId(null);
+    }
+  }
+
+  async function removeVoucher(logId: string) {
+    if (!confirm('Remove this voucher photo?')) return;
+    setRemovingLogId(logId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) { alert('Please sign in again'); return; }
+      const res = await fetch(`/api/vouchers?id=${logId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) loadWorkLogs();
+      else alert('Failed to remove voucher.');
+    } finally {
+      setRemovingLogId(null);
+    }
+  }
+
+  async function viewVoucher(logId: string) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) { alert('Please sign in again'); return; }
+    const res = await fetch(`/api/vouchers/signed-url?workLogId=${logId}`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (res.ok) {
+      const { url } = await res.json();
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      alert('Could not load voucher. Please try again.');
+    }
+  }
+
   function calculatePay() {
     const hours = parseFloat(workLogForm.hours_worked) || 0;
     const rate = parseFloat(workLogForm.pay_rate) || 0;
@@ -683,6 +785,7 @@ export default function Dashboard() {
       final_pay: finalPay,
       paid: workLogForm.paid,
       notes: workLogForm.notes || null,
+      voucher_type: workLogForm.voucher_type || null,
     };
 
     console.log('Attempting to save:', workLogData);
@@ -754,6 +857,7 @@ export default function Dashboard() {
       deductions: log.deductions?.toString() || '0',
       paid: log.paid || false,
       notes: log.notes || '',
+      voucher_type: log.voucher_type || '',
     });
     setShowWorkLogForm(true);
   }
@@ -773,6 +877,7 @@ export default function Dashboard() {
       deductions: '0',
       paid: false,
       notes: '',
+      voucher_type: '',
     });
     setShowWorkLogForm(false);
   }
@@ -878,22 +983,54 @@ export default function Dashboard() {
             >
               🍁 Find Agencies
             </button>
-            <a
-              href="https://ubcpactra.ca/agreements/"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => window.open('https://ubcpactra.ca/agreements/', '_blank', 'noopener,noreferrer')}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
             >
               ⚖️ Know Your Rights – UBCP
-            </a>
-            <a
-              href="https://ubcpactra.ca/production-list/"
-              target="_blank"
-              rel="noopener noreferrer"
+            </button>
+            <button
+              onClick={() => window.open('https://ubcpactra.ca/production-list/', '_blank', 'noopener,noreferrer')}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
             >
               🎬 Current and Upcoming Productions in BC
-            </a>
+            </button>
+            <button
+              onClick={() => router.push('/journal')}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
+            >
+              📔 Journal
+            </button>
+            <button
+              onClick={() => router.push('/rate-calculator')}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
+            >
+              💰 Rate Calculator
+            </button>
+            <button
+              onClick={() => router.push('/simulator')}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
+            >
+              🎭 Scenario Simulator
+            </button>
+            <button
+              onClick={() => router.push('/glossary')}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
+            >
+              📖 Glossary
+            </button>
+            <button
+              onClick={() => router.push('/goals')}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
+            >
+              🎯 My Goals
+            </button>
+            <button
+              onClick={() => router.push('/contacts')}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
+            >
+              👥 Film Contacts
+            </button>
           </div>
 
           {/* PAYMENT STATUS CARDS - UPDATED to use Stripe functions */}
@@ -1506,6 +1643,18 @@ export default function Dashboard() {
                         className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-700 font-bold"
                       />
                     </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Voucher Type</label>
+                      <select
+                        value={workLogForm.voucher_type}
+                        onChange={(e) => setWorkLogForm({...workLogForm, voucher_type: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">— Select —</option>
+                        <option value="Union Voucher">Union Voucher</option>
+                        <option value="Non-Union Voucher">Non-Union Voucher</option>
+                      </select>
+                    </div>
                     <div className="md:col-span-2">
                       <label className="block text-sm font-semibold text-gray-700 mb-2">Notes</label>
                       <textarea
@@ -1576,6 +1725,7 @@ export default function Dashboard() {
                         <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">💰 Gross</th>
                         <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">💵 Final</th>
                         <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">✅ Paid</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">📎 Voucher</th>
                         <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Actions</th>
                       </tr>
                     </thead>
@@ -1602,6 +1752,39 @@ export default function Dashboard() {
                               <span className="text-green-600 font-medium">✓ Yes</span>
                             ) : (
                               <span className="text-red-500">✗ No</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {uploadingLogId === log.id ? (
+                              <span className="text-xs text-blue-600 animate-pulse">Uploading…</span>
+                            ) : removingLogId === log.id ? (
+                              <span className="text-xs text-red-400 animate-pulse">Removing…</span>
+                            ) : log.voucher_filename ? (
+                              <div className="flex flex-col gap-1">
+                                <span className="text-xs text-gray-600 truncate max-w-[120px]" title={log.voucher_filename}>{log.voucher_filename}</span>
+                                {log.voucher_type && (
+                                  <span className="text-xs px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded w-fit">{log.voucher_type}</span>
+                                )}
+                                <div className="flex gap-1">
+                                  <button onClick={() => viewVoucher(log.id)} className="text-xs text-blue-600 hover:underline">View</button>
+                                  <span className="text-gray-300">|</span>
+                                  <button onClick={() => removeVoucher(log.id)} className="text-xs text-red-500 hover:underline">Remove</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <label className="cursor-pointer text-gray-400 hover:text-blue-600 transition" title="Upload voucher">
+                                📎
+                                <input
+                                  type="file"
+                                  className="hidden"
+                                  accept=".jpg,.jpeg,.png,.heic,.heif,.pdf"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) uploadVoucher(log.id, file);
+                                    e.target.value = '';
+                                  }}
+                                />
+                              </label>
                             )}
                           </td>
                           <td className="px-4 py-3 text-sm">
@@ -1817,6 +2000,51 @@ export default function Dashboard() {
             >
               Continue to Dashboard
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* PRE-CHECKOUT REFERRAL MODAL (Feature 4) */}
+      {showCheckoutModal && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '16px' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '16px', maxWidth: '440px', width: '100%', padding: '28px', boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '8px', color: '#1f2937' }}>🎁 Before you subscribe…</h2>
+            <p style={{ color: '#6b7280', fontSize: '0.9rem', marginBottom: '20px' }}>Do you have a referral code from a friend? You can enter it here or skip to subscribe now.</p>
+            <div style={{ marginBottom: '16px' }}>
+              <input
+                type="text"
+                value={preCheckoutCode}
+                onChange={(e) => { setPreCheckoutCode(e.target.value.toUpperCase()); setPreCheckoutError(''); }}
+                placeholder="REFERRAL CODE (optional)"
+                style={{ width: '100%', padding: '10px 14px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', boxSizing: 'border-box' }}
+              />
+              {preCheckoutError && (
+                <p style={{ color: '#dc2626', fontSize: '0.8rem', marginTop: '6px' }}>{preCheckoutError}</p>
+              )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button
+                onClick={applyCodeAndSubscribe}
+                disabled={preCheckoutValidating || !preCheckoutCode.trim()}
+                style={{ width: '100%', padding: '11px', backgroundColor: preCheckoutValidating || !preCheckoutCode.trim() ? '#9ca3af' : '#7c3aed', color: 'white', borderRadius: '10px', fontWeight: 600, border: 'none', cursor: preCheckoutValidating || !preCheckoutCode.trim() ? 'not-allowed' : 'pointer', fontSize: '0.95rem' }}
+              >
+                {preCheckoutValidating ? 'Validating…' : 'Apply Code and Subscribe'}
+              </button>
+              <button
+                onClick={skipAndSubscribe}
+                disabled={preCheckoutValidating}
+                style={{ width: '100%', padding: '11px', backgroundColor: '#f3f4f6', color: '#374151', borderRadius: '10px', fontWeight: 600, border: 'none', cursor: 'pointer', fontSize: '0.95rem' }}
+              >
+                Skip and Subscribe
+              </button>
+              <button
+                onClick={() => setShowCheckoutModal(false)}
+                disabled={preCheckoutValidating}
+                style={{ width: '100%', padding: '8px', backgroundColor: 'transparent', color: '#9ca3af', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

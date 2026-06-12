@@ -28,6 +28,14 @@ export default function SettingsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
 
+  // Referral code state
+  const [referralInput, setReferralInput] = useState('');
+  const [referralSubmitting, setReferralSubmitting] = useState(false);
+  const [referralMessage, setReferralMessage] = useState('');
+  const [referralError, setReferralError] = useState('');
+  const [referredBy, setReferredBy] = useState<string | null>(null);
+  const [ownReferralCode, setOwnReferralCode] = useState<string | null>(null);
+
   const provinces = [
     'British Columbia', 'Ontario', 'Quebec (English)', 'Quebec (French)',
     'Alberta', 'Saskatchewan', 'Manitoba', 'Maritimes', 'Newfoundland', 'Territories'
@@ -47,7 +55,7 @@ export default function SettingsPage() {
 
     const { data: profileData } = await supabase
       .from('users')
-      .select('name, province, subscription_id, subscription_status')
+      .select('name, province, subscription_id, subscription_status, referred_by, referral_code')
       .eq('id', user.id)
       .single();
 
@@ -56,6 +64,8 @@ export default function SettingsPage() {
         name: profileData.name || user.email?.split('@')[0] || '',
         province: profileData.province || 'British Columbia',
       });
+      setReferredBy(profileData.referred_by || null);
+      setOwnReferralCode(profileData.referral_code || null);
     }
 
     setLoading(false);
@@ -137,6 +147,35 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Error cancelling subscription:', error);
       return false;
+    }
+  }
+
+  async function applyReferralCode(e: React.FormEvent) {
+    e.preventDefault();
+    if (!referralInput.trim()) return;
+    setReferralSubmitting(true);
+    setReferralMessage('');
+    setReferralError('');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) { setReferralError('Please sign in again.'); return; }
+      const res = await fetch('/api/referral/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ code: referralInput.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setReferredBy(referralInput.trim().toUpperCase());
+        setReferralMessage('Referral code applied successfully!');
+        setReferralInput('');
+      } else {
+        setReferralError(data.error || 'Failed to apply code.');
+      }
+    } catch {
+      setReferralError('An error occurred. Please try again.');
+    } finally {
+      setReferralSubmitting(false);
     }
   }
 
@@ -334,6 +373,54 @@ export default function SettingsPage() {
               {passwordLoading ? 'Updating...' : 'Update Password'}
             </button>
           </form>
+        </div>
+
+        {/* Referral Code Section */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
+          <h2 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
+            🎁 Referral Code
+          </h2>
+          <p className="text-sm text-gray-500 mb-4">Were you referred by a friend? Enter their code to link your account.</p>
+
+          {referredBy ? (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <p className="text-sm text-green-800 font-medium mb-1">✅ Referral code applied</p>
+              <p className="text-sm text-gray-600">
+                You were referred by code: <span className="font-mono font-bold text-gray-800">{referredBy}</span>
+              </p>
+              <p className="text-xs text-gray-400 mt-2">Referral codes cannot be changed after they are applied.</p>
+            </div>
+          ) : (
+            <form onSubmit={applyReferralCode} className="space-y-3">
+              {referralMessage && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">{referralMessage}</div>
+              )}
+              {referralError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{referralError}</div>
+              )}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Enter Referral Code</label>
+                <input
+                  type="text"
+                  value={referralInput}
+                  onChange={(e) => { setReferralInput(e.target.value.toUpperCase()); setReferralError(''); }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono tracking-widest uppercase"
+                  placeholder="e.g. ABC12345"
+                  maxLength={20}
+                />
+                {ownReferralCode && (
+                  <p className="text-xs text-gray-400 mt-1">Your own code is {ownReferralCode} — you cannot use your own code.</p>
+                )}
+              </div>
+              <button
+                type="submit"
+                disabled={referralSubmitting || !referralInput.trim()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50"
+              >
+                {referralSubmitting ? 'Applying…' : 'Apply Code'}
+              </button>
+            </form>
+          )}
         </div>
 
         {/* Danger Zone */}

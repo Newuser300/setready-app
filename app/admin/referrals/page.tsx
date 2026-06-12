@@ -44,6 +44,14 @@ export default function AdminReferralsPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
 
+  // Assign referral code to user
+  const [assignEmail, setAssignEmail] = useState('');
+  const [assignCode, setAssignCode] = useState('');
+  const [assignConfirming, setAssignConfirming] = useState(false);
+  const [assignSubmitting, setAssignSubmitting] = useState(false);
+  const [assignMessage, setAssignMessage] = useState('');
+  const [assignError, setAssignError] = useState('');
+
   useEffect(() => {
     loadData();
   }, []);
@@ -118,6 +126,34 @@ export default function AdminReferralsPage() {
       toast.error('An error occurred. Please try again.');
     } finally {
       setMarkingPaid(null);
+    }
+  }
+
+  async function submitAssignReferral() {
+    setAssignSubmitting(true);
+    setAssignError('');
+    setAssignMessage('');
+    try {
+      const res = await fetch('/api/admin/assign-referral', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ userEmail: assignEmail.trim(), referralCode: assignCode.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAssignMessage(data.message || 'Referral code applied successfully.');
+        setAssignEmail('');
+        setAssignCode('');
+        setAssignConfirming(false);
+      } else {
+        setAssignError(data.error || 'Failed to assign code.');
+        setAssignConfirming(false);
+      }
+    } catch {
+      setAssignError('An error occurred. Please try again.');
+      setAssignConfirming(false);
+    } finally {
+      setAssignSubmitting(false);
     }
   }
 
@@ -357,6 +393,85 @@ export default function AdminReferralsPage() {
               </table>
             </div>
           )}
+        </div>
+
+        {/* SECTION D — Assign Referral Code to User */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-bold text-gray-800">Assign Referral Code to User</h2>
+            <p className="text-sm text-gray-500">Manually apply a referral code to a user who missed it at signup.</p>
+          </div>
+          <div className="px-6 py-6 space-y-4">
+            {assignMessage && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm font-medium">{assignMessage}</div>
+            )}
+            {assignError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">{assignError}</div>
+            )}
+            {!assignConfirming ? (
+              <form
+                onSubmit={(e) => { e.preventDefault(); setAssignError(''); setAssignMessage(''); setAssignConfirming(true); }}
+                className="space-y-4"
+              >
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">User Email</label>
+                  <input
+                    type="email"
+                    value={assignEmail}
+                    onChange={(e) => setAssignEmail(e.target.value)}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                    placeholder="user@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Referral Code</label>
+                  <input
+                    type="text"
+                    value={assignCode}
+                    onChange={(e) => setAssignCode(e.target.value.toUpperCase())}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm font-mono tracking-widest uppercase"
+                    placeholder="ABC12345"
+                    maxLength={20}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={!assignEmail.trim() || !assignCode.trim()}
+                  className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-semibold text-sm hover:bg-blue-700 transition disabled:opacity-50"
+                >
+                  Apply Code →
+                </button>
+              </form>
+            ) : (
+              <div className="bg-amber-50 border border-amber-300 rounded-lg p-5">
+                <p className="font-semibold text-amber-900 mb-3">⚠️ Confirm Assignment</p>
+                <p className="text-sm text-amber-800 mb-1">You are about to apply the following referral code:</p>
+                <div className="bg-white border border-amber-200 rounded-lg p-3 my-3 space-y-1 text-sm">
+                  <p><span className="font-semibold text-gray-600">User email:</span> <span className="text-gray-900">{assignEmail}</span></p>
+                  <p><span className="font-semibold text-gray-600">Referral code:</span> <code className="font-mono font-bold text-blue-700">{assignCode}</code></p>
+                </div>
+                <p className="text-xs text-amber-700 mb-4">This cannot be undone. The user will be permanently linked to this referrer.</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={submitAssignReferral}
+                    disabled={assignSubmitting}
+                    className="px-5 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700 transition disabled:opacity-50"
+                  >
+                    {assignSubmitting ? 'Saving…' : '✓ Confirm and Apply'}
+                  </button>
+                  <button
+                    onClick={() => setAssignConfirming(false)}
+                    disabled={assignSubmitting}
+                    className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold text-sm hover:bg-gray-200 transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer */}

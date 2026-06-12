@@ -220,8 +220,11 @@ export default function Home() {
               </h2>
               <div className="space-y-4">
                 {[
-                  'Master professional set conduct in hours, not years',
-                  'Speak the language that gets you hired again',
+                  'Master professional set conduct in hours, not years.',
+                  'Speak the language that gets you hired again.',
+                  'Log your work. Upload your vouchers. Calculate your earnings.',
+                  'Find an Agent. Discover what\'s filming. Journal your on-set journey.',
+                  'Build a contact list. Run through simulations. Track your goals.',
                 ].map(pt => (
                   <div key={pt} className="flex items-start gap-3">
                     <span className="text-amber-500 font-bold text-lg mt-0.5 shrink-0">✓</span>

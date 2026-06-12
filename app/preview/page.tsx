@@ -230,6 +230,50 @@ export default function PreviewPage() {
           </div>
         </section>
 
+        {/* ── SCENARIO SIMULATOR PREVIEW ──────────────────────── */}
+        <section className="bg-white px-4 pb-10">
+          <div className="max-w-6xl mx-auto">
+            <FadeIn>
+              <button
+                onClick={() => setShowModal(true)}
+                className="group w-full text-left bg-gray-50 rounded-2xl p-6 sm:p-8 border border-gray-200 border-t-2 border-t-amber-500 hover:shadow-md hover:border-gray-300 transition-all duration-200 relative"
+              >
+                {/* Lock badge */}
+                <span className="absolute top-4 right-4 text-base text-gray-400">🔒</span>
+
+                {/* Header */}
+                <div className="mb-4">
+                  <span className="inline-block text-xs font-bold px-2 py-0.5 rounded-md mb-3 bg-amber-50 text-amber-600">
+                    Bonus Tool
+                  </span>
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-800 pr-8 mb-2">
+                    🎭 Set Etiquette Scenario Simulator
+                  </h2>
+                  <p className="text-gray-500 text-sm leading-relaxed max-w-xl">
+                    Test your on-set knowledge with real scenarios. Learn how to handle tricky situations like a professional.
+                  </p>
+                </div>
+
+                {/* Example scenarios */}
+                <div className="space-y-2 mb-5">
+                  {[
+                    'What do you do when you can\'t hear the director?',
+                    'How do you handle a phone going off on set?',
+                    'What\'s the correct way to approach a lead actor?',
+                  ].map((q) => (
+                    <div key={q} className="flex items-start gap-2 text-sm text-gray-600">
+                      <span className="text-amber-500 shrink-0 mt-0.5">→</span>
+                      <span>{q}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <p className="text-xs font-medium text-amber-600">🔒 Sign up to access</p>
+              </button>
+            </FadeIn>
+          </div>
+        </section>
+
         {/* ── SECTION 2 PREVIEW ───────────────────────────────── */}
         <section className="bg-[#F9FAFB] px-4 py-14 border-y border-gray-200">
           <div className="max-w-6xl mx-auto">
@@ -282,7 +326,7 @@ export default function PreviewPage() {
               </div>
             </FadeIn>
 
-            {/* Horizontal scroll on mobile, 3-col on desktop */}
+            {/* 3-col grid on desktop, horizontal scroll on mobile */}
             <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0">
               {[
                 {
@@ -300,8 +344,48 @@ export default function PreviewPage() {
                   title: 'Referrals',
                   desc: 'Earn 20% commission on every friend you refer. Paid monthly via Interac e-Transfer.',
                 },
+                {
+                  icon: '💰',
+                  title: 'Calculate Your Earnings',
+                  desc: 'Instantly calculate your gross and net pay for any booking using union or non-union rates.',
+                },
+                {
+                  icon: '📄',
+                  title: 'Upload Your Vouchers',
+                  desc: 'Attach your union or non-union vouchers directly to each work log entry for safekeeping.',
+                },
+                {
+                  icon: '🤝',
+                  title: 'Find an Agent',
+                  desc: 'Browse a curated list of background talent agencies across Canada and find your match.',
+                },
+                {
+                  icon: '🎬',
+                  title: 'Discover What\'s Filming',
+                  desc: 'Stay up to date with current and upcoming productions filming in British Columbia.',
+                },
+                {
+                  icon: '👥',
+                  title: 'Build a Contact List',
+                  desc: 'Save directors, ADs, casting directors, and fellow performers you meet on set.',
+                },
+                {
+                  icon: '🎭',
+                  title: 'Run Through Simulations',
+                  desc: 'Practice real on-set scenarios and test your knowledge before your next booking.',
+                },
+                {
+                  icon: '🎯',
+                  title: 'Track Your Goals',
+                  desc: 'Set career milestones and track your progress as a background performer.',
+                },
+                {
+                  icon: '📔',
+                  title: 'Journal Your Journey',
+                  desc: 'Record every shoot day — what you learned, who you met, and how it went.',
+                },
               ].map((f, i) => (
-                <FadeIn key={f.title} delay={i * 80} className="snap-start shrink-0 w-72 sm:w-auto">
+                <FadeIn key={f.title} delay={i * 60} className="snap-start shrink-0 w-72 sm:w-auto">
                   <button
                     onClick={() => setShowModal(true)}
                     className="w-full h-full text-left bg-white rounded-2xl p-6 border border-gray-200 hover:border-amber-300 transition-all duration-200 group shadow-sm hover:shadow-md"
