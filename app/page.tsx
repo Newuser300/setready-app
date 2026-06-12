@@ -222,7 +222,6 @@ export default function Home() {
                 {[
                   'Master professional set conduct in hours, not years',
                   'Speak the language that gets you hired again',
-                  'Know your worth and negotiate confidently',
                 ].map(pt => (
                   <div key={pt} className="flex items-start gap-3">
                     <span className="text-amber-500 font-bold text-lg mt-0.5 shrink-0">✓</span>
@@ -303,6 +302,7 @@ export default function Home() {
                 </span>
                 <div className="mb-6">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Advanced Acting Techniques</h3>
+                  <p className="text-sm text-gray-500">Unlocks after Section 1 is complete. One-time fee.</p>
                 </div>
                 <ul className="space-y-3 mb-6 flex-1">
                   {[
@@ -316,9 +316,6 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-                <p className="text-xs text-gray-400 mb-6 border-t border-gray-100 pt-4">
-                  Includes: Master Class Content, Certificates
-                </p>
                 <button
                   onClick={() => router.push('/preview')}
                   className="w-full py-3 bg-transparent text-gray-700 border border-gray-300 font-bold rounded-xl hover:bg-gray-50 transition-all duration-200"

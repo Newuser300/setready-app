@@ -244,7 +244,7 @@ export default function PreviewPage() {
                   <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
                     Section 2: Advanced Acting Techniques
                   </h2>
-                  <p className="text-gray-500 text-sm mt-1">$19.99 one-time purchase</p>
+                  <p className="text-gray-500 text-sm mt-1">Unlocks after Section 1 is complete. Designed for those who want to act. One-time purchase fee.</p>
                 </div>
                 <button
                   onClick={() => setShowModal(true)}
