@@ -163,10 +163,13 @@ export default function Dashboard() {
   });
   const [workLogLoading, setWorkLogLoading] = useState(false);
   const workLogFormRef = useRef<HTMLDivElement>(null);
+  // In-form voucher staging (file picked but not yet uploaded — uploads on Save)
+  const [formVoucherFile, setFormVoucherFile] = useState<File | null>(null);
+  const [formVoucherType, setFormVoucherType] = useState<'Union Voucher' | 'Non-Union Voucher' | ''>('');
+  const [formVoucherPreview, setFormVoucherPreview] = useState<string | null>(null);
+  // Post-save voucher actions on existing cards
   const [uploadingLogId, setUploadingLogId] = useState<string | null>(null);
   const [removingLogId, setRemovingLogId] = useState<string | null>(null);
-  const [voucherUploadId, setVoucherUploadId] = useState<string | null>(null);
-  const [pendingVoucherType, setPendingVoucherType] = useState('');
   const [confirmRemoveVoucherId, setConfirmRemoveVoucherId] = useState<string | null>(null);
 
   // PRE-CHECKOUT REFERRAL MODAL STATE (Feature 4)
@@ -698,11 +701,9 @@ export default function Dashboard() {
     }
   }
 
-  // VOUCHER FUNCTIONS (Feature 1)
+  // VOUCHER FUNCTIONS — used on existing cards (post-save upload/remove/view)
   async function uploadVoucher(logId: string, file: File, voucherType?: string) {
     setUploadingLogId(logId);
-    setVoucherUploadId(null);
-    setPendingVoucherType('');
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) { alert('Please sign in again'); return; }
@@ -759,6 +760,23 @@ export default function Dashboard() {
     }
   }
 
+  function handleFormVoucherSelect(e: React.ChangeEvent<HTMLInputElement>, type: 'Union Voucher' | 'Non-Union Voucher') {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (formVoucherPreview) URL.revokeObjectURL(formVoucherPreview);
+    setFormVoucherFile(file);
+    setFormVoucherType(type);
+    setFormVoucherPreview(file.type.startsWith('image/') ? URL.createObjectURL(file) : null);
+    e.target.value = '';
+  }
+
+  function clearFormVoucher() {
+    if (formVoucherPreview) URL.revokeObjectURL(formVoucherPreview);
+    setFormVoucherFile(null);
+    setFormVoucherType('');
+    setFormVoucherPreview(null);
+  }
+
   function calculatePay() {
     const hours = parseFloat(workLogForm.hours_worked) || 0;
     const rate = parseFloat(workLogForm.pay_rate) || 0;
@@ -770,29 +788,16 @@ export default function Dashboard() {
     return { grossPay, finalPay };
   }
 
-  // UPDATED saveWorkLog with Production Name required
   async function saveWorkLog(e: React.FormEvent) {
     e.preventDefault();
-    
-    // Validate required fields: Work Date, Location, and Production Name
-    if (!workLogForm.work_date) {
-      alert('Please enter the work date');
-      return;
-    }
-    if (!workLogForm.location.trim()) {
-      alert('Please enter the location');
-      return;
-    }
-    if (!workLogForm.production_name.trim()) {
-      alert('Please enter the production name');
-      return;
-    }
-    
+
+    if (!workLogForm.work_date) { alert('Please enter the work date'); return; }
+    if (!workLogForm.production_name.trim()) { alert('Please enter the production name'); return; }
+
     setWorkLogLoading(true);
 
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (sessionError || !session?.user) {
-      console.error('Auth error:', sessionError);
       alert('Please sign in again');
       setWorkLogLoading(false);
       return;
@@ -809,7 +814,7 @@ export default function Dashboard() {
       work_date: workLogForm.work_date,
       production_name: workLogForm.production_name,
       production_type: workLogForm.production_type || null,
-      location: workLogForm.location,
+      location: workLogForm.location || null,
       role: workLogForm.role || null,
       character_name: workLogForm.character_name || null,
       agency: workLogForm.agency || null,
@@ -822,41 +827,42 @@ export default function Dashboard() {
       final_pay: finalPay,
       paid: workLogForm.paid,
       notes: workLogForm.notes || null,
-      voucher_type: workLogForm.voucher_type || null,
     };
-
-    console.log('Attempting to save:', workLogData);
 
     try {
       let result;
       if (editingWorkLog) {
-        // Update existing
-        result = await supabase
-          .from('work_logs')
-          .update(workLogData)
-          .eq('id', editingWorkLog.id)
-          .select();
+        result = await supabase.from('work_logs').update(workLogData).eq('id', editingWorkLog.id).select();
       } else {
-        // Insert new
-        result = await supabase
-          .from('work_logs')
-          .insert([workLogData])
-          .select();
+        result = await supabase.from('work_logs').insert([workLogData]).select();
       }
-
-      console.log('Supabase response:', result);
 
       if (result.error) {
-        console.error('Supabase error details:', result.error);
         alert(`Error saving: ${result.error.message || 'Unknown error'}`);
-      } else {
-        console.log('Saved successfully:', result.data);
-        resetWorkLogForm();
-        loadWorkLogs();
-        alert('Work entry saved successfully!');
+        return;
       }
+
+      // Upload staged voucher if one was selected in the form
+      const savedId = editingWorkLog?.id ?? result.data?.[0]?.id;
+      if (formVoucherFile && formVoucherType && savedId) {
+        const fd = new FormData();
+        fd.append('file', formVoucherFile);
+        fd.append('workLogId', savedId);
+        fd.append('voucherType', formVoucherType);
+        const uploadRes = await fetch('/api/work-log/voucher', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          body: fd,
+        });
+        if (!uploadRes.ok) {
+          const err = await uploadRes.json();
+          alert(`Entry saved but voucher upload failed: ${err.error || 'Unknown error'}`);
+        }
+      }
+
+      resetWorkLogForm();
+      loadWorkLogs();
     } catch (err) {
-      console.error('Unexpected error:', err);
       alert(`Error: ${err instanceof Error ? err.message : 'Something went wrong'}`);
     } finally {
       setWorkLogLoading(false);
@@ -898,6 +904,7 @@ export default function Dashboard() {
       notes: log.notes || '',
       voucher_type: log.voucher_type || '',
     });
+    clearFormVoucher();
     setShowWorkLogForm(true);
   }
 
@@ -920,6 +927,7 @@ export default function Dashboard() {
       notes: '',
       voucher_type: '',
     });
+    clearFormVoucher();
     setShowWorkLogForm(false);
   }
 
@@ -1566,231 +1574,276 @@ export default function Dashboard() {
                   <p className="text-gray-800 font-medium mt-1 text-base">Track your film industry work, earnings, and deductions</p>
                 </div>
                 <button
-                  onClick={() => setShowWorkLogForm(!showWorkLogForm)}
+                  onClick={() => { setEditingWorkLog(null); setShowWorkLogForm(true); }}
                   className="shrink-0 px-7 py-3 bg-gray-900 text-white font-bold text-base rounded-xl hover:bg-gray-800 active:scale-95 transition shadow-md"
                 >
-                  {showWorkLogForm ? '✖ Cancel' : '➕ Add Work Entry'}
+                  ➕ Add Work Entry
                 </button>
               </div>
             </div>
 
-            {/* Work Log Form */}
+            {/* ── Work Log Form ── */}
             {showWorkLogForm && (
               <div ref={workLogFormRef} className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 md:p-8 mb-8">
                 <h3 className="text-xl font-bold text-gray-800 mb-6">
                   {editingWorkLog ? '✏️ Edit Work Entry' : '➕ New Work Entry'}
                 </h3>
-                <form onSubmit={saveWorkLog} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-                    {/* Work Date */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Work Date *</label>
-                      <input
-                        type="date"
-                        required
-                        value={workLogForm.work_date}
-                        onChange={(e) => setWorkLogForm({...workLogForm, work_date: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      />
-                    </div>
+                <form onSubmit={saveWorkLog} className="space-y-8">
 
-                    {/* Production Name */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Production Name *</label>
-                      <input
-                        type="text"
-                        required
-                        value={workLogForm.production_name}
-                        onChange={(e) => setWorkLogForm({...workLogForm, production_name: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        placeholder="e.g., Movie Title"
-                      />
-                    </div>
+                  {/* ── BASIC INFO ── */}
+                  <div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Basic Info</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-                    {/* Production Type */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Production Type</label>
-                      <select
-                        value={workLogForm.production_type}
-                        onChange={(e) => setWorkLogForm({...workLogForm, production_type: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
-                      >
-                        <option value="">— Select —</option>
-                        <option value="Film">Film</option>
-                        <option value="TV Series">TV Series</option>
-                        <option value="Commercial">Commercial</option>
-                        <option value="Music Video">Music Video</option>
-                        <option value="Short Film">Short Film</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
-
-                    {/* Location */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Location *</label>
-                      <input
-                        type="text"
-                        required
-                        value={workLogForm.location}
-                        onChange={(e) => setWorkLogForm({...workLogForm, location: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        placeholder="City / Studio"
-                      />
-                    </div>
-
-                    {/* Role Type */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Role Type</label>
-                      <select
-                        value={workLogForm.role}
-                        onChange={(e) => setWorkLogForm({...workLogForm, role: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
-                      >
-                        <option value="">— Select —</option>
-                        <option value="General Background">General Background</option>
-                        <option value="Stand-in">Stand-in</option>
-                        <option value="Special Ability">Special Ability</option>
-                        <option value="Photo Double">Photo Double</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
-
-                    {/* Character Name */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Character Name</label>
-                      <input
-                        type="text"
-                        value={workLogForm.character_name}
-                        onChange={(e) => setWorkLogForm({...workLogForm, character_name: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        placeholder="Character name you played"
-                      />
-                    </div>
-
-                    {/* Agency */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Agency <span className="font-normal text-gray-400">(optional)</span></label>
-                      <input
-                        type="text"
-                        value={workLogForm.agency}
-                        onChange={(e) => setWorkLogForm({...workLogForm, agency: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        placeholder="e.g., Extras Casting Agency"
-                      />
-                    </div>
-
-                    {/* Hours Worked */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Hours Worked</label>
-                      <input
-                        type="number"
-                        step="0.5"
-                        min="0"
-                        value={workLogForm.hours_worked}
-                        onChange={(e) => setWorkLogForm({...workLogForm, hours_worked: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        placeholder="e.g., 8.5"
-                      />
-                    </div>
-
-                    {/* Pay Rate */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Hourly Rate ($/hr)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={workLogForm.pay_rate}
-                        onChange={(e) => setWorkLogForm({...workLogForm, pay_rate: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        placeholder="e.g., 270.30"
-                      />
-                    </div>
-
-                    {/* Gross Pay (auto-calculated) */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Gross Pay <span className="font-normal text-gray-400">(auto-calculated)</span></label>
-                      <input
-                        type="text"
-                        readOnly
-                        value={`$${grossPay.toFixed(2)}`}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 cursor-default"
-                      />
-                    </div>
-
-                    {/* Deductions */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Deductions ($)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={workLogForm.deductions}
-                        onChange={(e) => setWorkLogForm({...workLogForm, deductions: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        placeholder="e.g., 50.00"
-                      />
-                    </div>
-
-                    {/* Final Pay (auto-calculated) */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Total Pay <span className="font-normal text-gray-400">(after deductions)</span></label>
-                      <input
-                        type="text"
-                        readOnly
-                        value={`$${finalPay.toFixed(2)}`}
-                        className="w-full px-4 py-3 bg-green-50 border border-green-200 rounded-lg text-green-800 font-bold cursor-default"
-                      />
-                    </div>
-
-                    {/* Union / Non-Union toggle */}
-                    <div className="flex flex-col gap-3 pt-1">
-                      <p className="text-sm font-semibold text-gray-700 mb-1">Options</p>
-                      <label className="flex items-center gap-3 cursor-pointer">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Date *</label>
                         <input
-                          type="checkbox"
-                          checked={workLogForm.is_union}
-                          onChange={(e) => setWorkLogForm({...workLogForm, is_union: e.target.checked})}
-                          className="w-5 h-5 text-blue-600 rounded"
+                          type="date"
+                          required
+                          value={workLogForm.work_date}
+                          onChange={(e) => setWorkLogForm({...workLogForm, work_date: e.target.value})}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                         />
-                        <span className="text-sm text-gray-700">Union booking</span>
-                      </label>
-                      <label className="flex items-center gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={workLogForm.lunch_break}
-                          onChange={(e) => setWorkLogForm({...workLogForm, lunch_break: e.target.checked})}
-                          className="w-5 h-5 text-blue-600 rounded"
-                        />
-                        <span className="text-sm text-gray-700">Lunch break taken</span>
-                      </label>
-                      <label className="flex items-center gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={workLogForm.paid}
-                          onChange={(e) => setWorkLogForm({...workLogForm, paid: e.target.checked})}
-                          className="w-5 h-5 text-blue-600 rounded"
-                        />
-                        <span className="text-sm text-gray-700">Payment received</span>
-                      </label>
-                    </div>
+                      </div>
 
-                    {/* Notes */}
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Notes <span className="font-normal text-gray-400">(optional)</span></label>
-                      <textarea
-                        value={workLogForm.notes}
-                        onChange={(e) => setWorkLogForm({...workLogForm, notes: e.target.value})}
-                        rows={3}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
-                        placeholder="Any additional notes about the shoot..."
-                      />
-                    </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Production Name *</label>
+                        <input
+                          type="text"
+                          required
+                          value={workLogForm.production_name}
+                          onChange={(e) => setWorkLogForm({...workLogForm, production_name: e.target.value})}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          placeholder="e.g., Movie or Show Title"
+                        />
+                      </div>
 
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Production Type</label>
+                        <select
+                          value={workLogForm.production_type}
+                          onChange={(e) => setWorkLogForm({...workLogForm, production_type: e.target.value})}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                        >
+                          <option value="">— Select —</option>
+                          <option value="Film">Film</option>
+                          <option value="TV Series">TV Series</option>
+                          <option value="Commercial">Commercial</option>
+                          <option value="Music Video">Music Video</option>
+                          <option value="Short Film">Short Film</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Location</label>
+                        <input
+                          type="text"
+                          value={workLogForm.location}
+                          onChange={(e) => setWorkLogForm({...workLogForm, location: e.target.value})}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          placeholder="City / Studio"
+                        />
+                      </div>
+
+                    </div>
                   </div>
 
-                  {/* Form buttons */}
+                  {/* ── ROLE & PAY ── */}
+                  <div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Role &amp; Pay</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                      {/* Union Status pill toggle */}
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Union Status</label>
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setWorkLogForm({...workLogForm, is_union: true})}
+                            className={`flex-1 py-3 rounded-xl text-sm font-semibold border-2 transition ${workLogForm.is_union ? 'bg-blue-600 border-blue-600 text-white shadow-sm' : 'bg-white border-gray-300 text-gray-600 hover:border-blue-300'}`}
+                          >
+                            🎭 Union (UBCP/ACTRA)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setWorkLogForm({...workLogForm, is_union: false})}
+                            className={`flex-1 py-3 rounded-xl text-sm font-semibold border-2 transition ${!workLogForm.is_union ? 'bg-gray-800 border-gray-800 text-white shadow-sm' : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'}`}
+                          >
+                            Non-Union
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Role Type</label>
+                        <select
+                          value={workLogForm.role}
+                          onChange={(e) => setWorkLogForm({...workLogForm, role: e.target.value})}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                        >
+                          <option value="">— Select —</option>
+                          <option value="General Background">General Background</option>
+                          <option value="Stand-in">Stand-in</option>
+                          <option value="Special Ability Background">Special Ability Background</option>
+                          <option value="Photo Double">Photo Double</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Agency <span className="font-normal text-gray-400">(optional)</span></label>
+                        <input
+                          type="text"
+                          value={workLogForm.agency}
+                          onChange={(e) => setWorkLogForm({...workLogForm, agency: e.target.value})}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          placeholder="e.g., Extras Casting Agency"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Hours Worked</label>
+                        <input
+                          type="number"
+                          step="0.5"
+                          min="0"
+                          value={workLogForm.hours_worked}
+                          onChange={(e) => setWorkLogForm({...workLogForm, hours_worked: e.target.value})}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          placeholder="e.g., 8.5"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Hourly Rate ($)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={workLogForm.pay_rate}
+                          onChange={(e) => setWorkLogForm({...workLogForm, pay_rate: e.target.value})}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          placeholder="e.g., 270.30"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Gross Pay <span className="font-normal text-gray-400">(hours × rate)</span></label>
+                        <input type="text" readOnly value={`$${grossPay.toFixed(2)}`}
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 cursor-default" />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Deductions ($)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={workLogForm.deductions}
+                          onChange={(e) => setWorkLogForm({...workLogForm, deductions: e.target.value})}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          placeholder="0.00"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Total Pay <span className="font-normal text-gray-400">(after deductions)</span></label>
+                        <input type="text" readOnly value={`$${finalPay.toFixed(2)}`}
+                          className="w-full px-4 py-3 bg-green-50 border border-green-200 rounded-lg text-green-800 font-bold cursor-default" />
+                      </div>
+
+                      <div className="flex flex-wrap gap-5 items-center pt-2">
+                        <label className="flex items-center gap-2.5 cursor-pointer">
+                          <input type="checkbox" checked={workLogForm.lunch_break}
+                            onChange={(e) => setWorkLogForm({...workLogForm, lunch_break: e.target.checked})}
+                            className="w-5 h-5 rounded text-blue-600" />
+                          <span className="text-sm text-gray-700">Lunch break taken</span>
+                        </label>
+                        <label className="flex items-center gap-2.5 cursor-pointer">
+                          <input type="checkbox" checked={workLogForm.paid}
+                            onChange={(e) => setWorkLogForm({...workLogForm, paid: e.target.checked})}
+                            className="w-5 h-5 rounded text-blue-600" />
+                          <span className="text-sm text-gray-700">Payment received</span>
+                        </label>
+                      </div>
+
+                    </div>
+                  </div>
+
+                  {/* ── VOUCHER UPLOAD ── */}
+                  <div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">📄 Work Voucher</p>
+                    <p className="text-xs text-gray-400 mb-4">Optional — uploaded when you save this entry</p>
+
+                    {/* Edit mode: show existing voucher if no new file picked */}
+                    {editingWorkLog?.voucher_filename && !formVoucherFile && (
+                      <div className="flex flex-wrap items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl mb-3">
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${editingWorkLog.voucher_type === 'Union Voucher' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-700'}`}>
+                          ✅ {editingWorkLog.voucher_type || 'Voucher'}
+                        </span>
+                        <span className="text-sm text-gray-700 truncate max-w-[200px]">{editingWorkLog.voucher_filename}</span>
+                        <span className="text-xs text-gray-400">— select a new file below to replace</span>
+                      </div>
+                    )}
+
+                    {formVoucherFile ? (
+                      /* File staged — show preview */
+                      <div className="flex flex-wrap items-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                        {formVoucherFile.type.startsWith('image/') && formVoucherPreview ? (
+                          <img src={formVoucherPreview} alt="Voucher preview"
+                            className="w-16 h-16 object-cover rounded-lg border border-gray-200 shrink-0" />
+                        ) : (
+                          <div className="w-16 h-16 bg-red-50 border border-red-200 rounded-lg flex items-center justify-center text-3xl shrink-0">📄</div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold mb-1 ${formVoucherType === 'Union Voucher' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-700'}`}>
+                            {formVoucherType}
+                          </span>
+                          <p className="text-sm font-medium text-gray-800 truncate">{formVoucherFile.name}</p>
+                          <p className="text-xs text-gray-400">{(formVoucherFile.size / 1024 / 1024).toFixed(1)} MB — will upload on save</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={clearFormVoucher}
+                          className="shrink-0 px-3 py-1.5 text-xs font-semibold bg-white border border-red-200 text-red-500 rounded-lg hover:bg-red-50 transition"
+                        >
+                          ✕ Remove
+                        </button>
+                      </div>
+                    ) : (
+                      /* No file yet — show picker buttons */
+                      <div className="flex flex-wrap gap-3">
+                        <label className="flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl cursor-pointer transition select-none shadow-sm">
+                          📷 Union Voucher
+                          <input type="file" className="hidden"
+                            accept=".jpg,.jpeg,.png,.heic,.heif,.pdf"
+                            onChange={e => handleFormVoucherSelect(e, 'Union Voucher')} />
+                        </label>
+                        <label className="flex items-center gap-2 px-5 py-3 bg-white border-2 border-gray-300 hover:border-gray-400 text-gray-700 text-sm font-semibold rounded-xl cursor-pointer transition select-none">
+                          📷 Non-Union Voucher
+                          <input type="file" className="hidden"
+                            accept=".jpg,.jpeg,.png,.heic,.heif,.pdf"
+                            onChange={e => handleFormVoucherSelect(e, 'Non-Union Voucher')} />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── NOTES ── */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Notes <span className="font-normal text-gray-400">(optional)</span></label>
+                    <textarea
+                      value={workLogForm.notes}
+                      onChange={(e) => setWorkLogForm({...workLogForm, notes: e.target.value})}
+                      rows={3}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
+                      placeholder="Any notes about this booking..."
+                    />
+                  </div>
+
+                  {/* ── BUTTONS ── */}
                   <div className="flex flex-wrap gap-3 pt-2 border-t border-gray-100">
                     <button
                       type="button"
@@ -1804,9 +1857,10 @@ export default function Dashboard() {
                       disabled={workLogLoading}
                       className="px-8 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition font-bold disabled:opacity-50 shadow-sm"
                     >
-                      {workLogLoading ? 'Saving…' : (editingWorkLog ? 'Update Entry' : 'Save Entry')}
+                      {workLogLoading ? 'Saving…' : (editingWorkLog ? '💾 Update Entry' : '💾 Save Entry')}
                     </button>
                   </div>
+
                 </form>
               </div>
             )}
