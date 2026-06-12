@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -48,6 +48,8 @@ type WorkLog = {
   final_pay: number;
   paid: boolean;
   notes: string;
+  production_type?: string | null;
+  agency?: string | null;
   created_at: string;
   voucher_url?: string | null;
   voucher_filename?: string | null;
@@ -145,9 +147,11 @@ export default function Dashboard() {
   const [workLogForm, setWorkLogForm] = useState({
     work_date: new Date().toISOString().split('T')[0],
     production_name: '',
+    production_type: '',
     location: '',
     role: '',
     character_name: '',
+    agency: '',
     hours_worked: '',
     lunch_break: false,
     is_union: false,
@@ -158,6 +162,7 @@ export default function Dashboard() {
     voucher_type: '',
   });
   const [workLogLoading, setWorkLogLoading] = useState(false);
+  const workLogFormRef = useRef<HTMLDivElement>(null);
   const [uploadingLogId, setUploadingLogId] = useState<string | null>(null);
   const [removingLogId, setRemovingLogId] = useState<string | null>(null);
   const [voucherUploadId, setVoucherUploadId] = useState<string | null>(null);
@@ -471,6 +476,15 @@ export default function Dashboard() {
     }
     getCurrentUserId();
   }, []);
+
+  // Scroll the Add Entry form into view whenever it opens
+  useEffect(() => {
+    if (showWorkLogForm && workLogFormRef.current) {
+      setTimeout(() => {
+        workLogFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+    }
+  }, [showWorkLogForm]);
 
   // NEW: Check for refresh parameter when returning from quiz
   useEffect(() => {
@@ -794,9 +808,11 @@ export default function Dashboard() {
       user_id: session.user.id,
       work_date: workLogForm.work_date,
       production_name: workLogForm.production_name,
+      production_type: workLogForm.production_type || null,
       location: workLogForm.location,
       role: workLogForm.role || null,
       character_name: workLogForm.character_name || null,
+      agency: workLogForm.agency || null,
       hours_worked: hours,
       lunch_break: workLogForm.lunch_break,
       is_union: workLogForm.is_union,
@@ -868,9 +884,11 @@ export default function Dashboard() {
     setWorkLogForm({
       work_date: log.work_date,
       production_name: log.production_name || '',
+      production_type: log.production_type || '',
       location: log.location || '',
       role: log.role || '',
       character_name: log.character_name || '',
+      agency: log.agency || '',
       hours_worked: log.hours_worked?.toString() || '',
       lunch_break: log.lunch_break || false,
       is_union: log.is_union || false,
@@ -888,9 +906,11 @@ export default function Dashboard() {
     setWorkLogForm({
       work_date: new Date().toISOString().split('T')[0],
       production_name: '',
+      production_type: '',
       location: '',
       role: '',
       character_name: '',
+      agency: '',
       hours_worked: '',
       lunch_break: false,
       is_union: false,
@@ -1554,14 +1574,16 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Work Log Form - Modified with requested changes */}
+            {/* Work Log Form */}
             {showWorkLogForm && (
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 mb-8">
-                <h3 className="text-lg font-bold text-gray-800 mb-6">
-                  {editingWorkLog ? 'Edit Work Entry' : 'New Work Entry'}
+              <div ref={workLogFormRef} className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 md:p-8 mb-8">
+                <h3 className="text-xl font-bold text-gray-800 mb-6">
+                  {editingWorkLog ? '✏️ Edit Work Entry' : '➕ New Work Entry'}
                 </h3>
                 <form onSubmit={saveWorkLog} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                    {/* Work Date */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">Work Date *</label>
                       <input
@@ -1569,20 +1591,11 @@ export default function Dashboard() {
                         required
                         value={workLogForm.work_date}
                         onChange={(e) => setWorkLogForm({...workLogForm, work_date: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Location *</label>
-                      <input
-                        type="text"
-                        required
-                        value={workLogForm.location}
-                        onChange={(e) => setWorkLogForm({...workLogForm, location: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        placeholder="City / Studio"
-                      />
-                    </div>
+
+                    {/* Production Name */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">Production Name *</label>
                       <input
@@ -1590,53 +1603,150 @@ export default function Dashboard() {
                         required
                         value={workLogForm.production_name}
                         onChange={(e) => setWorkLogForm({...workLogForm, production_name: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                         placeholder="e.g., Movie Title"
                       />
                     </div>
-                    {/* Role Field */}
+
+                    {/* Production Type */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Role</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Production Type</label>
+                      <select
+                        value={workLogForm.production_type}
+                        onChange={(e) => setWorkLogForm({...workLogForm, production_type: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                      >
+                        <option value="">— Select —</option>
+                        <option value="Film">Film</option>
+                        <option value="TV Series">TV Series</option>
+                        <option value="Commercial">Commercial</option>
+                        <option value="Music Video">Music Video</option>
+                        <option value="Short Film">Short Film</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    {/* Location */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Location *</label>
                       <input
                         type="text"
-                        value={workLogForm.role}
-                        onChange={(e) => setWorkLogForm({...workLogForm, role: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        placeholder="Actor, Stunts, BG, Stand-in, etc."
+                        required
+                        value={workLogForm.location}
+                        onChange={(e) => setWorkLogForm({...workLogForm, location: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        placeholder="City / Studio"
                       />
                     </div>
-                    {/* Character Field */}
+
+                    {/* Role Type */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Character</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Role Type</label>
+                      <select
+                        value={workLogForm.role}
+                        onChange={(e) => setWorkLogForm({...workLogForm, role: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                      >
+                        <option value="">— Select —</option>
+                        <option value="General Background">General Background</option>
+                        <option value="Stand-in">Stand-in</option>
+                        <option value="Special Ability">Special Ability</option>
+                        <option value="Photo Double">Photo Double</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    {/* Character Name */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Character Name</label>
                       <input
                         type="text"
                         value={workLogForm.character_name}
                         onChange={(e) => setWorkLogForm({...workLogForm, character_name: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                         placeholder="Character name you played"
                       />
                     </div>
+
+                    {/* Agency */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Agency <span className="font-normal text-gray-400">(optional)</span></label>
+                      <input
+                        type="text"
+                        value={workLogForm.agency}
+                        onChange={(e) => setWorkLogForm({...workLogForm, agency: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        placeholder="e.g., Extras Casting Agency"
+                      />
+                    </div>
+
+                    {/* Hours Worked */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">Hours Worked</label>
                       <input
                         type="number"
                         step="0.5"
+                        min="0"
                         value={workLogForm.hours_worked}
                         onChange={(e) => setWorkLogForm({...workLogForm, hours_worked: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                         placeholder="e.g., 8.5"
                       />
                     </div>
-                    <div className="flex flex-col gap-3">
-                      <label className="flex items-center gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={workLogForm.lunch_break}
-                          onChange={(e) => setWorkLogForm({...workLogForm, lunch_break: e.target.checked})}
-                          className="w-5 h-5 text-blue-600 rounded"
-                        />
-                        <span className="text-sm text-gray-700">Lunch Break Taken</span>
-                      </label>
+
+                    {/* Pay Rate */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Hourly Rate ($/hr)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={workLogForm.pay_rate}
+                        onChange={(e) => setWorkLogForm({...workLogForm, pay_rate: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        placeholder="e.g., 270.30"
+                      />
+                    </div>
+
+                    {/* Gross Pay (auto-calculated) */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Gross Pay <span className="font-normal text-gray-400">(auto-calculated)</span></label>
+                      <input
+                        type="text"
+                        readOnly
+                        value={`$${grossPay.toFixed(2)}`}
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 cursor-default"
+                      />
+                    </div>
+
+                    {/* Deductions */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Deductions ($)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={workLogForm.deductions}
+                        onChange={(e) => setWorkLogForm({...workLogForm, deductions: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        placeholder="e.g., 50.00"
+                      />
+                    </div>
+
+                    {/* Final Pay (auto-calculated) */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Total Pay <span className="font-normal text-gray-400">(after deductions)</span></label>
+                      <input
+                        type="text"
+                        readOnly
+                        value={`$${finalPay.toFixed(2)}`}
+                        className="w-full px-4 py-3 bg-green-50 border border-green-200 rounded-lg text-green-800 font-bold cursor-default"
+                      />
+                    </div>
+
+                    {/* Union / Non-Union toggle */}
+                    <div className="flex flex-col gap-3 pt-1">
+                      <p className="text-sm font-semibold text-gray-700 mb-1">Options</p>
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input
                           type="checkbox"
@@ -1644,7 +1754,16 @@ export default function Dashboard() {
                           onChange={(e) => setWorkLogForm({...workLogForm, is_union: e.target.checked})}
                           className="w-5 h-5 text-blue-600 rounded"
                         />
-                        <span className="text-sm text-gray-700">Union</span>
+                        <span className="text-sm text-gray-700">Union booking</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={workLogForm.lunch_break}
+                          onChange={(e) => setWorkLogForm({...workLogForm, lunch_break: e.target.checked})}
+                          className="w-5 h-5 text-blue-600 rounded"
+                        />
+                        <span className="text-sm text-gray-700">Lunch break taken</span>
                       </label>
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input
@@ -1653,87 +1772,39 @@ export default function Dashboard() {
                           onChange={(e) => setWorkLogForm({...workLogForm, paid: e.target.checked})}
                           className="w-5 h-5 text-blue-600 rounded"
                         />
-                        <span className="text-sm text-gray-700">Paid</span>
+                        <span className="text-sm text-gray-700">Payment received</span>
                       </label>
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Pay Rate ($/hour)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={workLogForm.pay_rate}
-                        onChange={(e) => setWorkLogForm({...workLogForm, pay_rate: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        placeholder="e.g., 270.30"
-                      />
-                    </div>
-                    {/* Gross Pay moved above Deductions */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Gross Pay</label>
-                      <input
-                        type="text"
-                        readOnly
-                        value={`$${grossPay.toFixed(2)}`}
-                        className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-700"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Deductions ($)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={workLogForm.deductions}
-                        onChange={(e) => setWorkLogForm({...workLogForm, deductions: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        placeholder="e.g., 50.00"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Final Pay (After Deductions)</label>
-                      <input
-                        type="text"
-                        readOnly
-                        value={`$${finalPay.toFixed(2)}`}
-                        className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-700 font-bold"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Voucher Type</label>
-                      <select
-                        value={workLogForm.voucher_type}
-                        onChange={(e) => setWorkLogForm({...workLogForm, voucher_type: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">— Select —</option>
-                        <option value="Union Voucher">Union Voucher</option>
-                        <option value="Non-Union Voucher">Non-Union Voucher</option>
-                      </select>
-                    </div>
+
+                    {/* Notes */}
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Notes</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Notes <span className="font-normal text-gray-400">(optional)</span></label>
                       <textarea
                         value={workLogForm.notes}
                         onChange={(e) => setWorkLogForm({...workLogForm, notes: e.target.value})}
                         rows={3}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        placeholder="Any additional notes..."
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
+                        placeholder="Any additional notes about the shoot..."
                       />
                     </div>
+
                   </div>
-                  <div className="flex gap-4 pt-4">
-                    <button
-                      type="submit"
-                      disabled={workLogLoading}
-                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium disabled:opacity-50"
-                    >
-                      {workLogLoading ? 'Saving...' : (editingWorkLog ? 'Update Entry' : 'Save Entry')}
-                    </button>
+
+                  {/* Form buttons */}
+                  <div className="flex flex-wrap gap-3 pt-2 border-t border-gray-100">
                     <button
                       type="button"
                       onClick={resetWorkLogForm}
-                      className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition font-medium"
+                      className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition font-semibold"
                     >
                       Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={workLogLoading}
+                      className="px-8 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition font-bold disabled:opacity-50 shadow-sm"
+                    >
+                      {workLogLoading ? 'Saving…' : (editingWorkLog ? 'Update Entry' : 'Save Entry')}
                     </button>
                   </div>
                 </form>
