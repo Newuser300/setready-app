@@ -340,11 +340,13 @@ export default function ResidencyPage() {
           <div className="p-6 grid md:grid-cols-2 gap-6">
 
             <div>
-              <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-1">
-                Category A — Citizenship / PR Status
+              <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-0.5">
+                Category A — Proof of Canadian Citizenship or Permanent Residency Status
               </p>
-              <p className="text-xs text-gray-500 italic mb-3">
-                Required by UBCP/ACTRA and productions for tax credit purposes
+              <p className="text-xs font-semibold text-blue-600 mb-2">1 document required from this category</p>
+              <p className="text-xs text-gray-500 mb-3">
+                Productions require ONE document proving your Canadian citizenship or permanent residency
+                status. This is required by UBCP/ACTRA under the BC Master Production Agreement.
               </p>
               <ul className="space-y-1.5">
                 {['Passport', 'Birth Certificate', 'Certificate of Indian Status Card', 'Citizenship Card', 'Permanent Resident Card'].map(item => (
@@ -357,12 +359,22 @@ export default function ResidencyPage() {
             </div>
 
             <div>
-              <p className="text-xs font-bold text-purple-700 uppercase tracking-wider mb-1">
-                Category B — BC Residency
+              <p className="text-xs font-bold text-purple-700 uppercase tracking-wider mb-0.5">
+                Category B — Proof of BC Residency
               </p>
-              <p className="text-xs text-gray-500 italic mb-3">
-                Required for provincial tax credit claims
+              <p className="text-xs font-semibold text-purple-600 mb-2">1–2 documents may be required from this category</p>
+              <p className="text-xs text-gray-500 mb-2">
+                Productions may require documentation proving you are a BC resident, to support their
+                provincial tax credit claims with the CRA. Some productions require one document,
+                others require two.
               </p>
+              <div className="mb-3 px-3 py-2 bg-purple-50 border border-purple-200 rounded-lg">
+                <p className="text-xs text-purple-800">
+                  <strong>💡 Pro Tip:</strong> Your BC Services Card (combined health card + driver's
+                  licence) counts as TWO documents on its own.
+                </p>
+                <p className="text-xs text-purple-600 mt-0.5">Source: ACTRA National residency guidelines</p>
+              </div>
               <ul className="space-y-1.5">
                 <li className="flex items-start gap-2 text-sm text-gray-700">
                   <span className="text-green-600 font-bold shrink-0 mt-px">✅</span>
@@ -396,11 +408,11 @@ export default function ResidencyPage() {
 
           {/* Amber warning */}
           <div className="mx-6 mb-6 p-4 rounded-xl border border-amber-300" style={{ backgroundColor: '#FEF3C7' }}>
-            <p className="text-sm font-bold text-amber-900 mb-1">⚠️ Important</p>
+            <p className="text-sm font-bold text-amber-900 mb-1.5">⚠️ Important</p>
             <p className="text-sm text-amber-800 leading-relaxed">
-              Productions may request these documents at time of booking. You have a minimum of{' '}
-              <strong>2 business days</strong> to provide them. Documents are kept confidential by
-              productions under privacy law.
+              Productions must request these documents <strong>at time of booking</strong>. You have a
+              minimum of <strong>2 business days</strong> to provide them. If you fail to provide
+              documents by your call time on your first day, the producer may cancel your booking.
             </p>
             <p className="text-xs text-amber-700 mt-2 font-semibold">Source: UBCP/ACTRA BCMPA Agreement</p>
           </div>

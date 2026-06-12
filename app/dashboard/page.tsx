@@ -999,6 +999,12 @@ export default function Dashboard() {
               📋 Proof of Residency
             </button>
             <button
+              onClick={() => router.push('/clothing')}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
+            >
+              👔 What to Wear on Set
+            </button>
+            <button
               onClick={openAgencyClickModal}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
             >
