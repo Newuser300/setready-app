@@ -198,7 +198,7 @@ export default function Home() {
                 {[
                   'Not knowing set etiquette costs you callbacks',
                   'Missing industry terminology marks you as amateur',
-                  'No guidance on rates means leaving money behind',
+                  'Not knowing what to do can be stressful.',
                 ].map(pt => (
                   <div key={pt} className="flex items-start gap-3">
                     <span className="text-red-500 font-bold text-lg mt-0.5 shrink-0">✗</span>
@@ -304,7 +304,12 @@ export default function Home() {
                   Advanced
                 </span>
                 <div className="mb-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Advanced Acting Techniques</h3>
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <h3 className="text-xl font-bold text-gray-900">Advanced Acting Techniques</h3>
+                    <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs font-semibold rounded-full border border-gray-200 uppercase tracking-wide">
+                      Optional
+                    </span>
+                  </div>
                   <p className="text-sm text-gray-500">Unlocks after Section 1 is complete. One-time fee.</p>
                 </div>
                 <ul className="space-y-3 mb-6 flex-1">

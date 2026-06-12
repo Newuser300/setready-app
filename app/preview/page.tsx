@@ -282,8 +282,13 @@ export default function PreviewPage() {
             <FadeIn>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 pl-4 border-l-4 border-gray-400">
                 <div>
-                  <div className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-semibold rounded mb-2 uppercase tracking-wide">
-                    Advanced
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-semibold rounded uppercase tracking-wide">
+                      Advanced
+                    </div>
+                    <div className="inline-flex items-center px-2 py-0.5 bg-gray-50 text-gray-400 text-xs font-semibold rounded border border-gray-200 uppercase tracking-wide">
+                      Optional
+                    </div>
                   </div>
                   <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
                     Section 2: Advanced Acting Techniques

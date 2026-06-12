@@ -160,6 +160,9 @@ export default function Dashboard() {
   const [workLogLoading, setWorkLogLoading] = useState(false);
   const [uploadingLogId, setUploadingLogId] = useState<string | null>(null);
   const [removingLogId, setRemovingLogId] = useState<string | null>(null);
+  const [voucherUploadId, setVoucherUploadId] = useState<string | null>(null);
+  const [pendingVoucherType, setPendingVoucherType] = useState('');
+  const [confirmRemoveVoucherId, setConfirmRemoveVoucherId] = useState<string | null>(null);
 
   // PRE-CHECKOUT REFERRAL MODAL STATE (Feature 4)
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
@@ -682,14 +685,17 @@ export default function Dashboard() {
   }
 
   // VOUCHER FUNCTIONS (Feature 1)
-  async function uploadVoucher(logId: string, file: File) {
+  async function uploadVoucher(logId: string, file: File, voucherType?: string) {
     setUploadingLogId(logId);
+    setVoucherUploadId(null);
+    setPendingVoucherType('');
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) { alert('Please sign in again'); return; }
       const fd = new FormData();
       fd.append('file', file);
       fd.append('workLogId', logId);
+      if (voucherType) fd.append('voucherType', voucherType);
       const res = await fetch('/api/vouchers', {
         method: 'POST',
         headers: { Authorization: `Bearer ${session.access_token}` },
@@ -709,7 +715,7 @@ export default function Dashboard() {
   }
 
   async function removeVoucher(logId: string) {
-    if (!confirm('Remove this voucher photo?')) return;
+    setConfirmRemoveVoucherId(null);
     setRemovingLogId(logId);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -1077,7 +1083,10 @@ export default function Dashboard() {
 
           {section2Visible && !section2Unlocked && isSubscribed && (
             <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6">
-              <p className="font-semibold text-purple-800">🎓 Unlock Section 2</p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="font-semibold text-purple-800">🎓 Unlock Section 2</p>
+                <span className="px-2 py-0.5 bg-purple-100 text-purple-500 text-xs font-semibold rounded-full border border-purple-200 uppercase tracking-wide">Optional</span>
+              </div>
               <p className="text-sm text-purple-700 mb-3">You've completed Section 1! Unlock advanced acting modules for a one-time fee of $19.99.</p>
               <button
                 onClick={() => handleSection2Checkout()}
@@ -1206,7 +1215,10 @@ export default function Dashboard() {
               <div className="flex items-center gap-3 mt-8 mb-6">
                 <div className="text-3xl">🎭</div>
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-800">Section 2: From Background to Acting</h2>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-2xl font-bold text-gray-800">Section 2: From Background to Acting</h2>
+                    <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs font-semibold rounded-full border border-gray-200 uppercase tracking-wide">Optional Upgrade</span>
+                  </div>
                   <p className="text-gray-500 text-sm">Advanced techniques for the serious performer</p>
                 </div>
               </div>
@@ -1802,31 +1814,68 @@ export default function Dashboard() {
                             ) : removingLogId === log.id ? (
                               <span className="text-xs text-red-400 animate-pulse">Removing…</span>
                             ) : log.voucher_filename ? (
-                              <div className="flex flex-col gap-1">
-                                <span className="text-xs text-gray-600 truncate max-w-[120px]" title={log.voucher_filename}>{log.voucher_filename}</span>
+                              <div className="flex flex-col gap-1.5">
                                 {log.voucher_type && (
-                                  <span className="text-xs px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded w-fit">{log.voucher_type}</span>
+                                  <span className={`text-xs px-1.5 py-0.5 rounded-full w-fit font-semibold ${log.voucher_type === 'Union Voucher' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
+                                    {log.voucher_type}
+                                  </span>
                                 )}
-                                <div className="flex gap-1">
-                                  <button onClick={() => viewVoucher(log.id)} className="text-xs text-blue-600 hover:underline">View</button>
+                                <span className="text-xs text-gray-600 truncate max-w-[130px]" title={log.voucher_filename}>
+                                  📄 {log.voucher_filename}
+                                </span>
+                                <div className="flex gap-1 items-center">
+                                  <button onClick={() => viewVoucher(log.id)} className="text-xs text-blue-600 hover:underline">👁 View</button>
                                   <span className="text-gray-300">|</span>
-                                  <button onClick={() => removeVoucher(log.id)} className="text-xs text-red-500 hover:underline">Remove</button>
+                                  {confirmRemoveVoucherId === log.id ? (
+                                    <>
+                                      <button onClick={() => removeVoucher(log.id)} className="text-xs text-red-600 font-semibold hover:underline">Yes</button>
+                                      <button onClick={() => setConfirmRemoveVoucherId(null)} className="text-xs text-gray-400 hover:underline ml-0.5">No</button>
+                                    </>
+                                  ) : (
+                                    <button onClick={() => setConfirmRemoveVoucherId(log.id)} className="text-xs text-red-500 hover:underline">🗑 Remove</button>
+                                  )}
                                 </div>
                               </div>
+                            ) : voucherUploadId === log.id ? (
+                              <div className="space-y-1.5 min-w-[160px]">
+                                <select
+                                  value={pendingVoucherType}
+                                  onChange={e => setPendingVoucherType(e.target.value)}
+                                  className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-400"
+                                  autoFocus
+                                >
+                                  <option value="">Select type…</option>
+                                  <option value="Union Voucher">Union Voucher</option>
+                                  <option value="Non-Union Voucher">Non-Union Voucher</option>
+                                </select>
+                                <label className={`flex items-center justify-center gap-1 w-full px-2 py-1.5 text-xs font-semibold rounded-lg transition ${pendingVoucherType ? 'bg-blue-600 text-white cursor-pointer hover:bg-blue-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
+                                  📁 Choose File
+                                  <input
+                                    type="file"
+                                    className="hidden"
+                                    disabled={!pendingVoucherType}
+                                    accept=".jpg,.jpeg,.png,.heic,.heif,.pdf"
+                                    onChange={e => {
+                                      const file = e.target.files?.[0];
+                                      if (file && pendingVoucherType) uploadVoucher(log.id, file, pendingVoucherType);
+                                      e.target.value = '';
+                                    }}
+                                  />
+                                </label>
+                                <button
+                                  onClick={() => { setVoucherUploadId(null); setPendingVoucherType(''); }}
+                                  className="text-xs text-gray-400 hover:text-gray-600 w-full text-center"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
                             ) : (
-                              <label className="cursor-pointer text-gray-400 hover:text-blue-600 transition" title="Upload voucher">
-                                📎
-                                <input
-                                  type="file"
-                                  className="hidden"
-                                  accept=".jpg,.jpeg,.png,.heic,.heif,.pdf"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) uploadVoucher(log.id, file);
-                                    e.target.value = '';
-                                  }}
-                                />
-                              </label>
+                              <button
+                                onClick={() => { setVoucherUploadId(log.id); setPendingVoucherType(''); }}
+                                className="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600 font-medium border border-gray-200 hover:border-blue-300 px-2 py-1 rounded-lg transition whitespace-nowrap"
+                              >
+                                📄 Add Voucher
+                              </button>
                             )}
                           </td>
                           <td className="px-4 py-3 text-sm">
