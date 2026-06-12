@@ -168,6 +168,7 @@ export default function Dashboard() {
   const [preCheckoutError, setPreCheckoutError] = useState('');
   const [preCheckoutValidating, setPreCheckoutValidating] = useState(false);
   const [userHasReferral, setUserHasReferral] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Locks to prevent concurrent auth calls
   let isCheckingUser = false;
@@ -535,7 +536,10 @@ export default function Dashboard() {
       
       const user = session.user;
       setUser(user);
-      
+
+      const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+      setIsAdmin(adminEmails.includes(user.email?.toLowerCase() || ''));
+
       const { data } = await supabase
         .from('users')
         .select('section1_completed, subscription_status, section2_unlocked, referral_code, referred_by')
@@ -932,6 +936,12 @@ export default function Dashboard() {
                 </h1>
               </div>
               <div className="flex items-center gap-4">
+                {isAdmin && (
+                  <Link href="/admin" className="text-white/60 hover:text-white transition text-xs flex items-center gap-1 border border-white/20 px-2 py-1 rounded-lg">
+                    <span>🔑</span>
+                    <span>Admin</span>
+                  </Link>
+                )}
                 <Link href="/settings" className="text-white/80 hover:text-white transition text-sm flex items-center gap-1">
                   <span className="text-xl">⚙️</span>
                   <span className="hidden sm:inline">Settings</span>

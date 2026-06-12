@@ -1,13 +1,18 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'mikebhangu@gmail.com';
-
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
+
+function getAdminEmails(): string[] {
+  return (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map(e => e.trim().toLowerCase())
+    .filter(Boolean);
+}
 
 async function getUser(req: Request) {
   const token = req.headers.get('authorization')?.replace('Bearer ', '') ?? null;
@@ -20,7 +25,7 @@ export async function POST(req: Request) {
   const requester = await getUser(req);
   if (!requester) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  if (requester.email !== ADMIN_EMAIL) {
+  if (!getAdminEmails().includes(requester.email?.toLowerCase() ?? '')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

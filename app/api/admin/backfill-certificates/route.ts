@@ -42,6 +42,7 @@ async function verifyAdmin(request: Request): Promise<{ id: string; email: strin
 
 // ── GET: debug info for a user ────────────────────────────────────────────────
 // Usage: GET /api/admin/backfill-certificates?userId=<uuid>
+//        GET /api/admin/backfill-certificates?email=user@example.com
 export async function GET(request: Request) {
   const admin = await verifyAdmin(request);
   if (!admin) {
@@ -49,10 +50,19 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const userId = searchParams.get('userId');
+  let userId = searchParams.get('userId');
+  const email = searchParams.get('email');
 
-  if (!userId) {
-    return NextResponse.json({ error: 'userId query param required' }, { status: 400 });
+  if (!userId && !email) {
+    return NextResponse.json({ error: 'userId or email query param required' }, { status: 400 });
+  }
+
+  // Look up userId from email
+  if (!userId && email) {
+    const { data: usersData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+    const found = usersData?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    if (!found) return NextResponse.json({ error: `No account found for: ${email}` }, { status: 404 });
+    userId = found.id;
   }
 
   // Total rows in certificates table
@@ -98,6 +108,7 @@ export async function GET(request: Request) {
   });
 
   return NextResponse.json({
+    userId,
     debug: {
       totalCertificatesInTable: totalCerts ?? 0,
       certificatesForUser: userCerts ?? [],
