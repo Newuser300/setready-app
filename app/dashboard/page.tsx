@@ -167,6 +167,7 @@ export default function Dashboard() {
   const [formVoucherFile, setFormVoucherFile] = useState<File | null>(null);
   const [formVoucherType, setFormVoucherType] = useState<'Union Voucher' | 'Non-Union Voucher' | ''>('');
   const [formVoucherPreview, setFormVoucherPreview] = useState<string | null>(null);
+  const [showVoucherTypePicker, setShowVoucherTypePicker] = useState(false);
   // Post-save voucher actions on existing cards
   const [uploadingLogId, setUploadingLogId] = useState<string | null>(null);
   const [removingLogId, setRemovingLogId] = useState<string | null>(null);
@@ -775,6 +776,7 @@ export default function Dashboard() {
     setFormVoucherFile(null);
     setFormVoucherType('');
     setFormVoucherPreview(null);
+    setShowVoucherTypePicker(false);
   }
 
   function calculatePay() {
@@ -1754,18 +1756,12 @@ export default function Dashboard() {
                           className="w-full px-4 py-3 bg-green-50 border border-green-200 rounded-lg text-green-800 font-bold cursor-default" />
                       </div>
 
-                      <div className="flex flex-wrap gap-5 items-center pt-2">
-                        <label className="flex items-center gap-2.5 cursor-pointer">
-                          <input type="checkbox" checked={workLogForm.lunch_break}
-                            onChange={(e) => setWorkLogForm({...workLogForm, lunch_break: e.target.checked})}
-                            className="w-5 h-5 rounded text-blue-600" />
-                          <span className="text-sm text-gray-700">Lunch break taken</span>
-                        </label>
-                        <label className="flex items-center gap-2.5 cursor-pointer">
+                      <div className="md:col-span-2">
+                        <label className="flex items-center gap-2.5 cursor-pointer w-fit">
                           <input type="checkbox" checked={workLogForm.paid}
                             onChange={(e) => setWorkLogForm({...workLogForm, paid: e.target.checked})}
                             className="w-5 h-5 rounded text-blue-600" />
-                          <span className="text-sm text-gray-700">Payment received</span>
+                          <span className="text-sm font-semibold text-gray-700">Payment received</span>
                         </label>
                       </div>
 
@@ -1774,8 +1770,9 @@ export default function Dashboard() {
 
                   {/* ── VOUCHER UPLOAD ── */}
                   <div>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">📄 Work Voucher</p>
-                    <p className="text-xs text-gray-400 mb-4">Optional — uploaded when you save this entry</p>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      📄 Upload Work Voucher Photo <span className="font-normal text-gray-400">(optional)</span>
+                    </label>
 
                     {/* Edit mode: show existing voucher if no new file picked */}
                     {editingWorkLog?.voucher_filename && !formVoucherFile && (
@@ -1789,7 +1786,7 @@ export default function Dashboard() {
                     )}
 
                     {formVoucherFile ? (
-                      /* File staged — show preview */
+                      /* File staged — show preview + badge + remove */
                       <div className="flex flex-wrap items-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-xl">
                         {formVoucherFile.type.startsWith('image/') && formVoucherPreview ? (
                           <img src={formVoucherPreview} alt="Voucher preview"
@@ -1807,27 +1804,46 @@ export default function Dashboard() {
                         <button
                           type="button"
                           onClick={clearFormVoucher}
-                          className="shrink-0 px-3 py-1.5 text-xs font-semibold bg-white border border-red-200 text-red-500 rounded-lg hover:bg-red-50 transition"
+                          className="shrink-0 text-xs font-semibold text-red-500 hover:text-red-700 transition underline underline-offset-2"
                         >
                           ✕ Remove
                         </button>
                       </div>
-                    ) : (
-                      /* No file yet — show picker buttons */
-                      <div className="flex flex-wrap gap-3">
-                        <label className="flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl cursor-pointer transition select-none shadow-sm">
-                          📷 Union Voucher
-                          <input type="file" className="hidden"
-                            accept=".jpg,.jpeg,.png,.heic,.heif,.pdf"
-                            onChange={e => handleFormVoucherSelect(e, 'Union Voucher')} />
-                        </label>
-                        <label className="flex items-center gap-2 px-5 py-3 bg-white border-2 border-gray-300 hover:border-gray-400 text-gray-700 text-sm font-semibold rounded-xl cursor-pointer transition select-none">
-                          📷 Non-Union Voucher
-                          <input type="file" className="hidden"
-                            accept=".jpg,.jpeg,.png,.heic,.heif,.pdf"
-                            onChange={e => handleFormVoucherSelect(e, 'Non-Union Voucher')} />
-                        </label>
+                    ) : showVoucherTypePicker ? (
+                      /* Inline type selector — shown after "Upload Photo" is clicked */
+                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                        <p className="text-sm font-semibold text-gray-600 mb-3">Voucher type:</p>
+                        <div className="flex flex-wrap gap-3 items-center">
+                          <label className="flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl cursor-pointer transition select-none shadow-sm">
+                            🎭 Union Voucher
+                            <input type="file" className="hidden"
+                              accept=".jpg,.jpeg,.png,.heic,.heif,.pdf"
+                              onChange={e => { handleFormVoucherSelect(e, 'Union Voucher'); setShowVoucherTypePicker(false); }} />
+                          </label>
+                          <label className="flex items-center gap-2 px-5 py-3 bg-white border-2 border-gray-300 hover:border-gray-500 text-gray-700 text-sm font-semibold rounded-xl cursor-pointer transition select-none">
+                            📋 Non-Union Voucher
+                            <input type="file" className="hidden"
+                              accept=".jpg,.jpeg,.png,.heic,.heif,.pdf"
+                              onChange={e => { handleFormVoucherSelect(e, 'Non-Union Voucher'); setShowVoucherTypePicker(false); }} />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setShowVoucherTypePicker(false)}
+                            className="text-xs text-gray-400 hover:text-gray-600 transition"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       </div>
+                    ) : (
+                      /* Default: single "Upload Photo" button */
+                      <button
+                        type="button"
+                        onClick={() => setShowVoucherTypePicker(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition shadow-sm"
+                      >
+                        📷 Upload Photo
+                      </button>
                     )}
                   </div>
 
