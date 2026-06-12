@@ -113,18 +113,18 @@ export default function Home() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,rgba(245,158,11,0.06)_0%,transparent_70%)]" />
 
         <div className="relative z-10 max-w-4xl mx-auto">
-          {/* Pill badge — CHANGE 1: removed "#1" claim */}
+          {/* Pill badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-50 text-amber-600 text-xs font-semibold mb-8 animate-fade-in">
             🎬 Professional Background Performer Training
           </div>
 
-          {/* Headline */}
+          {/* Headline — CHANGE 2: "Your Acting Career Starts Here" */}
           <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-gray-900 mb-4 leading-tight animate-fade-in-up">
-            Your Career<br />
+            Your Acting Career<br />
             <span className="text-amber-500">Starts Here</span>
           </h1>
 
-          {/* CHANGE 6: 5-star rating below headline */}
+          {/* 5-star rating */}
           <div
             className="flex flex-col items-center gap-1 mb-6 animate-fade-in-up"
             style={{ animationDelay: '0.1s' }}
@@ -133,7 +133,7 @@ export default function Home() {
             <span className="text-gray-400 text-sm">5/5 from our performers</span>
           </div>
 
-          {/* Sub-headline — CHANGE 2: removed "acting" */}
+          {/* Sub-headline */}
           <p
             className="text-lg sm:text-xl text-gray-500 mb-10 max-w-2xl mx-auto animate-fade-in-up"
             style={{ animationDelay: '0.2s' }}
@@ -141,7 +141,7 @@ export default function Home() {
             Professional training trusted by background performers across Canada
           </p>
 
-          {/* CTA buttons */}
+          {/* CTA buttons — CHANGE 1: "Start Learning Free" → "Start Learning" */}
           <div
             className="flex flex-col sm:flex-row gap-4 justify-center mb-10 animate-fade-in-up"
             style={{ animationDelay: '0.35s' }}
@@ -150,7 +150,7 @@ export default function Home() {
               onClick={() => router.push('/preview')}
               className="px-8 py-4 bg-amber-500 text-black text-base font-bold rounded-xl hover:bg-amber-400 hover:scale-105 transition-all duration-200 shadow-lg shadow-amber-500/20"
             >
-              Start Learning Free →
+              Start Learning →
             </button>
             <button
               onClick={() => router.push('/preview')}
@@ -160,7 +160,7 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Trust badge — CHANGE 3: kept only "Cancel Anytime" */}
+          {/* Trust badge */}
           <div
             className="flex justify-center animate-fade-in-up"
             style={{ animationDelay: '0.5s' }}
@@ -179,26 +179,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── SOCIAL PROOF MARQUEE — CHANGE 8: removed unverified claims ── */}
-      <section className="bg-gray-100 border-y border-gray-200 py-4 overflow-hidden select-none">
-        <div className="flex animate-marquee whitespace-nowrap">
-          {[0, 1].map(i => (
-            <div key={i} className="flex items-center gap-10 px-10 shrink-0">
-              <span className="text-amber-600 text-sm font-semibold">Professional Training</span>
-              <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0" />
-              <span className="text-gray-500 text-sm">9 Professional Modules</span>
-              <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0" />
-              <span className="text-gray-500 text-sm">Industry Expert Content</span>
-              <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0" />
-              <span className="text-amber-500 text-sm tracking-wider">★★★★★</span>
-              <span className="text-gray-500 text-sm">5/5 Rated</span>
-              <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0" />
-              <span className="text-gray-500 text-sm">Cancel Anytime</span>
-              <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0" />
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* CHANGE 3: Marquee/ticker section removed entirely */}
 
       {/* ── PROBLEM / SOLUTION ─────────────────────────────── */}
       <section className="bg-[#F9FAFB] py-20 px-4">
@@ -228,7 +209,7 @@ export default function Home() {
             </div>
           </FadeIn>
 
-          {/* Solution */}
+          {/* Solution — CHANGE 1: button text updated */}
           <FadeIn delay={150}>
             <div className="bg-white rounded-2xl p-8 shadow-sm border border-amber-200 h-full">
               <span className="inline-block px-3 py-1 bg-amber-50 text-amber-600 text-xs font-bold rounded-full mb-5 uppercase tracking-wide">
@@ -253,7 +234,7 @@ export default function Home() {
                 onClick={goToSignUp}
                 className="mt-8 w-full py-3 bg-amber-500 text-black font-bold rounded-xl hover:bg-amber-400 transition-all duration-200"
               >
-                Start Learning Free →
+                Start Learning →
               </button>
             </div>
           </FadeIn>
@@ -354,87 +335,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── INSTRUCTOR CREDIBILITY ─────────────────────────── */}
-      <section className="bg-[#F9FAFB] py-20 px-4">
-        <div className="max-w-6xl mx-auto">
-          <FadeIn>
-            <div className="text-center mb-14">
-              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-                Learn From The Masters
-              </h2>
-              <p className="text-gray-500 max-w-xl mx-auto">
-                Our curriculum is built on the proven methods of the world&apos;s greatest acting teachers
-              </p>
-            </div>
-          </FadeIn>
+      {/* CHANGE 4: "Learn From The Masters" instructor section removed entirely */}
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {
-                name: 'Stanislavski',
-                technique: 'System Method',
-                desc: 'The father of modern acting. His System teaches truthful emotional memory and living honestly under imaginary circumstances.',
-              },
-              {
-                name: 'Meisner',
-                technique: 'Repetition Technique',
-                desc: "Sanford Meisner's technique trains actors to live fully in the moment and respond authentically to their scene partners.",
-              },
-              {
-                name: 'Uta Hagen',
-                technique: 'Object Exercises',
-                desc: "Hagen's practical exercises ground actors in physical specificity and connect them to the reality of their environment.",
-              },
-              {
-                name: 'Shurtleff',
-                technique: 'Audition Technique',
-                desc: "Michael Shurtleff's 12 guideposts give actors a clear roadmap to nail every audition with intention and confidence.",
-              },
-            ].map((ins, i) => (
-              <FadeIn key={ins.name} delay={i * 80}>
-                <div className="bg-white rounded-2xl p-6 border border-gray-100 border-t-2 border-t-amber-500 h-full shadow-sm">
-                  <h3 className="text-gray-900 font-bold text-lg mb-1">{ins.name}</h3>
-                  <p className="text-amber-600 text-sm font-semibold mb-3">{ins.technique}</p>
-                  <p className="text-gray-500 text-sm leading-relaxed">{ins.desc}</p>
-                </div>
-              </FadeIn>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* CHANGE 5: "Everything Included" features section removed entirely */}
 
-      {/* ── FEATURES — CHANGE 5: removed Agency Connect ────────── */}
-      <section className="bg-white py-20 px-4">
-        <div className="max-w-6xl mx-auto">
-          <FadeIn>
-            <div className="text-center mb-14">
-              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Everything Included</h2>
-              <p className="text-gray-500">One subscription, all the tools you need to succeed</p>
-            </div>
-          </FadeIn>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[
-              { icon: '🎓', title: 'Professional Certificates', desc: 'Earn industry certificates for every module you complete' },
-              { icon: '📊', title: 'Progress Tracking',         desc: 'Track every module, quiz score, and daily streak' },
-              { icon: '📅', title: 'Work Log',                  desc: 'Log your bookings, pay rates, and production details' },
-              { icon: '💰', title: 'Referral Rewards',          desc: 'Earn 20% commission on every friend you refer' },
-              { icon: '📱', title: 'Mobile Ready',              desc: 'Fully optimized for phones — train anywhere, anytime' },
-              { icon: '📚', title: 'Expert Curriculum',         desc: 'Built on proven methods from world-renowned acting teachers' },
-            ].map((f, i) => (
-              <FadeIn key={f.title} delay={i * 60}>
-                <div className="bg-white rounded-2xl p-6 border border-gray-200 hover:border-amber-300 transition-all duration-200 h-full shadow-sm hover:shadow-md">
-                  <div className="text-3xl mb-4">{f.icon}</div>
-                  <h3 className="text-gray-900 font-bold mb-2">{f.title}</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
-                </div>
-              </FadeIn>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── TESTIMONIALS — CHANGE 7: stars stay ★★★★★, quotes clean ── */}
+      {/* ── TESTIMONIALS ───────────────────────────────────── */}
       <section className="bg-[#F9FAFB] py-20 px-4">
         <div className="max-w-6xl mx-auto">
           <FadeIn>
@@ -448,19 +353,19 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-6">
             {[
               {
-                quote: 'SetReady completely changed how I approach auditions. I booked three productions in my first month after completing Section 1.',
+                quote: 'SetReady is perfect. I learned everything I needed to be a Background Performer.',
                 name: 'Sarah M.',
                 location: 'Vancouver, BC',
               },
               {
                 quote: 'The set etiquette module alone was worth the subscription. I finally feel confident walking onto any set.',
                 name: 'James T.',
-                location: 'Toronto, ON',
+                location: 'Vancouver, BC',
               },
               {
-                quote: 'The Stanislavski and Meisner content is genuinely professional level. This is not basic stuff.',
+                quote: 'Section 2 was worth it.',
                 name: 'Maria L.',
-                location: 'Calgary, AB',
+                location: 'Vancouver, BC',
               },
             ].map((t, i) => (
               <FadeIn key={t.name} delay={i * 100}>
@@ -480,8 +385,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* CHANGE 4: 30-Day Guarantee section removed entirely */}
 
       {/* ── REFERRAL SLIM BANNER ───────────────────────────── */}
       <div className="bg-gray-50 border-y border-gray-200 py-3 text-center px-4">
