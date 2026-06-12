@@ -95,6 +95,10 @@ export default function Dashboard() {
   // SECTION 2 POP-UP STATE
   const [showSection2Popup, setShowSection2Popup] = useState(false);
 
+  // MODULE ACCESS MODALS
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
+  const [showSection2Modal, setShowSection2Modal] = useState(false);
+
   // PAYMENT STATES - ADDED
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [section2Unlocked, setSection2Unlocked] = useState(false);
@@ -1181,7 +1185,7 @@ export default function Dashboard() {
                 return (
                   <div
                     key={module.id}
-                    onClick={() => document.getElementById('subscribe-banner')?.scrollIntoView({ behavior: 'smooth' })}
+                    onClick={() => setShowSubscribeModal(true)}
                     className="relative overflow-hidden rounded-2xl bg-white border border-gray-200 cursor-pointer hover:shadow-md hover:border-yellow-300 transition-all duration-300"
                   >
                     <div className="p-5">
@@ -1288,6 +1292,32 @@ export default function Dashboard() {
               <div className="grid gap-4">
                 {section2Modules.map((module) => {
                   const isCompleted = progress[module.id]?.completed;
+
+                  // Locked: user has not purchased Section 2
+                  if (!section2Unlocked) {
+                    return (
+                      <div
+                        key={module.id}
+                        onClick={() => setShowSection2Modal(true)}
+                        className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-5 border border-purple-200 cursor-pointer hover:shadow-md hover:border-purple-300 transition-all duration-200"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className="text-4xl opacity-40">{moduleIcons[module.module_number] || '🎯'}</div>
+                            <div>
+                              <h3 className="font-bold text-lg text-gray-500">{module.title}</h3>
+                              <p className="text-sm text-gray-400 mt-1">{moduleSubtitles[module.module_number] || 'Advanced acting techniques'}</p>
+                            </div>
+                          </div>
+                          <span className="shrink-0 bg-purple-100 text-purple-600 text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap">
+                            🔒 Optional upgrade
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Unlocked: full clickable card
                   return (
                     <Link href={`/module/${module.id}`} key={module.id}>
                       <div className={`bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-5 hover:scale-[1.02] transition-all duration-300 hover:shadow-lg border border-purple-200 ${isCompleted ? 'border-l-4 border-green-500' : ''}`}>
@@ -2290,6 +2320,140 @@ export default function Dashboard() {
               }}
             >
               Continue to Dashboard
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* SUBSCRIBE TO ACCESS MODULES MODAL */}
+      {showSubscribeModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          padding: '16px',
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            padding: '32px',
+            maxWidth: '400px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
+          }}>
+            <div style={{ fontSize: '48px' }}>🔒</div>
+            <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginTop: '16px', color: '#111827' }}>
+              Subscribe to Access Modules
+            </h2>
+            <p style={{ color: '#6b7280', marginTop: '8px', lineHeight: '1.6', fontSize: '14px' }}>
+              Get full access to all Section 1 modules, quizzes, certificates and all SetReady tools for just $9.99/month.
+            </p>
+            <button
+              onClick={() => { setShowSubscribeModal(false); handleSection1Checkout(); }}
+              disabled={loadingPayment}
+              style={{
+                width: '100%',
+                marginTop: '24px',
+                padding: '14px',
+                backgroundColor: '#1a1a2e',
+                color: 'white',
+                border: 'none',
+                borderRadius: '10px',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: loadingPayment ? 'not-allowed' : 'pointer',
+                opacity: loadingPayment ? 0.6 : 1,
+              }}
+            >
+              {loadingPayment ? 'Processing…' : 'Subscribe Now — $9.99/month'}
+            </button>
+            <button
+              onClick={() => setShowSubscribeModal(false)}
+              style={{
+                width: '100%',
+                marginTop: '12px',
+                padding: '12px',
+                backgroundColor: 'transparent',
+                color: '#9ca3af',
+                border: '1px solid #e5e7eb',
+                borderRadius: '10px',
+                fontSize: '14px',
+                cursor: 'pointer',
+              }}
+            >
+              Maybe Later
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* SECTION 2 UPGRADE MODAL */}
+      {showSection2Modal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          padding: '16px',
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            padding: '32px',
+            maxWidth: '400px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
+          }}>
+            <div style={{ fontSize: '48px' }}>🔒</div>
+            <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginTop: '16px', color: '#111827' }}>
+              Section 2 — Optional Upgrade
+            </h2>
+            <p style={{ color: '#6b7280', marginTop: '8px', lineHeight: '1.6', fontSize: '14px' }}>
+              Advanced Acting Techniques is an optional upgrade for performers who want to pursue acting beyond background work. One-time purchase — unlocks all 4 advanced modules permanently.
+            </p>
+            <button
+              onClick={() => { setShowSection2Modal(false); handleSection2Checkout(); }}
+              disabled={loadingPayment}
+              style={{
+                width: '100%',
+                marginTop: '24px',
+                padding: '14px',
+                backgroundColor: '#7c3aed',
+                color: 'white',
+                border: 'none',
+                borderRadius: '10px',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: loadingPayment ? 'not-allowed' : 'pointer',
+                opacity: loadingPayment ? 0.6 : 1,
+              }}
+            >
+              {loadingPayment ? 'Processing…' : 'Unlock Section 2 — $19.99'}
+            </button>
+            <button
+              onClick={() => setShowSection2Modal(false)}
+              style={{
+                width: '100%',
+                marginTop: '12px',
+                padding: '12px',
+                backgroundColor: 'transparent',
+                color: '#9ca3af',
+                border: '1px solid #e5e7eb',
+                borderRadius: '10px',
+                fontSize: '14px',
+                cursor: 'pointer',
+              }}
+            >
+              Maybe Later
             </button>
           </div>
         </div>
