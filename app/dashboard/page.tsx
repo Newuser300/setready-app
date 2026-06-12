@@ -987,6 +987,23 @@ export default function Dashboard() {
 
   return (
     <>
+      {/* ── Always-mounted hidden inputs (must be outside all conditionals for mobile camera to work) ── */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        style={{ display: 'none' }}
+        onChange={handleVoucherFileChange}
+      />
+      <input
+        ref={uploadInputRef}
+        type="file"
+        accept="image/*,application/pdf,.heic,.heif"
+        style={{ display: 'none' }}
+        onChange={handleVoucherFileChange}
+      />
+
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         {/* Hero Header */}
         <div className="bg-gradient-to-r from-blue-700 via-purple-700 to-indigo-800 text-white">
@@ -1810,23 +1827,6 @@ export default function Dashboard() {
                     <label className="block text-sm font-semibold text-gray-700 mb-3">
                       📄 Upload Work Voucher Photo <span className="font-normal text-gray-400">(optional)</span>
                     </label>
-
-                    {/* Hidden file inputs */}
-                    <input
-                      ref={cameraInputRef}
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      style={{ display: 'none' }}
-                      onChange={handleVoucherFileChange}
-                    />
-                    <input
-                      ref={uploadInputRef}
-                      type="file"
-                      accept="image/*,application/pdf,.heic,.heif"
-                      style={{ display: 'none' }}
-                      onChange={handleVoucherFileChange}
-                    />
 
                     {/* Edit mode: show existing voucher if no new file picked */}
                     {editingWorkLog?.voucher_filename && !formVoucherFile && (

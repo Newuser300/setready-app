@@ -330,6 +330,24 @@ export default function JournalPage() {
   return (
     <div className="min-h-screen bg-gray-50">
 
+      {/* ── Always-mounted hidden inputs (must be outside all conditionals for mobile camera to work) ── */}
+      <input
+        ref={journalCameraRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        style={{ display: 'none' }}
+        onChange={handleJournalPhotoChange}
+      />
+      <input
+        ref={journalUploadRef}
+        type="file"
+        accept="image/*,.heic,.heif"
+        multiple
+        style={{ display: 'none' }}
+        onChange={handleJournalPhotoChange}
+      />
+
       {/* Nav */}
       <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
@@ -780,24 +798,6 @@ export default function JournalPage() {
                     ))}
                   </div>
                 )}
-
-                {/* Hidden inputs */}
-                <input
-                  ref={journalCameraRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  style={{ display: 'none' }}
-                  onChange={handleJournalPhotoChange}
-                />
-                <input
-                  ref={journalUploadRef}
-                  type="file"
-                  accept="image/*,.heic,.heif"
-                  multiple
-                  style={{ display: 'none' }}
-                  onChange={handleJournalPhotoChange}
-                />
 
                 {/* Add buttons */}
                 {totalModalPhotos < 5 ? (
