@@ -163,11 +163,14 @@ export default function Dashboard() {
   });
   const [workLogLoading, setWorkLogLoading] = useState(false);
   const workLogFormRef = useRef<HTMLDivElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
   // In-form voucher staging (file picked but not yet uploaded — uploads on Save)
   const [formVoucherFile, setFormVoucherFile] = useState<File | null>(null);
   const [formVoucherType, setFormVoucherType] = useState<'Union Voucher' | 'Non-Union Voucher' | ''>('');
   const [formVoucherPreview, setFormVoucherPreview] = useState<string | null>(null);
   const [showVoucherTypePicker, setShowVoucherTypePicker] = useState(false);
+  const [unionStatus, setUnionStatus] = useState<'union' | 'non-union'>('non-union');
   // Post-save voucher actions on existing cards
   const [uploadingLogId, setUploadingLogId] = useState<string | null>(null);
   const [removingLogId, setRemovingLogId] = useState<string | null>(null);
@@ -771,6 +774,16 @@ export default function Dashboard() {
     e.target.value = '';
   }
 
+  function handleVoucherFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (formVoucherPreview) URL.revokeObjectURL(formVoucherPreview);
+    setFormVoucherFile(file);
+    setFormVoucherType('');
+    setFormVoucherPreview(file.type.startsWith('image/') ? URL.createObjectURL(file) : null);
+    e.target.value = '';
+  }
+
   function clearFormVoucher() {
     if (formVoucherPreview) URL.revokeObjectURL(formVoucherPreview);
     setFormVoucherFile(null);
@@ -822,7 +835,7 @@ export default function Dashboard() {
       agency: workLogForm.agency || null,
       hours_worked: hours,
       lunch_break: workLogForm.lunch_break,
-      is_union: workLogForm.is_union,
+      is_union: unionStatus === 'union',
       pay_rate: rate,
       gross_pay: grossPay,
       deductions: deductions,
@@ -846,7 +859,7 @@ export default function Dashboard() {
 
       // Upload staged voucher if one was selected in the form
       const savedId = editingWorkLog?.id ?? result.data?.[0]?.id;
-      if (formVoucherFile && formVoucherType && savedId) {
+      if (formVoucherFile && savedId) {
         const fd = new FormData();
         fd.append('file', formVoucherFile);
         fd.append('workLogId', savedId);
@@ -889,6 +902,7 @@ export default function Dashboard() {
 
   function editWorkLog(log: WorkLog) {
     setEditingWorkLog(log);
+    setUnionStatus(log.is_union ? 'union' : 'non-union');
     setWorkLogForm({
       work_date: log.work_date,
       production_name: log.production_name || '',
@@ -912,6 +926,7 @@ export default function Dashboard() {
 
   function resetWorkLogForm() {
     setEditingWorkLog(null);
+    setUnionStatus('non-union');
     setWorkLogForm({
       work_date: new Date().toISOString().split('T')[0],
       production_name: '',
@@ -1657,21 +1672,43 @@ export default function Dashboard() {
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Role &amp; Pay</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-                      {/* Union Status pill toggle */}
+                      {/* Union Status selector */}
                       <div className="md:col-span-2">
                         <label className="block text-sm font-semibold text-gray-700 mb-2">Union Status</label>
-                        <div className="flex gap-3">
+                        <div style={{ display: 'flex', gap: '8px' }}>
                           <button
                             type="button"
-                            onClick={() => setWorkLogForm({...workLogForm, is_union: true})}
-                            className={`flex-1 py-3 rounded-xl text-sm font-semibold border-2 transition ${workLogForm.is_union ? 'bg-blue-600 border-blue-600 text-white shadow-sm' : 'bg-white border-gray-300 text-gray-600 hover:border-blue-300'}`}
+                            onClick={() => setUnionStatus('union')}
+                            style={{
+                              flex: 1,
+                              padding: '12px',
+                              minHeight: '44px',
+                              backgroundColor: unionStatus === 'union' ? '#1a1a2e' : 'transparent',
+                              color: unionStatus === 'union' ? 'white' : '#1a1a2e',
+                              border: '2px solid #1a1a2e',
+                              borderRadius: '10px',
+                              cursor: 'pointer',
+                              fontWeight: 'bold',
+                              fontSize: '14px',
+                            }}
                           >
                             🎭 Union (UBCP/ACTRA)
                           </button>
                           <button
                             type="button"
-                            onClick={() => setWorkLogForm({...workLogForm, is_union: false})}
-                            className={`flex-1 py-3 rounded-xl text-sm font-semibold border-2 transition ${!workLogForm.is_union ? 'bg-gray-800 border-gray-800 text-white shadow-sm' : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'}`}
+                            onClick={() => setUnionStatus('non-union')}
+                            style={{
+                              flex: 1,
+                              padding: '12px',
+                              minHeight: '44px',
+                              backgroundColor: unionStatus === 'non-union' ? '#1a1a2e' : 'transparent',
+                              color: unionStatus === 'non-union' ? 'white' : '#1a1a2e',
+                              border: '2px solid #1a1a2e',
+                              borderRadius: '10px',
+                              cursor: 'pointer',
+                              fontWeight: 'bold',
+                              fontSize: '14px',
+                            }}
                           >
                             Non-Union
                           </button>
@@ -1774,10 +1811,27 @@ export default function Dashboard() {
                       📄 Upload Work Voucher Photo <span className="font-normal text-gray-400">(optional)</span>
                     </label>
 
+                    {/* Hidden file inputs */}
+                    <input
+                      ref={cameraInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      style={{ display: 'none' }}
+                      onChange={handleVoucherFileChange}
+                    />
+                    <input
+                      ref={uploadInputRef}
+                      type="file"
+                      accept="image/*,application/pdf,.heic,.heif"
+                      style={{ display: 'none' }}
+                      onChange={handleVoucherFileChange}
+                    />
+
                     {/* Edit mode: show existing voucher if no new file picked */}
                     {editingWorkLog?.voucher_filename && !formVoucherFile && (
                       <div className="flex flex-wrap items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl mb-3">
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${editingWorkLog.voucher_type === 'Union Voucher' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-700'}`}>
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
                           ✅ {editingWorkLog.voucher_type || 'Voucher'}
                         </span>
                         <span className="text-sm text-gray-700 truncate max-w-[200px]">{editingWorkLog.voucher_filename}</span>
@@ -1786,7 +1840,7 @@ export default function Dashboard() {
                     )}
 
                     {formVoucherFile ? (
-                      /* File staged — show preview + badge + remove */
+                      /* File staged — show thumbnail + filename + remove */
                       <div className="flex flex-wrap items-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-xl">
                         {formVoucherFile.type.startsWith('image/') && formVoucherPreview ? (
                           <img src={formVoucherPreview} alt="Voucher preview"
@@ -1795,9 +1849,6 @@ export default function Dashboard() {
                           <div className="w-16 h-16 bg-red-50 border border-red-200 rounded-lg flex items-center justify-center text-3xl shrink-0">📄</div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold mb-1 ${formVoucherType === 'Union Voucher' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-700'}`}>
-                            {formVoucherType}
-                          </span>
                           <p className="text-sm font-medium text-gray-800 truncate">{formVoucherFile.name}</p>
                           <p className="text-xs text-gray-400">{(formVoucherFile.size / 1024 / 1024).toFixed(1)} MB — will upload on save</p>
                         </div>
@@ -1809,41 +1860,54 @@ export default function Dashboard() {
                           ✕ Remove
                         </button>
                       </div>
-                    ) : showVoucherTypePicker ? (
-                      /* Inline type selector — shown after "Upload Photo" is clicked */
-                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                        <p className="text-sm font-semibold text-gray-600 mb-3">Voucher type:</p>
-                        <div className="flex flex-wrap gap-3 items-center">
-                          <label className="flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl cursor-pointer transition select-none shadow-sm">
-                            🎭 Union Voucher
-                            <input type="file" className="hidden"
-                              accept=".jpg,.jpeg,.png,.heic,.heif,.pdf"
-                              onChange={e => { handleFormVoucherSelect(e, 'Union Voucher'); setShowVoucherTypePicker(false); }} />
-                          </label>
-                          <label className="flex items-center gap-2 px-5 py-3 bg-white border-2 border-gray-300 hover:border-gray-500 text-gray-700 text-sm font-semibold rounded-xl cursor-pointer transition select-none">
-                            📋 Non-Union Voucher
-                            <input type="file" className="hidden"
-                              accept=".jpg,.jpeg,.png,.heic,.heif,.pdf"
-                              onChange={e => { handleFormVoucherSelect(e, 'Non-Union Voucher'); setShowVoucherTypePicker(false); }} />
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => setShowVoucherTypePicker(false)}
-                            className="text-xs text-gray-400 hover:text-gray-600 transition"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
                     ) : (
-                      /* Default: single "Upload Photo" button */
-                      <button
-                        type="button"
-                        onClick={() => setShowVoucherTypePicker(true)}
-                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition shadow-sm"
-                      >
-                        📷 Upload Photo
-                      </button>
+                      /* Two buttons: camera + file picker */
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button
+                          type="button"
+                          onClick={() => cameraInputRef.current?.click()}
+                          style={{
+                            flex: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            padding: '12px',
+                            minHeight: '48px',
+                            backgroundColor: '#1a1a2e',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            fontWeight: 'bold',
+                            fontSize: '14px',
+                          }}
+                        >
+                          📷 Take Photo
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => uploadInputRef.current?.click()}
+                          style={{
+                            flex: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            padding: '12px',
+                            minHeight: '48px',
+                            backgroundColor: 'transparent',
+                            color: '#1a1a2e',
+                            border: '2px solid #1a1a2e',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            fontWeight: 'bold',
+                            fontSize: '14px',
+                          }}
+                        >
+                          📁 Upload Photo
+                        </button>
+                      </div>
                     )}
                   </div>
 

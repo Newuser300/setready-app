@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
@@ -80,6 +80,8 @@ export default function JournalPage() {
   // In-modal photo staging
   const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
   const [pendingPreviews, setPendingPreviews] = useState<string[]>([]);
+  const journalCameraRef = useRef<HTMLInputElement>(null);
+  const journalUploadRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -215,6 +217,12 @@ export default function JournalPage() {
     const preview = file.type.startsWith('image/') ? URL.createObjectURL(file) : '';
     setPendingPhotos(prev => [...prev, file]);
     setPendingPreviews(prev => [...prev, preview]);
+  }
+
+  function handleJournalPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    files.forEach(addPendingPhoto);
+    e.target.value = '';
   }
 
   function removePendingPhoto(index: number) {
@@ -773,22 +781,72 @@ export default function JournalPage() {
                   </div>
                 )}
 
-                {/* Add button */}
+                {/* Hidden inputs */}
+                <input
+                  ref={journalCameraRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  style={{ display: 'none' }}
+                  onChange={handleJournalPhotoChange}
+                />
+                <input
+                  ref={journalUploadRef}
+                  type="file"
+                  accept="image/*,.heic,.heif"
+                  multiple
+                  style={{ display: 'none' }}
+                  onChange={handleJournalPhotoChange}
+                />
+
+                {/* Add buttons */}
                 {totalModalPhotos < 5 ? (
-                  <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-500 hover:border-amber-400 hover:text-amber-600 transition cursor-pointer">
-                    📷 {totalModalPhotos === 0 ? 'Add Photos' : 'Add More Photos'}
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept=".jpg,.jpeg,.png,.heic,.heif"
-                      multiple
-                      onChange={e => {
-                        const files = Array.from(e.target.files ?? []);
-                        files.forEach(addPendingPhoto);
-                        e.target.value = '';
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => journalCameraRef.current?.click()}
+                      style={{
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        padding: '12px',
+                        minHeight: '48px',
+                        backgroundColor: '#1a1a2e',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        fontSize: '13px',
                       }}
-                    />
-                  </label>
+                    >
+                      📷 Take Photo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => journalUploadRef.current?.click()}
+                      style={{
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        padding: '12px',
+                        minHeight: '48px',
+                        backgroundColor: 'transparent',
+                        color: '#1a1a2e',
+                        border: '2px solid #1a1a2e',
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        fontSize: '13px',
+                      }}
+                    >
+                      📁 Upload Photo
+                    </button>
+                  </div>
                 ) : (
                   <p className="text-xs text-gray-400 text-center">Maximum 5 photos reached.</p>
                 )}
