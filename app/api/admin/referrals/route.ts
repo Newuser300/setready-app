@@ -1,41 +1,11 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
-
-function getAdminEmails(): string[] {
-  return (process.env.ADMIN_EMAILS || 'mikebhangu@gmail.com')
-    .split(',')
-    .map(e => e.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-async function verifyAdmin(request: Request): Promise<{ user: { id: string; email: string } } | null> {
-  const authHeader = request.headers.get('authorization');
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
-  if (!token) return null;
-
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-  if (error || !user?.email) return null;
-
-  const adminEmails = getAdminEmails();
-  if (!adminEmails.includes(user.email.toLowerCase())) return null;
-
-  return { user: { id: user.id, email: user.email } };
-}
+import { verifyAdminRequest, supabaseAdmin } from '@/utils/isAdmin';
 
 // ── GET: return all payout requests, commissions, and summary ────────────────
 export async function GET(request: Request) {
-  const admin = await verifyAdmin(request);
-  if (!admin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const admin = await verifyAdminRequest(request);
+  if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  // 1. All payout requests
   const { data: payoutRequests, error: payoutError } = await supabaseAdmin
     .from('referral_payout_requests')
     .select('*')
@@ -46,7 +16,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
   }
 
-  // Enrich payout requests with user email + referral_code
   const enrichedPayouts = await Promise.all(
     (payoutRequests || []).map(async (req) => {
       const { data: userData } = await supabaseAdmin
@@ -62,7 +31,6 @@ export async function GET(request: Request) {
     })
   );
 
-  // 2. All commissions
   const { data: commissions, error: commError } = await supabaseAdmin
     .from('referral_commissions')
     .select('*')
@@ -73,7 +41,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Failed to fetch commissions' }, { status: 500 });
   }
 
-  // Enrich commissions with referrer email and masked referred email
   const enrichedCommissions = await Promise.all(
     (commissions || []).map(async (c) => {
       const [{ data: referrer }, { data: referred }] = await Promise.all([
@@ -94,7 +61,6 @@ export async function GET(request: Request) {
     })
   );
 
-  // 3. Summary
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
@@ -106,10 +72,7 @@ export async function GET(request: Request) {
   const pendingAmount = pending.reduce((sum, r) => sum + (r.amount || 0), 0);
   const monthlyAmount = monthlyPending.reduce((sum, r) => sum + (r.amount || 0), 0);
   const totalPaid = paid.reduce((sum, r) => sum + (r.amount || 0), 0);
-
-  const uniqueReferrers = new Set(
-    (commissions || []).map(c => c.referrer_id)
-  ).size;
+  const uniqueReferrers = new Set((commissions || []).map(c => c.referrer_id)).size;
 
   return NextResponse.json({
     payoutRequests: enrichedPayouts,
@@ -126,18 +89,14 @@ export async function GET(request: Request) {
 
 // ── POST: mark a payout request as paid ─────────────────────────────────────
 export async function POST(request: Request) {
-  const admin = await verifyAdmin(request);
-  if (!admin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const admin = await verifyAdminRequest(request);
+  if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { payoutRequestId } = await request.json();
-
   if (!payoutRequestId) {
     return NextResponse.json({ error: 'payoutRequestId is required' }, { status: 400 });
   }
 
-  // Get the payout request to find user_id
   const { data: payoutReq, error: fetchError } = await supabaseAdmin
     .from('referral_payout_requests')
     .select('id, user_id, amount, status')
@@ -155,7 +114,6 @@ export async function POST(request: Request) {
 
   const paidAt = new Date().toISOString();
 
-  // Mark payout request as paid
   const { error: payoutUpdateError } = await supabaseAdmin
     .from('referral_payout_requests')
     .update({ status: 'paid', paid_at: paidAt })
@@ -166,7 +124,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to update payout request' }, { status: 500 });
   }
 
-  // Mark all pending commissions for this referrer as paid
   const { error: commUpdateError } = await supabaseAdmin
     .from('referral_commissions')
     .update({ status: 'paid', paid_at: paidAt })
@@ -178,7 +135,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to update commissions' }, { status: 500 });
   }
 
-  console.log(`✅ Admin ${admin.user.email} marked payout ${payoutRequestId} as paid ($${payoutReq.amount})`);
+  console.log(`✅ Admin ${admin.email} marked payout ${payoutRequestId} as paid ($${payoutReq.amount})`);
 
   return NextResponse.json({
     success: true,

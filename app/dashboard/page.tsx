@@ -537,8 +537,19 @@ export default function Dashboard() {
       const user = session.user;
       setUser(user);
 
-      const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || 'mikebhangu@gmail.com').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
-      setIsAdmin(adminEmails.includes(user.email?.toLowerCase() || ''));
+      try {
+        const adminCheckRes = await fetch('/api/admin/check', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (adminCheckRes.ok) {
+          const adminData = await adminCheckRes.json();
+          setIsAdmin(adminData.isAdmin === true);
+        } else {
+          setIsAdmin(false);
+        }
+      } catch {
+        setIsAdmin(false);
+      }
 
       const { data } = await supabase
         .from('users')
@@ -1504,20 +1515,19 @@ export default function Dashboard() {
           {/* WORK LOG SECTION */}
           {/* ===================================================== */}
           <div id="work-log-section">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="text-3xl">📋💰</div>
+            <div className="mb-6 rounded-2xl overflow-hidden shadow-lg" style={{ backgroundColor: '#F59E0B' }}>
+              <div className="px-6 py-7 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-800">Work Log & Earnings Tracker</h2>
-                  <p className="text-gray-500 text-sm italic">Track your film industry work, earnings, and deductions</p>
+                  <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-tight">📋💰 Work Log & Earnings Tracker</h2>
+                  <p className="text-gray-800 font-medium mt-1 text-base">Track your film industry work, earnings, and deductions</p>
                 </div>
+                <button
+                  onClick={() => setShowWorkLogForm(!showWorkLogForm)}
+                  className="shrink-0 px-7 py-3 bg-gray-900 text-white font-bold text-base rounded-xl hover:bg-gray-800 active:scale-95 transition shadow-md"
+                >
+                  {showWorkLogForm ? '✖ Cancel' : '➕ Add Work Entry'}
+                </button>
               </div>
-              <button
-                onClick={() => setShowWorkLogForm(!showWorkLogForm)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-medium"
-              >
-                {showWorkLogForm ? '✖ Cancel' : '➕ Add Work Entry'}
-              </button>
             </div>
 
             {/* Work Log Form - Modified with requested changes */}

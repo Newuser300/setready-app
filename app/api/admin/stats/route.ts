@@ -1,28 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
-
-function getAdminEmails(): string[] {
-  return (process.env.ADMIN_EMAILS || 'mikebhangu@gmail.com')
-    .split(',')
-    .map(e => e.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-async function verifyAdmin(request: Request): Promise<{ id: string; email: string } | null> {
-  const authHeader = request.headers.get('authorization');
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
-  if (!token) return null;
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-  if (error || !user?.email) return null;
-  if (!getAdminEmails().includes(user.email.toLowerCase())) return null;
-  return { id: user.id, email: user.email };
-}
+import { verifyAdminRequest, supabaseAdmin } from '@/utils/isAdmin';
 
 const MODULE_NAMES: Record<number, string> = {
   1: 'Film Set Terminology',
@@ -37,7 +14,7 @@ const MODULE_NAMES: Record<number, string> = {
 };
 
 export async function GET(request: Request) {
-  const admin = await verifyAdmin(request);
+  const admin = await verifyAdminRequest(request);
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const [
@@ -66,11 +43,9 @@ export async function GET(request: Request) {
     supabaseAdmin.from('certificates').select('module_id').eq('certificate_type', 'module'),
   ]);
 
-  // Pending payout totals
   const pendingPayouts = pendingPayoutsResult.data || [];
   const pendingPayoutAmount = pendingPayouts.reduce((sum, r) => sum + (r.amount || 0), 0);
 
-  // Module stats: group completed progress by module_id
   const allProgress = allProgressResult.data || [];
   const modules = modulesResult.data || [];
 

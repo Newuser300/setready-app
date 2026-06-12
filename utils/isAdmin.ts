@@ -1,0 +1,39 @@
+import { createClient } from '@supabase/supabase-js';
+
+export const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+);
+
+export function getEnvAdminEmails(): string[] {
+  return (process.env.ADMIN_EMAILS || 'mikebhangu@gmail.com')
+    .split(',')
+    .map(e => e.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export async function isAdminUser(email: string): Promise<boolean> {
+  const normalized = email.toLowerCase();
+  if (getEnvAdminEmails().includes(normalized)) return true;
+  try {
+    const { data } = await supabaseAdmin
+      .from('admin_emails')
+      .select('email')
+      .eq('email', normalized)
+      .maybeSingle();
+    return !!data;
+  } catch {
+    return false;
+  }
+}
+
+export async function verifyAdminRequest(request: Request): Promise<{ id: string; email: string } | null> {
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+  if (!token) return null;
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !user?.email) return null;
+  if (!(await isAdminUser(user.email))) return null;
+  return { id: user.id, email: user.email };
+}

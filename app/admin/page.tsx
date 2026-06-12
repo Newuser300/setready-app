@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import toast, { Toaster } from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
 
 type Stats = {
@@ -38,7 +39,14 @@ type SystemInfo = {
   vercelEnv: string;
 };
 
-type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools';
+type AdminRecord = {
+  id: string;
+  email: string;
+  added_by: string;
+  added_at: string;
+};
+
+type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools' | 'admins';
 
 export default function AdminPage() {
   const router = useRouter();
@@ -51,11 +59,29 @@ export default function AdminPage() {
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [activeSection, setActiveSection] = useState<NavSection>('overview');
 
+  // Email download / copy
+  const [allEmails, setAllEmails] = useState<string[]>([]);
+  const [emailsLoading, setEmailsLoading] = useState(false);
+
+  // Admin management
+  const [envAdmins, setEnvAdmins] = useState<string[]>([]);
+  const [dbAdmins, setDbAdmins] = useState<AdminRecord[]>([]);
+  const [adminsLoading, setAdminsLoading] = useState(false);
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [addingAdmin, setAddingAdmin] = useState(false);
+  const [removingAdminId, setRemovingAdminId] = useState<string | null>(null);
+  const [adminMgmtMessage, setAdminMgmtMessage] = useState('');
+  const [adminMgmtError, setAdminMgmtError] = useState('');
+  const [confirmNewAdmin, setConfirmNewAdmin] = useState(false);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
+
   // Backfill modal
   const [showBackfill, setShowBackfill] = useState(false);
   const [backfillEmail, setBackfillEmail] = useState('');
   const [backfillLoading, setBackfillLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [backfillUserInfo, setBackfillUserInfo] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [backfillResults, setBackfillResults] = useState<any>(null);
   const [backfillError, setBackfillError] = useState('');
 
@@ -80,6 +106,108 @@ export default function AdminPage() {
     setSystemInfo(data.systemInfo);
     setLoading(false);
   }
+
+  // ── Email helpers ──────────────────────────────────────────────────────────
+
+  async function fetchAllEmails(token: string): Promise<string[]> {
+    if (allEmails.length > 0) return allEmails;
+    setEmailsLoading(true);
+    try {
+      const res = await fetch('/api/admin/emails', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      const emails: string[] = data.emails || [];
+      setAllEmails(emails);
+      return emails;
+    } finally {
+      setEmailsLoading(false);
+    }
+  }
+
+  async function downloadEmails() {
+    const emails = await fetchAllEmails(accessToken);
+    if (!emails.length) { toast.error('No emails found.'); return; }
+    const blob = new Blob([emails.join(',\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `setready-emails-${new Date().toISOString().slice(0, 10)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Downloaded ${emails.length} emails`);
+  }
+
+  async function copyEmails() {
+    const emails = await fetchAllEmails(accessToken);
+    if (!emails.length) { toast.error('No emails found.'); return; }
+    await navigator.clipboard.writeText(emails.join(', '));
+    toast.success(`Copied ${emails.length} emails to clipboard`);
+  }
+
+  // ── Admin management helpers ───────────────────────────────────────────────
+
+  async function loadAdmins() {
+    setAdminsLoading(true);
+    setAdminMgmtMessage('');
+    setAdminMgmtError('');
+    try {
+      const res = await fetch('/api/admin/manage-admins', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const data = await res.json();
+      if (!res.ok) { setAdminMgmtError(data.error || 'Failed to load admins.'); return; }
+      setEnvAdmins(data.envAdmins || []);
+      setDbAdmins(data.dbAdmins || []);
+    } finally {
+      setAdminsLoading(false);
+    }
+  }
+
+  async function addAdmin() {
+    if (!newAdminEmail.trim()) return;
+    setAddingAdmin(true);
+    setAdminMgmtMessage('');
+    setAdminMgmtError('');
+    try {
+      const res = await fetch('/api/admin/manage-admins', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ email: newAdminEmail.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setAdminMgmtError(data.error || 'Failed to add admin.'); return; }
+      setAdminMgmtMessage(`${newAdminEmail.trim()} added as admin.`);
+      setNewAdminEmail('');
+      setConfirmNewAdmin(false);
+      await loadAdmins();
+    } finally {
+      setAddingAdmin(false);
+    }
+  }
+
+  async function removeAdmin(id: string) {
+    setRemovingAdminId(id);
+    setAdminMgmtMessage('');
+    setAdminMgmtError('');
+    try {
+      const res = await fetch(`/api/admin/manage-admins?id=${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const data = await res.json();
+      if (!res.ok) { setAdminMgmtError(data.error || 'Failed to remove admin.'); return; }
+      setAdminMgmtMessage('Admin removed.');
+      setConfirmRemoveId(null);
+      await loadAdmins();
+    } finally {
+      setRemovingAdminId(null);
+    }
+  }
+
+  // ── Backfill helpers ───────────────────────────────────────────────────────
 
   function openBackfill() {
     setShowBackfill(true);
@@ -155,10 +283,12 @@ export default function AdminPage() {
     { key: 'referrals',    label: 'Referrals',     icon: '💰' },
     { key: 'certificates', label: 'Certificates',  icon: '🏆' },
     { key: 'tools',        label: 'Tools',         icon: '🔧' },
+    { key: 'admins',       label: 'Admins',        icon: '🔐' },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Toaster position="top-right" />
 
       {/* ── Header ── */}
       <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white">
@@ -176,12 +306,17 @@ export default function AdminPage() {
         </div>
 
         {/* ── Nav tabs ── */}
-        <div className="max-w-7xl mx-auto px-4 flex gap-1 border-t border-white/10">
+        <div className="max-w-7xl mx-auto px-4 flex gap-1 border-t border-white/10 overflow-x-auto">
           {navItems.map(item => (
             <button
               key={item.key}
-              onClick={() => setActiveSection(item.key)}
-              className={`px-4 py-3 text-sm font-medium transition border-b-2 ${
+              onClick={() => {
+                setActiveSection(item.key);
+                if (item.key === 'admins' && envAdmins.length === 0 && dbAdmins.length === 0) {
+                  loadAdmins();
+                }
+              }}
+              className={`px-4 py-3 text-sm font-medium transition border-b-2 whitespace-nowrap ${
                 activeSection === item.key
                   ? 'border-blue-400 text-white'
                   : 'border-transparent text-slate-400 hover:text-white'
@@ -282,9 +417,27 @@ export default function AdminPage() {
         ══════════════════════════════════════ */}
         {activeSection === 'users' && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-800">Recent Users</h2>
-              <p className="text-sm text-gray-500">Latest 20 signups</p>
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">Recent Users</h2>
+                <p className="text-sm text-gray-500">Latest 20 signups</p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={downloadEmails}
+                  disabled={emailsLoading}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+                >
+                  {emailsLoading ? '...' : '⬇ Download All Emails'}
+                </button>
+                <button
+                  onClick={copyEmails}
+                  disabled={emailsLoading}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-gray-700 text-white rounded-lg text-sm font-semibold hover:bg-gray-800 transition disabled:opacity-50"
+                >
+                  {emailsLoading ? '...' : '📋 Copy All Emails'}
+                </button>
+              </div>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
@@ -426,7 +579,6 @@ export default function AdminPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
-              {/* Card 1: Certificate Backfill */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                 <div className="text-3xl mb-3">🏆</div>
                 <h3 className="font-bold text-gray-800 mb-1">Certificate Backfill</h3>
@@ -439,7 +591,6 @@ export default function AdminPage() {
                 </button>
               </div>
 
-              {/* Card 2: Referral Code Assignment */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                 <div className="text-3xl mb-3">🎁</div>
                 <h3 className="font-bold text-gray-800 mb-1">Assign Referral Code</h3>
@@ -452,7 +603,6 @@ export default function AdminPage() {
                 </Link>
               </div>
 
-              {/* Card 3: System Status */}
               {systemInfo && (
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                   <div className="text-3xl mb-3">🖥️</div>
@@ -479,7 +629,6 @@ export default function AdminPage() {
               )}
             </div>
 
-            {/* External links */}
             <div>
               <h3 className="font-bold text-gray-700 mb-3">External Dashboards</h3>
               <div className="flex flex-wrap gap-3">
@@ -502,6 +651,163 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+
+        {/* ══════════════════════════════════════
+            ADMINS
+        ══════════════════════════════════════ */}
+        {activeSection === 'admins' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">Admin Management</h2>
+                <p className="text-sm text-gray-500">Manage who has access to this admin panel.</p>
+              </div>
+              <button
+                onClick={loadAdmins}
+                disabled={adminsLoading}
+                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition disabled:opacity-50"
+              >
+                {adminsLoading ? '...' : '↻ Refresh'}
+              </button>
+            </div>
+
+            {adminMgmtMessage && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">{adminMgmtMessage}</div>
+            )}
+            {adminMgmtError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{adminMgmtError}</div>
+            )}
+
+            {/* Primary (env) admins */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-5 py-4 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
+                <span className="text-lg">🔒</span>
+                <div>
+                  <h3 className="font-bold text-gray-800 text-sm">Primary Admins</h3>
+                  <p className="text-xs text-gray-500">Configured via ADMIN_EMAILS environment variable. Cannot be removed here.</p>
+                </div>
+              </div>
+              {adminsLoading ? (
+                <div className="px-5 py-6 text-center text-gray-400 text-sm">Loading...</div>
+              ) : envAdmins.length === 0 ? (
+                <div className="px-5 py-6 text-center text-gray-400 text-sm">No primary admins found.</div>
+              ) : (
+                <ul className="divide-y divide-gray-100">
+                  {envAdmins.map(email => (
+                    <li key={email} className="px-5 py-3 flex items-center justify-between">
+                      <span className="text-sm text-gray-800 font-medium">{email}</span>
+                      <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold">Primary Admin</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Dynamic (db) admins */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-5 py-4 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
+                <span className="text-lg">🔐</span>
+                <div>
+                  <h3 className="font-bold text-gray-800 text-sm">Additional Admins</h3>
+                  <p className="text-xs text-gray-500">Stored in the admin_emails table. Can be added or removed below.</p>
+                </div>
+              </div>
+              {adminsLoading ? (
+                <div className="px-5 py-6 text-center text-gray-400 text-sm">Loading...</div>
+              ) : dbAdmins.length === 0 ? (
+                <div className="px-5 py-6 text-center text-gray-400 text-sm">No additional admins yet.</div>
+              ) : (
+                <ul className="divide-y divide-gray-100">
+                  {dbAdmins.map(record => (
+                    <li key={record.id} className="px-5 py-3 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm text-gray-800 font-medium">{record.email}</p>
+                        <p className="text-xs text-gray-400">
+                          Added by {record.added_by} · {new Date(record.added_at).toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {confirmRemoveId === record.id ? (
+                          <>
+                            <span className="text-xs text-red-600 font-semibold">Remove this admin?</span>
+                            <button
+                              onClick={() => removeAdmin(record.id)}
+                              disabled={removingAdminId === record.id}
+                              className="px-3 py-1 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition disabled:opacity-50"
+                            >
+                              {removingAdminId === record.id ? '...' : 'Yes, Remove'}
+                            </button>
+                            <button
+                              onClick={() => setConfirmRemoveId(null)}
+                              className="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => { setConfirmRemoveId(record.id); setAdminMgmtMessage(''); setAdminMgmtError(''); }}
+                            className="px-3 py-1 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-semibold hover:bg-red-100 transition"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Add new admin */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+              <h3 className="font-bold text-gray-800 mb-1 text-sm">Add New Admin</h3>
+              <p className="text-xs text-gray-500 mb-4">Grant admin access to another email address. They must already have a SetReady account.</p>
+
+              {!confirmNewAdmin ? (
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    value={newAdminEmail}
+                    onChange={e => setNewAdminEmail(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && newAdminEmail.trim()) setConfirmNewAdmin(true); }}
+                    placeholder="admin@example.com"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                  <button
+                    onClick={() => { if (newAdminEmail.trim()) setConfirmNewAdmin(true); }}
+                    disabled={!newAdminEmail.trim()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+                  >
+                    Add Admin
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
+                  <p className="text-sm text-amber-900 font-semibold">
+                    Grant admin access to <span className="font-bold">{newAdminEmail}</span>?
+                  </p>
+                  <p className="text-xs text-amber-700">This will give them full access to this admin panel.</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={addAdmin}
+                      disabled={addingAdmin}
+                      className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 transition disabled:opacity-50"
+                    >
+                      {addingAdmin ? 'Adding...' : 'Confirm — Add Admin'}
+                    </button>
+                    <button
+                      onClick={() => { setConfirmNewAdmin(false); setAdminMgmtError(''); }}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ══════════════════════════════════════
@@ -513,7 +819,6 @@ export default function AdminPage() {
           onClick={e => { if (e.target === e.currentTarget) closeBackfill(); }}
         >
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
-            {/* Modal header */}
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-bold text-gray-800">🏆 Certificate Backfill Tool</h2>
@@ -527,7 +832,6 @@ export default function AdminPage() {
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{backfillError}</div>
               )}
 
-              {/* Step 1: Enter email */}
               {!backfillUserInfo && !backfillResults && (
                 <div className="space-y-3">
                   <label className="block text-sm font-semibold text-gray-700">User Email</label>
@@ -551,7 +855,6 @@ export default function AdminPage() {
                 </div>
               )}
 
-              {/* Step 2: Show user info + completed modules */}
               {backfillUserInfo && !backfillResults && (
                 <div className="space-y-4">
                   <div className="bg-gray-50 rounded-lg p-4 space-y-1.5 text-sm">
@@ -564,7 +867,9 @@ export default function AdminPage() {
                     <div>
                       <p className="text-xs font-semibold text-gray-600 uppercase mb-2">Completed Modules</p>
                       <div className="space-y-1 max-h-48 overflow-y-auto">
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {backfillUserInfo.debug.completedModulesForUser.map((m: any) => {
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           const hasCert = (backfillUserInfo.debug.certificatesForUser || []).some((c: any) => c.module_id === m.module_number);
                           return (
                             <div key={m.progress_module_id} className="flex items-center justify-between text-xs py-1.5 border-b border-gray-100">
@@ -599,7 +904,6 @@ export default function AdminPage() {
                 </div>
               )}
 
-              {/* Step 3: Results */}
               {backfillResults && (
                 <div className="space-y-3">
                   <div className={`p-3 rounded-lg ${backfillResults.created > 0 ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-200'}`}>
@@ -613,6 +917,7 @@ export default function AdminPage() {
 
                   {(backfillResults.results?.length ?? 0) > 0 && (
                     <div className="space-y-1 max-h-48 overflow-y-auto">
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {backfillResults.results.map((r: any, i: number) => (
                         <div key={i} className="flex items-center justify-between text-xs py-1.5 border-b border-gray-100">
                           <span className="text-gray-700">Module {r.moduleNumber}{r.title ? `: ${r.title}` : ''}</span>
