@@ -128,7 +128,7 @@ export async function POST(request: Request) {
     .from('referral_commissions')
     .update({ status: 'paid', paid_at: paidAt })
     .eq('referrer_id', payoutReq.user_id)
-    .eq('status', 'pending');
+    .in('status', ['pending', 'pending_30_days']);
 
   if (commUpdateError) {
     console.error('Failed to update commissions:', commUpdateError);

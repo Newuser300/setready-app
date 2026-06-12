@@ -166,7 +166,7 @@ export default function Home() {
             style={{ animationDelay: '0.5s' }}
           >
             <span className="flex items-center gap-1.5 text-sm text-gray-500">
-              <span className="text-green-500 font-bold">✓</span> Cancel Anytime
+              <span className="text-green-500 font-bold">✓</span> 30-Day Minimum Commitment
             </span>
           </div>
         </div>

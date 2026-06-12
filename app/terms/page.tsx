@@ -10,7 +10,7 @@ export default function TermsPage() {
   return (
     <div className="max-w-3xl mx-auto p-8 bg-white shadow-lg rounded-xl my-8">
       <h1 className="text-3xl font-bold mb-2">Terms of Service</h1>
-      <p className="text-gray-600 mb-8">Last Updated: April 26, 2026</p>
+      <p className="text-gray-600 mb-8">Last Updated: June 12, 2026</p>
 
       <div className="bg-yellow-50 p-4 rounded-lg mb-8 border-l-4 border-yellow-500">
         <p className="text-sm text-yellow-800">
@@ -92,19 +92,24 @@ export default function TermsPage() {
         <h3 className="font-semibold mt-2">6.1 Pricing</h3>
         <p>Current pricing is displayed in the App. We reserve the right to change prices with reasonable notice. Any price changes will not affect existing paid subscriptions during their current term.</p>
         
-        <h3 className="font-semibold mt-3">6.2 Refund Policy</h3>
-        <p>Due to the digital nature of our educational content, refunds are available within 30 days of purchase provided that you have not completed more than 10% of the course content or have not received your completion certificate.</p>
+        <h3 className="font-semibold mt-3">6.2 No-Refund Policy</h3>
+        <p>All subscription purchases are <strong>final and non-refundable</strong>. Due to the digital nature of our educational content and the immediate access provided upon subscription, we do not issue refunds for any reason once a subscription has been activated.</p>
         <ul className="list-disc pl-6 mt-1 space-y-1 text-gray-700">
-          <li>To request a refund, contact setready@mail.com with your account email and reason for refund</li>
-          <li>Refunds are processed within 5-10 business days to the original payment method</li>
+          <li>No refunds will be issued regardless of usage, progress, or circumstances</li>
+          <li>Cancelling your subscription stops future billing but does not entitle you to a refund of amounts already charged</li>
+          <li>If you have questions about your billing, contact setready@mail.com</li>
         </ul>
-        <p className="mt-2">If you cancel a subscription during a free trial, you will not be charged.</p>
-        
-        <h3 className="font-semibold mt-3">6.3 Free Trial</h3>
-        <p>If a free trial is offered, you must cancel before the trial ends to avoid charges. Failure to cancel will result in automatic billing at the then-current rate.</p>
-        
+
+        <h3 className="font-semibold mt-3">6.3 30-Day Minimum Commitment</h3>
+        <p>By subscribing to SetReady, you agree to a <strong>30-day minimum commitment period</strong>. During this period:</p>
+        <ul className="list-disc pl-6 mt-1 space-y-1 text-gray-700">
+          <li>Cancellation of your subscription is not available for the first 30 days from your subscription start date</li>
+          <li>After 30 days, you may cancel at any time through your account&apos;s billing settings</li>
+          <li>You will be billed for the full first month regardless of cancellation request timing</li>
+        </ul>
+
         <h3 className="font-semibold mt-3">6.4 Automatic Renewal</h3>
-        <p>If you purchase a subscription plan, your subscription will automatically renew at the end of each billing period at the then-current rate unless you cancel at least 24 hours before the renewal date. We will send you a reminder email at least 7 days before any automatic renewal. You can cancel your subscription at any time through your account settings.</p>
+        <p>If you purchase a subscription plan, your subscription will automatically renew at the end of each billing period at the then-current rate unless you cancel at least 24 hours before the renewal date. We will send you a reminder email at least 7 days before any automatic renewal. After the 30-day minimum commitment period, you may cancel your subscription at any time through your account settings.</p>
         
         <h3 className="font-semibold mt-3">6.5 Restoring Purchases</h3>
         <p>If you upgrade to a new device or reinstall the App, you may restore your previous purchases. For App Store purchases, tap <strong>"Restore Purchases"</strong> in the app's Settings. For Google Play Store purchases, restoration is automatic upon reinstalling.</p>
@@ -112,10 +117,11 @@ export default function TermsPage() {
         <h3 className="font-semibold mt-3">6.6 Referral Program Terms</h3>
         <ul className="list-disc pl-6 mt-1 space-y-1 text-gray-700">
           <li>Users earn 20% commission on referrals when a referred user completes a paid subscription</li>
+          <li>Commissions are held for 30 days from the referred user&apos;s subscription start date before becoming payable, to account for the minimum commitment period</li>
           <li>Minimum payout threshold is $10.00 CAD — commissions below this amount cannot be requested until the threshold is reached</li>
           <li>Commissions are paid monthly via Interac e-Transfer to the email address provided at time of request</li>
           <li>SetReady reserves the right to verify referrals before processing payment</li>
-          <li>Commission is only earned on successful payments — refunded or disputed transactions do not qualify</li>
+          <li>Commission is only earned on successful, non-disputed payments that complete the 30-day commitment period</li>
           <li>Referral codes are non-transferable and may only be used by the account holder</li>
           <li>SetReady reserves the right to suspend or terminate referral privileges for accounts found to be abusing the referral system</li>
         </ul>

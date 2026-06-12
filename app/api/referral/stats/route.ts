@@ -74,7 +74,7 @@ export async function GET(request: Request) {
   );
 
   const pendingCommission = (commissions || [])
-    .filter(c => c.status === 'pending')
+    .filter(c => c.status === 'pending' || c.status === 'pending_30_days')
     .reduce((sum, c) => sum + (c.commission_amount || 0), 0);
 
   const totalEarned = (commissions || [])

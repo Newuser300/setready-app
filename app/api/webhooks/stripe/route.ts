@@ -145,11 +145,11 @@ export async function POST(request: Request) {
       // stripe_customer_id to public.users.
       console.log(`🔍 Looking up user WHERE stripe_customer_id = '${stripeCustomerId}'...`);
       let findError: unknown = null;
-      let userData: { id: string; referred_by: string | null } | null = null;
+      let userData: { id: string; referred_by: string | null; subscription_started_at: string | null } | null = null;
 
       const { data: firstAttempt, error: firstError } = await supabaseAdmin
         .from('users')
-        .select('id, referred_by')
+        .select('id, referred_by, subscription_started_at')
         .eq('stripe_customer_id', stripeCustomerId)
         .maybeSingle();
 
@@ -164,7 +164,7 @@ export async function POST(request: Request) {
 
         const { data: secondAttempt, error: secondError } = await supabaseAdmin
           .from('users')
-          .select('id, referred_by')
+          .select('id, referred_by, subscription_started_at')
           .eq('stripe_customer_id', stripeCustomerId)
           .maybeSingle();
 
@@ -190,11 +190,15 @@ export async function POST(request: Request) {
       subscriptionEndsAt.setDate(subscriptionEndsAt.getDate() + 30);
       console.log(`📅 subscription_ends_at set to: ${subscriptionEndsAt.toISOString()}`);
 
-      const updatePayload = {
+      const updatePayload: Record<string, unknown> = {
         subscription_status: 'active',
         stripe_subscription_id: stripeSubscriptionId,
         subscription_ends_at: subscriptionEndsAt.toISOString(),
       };
+      if (!userData.subscription_started_at) {
+        updatePayload.subscription_started_at = new Date().toISOString();
+        console.log('📅 Setting subscription_started_at (first subscription)');
+      }
 
       console.log(`📝 Updating users WHERE id = '${userData.id}' with:`, updatePayload);
       const { data: updatedRows, error: updateError } = await supabaseAdmin
@@ -224,6 +228,9 @@ export async function POST(request: Request) {
           const invoiceAmount = ((invoice as any).amount_paid ?? 0) / 100;
           const commissionAmount = parseFloat((invoiceAmount * 0.20).toFixed(2));
 
+          const commissionPayableAfter = new Date();
+          commissionPayableAfter.setDate(commissionPayableAfter.getDate() + 30);
+
           const { error: commissionError } = await supabaseAdmin
             .from('referral_commissions')
             .insert({
@@ -232,8 +239,9 @@ export async function POST(request: Request) {
               sale_amount: invoiceAmount,
               commission_amount: commissionAmount,
               commission_rate: 20.00,
-              status: 'pending',
+              status: 'pending_30_days',
               payment_method: 'etransfer',
+              commission_payable_after: commissionPayableAfter.toISOString(),
             });
 
           if (commissionError) {

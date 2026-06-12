@@ -102,6 +102,7 @@ export default function Dashboard() {
   // PAYMENT STATES - ADDED
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [section2Unlocked, setSection2Unlocked] = useState(false);
+  const [subscriptionStartedAt, setSubscriptionStartedAt] = useState<string | null>(null);
   const [loadingPayment, setLoadingPayment] = useState(false);
 
   // CUSTOMER PORTAL STATE
@@ -582,7 +583,7 @@ export default function Dashboard() {
 
       const { data } = await supabase
         .from('users')
-        .select('section1_completed, subscription_status, section2_unlocked, referral_code, referred_by')
+        .select('section1_completed, subscription_status, section2_unlocked, referral_code, referred_by, subscription_started_at')
         .eq('id', user.id)
         .single();
 
@@ -592,6 +593,7 @@ export default function Dashboard() {
         setSection2Unlocked(data.section2_unlocked || false);
         if (data.referral_code) setReferralCode(data.referral_code);
         setUserHasReferral(!!data.referred_by);
+        setSubscriptionStartedAt(data.subscription_started_at || null);
         console.log('User subscription status:', data.subscription_status);
       }
     } catch (error) {
@@ -2136,18 +2138,35 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* CUSTOMER PORTAL BUTTON - Added under subscription status */}
-          {isSubscribed && (
-            <div className="mt-3 text-center">
-              <button
-                onClick={handleManageBilling}
-                disabled={loadingPortal}
-                className="text-sm text-blue-600 hover:text-blue-800 transition underline"
-              >
-                {loadingPortal ? 'Loading...' : 'Manage Billing →'}
-              </button>
-            </div>
-          )}
+          {/* CUSTOMER PORTAL BUTTON - 30-day minimum commitment lock */}
+          {isSubscribed && (() => {
+            const startedMs = subscriptionStartedAt ? new Date(subscriptionStartedAt).getTime() : null;
+            const canCancel = startedMs ? (Date.now() - startedMs) >= 30 * 24 * 60 * 60 * 1000 : true;
+            const cancelUnlockDate = startedMs
+              ? new Date(startedMs + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })
+              : null;
+            return (
+              <div className="mt-3 text-center">
+                {canCancel ? (
+                  <button
+                    onClick={handleManageBilling}
+                    disabled={loadingPortal}
+                    className="text-sm text-blue-600 hover:text-blue-800 transition underline"
+                  >
+                    {loadingPortal ? 'Loading...' : 'Manage Billing →'}
+                  </button>
+                ) : (
+                  <div className="inline-block text-center">
+                    <div className="text-xs text-gray-400 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 max-w-xs">
+                      <span className="text-gray-500 font-semibold">🔒 30-Day Commitment Active</span>
+                      <br />
+                      <span className="text-gray-400">Billing management available {cancelUnlockDate ? `on ${cancelUnlockDate}` : 'after 30 days'}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Footer Links */}
           <div className="mt-12 pt-6 border-t border-gray-200 flex justify-center gap-6 text-sm text-gray-400">

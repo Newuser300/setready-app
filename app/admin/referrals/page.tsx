@@ -24,6 +24,7 @@ type Commission = {
   sale_amount: number;
   commission_amount: number;
   status: string;
+  commission_payable_after: string | null;
   created_at: string;
 };
 
@@ -382,10 +383,17 @@ export default function AdminReferralsPage() {
                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                           c.status === 'paid'
                             ? 'bg-green-100 text-green-700'
+                            : c.status === 'pending_30_days'
+                            ? 'bg-orange-100 text-orange-700'
                             : 'bg-yellow-100 text-yellow-700'
                         }`}>
-                          {c.status}
+                          {c.status === 'pending_30_days' ? 'pending (30-day hold)' : c.status}
                         </span>
+                        {c.status === 'pending_30_days' && c.commission_payable_after && (
+                          <div className="text-xs text-gray-400 mt-0.5">
+                            payable {new Date(c.commission_payable_after).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}

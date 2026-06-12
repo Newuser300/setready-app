@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 
   const { data: user } = await supabaseAdmin
     .from('users')
-    .select('id, email, name, subscription_status, stripe_subscription_id, stripe_customer_id, created_at')
+    .select('id, email, name, subscription_status, stripe_subscription_id, stripe_customer_id, created_at, subscription_started_at')
     .eq('email', email.toLowerCase().trim())
     .maybeSingle();
 
@@ -28,12 +28,18 @@ export async function GET(request: Request) {
     supabaseAdmin.from('certificates').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
   ]);
 
+  const within30Days = user.subscription_started_at
+    ? (Date.now() - new Date(user.subscription_started_at).getTime()) < 30 * 24 * 60 * 60 * 1000
+    : false;
+
   return NextResponse.json({
     id: user.id,
     email: user.email,
     name: user.name,
     subscription_status: user.subscription_status,
     stripe_subscription_id: user.stripe_subscription_id || null,
+    subscription_started_at: user.subscription_started_at || null,
+    within_30_days: within30Days,
     created_at: user.created_at,
     completed_modules: progressResult.count ?? 0,
     certificates: certResult.count ?? 0,
@@ -64,36 +70,13 @@ export async function DELETE(request: Request) {
 
   const log: string[] = [];
 
-  // 1. Cancel Stripe subscription with prorated refund
+  // 1. Cancel Stripe subscription (no refund — 30-day minimum commitment policy)
   if (user.stripe_subscription_id) {
     try {
       const sub = await stripe.subscriptions.retrieve(user.stripe_subscription_id);
       if (sub.status !== 'canceled') {
-        const now = Math.floor(Date.now() / 1000);
-        const periodStart = sub.current_period_start;
-        const periodEnd = sub.current_period_end;
-        const totalPeriod = periodEnd - periodStart;
-        const remainingPeriod = Math.max(0, periodEnd - now);
-        const unusedFraction = totalPeriod > 0 ? remainingPeriod / totalPeriod : 0;
-
         await stripe.subscriptions.cancel(user.stripe_subscription_id);
-        log.push('Stripe subscription cancelled');
-
-        if (unusedFraction > 0.01 && user.stripe_customer_id) {
-          const invoices = await stripe.invoices.list({ customer: user.stripe_customer_id, limit: 1 });
-          const latestInvoice = invoices.data[0];
-          if (latestInvoice?.payment_intent && latestInvoice.amount_paid > 0) {
-            const refundAmount = Math.floor(latestInvoice.amount_paid * unusedFraction);
-            if (refundAmount > 0) {
-              await stripe.refunds.create({
-                payment_intent: latestInvoice.payment_intent as string,
-                amount: refundAmount,
-                reason: 'requested_by_customer',
-              });
-              log.push(`Prorated refund issued: $${(refundAmount / 100).toFixed(2)}`);
-            }
-          }
-        }
+        log.push('Stripe subscription cancelled (no refund per 30-day minimum commitment policy)');
       } else {
         log.push('Subscription already cancelled');
       }

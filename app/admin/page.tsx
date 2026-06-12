@@ -122,6 +122,7 @@ export default function AdminPage() {
   const [removeUserInfo, setRemoveUserInfo] = useState<{
     id: string; email: string; name: string | null;
     subscription_status: string | null; stripe_subscription_id: string | null;
+    subscription_started_at: string | null; within_30_days: boolean;
     created_at: string; completed_modules: number; certificates: number;
   } | null>(null);
   const [removeUserError, setRemoveUserError] = useState('');
@@ -909,7 +910,7 @@ export default function AdminPage() {
               <div className="bg-white rounded-xl border border-red-200 shadow-sm p-6">
                 <div className="text-3xl mb-3">🗑️</div>
                 <h3 className="font-bold text-gray-800 mb-1">Remove User Account</h3>
-                <p className="text-sm text-gray-500 mb-4">Permanently delete a user: cancel their Stripe subscription with prorated refund, then remove all their data.</p>
+                <p className="text-sm text-gray-500 mb-4">Permanently delete a user: cancel their Stripe subscription (no refund per 30-day commitment policy), then remove all their data.</p>
                 <button
                   onClick={openRemoveUser}
                   className="w-full px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition"
@@ -1176,11 +1177,17 @@ export default function AdminPage() {
                     <p><span className="font-semibold text-gray-600">Email:</span> {removeUserInfo.email}</p>
                     <p><span className="font-semibold text-gray-600">Name:</span> {removeUserInfo.name || '—'}</p>
                     <p><span className="font-semibold text-gray-600">Status:</span> {removeUserInfo.subscription_status || 'none'}</p>
+                    {removeUserInfo.subscription_started_at && (
+                      <p><span className="font-semibold text-gray-600">Subscribed:</span> {new Date(removeUserInfo.subscription_started_at).toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                    )}
                     <p><span className="font-semibold text-gray-600">Joined:</span> {new Date(removeUserInfo.created_at).toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
                     <p><span className="font-semibold text-gray-600">Completed Modules:</span> {removeUserInfo.completed_modules}</p>
                     <p><span className="font-semibold text-gray-600">Certificates:</span> {removeUserInfo.certificates}</p>
                     {removeUserInfo.stripe_subscription_id && (
-                      <p className="text-orange-700 font-semibold text-xs mt-2">⚠ Active subscription will be cancelled with prorated refund</p>
+                      <p className="text-orange-700 font-semibold text-xs mt-2">⚠ Active subscription will be cancelled — no refund will be issued</p>
+                    )}
+                    {removeUserInfo.within_30_days && removeUserInfo.stripe_subscription_id && (
+                      <p className="text-red-700 font-semibold text-xs">⚠ User is within their 30-day minimum commitment period</p>
                     )}
                   </div>
 

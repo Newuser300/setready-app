@@ -67,6 +67,11 @@ export async function POST(request: Request) {
         userId: user.id,              // Also set in metadata as backup
         type: 'section1',
       },
+      custom_text: {
+        submit: {
+          message: 'By subscribing, you agree to a 30-day minimum commitment. Cancellation is available after 30 days from your subscription start date. No refunds are issued.',
+        },
+      },
     });
     
     console.log('Checkout session created:', session.id);

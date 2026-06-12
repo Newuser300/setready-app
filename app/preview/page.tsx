@@ -202,7 +202,7 @@ export default function PreviewPage() {
                   <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
                     Section 1: Background Acting Essentials
                   </h2>
-                  <p className="text-gray-500 text-sm mt-1">$9.99/month • Cancel anytime</p>
+                  <p className="text-gray-500 text-sm mt-1">$9.99/month • 30-day minimum commitment</p>
                 </div>
                 <button
                   onClick={() => setShowModal(true)}
@@ -443,7 +443,7 @@ export default function PreviewPage() {
               >
                 Create Free Account
               </button>
-              <p className="text-gray-500 text-sm mb-10">Then subscribe from $9.99/month</p>
+              <p className="text-gray-500 text-sm mb-10">Then subscribe from $9.99/month • 30-day minimum commitment</p>
 
               {/* Trust badges */}
               <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-gray-500 mb-8">
