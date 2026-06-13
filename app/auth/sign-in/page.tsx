@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Logo from '@/components/Logo';
+import Copyright from '@/components/Copyright';
 
 export default function SignIn() {
   const router = useRouter();
@@ -115,6 +116,7 @@ export default function SignIn() {
           </p>
         </div>
       </div>
+      <Copyright />
     </div>
   );
 }

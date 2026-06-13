@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Logo from '@/components/Logo';
+import Copyright from '@/components/Copyright';
 
 /* ── Scroll-triggered fade-in wrapper ──────────────────────── */
 function FadeIn({
@@ -144,7 +145,7 @@ export default function Home() {
           </div>
 
           <p className="text-4xl font-bold text-amber-500 text-center mt-6 animate-fade-in-up">
-            $9.99/month
+            $9.99
           </p>
 
         </div>
@@ -459,6 +460,7 @@ export default function Home() {
           </div>
         </div>
       </footer>
+      <Copyright />
 
     </div>
   );

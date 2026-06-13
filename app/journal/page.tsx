@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import Copyright from '@/components/Copyright';
 
 type PhotoMeta = {
   id: string;
@@ -616,6 +617,8 @@ export default function JournalPage() {
           </button>
         </div>
       )}
+
+      <Copyright />
 
       {/* Modal */}
       {showModal && (

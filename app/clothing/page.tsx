@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Copyright from '@/components/Copyright';
 
 export default function ClothingGuidePage() {
   return (
@@ -293,6 +294,7 @@ export default function ClothingGuidePage() {
         </section>
 
       </div>
+      <Copyright />
     </div>
   );
 }

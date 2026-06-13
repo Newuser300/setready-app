@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import Logo from '@/components/Logo';
+import Copyright from '@/components/Copyright';
 
 export default function SignUp() {
   const router = useRouter();
@@ -241,6 +242,7 @@ export default function SignUp() {
           </Link>
         </p>
       </div>
+      <Copyright />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import Copyright from '@/components/Copyright';
 
 const UNION_RATES = {
   'General Background Performer': { daily: 270.30, hourly: 33.79, ot1: 50.69, ot2: 67.58 },
@@ -276,8 +277,7 @@ export default function RateCalculator() {
           )
         )}
 
-        {/* Footer spacer */}
-        <div className="h-8" />
+        <Copyright />
       </div>
     </div>
   );

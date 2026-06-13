@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
+import Copyright from '@/components/Copyright';
 import { supabase } from '@/lib/supabase';
 
 type ResidencyDoc = {
@@ -770,6 +771,7 @@ export default function ResidencyPage() {
         </div>
 
       </div>
+      <Copyright />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Copyright from '@/components/Copyright';
 
 const SCENARIOS = [
   {
@@ -320,6 +321,7 @@ export default function SimulatorPage() {
           </button>
         )}
       </div>
+      <Copyright />
     </div>
   );
 }

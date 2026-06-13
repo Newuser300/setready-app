@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import SignUpModal from '@/app/components/SignUpModal';
 import Logo from '@/components/Logo';
+import Copyright from '@/components/Copyright';
 
 /* ── Scroll-triggered fade-in wrapper ──────────────────────── */
 function FadeIn({
@@ -457,6 +458,7 @@ export default function PreviewPage() {
           </FadeIn>
         </section>
 
+      <Copyright />
       </div>{/* end pt-[52px] wrapper */}
     </div>
   );

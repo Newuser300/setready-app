@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
+import Copyright from '@/components/Copyright';
 
 type Module = {
   id: string;
@@ -2232,6 +2233,7 @@ export default function Dashboard() {
               Sign Out
             </button>
           </div>
+          <Copyright />
         </div>
       </div>
 

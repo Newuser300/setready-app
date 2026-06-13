@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import Copyright from '@/components/Copyright';
 
 const TERMS = [
   { term: 'Action',                             def: 'The director\'s command to begin filming a scene. When you hear "Action" you begin your designated activity immediately.' },
@@ -191,6 +192,7 @@ export default function GlossaryPage() {
           SetReady Film Set Glossary — for use on set or as a training reference.
           Definitions reflect standard Canadian film industry usage in British Columbia.
         </p>
+        <Copyright />
       </div>
     </div>
   );
