@@ -442,11 +442,11 @@ export default function PreviewPage() {
               >
                 Create Free Account
               </button>
-              <p className="text-gray-500 text-sm mb-10">Subscribe from $9.99/month. Cancel after 30 days.</p>
+              <p className="text-gray-500 text-sm mb-10">Subscribe for $9.99/month.</p>
 
               {/* Trust badges */}
               <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-gray-500 mb-8">
-                {['Cancel Anytime after 30 days', 'Instant Access', 'Secure Payment'].map(b => (
+                {['Instant Access', 'Secure Payment'].map(b => (
                   <span key={b} className="flex items-center gap-1.5">
                     <span className="text-green-500 font-bold">✓</span> {b}
                   </span>

@@ -102,6 +102,10 @@ export default function Home() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,rgba(245,158,11,0.06)_0%,transparent_70%)]" />
 
         <div className="relative z-10 max-w-4xl mx-auto">
+          <h2 className="text-6xl sm:text-7xl font-extrabold text-white text-center tracking-tight mb-4 animate-fade-in">
+            SetReady
+          </h2>
+
           {/* Pill badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-50 text-amber-600 text-xs font-semibold mb-8 animate-fade-in">
             🎬 Professional Background Performer Training
@@ -119,9 +123,9 @@ export default function Home() {
             From your first call time to your hundredth set.
           </p>
 
-          {/* CTA buttons — CHANGE 1: "Start Learning Free" → "Start Learning" */}
+          {/* CTA buttons */}
           <div
-            className="flex flex-col sm:flex-row gap-4 justify-center mb-10 animate-fade-in-up"
+            className="flex flex-col sm:flex-row gap-4 justify-center mb-6 animate-fade-in-up"
             style={{ animationDelay: '0.35s' }}
           >
             <button
@@ -137,6 +141,10 @@ export default function Home() {
               View Curriculum
             </button>
           </div>
+
+          <p className="text-4xl font-bold text-amber-500 text-center mt-6 animate-fade-in-up">
+            $9.99/month
+          </p>
 
         </div>
 
