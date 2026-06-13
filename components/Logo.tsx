@@ -10,7 +10,7 @@ const sizeConfig = {
   lg: { circle: 48, srFont: 17, wordmark: 'text-2xl' },
 };
 
-export default function Logo({ size = 'md', darkBackground = true, showText = true }: LogoProps) {
+export default function Logo({ size = 'md', darkBackground = true, showText = false }: LogoProps) {
   const cfg = sizeConfig[size];
   const setColor = darkBackground ? 'text-white' : 'text-[#1a1a2e]';
 

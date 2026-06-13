@@ -35,7 +35,7 @@ export default function SignIn() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow">
         <div className="flex justify-center">
-          <Logo size="lg" darkBackground={false} />
+          <Logo size="lg" darkBackground={false} showText={true} />
         </div>
         <p className="text-center text-gray-700 font-bold">
           Essential Training for Every Film Industry Background Performer
