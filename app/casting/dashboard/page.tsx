@@ -85,6 +85,10 @@ const ROLE_TYPES = ['Background', 'Featured Extra', 'Day Player', 'Principal', '
 function fmtDate(d: string) {
   return new Date(d + 'T00:00:00').toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' })
 }
+function daysUntil(dateStr: string) {
+  const diff = new Date(dateStr + 'T00:00:00').getTime() - new Date().setHours(0, 0, 0, 0)
+  return Math.ceil(diff / 86400000)
+}
 function heatColor(count: number, max: number) {
   if (count === 0) return '#f3f4f6'
   const pct = Math.min(count / Math.max(max, 1), 1)
@@ -385,9 +389,17 @@ export default function CastingDashboardPage() {
     return cells
   }
 
-  // ─── Render ───────────────────────────────────────────────────────────────────
+  // ─── isMobile (reactive) ─────────────────────────────────────────────────────
 
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
+  // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', display: 'flex', flexDirection: 'column' }}>
@@ -805,9 +817,24 @@ export default function CastingDashboardPage() {
                       return (
                         <div key={req.id} style={{ backgroundColor: 'white', borderRadius: '14px', padding: '18px 20px', boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
                           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '10px' }}>
-                            <div>
-                              <div style={{ fontWeight: '700', fontSize: '16px', color: '#1a1a2e' }}>{req.production_name}</div>
-                              <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '2px' }}>
+                                <div style={{ fontWeight: '700', fontSize: '16px', color: '#1a1a2e' }}>{req.production_name}</div>
+                                {(() => {
+                                  const days = daysUntil(req.shoot_date)
+                                  const u = days <= 2
+                                    ? { bg: '#fef2f2', color: '#dc2626', label: days <= 0 ? 'TODAY' : `${days}d left` }
+                                    : days <= 7
+                                    ? { bg: '#fffbeb', color: '#d97706', label: `${days}d left` }
+                                    : { bg: '#f0fdf4', color: '#16a34a', label: `${days}d` }
+                                  return (
+                                    <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: '700', backgroundColor: u.bg, color: u.color, flexShrink: 0 }}>
+                                      {u.label}
+                                    </span>
+                                  )
+                                })()}
+                              </div>
+                              <div style={{ fontSize: '13px', color: '#6b7280' }}>
                                 {req.role_type} · {fmtDate(req.shoot_date)}{req.location ? ` · ${req.location}` : ''}
                               </div>
                             </div>
@@ -936,8 +963,14 @@ export default function CastingDashboardPage() {
               </div>
             ) : null}
             {quickView.bio && (
-              <div style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.6' }}>{quickView.bio}</div>
+              <div style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.6', marginBottom: '16px' }}>{quickView.bio}</div>
             )}
+            <button
+              onClick={() => { setQuickView(null); router.push(`/profile/${quickView.user_id}`) }}
+              style={{ width: '100%', padding: '11px', backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}
+            >
+              View Full Profile
+            </button>
           </div>
         </div>
       )}
@@ -1016,6 +1049,11 @@ export default function CastingDashboardPage() {
                                     {sub.agencies && <div style={{ fontSize: '11px', color: '#9ca3af' }}>{sub.agencies.name}</div>}
                                   </div>
                                 </div>
+                                {sub.notes && (
+                                  <div style={{ fontSize: '11px', color: '#374151', marginBottom: '6px', backgroundColor: '#f3f4f6', borderRadius: '6px', padding: '5px 8px', fontStyle: 'italic' }}>
+                                    💬 {sub.notes}
+                                  </div>
+                                )}
                                 {/* Action buttons */}
                                 <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                                   {colStatus !== 'confirmed' && (

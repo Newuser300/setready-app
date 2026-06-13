@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import bcrypt from 'bcryptjs'
-import { createSession, getCastingSession, supabaseAdmin } from '@/lib/casting-auth'
+import { createSession, getCastingSession, deleteSession, supabaseAdmin } from '@/lib/casting-auth'
 
 export async function GET() {
   const session = await getCastingSession()
@@ -17,7 +18,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { action, email, password, name, company, phone } = await req.json()
+  const { action, email, password, name, company, phone, heardFrom, description } = await req.json()
 
   if (action === 'login') {
     const { data: cd } = await supabaseAdmin
@@ -84,6 +85,8 @@ export async function POST(req: Request) {
         email: email.toLowerCase(),
         company,
         phone,
+        heard_from: heardFrom || null,
+        description: description || null,
         password_hash: hash,
         is_verified: false,
         plan: 'basic'
@@ -112,6 +115,9 @@ export async function POST(req: Request) {
   }
 
   if (action === 'logout') {
+    const cookieStore = await cookies()
+    const token = cookieStore.get('casting_session')?.value
+    if (token) await deleteSession(token)
     const response = NextResponse.json({ success: true })
     response.cookies.delete('casting_session')
     return response

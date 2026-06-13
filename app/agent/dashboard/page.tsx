@@ -200,6 +200,8 @@ export default function AgentDashboardPage() {
   const [submitIds, setSubmitIds] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [submitMsg, setSubmitMsg] = useState('')
+  const [submitNotes, setSubmitNotes] = useState('')
+  const [submitSearch, setSubmitSearch] = useState('')
 
   // Submission filters
   const [subStatusFilter, setSubStatusFilter] = useState('')
@@ -236,11 +238,10 @@ export default function AgentDashboardPage() {
 
   const loadSubmissions = useCallback(async () => {
     setLoadingSubmissions(true)
-    const params = subStatusFilter ? `?status=${subStatusFilter}` : ''
-    const res = await fetch(`/api/agent/submissions${params}`)
+    const res = await fetch('/api/agent/submissions')
     if (res.ok) setSubmissions(await res.json())
     setLoadingSubmissions(false)
-  }, [subStatusFilter])
+  }, [])
 
   const loadNotifications = useCallback(async () => {
     const res = await fetch('/api/agent/notifications')
@@ -254,11 +255,12 @@ export default function AgentDashboardPage() {
     if (activeTab === 'notifications') loadNotifications()
   }, [activeTab, loadRoster, loadRequests, loadSubmissions, loadNotifications])
 
-  useEffect(() => { if (activeTab === 'submissions') loadSubmissions() }, [subStatusFilter])
-
   // ── Stats ──────────────────────────────────────────────────────────────────
 
   const todayStr = new Date().toISOString().slice(0, 10)
+  const filteredSubmissions = subStatusFilter
+    ? submissions.filter(s => s.status === subStatusFilter)
+    : submissions
   const availableToday = roster.filter(r =>
     r.weekAvailability.find(w => w.date === todayStr)?.status === 'available'
   ).length
@@ -310,7 +312,7 @@ export default function AgentDashboardPage() {
     const res = await fetch('/api/agent/submissions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ castingRequestId: submitModal.id, performerIds: submitIds }),
+      body: JSON.stringify({ castingRequestId: submitModal.id, performerIds: submitIds, notes: submitNotes || null }),
     })
     const data = await res.json()
     setSubmitting(false)
@@ -318,7 +320,7 @@ export default function AgentDashboardPage() {
     if (res.ok) {
       setSubmitMsg(`✅ ${data.submitted} performer${data.submitted !== 1 ? 's' : ''} submitted!`)
       loadRequests()
-      setTimeout(() => { setSubmitModal(null); setSubmitIds([]); setSubmitMsg('') }, 1500)
+      setTimeout(() => { setSubmitModal(null); setSubmitIds([]); setSubmitMsg(''); setSubmitNotes(''); setSubmitSearch('') }, 1500)
     } else {
       setSubmitMsg(`❌ ${data.error}`)
     }
@@ -595,6 +597,12 @@ export default function AgentDashboardPage() {
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0 }}>
                           <button
+                            onClick={() => router.push(`/profile/${r.user_id}`)}
+                            style={{ padding: '5px 10px', fontSize: '12px', fontWeight: '600', border: '1px solid #e5e7eb', borderRadius: '6px', background: 'white', cursor: 'pointer', color: '#374151' }}
+                          >
+                            👤 Profile
+                          </button>
+                          <button
                             onClick={() => router.push(`/availability?userId=${r.user_id}`)}
                             style={{ padding: '5px 10px', fontSize: '12px', fontWeight: '600', border: '1px solid #e5e7eb', borderRadius: '6px', background: 'white', cursor: 'pointer', color: '#374151' }}
                           >
@@ -663,6 +671,8 @@ export default function AgentDashboardPage() {
                               setSubmitModal(req)
                               setSubmitIds([])
                               setSubmitMsg('')
+                              setSubmitNotes('')
+                              setSubmitSearch('')
                             }}
                             style={{
                               padding: '8px 16px', backgroundColor: '#1a1a2e',
@@ -684,19 +694,36 @@ export default function AgentDashboardPage() {
           {/* ── SUBMISSIONS ── */}
           {activeTab === 'submissions' && (
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-                <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: 0 }}>📨 Submissions</h1>
-                <select
-                  value={subStatusFilter}
-                  onChange={e => setSubStatusFilter(e.target.value)}
-                  style={{ padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', backgroundColor: 'white' }}
-                >
-                  <option value="">All statuses</option>
-                  <option value="submitted">Submitted</option>
-                  <option value="shortlisted">Shortlisted</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="rejected">Rejected</option>
-                </select>
+              <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 12px' }}>📨 Submissions</h1>
+
+              {/* Submission stats bar */}
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                {([
+                  { status: '', label: 'All' },
+                  { status: 'submitted', label: 'Submitted' },
+                  { status: 'shortlisted', label: 'Shortlisted' },
+                  { status: 'confirmed', label: 'Confirmed' },
+                  { status: 'rejected', label: 'Rejected' },
+                ] as const).map(({ status, label }) => {
+                  const count = status ? submissions.filter(s => s.status === status).length : submissions.length
+                  const sc = STATUS_COLORS[status || 'submitted'] || STATUS_COLORS.submitted
+                  const isActive = subStatusFilter === status
+                  return (
+                    <button
+                      key={status}
+                      onClick={() => setSubStatusFilter(status)}
+                      style={{
+                        padding: '5px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700',
+                        border: isActive ? '2px solid #1a1a2e' : '2px solid transparent',
+                        backgroundColor: status ? sc.bg : (isActive ? '#1a1a2e' : '#f3f4f6'),
+                        color: status ? sc.color : (isActive ? 'white' : '#374151'),
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {label} ({count})
+                    </button>
+                  )
+                })}
               </div>
 
               {loadingSubmissions ? (
@@ -704,6 +731,10 @@ export default function AgentDashboardPage() {
               ) : submissions.length === 0 ? (
                 <div style={{ ...sectionStyle, textAlign: 'center', padding: '40px' }}>
                   <p style={{ color: '#9ca3af' }}>No submissions yet.</p>
+                </div>
+              ) : filteredSubmissions.length === 0 ? (
+                <div style={{ ...sectionStyle, textAlign: 'center', padding: '40px' }}>
+                  <p style={{ color: '#9ca3af' }}>No {subStatusFilter} submissions.</p>
                 </div>
               ) : (
                 <div style={{ backgroundColor: 'white', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
@@ -719,7 +750,7 @@ export default function AgentDashboardPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {submissions.map(s => {
+                        {filteredSubmissions.map(s => {
                           const name = displayName(s.users)
                           const sc = STATUS_COLORS[s.status] || STATUS_COLORS.submitted
                           return (
@@ -917,7 +948,7 @@ export default function AgentDashboardPage() {
       {/* Submit performers modal */}
       {submitModal && (
         <div
-          onClick={e => { if (e.target === e.currentTarget) { setSubmitModal(null); setSubmitIds([]) } }}
+          onClick={e => { if (e.target === e.currentTarget) { setSubmitModal(null); setSubmitIds([]); setSubmitNotes(''); setSubmitSearch('') } }}
           style={{
             position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)',
             zIndex: 60, display: 'flex', alignItems: 'flex-end',
@@ -939,23 +970,36 @@ export default function AgentDashboardPage() {
                   {submitModal.production_name} · {submitModal.shoot_date}
                 </p>
               </div>
-              <button onClick={() => { setSubmitModal(null); setSubmitIds([]) }} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#9ca3af' }}>×</button>
+              <button onClick={() => { setSubmitModal(null); setSubmitIds([]); setSubmitNotes(''); setSubmitSearch('') }} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#9ca3af' }}>×</button>
             </div>
 
             {(() => {
-              const eligible = eligibleForRequest(submitModal)
-              return eligible.length === 0 ? (
+              const allEligible = eligibleForRequest(submitModal)
+              const eligible = allEligible.filter(r =>
+                !submitSearch ||
+                displayName(r.users).toLowerCase().includes(submitSearch.toLowerCase()) ||
+                (r.users?.email || '').toLowerCase().includes(submitSearch.toLowerCase())
+              )
+              return allEligible.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '24px', color: '#9ca3af' }}>
                   <p>No available performers match this request on {submitModal.shoot_date}.</p>
                   <p style={{ fontSize: '12px' }}>Performers must be marked Available on that date.</p>
                 </div>
               ) : (
                 <>
-                  <p style={{ fontSize: '13px', color: '#374151', margin: '0 0 12px' }}>
-                    {eligible.length} performer{eligible.length !== 1 ? 's' : ''} available on shoot date:
+                  <input
+                    value={submitSearch}
+                    onChange={e => setSubmitSearch(e.target.value)}
+                    placeholder="Search performers by name..."
+                    style={{ width: '100%', padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', marginBottom: '10px', boxSizing: 'border-box' }}
+                  />
+                  <p style={{ fontSize: '13px', color: '#374151', margin: '0 0 10px' }}>
+                    {eligible.length}{submitSearch ? ` of ${allEligible.length}` : ''} performer{allEligible.length !== 1 ? 's' : ''} available on shoot date:
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-                    {eligible.map(r => {
+                    {eligible.length === 0 ? (
+                      <p style={{ textAlign: 'center', color: '#9ca3af', fontSize: '13px', padding: '16px 0' }}>No performers match your search.</p>
+                    ) : eligible.map(r => {
                       const name = displayName(r.users)
                       const selected = submitIds.includes(r.user_id)
                       return (
@@ -984,6 +1028,18 @@ export default function AgentDashboardPage() {
                         </label>
                       )
                     })}
+                  </div>
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#6b7280', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Note to Casting Director (optional)
+                    </label>
+                    <textarea
+                      value={submitNotes}
+                      onChange={e => setSubmitNotes(e.target.value)}
+                      placeholder="Add any notes about these performers or the submission..."
+                      rows={3}
+                      style={{ width: '100%', padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                    />
                   </div>
                 </>
               )

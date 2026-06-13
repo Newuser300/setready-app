@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/utils/supabase/client'
 
 const COLORS = {
   available: '#22c55e',
@@ -24,9 +25,16 @@ export default function AvailabilityPage() {
   const [availability, setAvailability] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [selectedDate, setSelectedDate] = useState<string | null>(null)
 
   const month = currentDate.toISOString().slice(0, 7)
+
+  // Auth guard
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) router.push('/auth/sign-in')
+    })
+  }, [router])
 
   useEffect(() => {
     fetchAvailability()
@@ -35,11 +43,10 @@ export default function AvailabilityPage() {
   const fetchAvailability = async () => {
     setLoading(true)
     const res = await fetch(`/api/availability?month=${month}`)
+    if (res.status === 401) { router.push('/auth/sign-in'); return }
     const data = await res.json()
     const map: Record<string, string> = {}
-    data.forEach((a: any) => {
-      map[a.date] = a.status
-    })
+    data.forEach((a: any) => { map[a.date] = a.status })
     setAvailability(map)
     setLoading(false)
   }
@@ -120,11 +127,84 @@ export default function AvailabilityPage() {
     return days
   }
 
-  const monthName = currentDate.toLocaleDateString('en-CA', {
-    month: 'long', year: 'numeric'
-  })
+  // ── Availability stats ────────────────────────────────────────────────────
+
+  const monthName = currentDate.toLocaleDateString('en-CA', { month: 'long', year: 'numeric' })
   const today = new Date().toISOString().slice(0, 10)
   const days = getDaysInMonth()
+
+  const { year: cYear, mon: cMon } = (() => {
+    const y = currentDate.getFullYear(), m = currentDate.getMonth()
+    return { year: y, mon: m }
+  })()
+  const daysInCurrentMonth = new Date(cYear, cMon + 1, 0).getDate()
+  const allDates = Array.from({ length: daysInCurrentMonth }, (_, i) => {
+    const d = new Date(cYear, cMon, i + 1)
+    return d.toISOString().slice(0, 10)
+  })
+  const availCount = allDates.filter(d => availability[d] === 'available').length
+  const unavailCount = allDates.filter(d => availability[d] === 'unavailable').length
+  const notSetCount = allDates.filter(d => !availability[d]).length
+
+  // ── Weekdays / weekends helper ────────────────────────────────────────────
+
+  async function setWeekdaysAvailableWeekendsUnavailable() {
+    const newMap = { ...availability }
+    const records: { date: string; status: string }[] = []
+    allDates.forEach(d => {
+      const dow = new Date(d + 'T12:00:00').getDay()
+      const status = (dow === 0 || dow === 6) ? 'unavailable' : 'available'
+      newMap[d] = status
+      records.push({ date: d, status })
+    })
+    setAvailability(newMap)
+    setSaving(true)
+    for (const { date, status } of records) {
+      await fetch('/api/availability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date, status }),
+      })
+    }
+    setSaving(false)
+  }
+
+  // ── Copy previous month ───────────────────────────────────────────────────
+
+  async function copyPreviousMonth() {
+    const prevDate = new Date(cYear, cMon - 1, 1)
+    const prevMonth = prevDate.toISOString().slice(0, 7)
+    const res = await fetch(`/api/availability?month=${prevMonth}`)
+    if (!res.ok) return
+    const prevData = await res.json()
+    const prevMap: Record<string, string> = {}
+    prevData.forEach((a: any) => { prevMap[a.date] = a.status })
+
+    const newMap = { ...availability }
+    const toSet: { date: string; status: string }[] = []
+
+    allDates.forEach(d => {
+      if (availability[d]) return // skip already-set days
+      const prevDay = d.replace(`${cYear}-${String(cMon + 1).padStart(2, '0')}`, prevMonth)
+      const status = prevMap[prevDay]
+      if (status) {
+        newMap[d] = status
+        toSet.push({ date: d, status })
+      }
+    })
+
+    if (!toSet.length) { alert('No previous month data to copy.'); return }
+    setAvailability(newMap)
+    setSaving(true)
+    for (const { date, status } of toSet) {
+      await fetch('/api/availability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date, status }),
+      })
+    }
+    setSaving(false)
+  }
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', padding: '0 0 80px' }}>
@@ -166,8 +246,8 @@ export default function AvailabilityPage() {
           >→</button>
         </div>
 
-        {/* Bulk actions */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px' }}>
+        {/* Bulk actions — row 1 */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '8px' }}>
           {[
             { label: '✅ All Available', status: 'available', bg: '#22c55e' },
             { label: '❌ All Unavailable', status: 'unavailable', bg: '#ef4444' },
@@ -185,6 +265,22 @@ export default function AvailabilityPage() {
               {btn.label}
             </button>
           ))}
+        </div>
+
+        {/* Bulk actions — row 2 */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px' }}>
+          <button
+            onClick={setWeekdaysAvailableWeekendsUnavailable}
+            style={{ backgroundColor: 'white', color: '#374151', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '8px 4px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}
+          >
+            📆 Weekdays ✅ / Weekends ❌
+          </button>
+          <button
+            onClick={copyPreviousMonth}
+            style={{ backgroundColor: 'white', color: '#374151', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '8px 4px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}
+          >
+            📋 Copy Last Month
+          </button>
         </div>
 
         {/* Calendar grid */}
@@ -258,7 +354,21 @@ export default function AvailabilityPage() {
           ))}
         </div>
 
-        <p style={{ textAlign: 'center', fontSize: '12px', color: '#9ca3af', marginTop: '16px' }}>
+        {/* Monthly summary */}
+        <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '14px 16px', marginTop: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', textAlign: 'center' }}>
+          {[
+            { label: 'Available', count: availCount, color: '#22c55e' },
+            { label: 'Unavailable', count: unavailCount, color: '#ef4444' },
+            { label: 'Not Set', count: notSetCount, color: '#9ca3af' },
+          ].map(s => (
+            <div key={s.label}>
+              <div style={{ fontSize: '24px', fontWeight: '800', color: s.color }}>{s.count}</div>
+              <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        <p style={{ textAlign: 'center', fontSize: '12px', color: '#9ca3af', marginTop: '14px' }}>
           🔒 Your availability is visible to approved agents and casting directors on SetReady Casting.
         </p>
       </div>

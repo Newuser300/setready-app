@@ -122,11 +122,16 @@ export default function ProfilePage() {
   const [langInput, setLangInput] = useState('')
 
   const [agencies, setAgencies] = useState<{ id: string; name: string }[]>([])
+  const [videoReelUrl, setVideoReelUrl] = useState('')
+  const [toast, setToast] = useState('')
 
   useEffect(() => {
-    loadProfile()
-    loadAgencies()
-  }, [])
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) { router.push('/auth/sign-in'); return }
+      loadProfile()
+      loadAgencies()
+    })
+  }, [router])
 
   async function loadProfile() {
     const res = await fetch('/api/profile')
@@ -147,6 +152,7 @@ export default function ProfilePage() {
         setAgencyId(p.agency_id || '')
         setIsPublic(p.is_public ?? true)
         setHeadshotUrl(p.headshot_url || '')
+        setVideoReelUrl(p.video_reel_url || '')
       }
     }
     setLoading(false)
@@ -251,6 +257,13 @@ export default function ProfilePage() {
     const formData = new FormData()
     if (headshotFile) formData.append('headshot', headshotFile)
 
+    // Validate video URL if provided
+    if (videoReelUrl && !/^https?:\/\/.+/.test(videoReelUrl)) {
+      setMessage('❌ Video reel URL must start with https://')
+      setSaving(false)
+      return
+    }
+
     formData.append('data', JSON.stringify({
       bio,
       gender,
@@ -265,6 +278,7 @@ export default function ProfilePage() {
       languages,
       agency_id: agencyId || null,
       is_public: isPublic,
+      video_reel_url: videoReelUrl || null,
     }))
 
     const res = await fetch('/api/profile', { method: 'POST', body: formData })
@@ -273,7 +287,9 @@ export default function ProfilePage() {
       const result = await res.json()
       if (result.headshot_url) setHeadshotUrl(result.headshot_url)
       setHeadshotFile(null)
-      setMessage('✅ Profile saved!')
+      setMessage('')
+      setToast('✅ Profile saved successfully!')
+      setTimeout(() => setToast(''), 3000)
     } else {
       setMessage('❌ Failed to save. Please try again.')
     }
@@ -290,10 +306,31 @@ export default function ProfilePage() {
     )
   }
 
+  // ── Profile completion ───────────────────────────────────────────────────
+
+  const completionScore = [
+    headshotUrl ? 20 : 0,
+    bio.trim().length > 20 ? 10 : 0,
+    (heightCm && hairColor && eyeColor) ? 20 : 0,
+    unionStatus ? 10 : 0,
+    skills.length > 0 ? 10 : 0,
+    languages.length > 0 ? 5 : 0,
+    agencyId ? 20 : 0,
+  ].reduce((a, b) => a + b, 0)
+
+  const completionColor = completionScore < 40 ? '#ef4444' : completionScore < 80 ? '#f59e0b' : '#22c55e'
+
   // ── Render ──────────────────────────────────────────────────────────────
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', paddingBottom: '80px' }}>
+
+      {/* Toast */}
+      {toast && (
+        <div style={{ position: 'fixed', top: '16px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#1a1a2e', color: 'white', padding: '12px 24px', borderRadius: '10px', fontSize: '14px', fontWeight: '600', zIndex: 100, boxShadow: '0 4px 20px rgba(0,0,0,0.25)', whiteSpace: 'nowrap' }}>
+          {toast}
+        </div>
+      )}
 
       {/* Header */}
       <div style={{ backgroundColor: '#1a1a2e', color: 'white', padding: '20px 24px' }}>
@@ -303,10 +340,28 @@ export default function ProfilePage() {
         >
           ← Dashboard
         </button>
-        <h1 style={{ fontSize: '24px', fontWeight: '700', margin: '0 0 4px' }}>🎭 My Profile</h1>
-        <p style={{ color: '#9ca3af', margin: 0, fontSize: '14px' }}>
-          Your casting profile — visible to approved agents and casting directors
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <h1 style={{ fontSize: '24px', fontWeight: '700', margin: '0 0 4px' }}>🎭 My Profile</h1>
+            <p style={{ color: '#9ca3af', margin: 0, fontSize: '14px' }}>
+              Your casting profile — visible to approved agents and casting directors
+            </p>
+          </div>
+          {/* Completion ring */}
+          <div style={{ textAlign: 'center', flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: '52px', height: '52px' }}>
+              <svg viewBox="0 0 36 36" style={{ width: '52px', height: '52px', transform: 'rotate(-90deg)' }}>
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke={completionColor} strokeWidth="3"
+                  strokeDasharray={`${completionScore} ${100 - completionScore}`} strokeLinecap="round" />
+              </svg>
+              <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '800', color: completionColor }}>
+                {completionScore}%
+              </span>
+            </div>
+            <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>Profile</div>
+          </div>
+        </div>
       </div>
 
       <div style={{ maxWidth: '640px', margin: '0 auto', padding: '16px' }}>
@@ -619,6 +674,33 @@ export default function ProfilePage() {
             >
               Add
             </button>
+          </div>
+        </Section>
+
+        {/* ── Video Reel ── */}
+        <Section title="🎬 Video Reel">
+          <div>
+            <Label>YouTube or Vimeo URL</Label>
+            <input
+              value={videoReelUrl}
+              onChange={e => setVideoReelUrl(e.target.value)}
+              placeholder="https://youtube.com/watch?v=..."
+              type="url"
+              style={inputStyle}
+            />
+            <p style={{ fontSize: '11px', color: '#9ca3af', margin: '5px 0 0' }}>
+              Your showreel — visible to casting directors on your profile
+            </p>
+            {videoReelUrl && /youtube\.com|youtu\.be/.test(videoReelUrl) && (
+              <div style={{ marginTop: '10px', borderRadius: '8px', overflow: 'hidden', aspectRatio: '16/9' }}>
+                <iframe
+                  src={`https://www.youtube.com/embed/${videoReelUrl.match(/(?:v=|youtu\.be\/)([^&\s]+)/)?.[1]}`}
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                  allow="accelerometer; autoplay"
+                  allowFullScreen
+                />
+              </div>
+            )}
           </div>
         </Section>
 

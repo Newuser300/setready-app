@@ -67,4 +67,11 @@ export async function getCastingSession() {
   return verifySession(token)
 }
 
+export async function deleteSession(token: string) {
+  await supabaseAdmin
+    .from('casting_sessions')
+    .delete()
+    .eq('token', token)
+}
+
 export { supabaseAdmin }

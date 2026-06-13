@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import bcrypt from 'bcryptjs'
-import { createSession, getAgentSession, supabaseAdmin } from '@/lib/casting-auth'
+import { createSession, getAgentSession, deleteSession, supabaseAdmin } from '@/lib/casting-auth'
 
 export async function GET() {
   const session = await getAgentSession()
@@ -120,6 +121,9 @@ export async function POST(req: Request) {
   }
 
   if (action === 'logout') {
+    const cookieStore = await cookies()
+    const token = cookieStore.get('agent_session')?.value
+    if (token) await deleteSession(token)
     const response = NextResponse.json({ success: true })
     response.cookies.delete('agent_session')
     return response

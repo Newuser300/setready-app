@@ -103,13 +103,16 @@ export async function POST(req: Request) {
 
   if (!agent) return NextResponse.json({ error: 'Agent not found' }, { status: 404 })
 
-  // Look up user by email
-  const { data: users } = await supabaseAdmin.auth.admin.listUsers()
-  const found = users?.users.find(u => u.email?.toLowerCase() === email.toLowerCase().trim())
+  // Look up user by email via public users view
+  const { data: found, error: lookupError } = await supabaseAdmin
+    .from('users')
+    .select('id, email')
+    .eq('email', email.toLowerCase().trim())
+    .single()
 
-  if (!found) {
+  if (lookupError || !found) {
     return NextResponse.json(
-      { error: 'No SetReady account found with that email' },
+      { error: 'No SetReady account found with that email address.' },
       { status: 404 }
     )
   }

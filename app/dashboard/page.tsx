@@ -220,6 +220,22 @@ export default function Dashboard() {
   const [userHasReferral, setUserHasReferral] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  // Casting notifications
+  const [showNotifPanel, setShowNotifPanel] = useState(false)
+  const [castingNotifs, setCastingNotifs] = useState<Array<{ id: string; title: string; message: string; is_read: boolean; created_at: string; action_url?: string }>>([])
+  const [notifUnread, setNotifUnread] = useState(0)
+
+  // Load casting notifications on mount
+  useEffect(() => {
+    fetch('/api/notifications/casting')
+      .then(r => r.ok ? r.json() : [])
+      .then((data: Array<{ id: string; title: string; message: string; is_read: boolean; created_at: string; action_url?: string }>) => {
+        setCastingNotifs(data)
+        setNotifUnread(data.filter(n => !n.is_read).length)
+      })
+      .catch(() => {})
+  }, [])
+
   // Locks to prevent concurrent auth calls
   let isCheckingUser = false;
   let isRefreshingProgress = false;
@@ -1085,6 +1101,18 @@ export default function Dashboard() {
                     <span>Admin</span>
                   </Link>
                 )}
+                <button
+                  onClick={() => { setShowNotifPanel(true); if (notifUnread > 0) fetch('/api/notifications/casting', { method: 'PATCH' }).then(() => setNotifUnread(0)) }}
+                  style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'rgba(255,255,255,0.8)' }}
+                  title="Casting notifications"
+                >
+                  <span style={{ fontSize: '20px' }}>🔔</span>
+                  {notifUnread > 0 && (
+                    <span style={{ position: 'absolute', top: 0, right: 0, backgroundColor: '#ef4444', color: 'white', borderRadius: '50%', width: '16px', height: '16px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', lineHeight: 1 }}>
+                      {notifUnread > 9 ? '9+' : notifUnread}
+                    </span>
+                  )}
+                </button>
                 <Link href="/settings" className="text-white/80 hover:text-white transition text-sm flex items-center gap-1">
                   <span className="text-xl">⚙️</span>
                   <span className="hidden sm:inline">Settings</span>
@@ -2257,6 +2285,38 @@ export default function Dashboard() {
           <Copyright />
         </div>
       </div>
+
+      {/* CASTING NOTIFICATIONS PANEL */}
+      {showNotifPanel && (
+        <div onClick={() => setShowNotifPanel(false)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 99998, display: 'flex', justifyContent: 'flex-end' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '340px', maxWidth: '90vw', backgroundColor: 'white', height: '100%', boxShadow: '-4px 0 20px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontWeight: '700', fontSize: '16px', margin: 0, color: '#1a1a2e' }}>🔔 Casting Updates</h3>
+              <button onClick={() => setShowNotifPanel(false)} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#9ca3af', lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+              {castingNotifs.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: '#9ca3af' }}>
+                  <div style={{ fontSize: '36px', marginBottom: '8px' }}>🎬</div>
+                  <p style={{ fontSize: '14px', margin: 0 }}>No casting notifications yet.</p>
+                  <p style={{ fontSize: '12px', marginTop: '6px' }}>You'll be notified when an agent submits you or your status changes.</p>
+                </div>
+              ) : castingNotifs.map(n => (
+                <div key={n.id}
+                  onClick={() => { if (n.action_url) { setShowNotifPanel(false); router.push(n.action_url) } }}
+                  style={{ padding: '12px', borderRadius: '10px', marginBottom: '8px', backgroundColor: n.is_read ? '#f9fafb' : '#fffbeb', borderLeft: `3px solid ${n.is_read ? '#e5e7eb' : '#F59E0B'}`, cursor: n.action_url ? 'pointer' : 'default' }}
+                >
+                  <div style={{ fontWeight: '700', fontSize: '13px', color: '#1a1a2e', marginBottom: '3px' }}>{n.title}</div>
+                  <div style={{ fontSize: '12px', color: '#6b7280', lineHeight: '1.4' }}>{n.message}</div>
+                  <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '5px' }}>
+                    {new Date(n.created_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* AGENCY CLICK MODAL */}
       {showAgencyClickModal && (
