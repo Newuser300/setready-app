@@ -135,7 +135,7 @@ export default function PreviewPage() {
       {/* ── STICKY NAV ──────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#1a1a2e] border-b border-gray-800 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
-          <span className="text-white text-xl font-bold tracking-tight">🎬 SetReady</span>
+          <span className="bg-[#F59E0B] rounded-md px-3 py-1 text-[#1a1a2e] text-xl font-bold tracking-tight">🎬 SetReady</span>
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => router.push('/auth/sign-in')}
@@ -164,8 +164,7 @@ export default function PreviewPage() {
                 👁 Preview Mode — Explore the full curriculum
               </div>
               <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 mb-5 leading-tight max-w-3xl">
-                Your Acting Journey<br />
-                <span className="text-amber-500">Starts Here</span>
+                SetReady
               </h1>
               <p className="text-gray-500 text-lg max-w-xl mb-8 leading-relaxed">
                 Explore our complete curriculum below. Sign up to unlock instant access to all modules,

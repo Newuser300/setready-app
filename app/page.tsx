@@ -78,7 +78,7 @@ export default function Home() {
       {/* ── STICKY NAV ──────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#1a1a2e] border-b border-gray-800 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
-          <span className="text-white text-xl font-bold tracking-tight">🎬 SetReady</span>
+          <span className="bg-[#F59E0B] rounded-md px-3 py-1 text-[#1a1a2e] text-xl font-bold tracking-tight">🎬 SetReady</span>
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => router.push('/auth/sign-in')}
@@ -97,7 +97,7 @@ export default function Home() {
       </nav>
 
       {/* ── HERO ────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col justify-center items-center text-center px-4 overflow-hidden bg-white">
+      <section className="relative min-h-screen flex flex-col justify-center items-center text-center px-4 overflow-hidden bg-[#1a1a2e]">
         {/* Subtle amber radial glow */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,rgba(245,158,11,0.06)_0%,transparent_70%)]" />
 
@@ -107,17 +107,17 @@ export default function Home() {
           </h2>
 
           {/* Pill badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-50 text-amber-600 text-xs font-semibold mb-8 animate-fade-in">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/40 bg-amber-500/20 text-amber-400 text-xs font-semibold mb-8 animate-fade-in">
             🎬 Professional Background Performer Training
           </div>
 
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-gray-900 mb-4 leading-tight animate-fade-in-up">
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-white mb-4 leading-tight animate-fade-in-up">
             Everything a background performer needs. One app.
           </h1>
 
           {/* Sub-headline */}
           <p
-            className="text-lg sm:text-xl text-gray-500 mb-10 max-w-2xl mx-auto animate-fade-in-up"
+            className="text-lg sm:text-xl text-gray-300 mb-10 max-w-2xl mx-auto animate-fade-in-up"
             style={{ animationDelay: '0.2s' }}
           >
             From your first call time to your hundredth set.
@@ -136,7 +136,7 @@ export default function Home() {
             </button>
             <button
               onClick={() => router.push('/preview')}
-              className="px-8 py-4 bg-transparent text-gray-700 border border-gray-300 text-base font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200"
+              className="px-8 py-4 bg-transparent text-gray-200 border border-gray-500 text-base font-semibold rounded-xl hover:bg-white/10 transition-all duration-200"
             >
               View Curriculum
             </button>
@@ -326,12 +326,12 @@ export default function Home() {
       </div>
 
       {/* ── BOLD STATEMENT ─────────────────────────────────── */}
-      <section style={{ backgroundColor: '#1a1a2e' }} className="py-10 px-4 text-center">
+      <section style={{ backgroundColor: '#F59E0B' }} className="py-10 px-4 text-center">
         <div className="max-w-2xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl font-bold text-[#1a1a2e] mb-4">
             Not just a course.<br />Your complete career companion.
           </h2>
-          <p className="text-gray-400 text-base leading-relaxed">
+          <p className="text-[#1a1a2e]/80 text-base leading-relaxed">
             Most background performers learn through costly mistakes on the job. SetReady performers arrive prepared, professional and confident — from day one.
           </p>
         </div>
