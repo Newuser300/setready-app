@@ -5,6 +5,13 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { LESSONS } from '@/lib/lessons';
 
+const MODULE_TITLE_OVERRIDES: Record<number, string> = {
+  6: 'Foundation',
+  7: 'Audition Technique',
+  8: 'Scene Study',
+  9: 'Advanced Technique',
+};
+
 type Module = {
   id: string;
   title: string;
@@ -450,7 +457,7 @@ export default function ModulePage() {
   return (
     <div className="max-w-3xl mx-auto p-4">
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-2xl mb-6">
-        <h1 className="text-3xl font-bold">{module.title}</h1>
+        <h1 className="text-3xl font-bold">{MODULE_TITLE_OVERRIDES[module.module_number] || module.title}</h1>
         <p className="text-blue-100 mt-2">Module {module.section === 1 ? module.module_number : module.module_number - 5} of {module.section === 1 ? '5' : '4'}</p>
       </div>
       

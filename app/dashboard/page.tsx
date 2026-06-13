@@ -79,7 +79,15 @@ const moduleSubtitles: Record<number, string> = {
   6: 'The foundation of modern acting',
   7: 'Nail every audition',
   8: 'Advanced scene study techniques',
-  9: 'Meisner, Adler, and more',
+  9: 'Advanced technique for working actors',
+};
+
+// Short display names — overrides the DB title for Section 2 modules
+const moduleTitleOverrides: Record<number, string> = {
+  6: 'Foundation',
+  7: 'Audition Technique',
+  8: 'Scene Study',
+  9: 'Advanced Technique',
 };
 
 export default function Dashboard() {
@@ -1308,7 +1316,7 @@ export default function Dashboard() {
                           <div className="flex items-center gap-4">
                             <div className="text-4xl opacity-40">{moduleIcons[module.module_number] || '🎯'}</div>
                             <div>
-                              <h3 className="font-bold text-lg text-gray-500">{module.title}</h3>
+                              <h3 className="font-bold text-lg text-gray-500">{moduleTitleOverrides[module.module_number] || module.title}</h3>
                               <p className="text-sm text-gray-400 mt-1">{moduleSubtitles[module.module_number] || 'Advanced acting techniques'}</p>
                             </div>
                           </div>
@@ -1328,7 +1336,7 @@ export default function Dashboard() {
                           <div className="flex items-center gap-4">
                             <div className="text-4xl">{moduleIcons[module.module_number] || '🎯'}</div>
                             <div>
-                              <h3 className="font-bold text-lg text-gray-800">{module.title}</h3>
+                              <h3 className="font-bold text-lg text-gray-800">{moduleTitleOverrides[module.module_number] || module.title}</h3>
                               <p className="text-sm text-gray-500 mt-1">{moduleSubtitles[module.module_number] || 'Advanced acting techniques'}</p>
                             </div>
                           </div>

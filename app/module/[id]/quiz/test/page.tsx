@@ -1671,6 +1671,13 @@ const MODULE_9_QUESTIONS: Question[] = [
 ];
 
 // Map module numbers to their question sets
+const MODULE_TITLE_OVERRIDES: Record<number, string> = {
+  6: 'Foundation',
+  7: 'Audition Technique',
+  8: 'Scene Study',
+  9: 'Advanced Technique',
+};
+
 const getQuestionsForModule = (moduleNumber: number): Question[] => {
   switch (moduleNumber) {
     case 1: return MODULE_1_QUESTIONS;
@@ -1754,7 +1761,7 @@ export default function QuizTestPage({ params }: TestPageProps) {
       
       const modNumber = moduleData?.module_number || 1;
       setModuleNumber(modNumber);
-      setModuleTitle(moduleData?.title || `Module ${modNumber}`);
+      setModuleTitle(MODULE_TITLE_OVERRIDES[modNumber] || moduleData?.title || `Module ${modNumber}`);
       
       // Get hardcoded questions for this module
       const moduleQuestions = getQuestionsForModule(modNumber);
