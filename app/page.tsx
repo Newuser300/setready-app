@@ -97,27 +97,27 @@ export default function Home() {
       </nav>
 
       {/* ── HERO ────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col justify-center items-center text-center px-4 overflow-hidden bg-[#1a1a2e]">
+      <section className="relative min-h-screen flex flex-col justify-center items-center text-center px-4 overflow-hidden bg-white">
         {/* Subtle amber radial glow */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,rgba(245,158,11,0.06)_0%,transparent_70%)]" />
 
         <div className="relative z-10 max-w-4xl mx-auto">
-          <h2 className="text-6xl sm:text-7xl font-extrabold text-white text-center tracking-tight mb-4 animate-fade-in">
+          <h2 className="text-6xl sm:text-7xl font-extrabold text-[#1a1a2e] text-center tracking-tight mb-4 animate-fade-in">
             SetReady
           </h2>
 
           {/* Pill badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/40 bg-amber-500/20 text-amber-400 text-xs font-semibold mb-8 animate-fade-in">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-50 text-amber-600 text-xs font-semibold mb-8 animate-fade-in">
             🎬 Professional Background Performer Training
           </div>
 
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-white mb-4 leading-tight animate-fade-in-up">
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-[#1a1a2e] mb-4 leading-tight animate-fade-in-up">
             Everything a background performer needs. One app.
           </h1>
 
           {/* Sub-headline */}
           <p
-            className="text-lg sm:text-xl text-gray-300 mb-10 max-w-2xl mx-auto animate-fade-in-up"
+            className="text-lg sm:text-xl text-gray-600 mb-10 max-w-2xl mx-auto animate-fade-in-up"
             style={{ animationDelay: '0.2s' }}
           >
             From your first call time to your hundredth set.
@@ -136,7 +136,7 @@ export default function Home() {
             </button>
             <button
               onClick={() => router.push('/preview')}
-              className="px-8 py-4 bg-transparent text-gray-200 border border-gray-500 text-base font-semibold rounded-xl hover:bg-white/10 transition-all duration-200"
+              className="px-8 py-4 bg-transparent text-gray-700 border border-gray-300 text-base font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200"
             >
               View Curriculum
             </button>
