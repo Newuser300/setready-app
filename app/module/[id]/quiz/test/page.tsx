@@ -1721,6 +1721,8 @@ export default function QuizTestPage({ params }: TestPageProps) {
   const [moduleTitle, setModuleTitle] = useState<string>('');
   const [userId, setUserId] = useState<string | null>(null);
   const [showAllAnswers, setShowAllAnswers] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [unansweredQuestions, setUnansweredQuestions] = useState<number[]>([]);
 
   const currentQuestion = questions[currentIndex];
   const isLast = currentIndex === questions.length - 1;
@@ -1773,6 +1775,10 @@ export default function QuizTestPage({ params }: TestPageProps) {
   
   const handleAnswer = (questionId: string, answerIndex: number) => {
     setAnswers(prev => ({ ...prev, [questionId]: answerIndex }));
+    if (submitError) {
+      setSubmitError(null);
+      setUnansweredQuestions([]);
+    }
   };
   
   const calculateScore = () => {
@@ -1839,7 +1845,12 @@ export default function QuizTestPage({ params }: TestPageProps) {
   // handleSubmit - uses userId from state (set during page load)
   const handleSubmit = async () => {
     if (!allAnswered) {
-      alert(`Please answer all ${questions.length} questions.`);
+      const unanswered = questions
+        .map((q, idx) => (answers[q.id] === undefined ? idx : -1))
+        .filter(idx => idx !== -1);
+      setUnansweredQuestions(unanswered);
+      setSubmitError(`Please answer all questions before submitting. ${unanswered.length} question${unanswered.length !== 1 ? 's' : ''} still unanswered.`);
+      setCurrentIndex(unanswered[0]);
       return;
     }
     
@@ -2116,7 +2127,7 @@ export default function QuizTestPage({ params }: TestPageProps) {
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <div id={`question-${currentIndex}`} className={`bg-white rounded-lg shadow-lg p-6 mb-6 ${submitError && answers[currentQuestion?.id] === undefined ? 'ring-2 ring-red-500 bg-red-50' : ''}`}>
           <h2 className="text-xl font-semibold mb-6">{currentQuestion?.text}</h2>
           <div className="space-y-3">
             {currentQuestion?.options.map((option, idx) => (
@@ -2137,6 +2148,12 @@ export default function QuizTestPage({ params }: TestPageProps) {
           </div>
         </div>
         
+        {submitError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-300 rounded-lg text-red-700 text-sm font-medium">
+            ⚠️ {submitError}
+          </div>
+        )}
+
         <div className="flex justify-between">
           <button
             onClick={() => setCurrentIndex(i => i - 1)}
@@ -2169,7 +2186,7 @@ export default function QuizTestPage({ params }: TestPageProps) {
             <button
               key={idx}
               onClick={() => setCurrentIndex(idx)}
-              className={`w-3 h-3 rounded-full transition-all ${currentIndex === idx ? 'bg-blue-600 w-6' : answers[questions[idx].id] !== undefined ? 'bg-green-500' : 'bg-gray-300'}`}
+              className={`w-3 h-3 rounded-full transition-all ${currentIndex === idx ? 'bg-blue-600 w-6' : answers[questions[idx].id] !== undefined ? 'bg-green-500' : submitError ? 'bg-red-400' : 'bg-gray-300'}`}
             />
           ))}
         </div>

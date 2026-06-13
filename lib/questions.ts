@@ -638,7 +638,7 @@ export const QUESTIONS: Question[] = [
     option_c: 'Call 911',
     option_d: 'Keep working',
     correct_answer: 'c',
-    explanation: 'Lesson 4.4: "Heat Stroke: Call 911"',
+    explanation: 'Lesson 4.4: "Heat Stroke: Call 911 immediately. Then notify the 1st AD and Set Medic, move the person to a cool shaded area, and apply cool water or ice packs to the neck, armpits, and groin."',
     province_id: null
   },
   {

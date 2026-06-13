@@ -388,6 +388,12 @@ All performers have the right to a workplace free from harassment.
 | Heat Exhaustion | Dizziness, nausea | Seek shade, hydrate |
 | Heat Stroke | Confusion, no sweating | **Call 911** |
 
+> 🚨 **Heat Stroke Protocol (4 Steps):**
+> 1. **Call 911 immediately** — heat stroke is a life-threatening emergency
+> 2. **Notify the 1st AD and Set Medic immediately**
+> 3. **Move the person to a cool, shaded area** — out of direct sun
+> 4. **Apply cool water or ice packs** to neck, armpits, and groin
+
 *Cold Exposure:*
 | Stage | Symptoms | Action |
 |-------|----------|--------|
@@ -520,7 +526,7 @@ All performers have the right to a workplace free from harassment.
 | Item | Union Rate | Non-Union Rate (approx) |
 |------|------------|------------------------|
 | Background (8 hours) | $270.30 | ~$215-230 |
-| Union permit fee | $12.50/day | N/A for non-union |
+| Union permit fee | $15.00/day | N/A for non-union |
 | Overtime (8-12h) | 1.5x | 1.5x |
 | Overtime (12+h) | 2.0x | 2.0x |
 | Union night premium | $30.00 | ~$25 |
@@ -529,7 +535,7 @@ All performers have the right to a workplace free from harassment.
 | Item | Union Rate | Non-Union Rate (approx) |
 |------|------------|------------------------|
 | Background (8 hours) | $270.30 | ~$215-230 |
-| Union permit fee (within 120km) | $12.50 | N/A for non-union |
+| Union permit fee (within 120km) | $15.00 | N/A for non-union |
 | Union permit fee (outside 120km) | $7.50 | N/A for non-union |
 
 *Other Provinces:* Rates match ACTRA national standard with local variations for permits and minimums.
@@ -550,7 +556,7 @@ Union background performers are guaranteed a minimum of 8 hours pay, even if dis
 | Get professional headshots | Updated annually |
 | Network appropriately | Connect with industry professionals |`,
 
-  6: `Foundation (Stanislavski) – Professional Acting Methodology
+  6: `Foundation
 
 **Source:** *An Actor Prepares* (1936), *Building a Character* (1949), *Creating a Role* (1961) by Konstantin Stanislavski
 
@@ -915,7 +921,7 @@ The physical actions *produce* the feeling of nervousness.
 
 📖 **Required Reading:** *An Actor Prepares* by Konstantin Stanislavski, Chapters 1-8`,
 
-  7: `Audition Technique (Shurtleff) – The 12 Guideposts
+  7: `Audition Technique
 
 **Source:** *Audition: Everything an Actor Needs to Know to Get the Part* by Michael Shurtleff (1978)
 
@@ -1534,7 +1540,7 @@ Self-tape is now the **most common audition format** in the Canadian film indust
 
 > 🎬 **Industry Reality:** A strong self-tape that arrives same-day beats a perfect tape that arrives late. Responsiveness signals professionalism.`,
 
-  8: `Scene Study (Hagen) – The Actor's Craft
+  8: `Scene Study
 
 **Source:** *Respect for Acting* (1973) by Uta Hagen, *A Challenge for the Actor* (1991)
 
