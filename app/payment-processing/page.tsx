@@ -4,6 +4,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import Logo from '@/components/Logo';
 
 // Force dynamic rendering to avoid static prerendering issues
 export const dynamic = 'force-dynamic';
@@ -91,7 +92,7 @@ function PaymentProcessingContent() {
         <div className="relative w-24 h-24 mx-auto mb-6">
           <div className="animate-spin rounded-full h-24 w-24 border-b-4 border-blue-600"></div>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-2xl">🎬</span>
+            <Logo size="sm" showText={false} />
           </div>
         </div>
         <h1 className="text-2xl font-bold text-gray-800 mb-2">

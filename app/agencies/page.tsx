@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Logo from '@/components/Logo';
 
 /* ── Agency data ─────────────────────────────────────────────── */
 interface Agency {
@@ -737,7 +738,7 @@ export default function AgenciesPage() {
       {/* ── TOP NAV BAR ─────────────────────────────────────── */}
       <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <span className="text-gray-900 font-bold text-lg">🎬 SetReady</span>
+          <Logo size="sm" darkBackground={false} />
           <Link
             href="/dashboard"
             className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition"

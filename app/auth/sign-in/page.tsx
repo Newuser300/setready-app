@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import Logo from '@/components/Logo';
 
 export default function SignIn() {
   const router = useRouter();
@@ -33,9 +34,9 @@ export default function SignIn() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow">
-        <h2 className="text-3xl font-bold text-center text-gray-900 underline">
-          Set Ready: Background Performer Essential Film Industry Training
-        </h2>
+        <div className="flex justify-center">
+          <Logo size="lg" darkBackground={false} />
+        </div>
         <p className="text-center text-gray-700 font-bold">
           Essential Training for Every Film Industry Background Performer
         </p>

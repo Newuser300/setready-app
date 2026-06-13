@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import SignUpModal from '@/app/components/SignUpModal';
+import Logo from '@/components/Logo';
 
 /* ── Scroll-triggered fade-in wrapper ──────────────────────── */
 function FadeIn({
@@ -135,7 +136,7 @@ export default function PreviewPage() {
       {/* ── STICKY NAV ──────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#1a1a2e] border-b border-gray-800 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
-          <span className="bg-[#F59E0B] rounded-md px-3 py-1 text-[#1a1a2e] text-xl font-bold tracking-tight">🎬 SetReady</span>
+          <Logo size="md" darkBackground={true} />
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => router.push('/auth/sign-in')}

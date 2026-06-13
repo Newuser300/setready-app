@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import Logo from '@/components/Logo';
 
 export default function SignUp() {
   const router = useRouter();
@@ -122,7 +123,9 @@ export default function SignUp() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow">
-        <h2 className="text-3xl font-bold text-center text-gray-900">SetReady</h2>
+        <div className="flex justify-center">
+          <Logo size="lg" darkBackground={false} />
+        </div>
         <p className="text-center text-gray-600">Create your account</p>
         <p className="text-center text-sm text-gray-500 italic">
           Essential Training for Every Film Industry Background Performer
