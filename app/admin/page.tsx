@@ -69,7 +69,7 @@ type AdminRecord = {
   added_at: string;
 };
 
-type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools' | 'admins';
+type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools' | 'admins' | 'casting';
 
 export default function AdminPage() {
   const router = useRouter();
@@ -128,6 +128,12 @@ export default function AdminPage() {
   const [removeUserError, setRemoveUserError] = useState('');
   const [removeUserDone, setRemoveUserDone] = useState<string[] | null>(null);
   const [confirmDeleteUser, setConfirmDeleteUser] = useState(false);
+
+  // Casting tab
+  const [castingSubTab, setCastingSubTab] = useState<'pending' | 'stats' | 'requests'>('pending');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [castingData, setCastingData] = useState<any>(null);
+  const [castingLoading, setCastingLoading] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -424,6 +430,7 @@ export default function AdminPage() {
     { key: 'certificates', label: 'Certificates',  icon: '🏆' },
     { key: 'tools',        label: 'Tools',         icon: '🔧' },
     { key: 'admins',       label: 'Admins',        icon: '🔐' },
+    { key: 'casting',      label: 'Casting',       icon: '🎬' },
   ];
 
   return (
@@ -1122,6 +1129,141 @@ export default function AdminPage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════
+            CASTING PLATFORM
+        ══════════════════════════════════════ */}
+        {activeSection === 'casting' && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 mb-2">
+              <h2 className="text-xl font-bold text-gray-800">🎬 Casting Platform</h2>
+            </div>
+
+            {/* Sub-tabs */}
+            <div className="flex gap-2 border-b border-gray-200 pb-0">
+              {(['pending', 'stats', 'requests'] as const).map(t => (
+                <button key={t} onClick={async () => {
+                  setCastingSubTab(t)
+                  setCastingLoading(true)
+                  const res = await fetch(`/api/admin/casting?type=${t}`)
+                  setCastingLoading(false)
+                  if (res.ok) setCastingData(await res.json())
+                }}
+                  className={`px-4 py-2 text-sm font-semibold border-b-2 transition -mb-px ${castingSubTab === t ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                  {t === 'pending' ? 'Pending Applications' : t === 'stats' ? 'Platform Stats' : 'All Requests'}
+                </button>
+              ))}
+            </div>
+
+            {castingLoading && <div className="text-center py-10 text-gray-400">Loading...</div>}
+
+            {/* Pending Applications */}
+            {!castingLoading && castingSubTab === 'pending' && castingData && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-sm font-bold text-gray-700 mb-3">Casting Directors ({castingData.castingDirectors?.length || 0} pending)</h3>
+                  {castingData.castingDirectors?.length === 0
+                    ? <p className="text-gray-400 text-sm">No pending casting director applications.</p>
+                    : castingData.castingDirectors?.map((cd: any) => (
+                      <div key={cd.id} className="bg-white border border-gray-200 rounded-xl p-4 mb-3 flex items-start justify-between gap-4">
+                        <div>
+                          <div className="font-bold text-gray-800">{cd.name} <span className="font-normal text-gray-500">· {cd.company}</span></div>
+                          <div className="text-sm text-gray-500">{cd.email} {cd.phone && `· ${cd.phone}`}</div>
+                          {cd.description && <div className="text-xs text-gray-400 mt-1">{cd.description}</div>}
+                          <div className="text-xs text-gray-300 mt-1">{new Date(cd.created_at).toLocaleString('en-CA')}</div>
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          <button onClick={async () => {
+                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve', id: cd.id, entityType: 'casting_director' }) })
+                            setCastingData((d: any) => ({ ...d, castingDirectors: d.castingDirectors.filter((x: any) => x.id !== cd.id) }))
+                          }} className="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700">Approve</button>
+                          <button onClick={async () => {
+                            if (!confirm('Reject and delete this application?')) return
+                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reject', id: cd.id, entityType: 'casting_director' }) })
+                            setCastingData((d: any) => ({ ...d, castingDirectors: d.castingDirectors.filter((x: any) => x.id !== cd.id) }))
+                          }} className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 text-xs font-bold rounded-lg hover:bg-red-100">Reject</button>
+                        </div>
+                      </div>
+                    ))
+                  }
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-gray-700 mb-3">Agencies ({castingData.agencies?.length || 0} pending)</h3>
+                  {castingData.agencies?.length === 0
+                    ? <p className="text-gray-400 text-sm">No pending agency applications.</p>
+                    : castingData.agencies?.map((ag: any) => (
+                      <div key={ag.id} className="bg-white border border-gray-200 rounded-xl p-4 mb-3 flex items-start justify-between gap-4">
+                        <div>
+                          <div className="font-bold text-gray-800">{ag.name}</div>
+                          <div className="text-sm text-gray-500">{ag.contact_name} · {ag.email} {ag.phone && `· ${ag.phone}`}</div>
+                          {ag.city && <div className="text-xs text-gray-400 mt-1">{ag.city}{ag.website && ` · ${ag.website}`}</div>}
+                          <div className="text-xs text-gray-300 mt-1">{new Date(ag.created_at).toLocaleString('en-CA')}</div>
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          <button onClick={async () => {
+                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve', id: ag.id, entityType: 'agency' }) })
+                            setCastingData((d: any) => ({ ...d, agencies: d.agencies.filter((x: any) => x.id !== ag.id) }))
+                          }} className="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700">Approve</button>
+                          <button onClick={async () => {
+                            if (!confirm('Reject and delete this application?')) return
+                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reject', id: ag.id, entityType: 'agency' }) })
+                            setCastingData((d: any) => ({ ...d, agencies: d.agencies.filter((x: any) => x.id !== ag.id) }))
+                          }} className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 text-xs font-bold rounded-lg hover:bg-red-100">Reject</button>
+                        </div>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+            )}
+
+            {/* Platform Stats */}
+            {!castingLoading && castingSubTab === 'stats' && castingData && (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {[
+                  { label: 'Verified CDs', value: castingData.totalCDs },
+                  { label: 'Approved Agencies', value: castingData.totalAgencies },
+                  { label: 'Public Performers', value: castingData.totalPerformers },
+                  { label: 'Casting Requests', value: castingData.totalRequests },
+                  { label: 'Total Submissions', value: castingData.totalSubmissions },
+                ].map(s => (
+                  <div key={s.label} className="bg-white border border-gray-200 rounded-xl p-5 text-center">
+                    <div className="text-3xl font-black text-gray-800">{s.value}</div>
+                    <div className="text-xs text-gray-500 mt-1">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* All Requests */}
+            {!castingLoading && castingSubTab === 'requests' && castingData && (
+              <div className="space-y-3">
+                {castingData.length === 0 && <p className="text-gray-400 text-sm">No casting requests yet.</p>}
+                {castingData.map((r: any) => (
+                  <div key={r.id} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-gray-800">{r.production_name}</div>
+                      <div className="text-sm text-gray-500">{r.role_type} · {r.shoot_date} · {(r.casting_directors as any)?.company || (r.casting_directors as any)?.name}</div>
+                    </div>
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${r.status === 'open' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{r.status}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Load initial data on mount */}
+            {!castingLoading && !castingData && (
+              <button onClick={async () => {
+                setCastingLoading(true)
+                const res = await fetch('/api/admin/casting?type=pending')
+                setCastingLoading(false)
+                if (res.ok) setCastingData(await res.json())
+              }} className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700">
+                Load Casting Data
+              </button>
+            )}
           </div>
         )}
       </div>

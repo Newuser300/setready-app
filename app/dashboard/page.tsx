@@ -104,6 +104,9 @@ const quickActions = [
   { icon: '⚖️', label: 'Know Your Rights', action: 'external' as const, href: 'https://ubcpactra.ca/agreements/' },
   { icon: '🎬', label: 'Productions in BC', action: 'external' as const, href: 'https://ubcpactra.ca/production-list/' },
   { icon: '🍁', label: 'Find Agencies', action: 'link' as const, href: '/agencies' },
+  { icon: '📅', label: 'Availability', action: 'link' as const, href: '/availability' },
+  { icon: '👤', label: 'My Profile', action: 'link' as const, href: '/profile' },
+  { icon: '🎬', label: 'Casting Platform', action: 'link' as const, href: '/casting/about' },
 ];
 
 export default function Dashboard() {

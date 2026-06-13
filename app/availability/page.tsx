@@ -1,0 +1,267 @@
+'use client'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+
+const COLORS = {
+  available: '#22c55e',
+  unavailable: '#ef4444',
+  booked: '#3b82f6',
+  tentative: '#f59e0b',
+  none: '#f3f4f6'
+}
+
+const STATUS_LABELS = {
+  available: '🟢 Available',
+  unavailable: '🔴 Unavailable',
+  booked: '🔵 Booked',
+  tentative: '🟡 Tentative',
+  none: '⬜ Not Set'
+}
+
+export default function AvailabilityPage() {
+  const router = useRouter()
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [availability, setAvailability] = useState<Record<string, string>>({})
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+
+  const month = currentDate.toISOString().slice(0, 7)
+
+  useEffect(() => {
+    fetchAvailability()
+  }, [month])
+
+  const fetchAvailability = async () => {
+    setLoading(true)
+    const res = await fetch(`/api/availability?month=${month}`)
+    const data = await res.json()
+    const map: Record<string, string> = {}
+    data.forEach((a: any) => {
+      map[a.date] = a.status
+    })
+    setAvailability(map)
+    setLoading(false)
+  }
+
+  const toggleDay = async (dateStr: string) => {
+    const current = availability[dateStr]
+    const next = !current ? 'available'
+      : current === 'available' ? 'unavailable'
+      : current === 'unavailable' ? 'tentative'
+      : null
+
+    if (next === null) {
+      const newMap = { ...availability }
+      delete newMap[dateStr]
+      setAvailability(newMap)
+      await fetch('/api/availability', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: dateStr })
+      })
+    } else {
+      setAvailability({ ...availability, [dateStr]: next })
+      setSaving(true)
+      await fetch('/api/availability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: dateStr, status: next })
+      })
+      setSaving(false)
+    }
+  }
+
+  const bulkSet = async (status: string | null) => {
+    const year = currentDate.getFullYear()
+    const mon = currentDate.getMonth()
+    const daysInMonth = new Date(year, mon + 1, 0).getDate()
+    const dates = Array.from({ length: daysInMonth }, (_, i) => {
+      const d = new Date(year, mon, i + 1)
+      return d.toISOString().slice(0, 10)
+    })
+
+    if (status === null) {
+      const newMap = { ...availability }
+      dates.forEach(d => delete newMap[d])
+      setAvailability(newMap)
+      for (const d of dates) {
+        await fetch('/api/availability', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: d })
+        })
+      }
+    } else {
+      const newMap = { ...availability }
+      dates.forEach(d => { newMap[d] = status })
+      setAvailability(newMap)
+      setSaving(true)
+      await fetch('/api/availability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bulk: true, dates, status })
+      })
+      setSaving(false)
+    }
+  }
+
+  const getDaysInMonth = () => {
+    const year = currentDate.getFullYear()
+    const mon = currentDate.getMonth()
+    const first = new Date(year, mon, 1).getDay()
+    const total = new Date(year, mon + 1, 0).getDate()
+    const days: (string | null)[] = []
+    for (let i = 0; i < first; i++) days.push(null)
+    for (let i = 1; i <= total; i++) {
+      const d = new Date(year, mon, i)
+      days.push(d.toISOString().slice(0, 10))
+    }
+    return days
+  }
+
+  const monthName = currentDate.toLocaleDateString('en-CA', {
+    month: 'long', year: 'numeric'
+  })
+  const today = new Date().toISOString().slice(0, 10)
+  const days = getDaysInMonth()
+
+  return (
+    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', padding: '0 0 80px' }}>
+      {/* Header */}
+      <div style={{ backgroundColor: '#1a1a2e', color: 'white', padding: '20px 24px' }}>
+        <button
+          onClick={() => router.push('/dashboard')}
+          style={{ color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer', marginBottom: '8px', fontSize: '14px' }}
+        >
+          ← Dashboard
+        </button>
+        <h1 style={{ fontSize: '24px', fontWeight: '700', margin: '0 0 4px' }}>
+          📅 My Availability
+        </h1>
+        <p style={{ color: '#9ca3af', margin: 0, fontSize: '14px' }}>
+          Tap a day to cycle: Available → Unavailable → Tentative → Clear
+        </p>
+        {saving && (
+          <p style={{ color: '#F59E0B', fontSize: '12px', margin: '4px 0 0' }}>Saving...</p>
+        )}
+      </div>
+
+      <div style={{ maxWidth: '600px', margin: '0 auto', padding: '16px' }}>
+
+        {/* Month navigation */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          marginBottom: '16px', backgroundColor: 'white', borderRadius: '12px',
+          padding: '12px 16px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+        }}>
+          <button
+            onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
+            style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1px solid #e5e7eb', backgroundColor: 'white', cursor: 'pointer', fontSize: '18px' }}
+          >←</button>
+          <span style={{ fontWeight: '700', fontSize: '18px' }}>{monthName}</span>
+          <button
+            onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
+            style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1px solid #e5e7eb', backgroundColor: 'white', cursor: 'pointer', fontSize: '18px' }}
+          >→</button>
+        </div>
+
+        {/* Bulk actions */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px' }}>
+          {[
+            { label: '✅ All Available', status: 'available', bg: '#22c55e' },
+            { label: '❌ All Unavailable', status: 'unavailable', bg: '#ef4444' },
+            { label: '🗑 Clear Month', status: null, bg: '#6b7280' }
+          ].map(btn => (
+            <button
+              key={btn.label}
+              onClick={() => bulkSet(btn.status)}
+              style={{
+                backgroundColor: btn.bg, color: 'white', border: 'none',
+                borderRadius: '8px', padding: '8px 4px',
+                fontSize: '11px', fontWeight: '600', cursor: 'pointer'
+              }}
+            >
+              {btn.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Calendar grid */}
+        <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+          {/* Day headers */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: '8px' }}>
+            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+              <div key={d} style={{ textAlign: 'center', fontSize: '11px', fontWeight: '700', color: '#6b7280', padding: '4px 0' }}>
+                {d}
+              </div>
+            ))}
+          </div>
+
+          {/* Day cells */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+            {loading ? (
+              <div style={{ gridColumn: 'span 7', textAlign: 'center', padding: '40px', color: '#9ca3af' }}>
+                Loading calendar...
+              </div>
+            ) : days.map((dateStr, i) => {
+              if (!dateStr) return <div key={`empty-${i}`} />
+              const status = availability[dateStr]
+              const isToday = dateStr === today
+              const isPast = dateStr < today
+
+              return (
+                <button
+                  key={dateStr}
+                  onClick={() => !isPast && toggleDay(dateStr)}
+                  disabled={isPast}
+                  style={{
+                    aspectRatio: '1',
+                    borderRadius: '8px',
+                    border: isToday ? '2px solid #1a1a2e' : '1px solid #e5e7eb',
+                    backgroundColor: status
+                      ? COLORS[status as keyof typeof COLORS]
+                      : isPast ? '#f9fafb' : 'white',
+                    color: status ? 'white' : isPast ? '#d1d5db' : '#1a1a2e',
+                    cursor: isPast ? 'not-allowed' : 'pointer',
+                    fontSize: '13px',
+                    fontWeight: isToday ? '700' : '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: isPast ? 0.5 : 1,
+                    transition: 'all 0.1s ease'
+                  }}
+                >
+                  {new Date(dateStr + 'T12:00:00').getDate()}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginTop: '16px' }}>
+          {Object.entries(STATUS_LABELS).map(([status, label]) => (
+            <div key={status} style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              backgroundColor: 'white', borderRadius: '8px',
+              padding: '8px 12px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+            }}>
+              <div style={{
+                width: '16px', height: '16px', borderRadius: '4px',
+                backgroundColor: status === 'none' ? '#f3f4f6' : COLORS[status as keyof typeof COLORS],
+                border: '1px solid #e5e7eb', flexShrink: 0
+              }} />
+              <span style={{ fontSize: '12px', color: '#374151' }}>{label}</span>
+            </div>
+          ))}
+        </div>
+
+        <p style={{ textAlign: 'center', fontSize: '12px', color: '#9ca3af', marginTop: '16px' }}>
+          🔒 Your availability is visible to approved agents and casting directors on SetReady Casting.
+        </p>
+      </div>
+    </div>
+  )
+}

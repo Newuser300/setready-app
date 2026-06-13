@@ -438,6 +438,29 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── SETREADY CASTING ─────────────────────────────────── */}
+      <section style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', padding: '72px 24px', textAlign: 'center' }}>
+        <div style={{ maxWidth: '680px', margin: '0 auto' }}>
+          <div style={{ display: 'inline-block', padding: '5px 14px', backgroundColor: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '20px', color: '#4ade80', fontSize: '13px', fontWeight: '600', marginBottom: '18px' }}>
+            New — SetReady Casting
+          </div>
+          <h2 style={{ fontSize: 'clamp(28px, 5vw, 44px)', fontWeight: '900', color: 'white', margin: '0 0 14px', lineHeight: '1.1' }}>
+            Cast smarter. Confirm faster.
+          </h2>
+          <p style={{ fontSize: 'clamp(15px, 2.5vw, 18px)', color: '#9ca3af', margin: '0 auto 36px', lineHeight: '1.7', maxWidth: '520px' }}>
+            The only casting platform built around performer availability. Casting directors can see who is available before they even post a request.
+          </p>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href="/casting/about" style={{ display: 'inline-block', padding: '13px 28px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '800', borderRadius: '10px', textDecoration: 'none', fontSize: '15px' }}>
+              I&apos;m a Casting Director
+            </Link>
+            <Link href="/agent/about" style={{ display: 'inline-block', padding: '13px 28px', backgroundColor: 'rgba(255,255,255,0.08)', color: 'white', fontWeight: '700', borderRadius: '10px', textDecoration: 'none', fontSize: '15px', border: '1px solid rgba(255,255,255,0.15)' }}>
+              I&apos;m an Agency
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ── FOOTER ─────────────────────────────────────────── */}
       <footer className="bg-gray-900 border-t border-gray-800 py-12 px-4">
         <div className="max-w-6xl mx-auto">
