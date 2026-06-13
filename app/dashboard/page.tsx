@@ -152,6 +152,7 @@ export default function Dashboard() {
   const [payoutLoading, setPayoutLoading] = useState(false);
   const [payoutMessage, setPayoutMessage] = useState('');
   const [copiedText, setCopiedText] = useState('');
+  const [showIOSTip, setShowIOSTip] = useState(false);
 
   // Work Log State
   const [workLogs, setWorkLogs] = useState<WorkLog[]>([]);
@@ -482,6 +483,15 @@ export default function Dashboard() {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    const dismissed = localStorage.getItem('sr-ios-tip-dismissed')
+    if (isIOS && !isStandalone && !dismissed) {
+      setShowIOSTip(true)
+    }
+  }, [])
 
   // Get current user ID to pass to child pages (like certificates)
   // Using getSession() instead of getUser() for better reliability
@@ -1142,6 +1152,38 @@ export default function Dashboard() {
               👥 Film Contacts
             </button>
           </div>
+
+          {showIOSTip && (
+            <div style={{
+              backgroundColor: '#1a1a2e',
+              border: '1px solid #F59E0B',
+              borderRadius: '10px',
+              padding: '12px 16px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+            }}>
+              <span style={{ fontSize: '13px', color: 'white' }}>
+                📱 Add SetReady to your home screen: tap Share then &ldquo;Add to Home Screen&rdquo;
+              </span>
+              <button
+                onClick={() => {
+                  setShowIOSTip(false)
+                  localStorage.setItem('sr-ios-tip-dismissed', 'true')
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#6b7280',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  flexShrink: 0,
+                }}
+              >✕</button>
+            </div>
+          )}
 
           {/* PAYMENT STATUS CARDS - UPDATED to use Stripe functions */}
           {!isSubscribed && (

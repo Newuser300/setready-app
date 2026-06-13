@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72" width="72" height="72">
+  <rect width="72" height="72" fill="#F59E0B"/>
+  <circle cx="36" cy="36" r="31" fill="#F59E0B"/>
+  <text x="36" y="44"
+        text-anchor="middle"
+        font-family="Arial, sans-serif"
+        font-size="28"
+        font-weight="900"
+        fill="#1a1a2e">SR</text>
+</svg>
