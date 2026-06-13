@@ -91,6 +91,21 @@ const moduleTitleOverrides: Record<number, string> = {
   9: 'Advanced Technique',
 };
 
+const quickActions = [
+  { icon: '📋', label: 'Work Log', action: 'scroll' as const, target: 'work-log-section' },
+  { icon: '💰', label: 'Rate Calculator', action: 'link' as const, href: '/rate-calculator' },
+  { icon: '📔', label: 'Journal', action: 'link' as const, href: '/journal' },
+  { icon: '👥', label: 'Contacts', action: 'link' as const, href: '/contacts' },
+  { icon: '🎯', label: 'My Goals', action: 'link' as const, href: '/goals' },
+  { icon: '📖', label: 'Glossary', action: 'link' as const, href: '/glossary' },
+  { icon: '📋', label: 'Residency Docs', action: 'link' as const, href: '/residency' },
+  { icon: '👔', label: 'What to Wear', action: 'link' as const, href: '/clothing' },
+  { icon: '🎭', label: 'Agency Click', action: 'modal' as const, modal: 'agencyClick' },
+  { icon: '⚖️', label: 'Know Your Rights', action: 'external' as const, href: 'https://ubcpactra.ca/agreements/' },
+  { icon: '🎬', label: 'Productions in BC', action: 'external' as const, href: 'https://ubcpactra.ca/production-list/' },
+  { icon: '🍁', label: 'Find Agencies', action: 'link' as const, href: '/agencies' },
+];
+
 export default function Dashboard() {
   const router = useRouter();
   const [modules, setModules] = useState<Module[]>([]);
@@ -154,6 +169,8 @@ export default function Dashboard() {
   const [payoutMessage, setPayoutMessage] = useState('');
   const [copiedText, setCopiedText] = useState('');
   const [showIOSTip, setShowIOSTip] = useState(false);
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768);
+  const [showReferralDetails, setShowReferralDetails] = useState(false);
 
   // Work Log State
   const [workLogs, setWorkLogs] = useState<WorkLog[]>([]);
@@ -493,6 +510,12 @@ export default function Dashboard() {
       setShowIOSTip(true)
     }
   }, [])
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
 
   // Get current user ID to pass to child pages (like certificates)
   // Using getSession() instead of getUser() for better reliability
@@ -974,6 +997,18 @@ export default function Dashboard() {
     setShowWorkLogForm(false);
   }
 
+  function handleQuickAction(item: typeof quickActions[0]) {
+    if (item.action === 'scroll' && item.target) {
+      document.getElementById(item.target)?.scrollIntoView({ behavior: 'smooth' });
+    } else if (item.action === 'link' && item.href) {
+      router.push(item.href);
+    } else if (item.action === 'external' && item.href) {
+      window.open(item.href, '_blank', 'noopener,noreferrer');
+    } else if (item.action === 'modal' && item.modal === 'agencyClick') {
+      openAgencyClickModal();
+    }
+  }
+
   const totalEarnings = workLogs.reduce((sum, log) => sum + (log.final_pay || 0), 0);
   const totalPaid = workLogs.filter(log => log.paid).reduce((sum, log) => sum + (log.final_pay || 0), 0);
   const totalUnpaid = totalEarnings - totalPaid;
@@ -1033,10 +1068,10 @@ export default function Dashboard() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         {/* Hero Header */}
         <div className="bg-gradient-to-r from-blue-700 via-purple-700 to-indigo-800 text-white">
-          <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto px-4" style={{ paddingTop: isMobile ? '16px' : '24px', paddingBottom: isMobile ? '16px' : '24px' }}>
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+                <h1 className="font-bold tracking-tight" style={{ fontSize: isMobile ? '20px' : '28px' }}>
                   Welcome back, <span className="text-yellow-300">{user?.email?.split('@')[0]}</span>
                 </h1>
               </div>
@@ -1056,7 +1091,7 @@ export default function Dashboard() {
             </div>
             
             {/* Progress Card */}
-            <div className="mt-6 bg-white/10 rounded-2xl p-4 backdrop-blur-sm">
+            <div className="bg-white/10 rounded-2xl backdrop-blur-sm" style={{ marginTop: isMobile ? '12px' : '20px', padding: isMobile ? '12px' : '16px' }}>
               <div className="flex justify-between items-center mb-2">
                 <span className="font-medium">Your Progress</span>
                 <span className="text-2xl font-bold">{completedCount}/{section1Modules.length}</span>
@@ -1078,80 +1113,44 @@ export default function Dashboard() {
 
         {/* Main Content */}
         <div className="max-w-4xl mx-auto px-4 py-8">
-          {/* QUICK ACTION BUTTONS */}
-          <div className="flex flex-wrap gap-3 mb-6">
-            <button
-              onClick={() => document.getElementById('work-log-section')?.scrollIntoView({ behavior: 'smooth' })}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
-            >
-              📋 Work Log
-            </button>
-            <button
-              onClick={() => router.push('/residency')}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
-            >
-              📋 Proof of Residency
-            </button>
-            <button
-              onClick={() => router.push('/clothing')}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
-            >
-              👔 What to Wear on Set
-            </button>
-            <button
-              onClick={openAgencyClickModal}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
-            >
-              🎭 Background Availability – Agency Click
-            </button>
-            <button
-              onClick={() => router.push('/agencies')}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
-            >
-              🍁 Find Agencies
-            </button>
-            <button
-              onClick={() => window.open('https://ubcpactra.ca/agreements/', '_blank', 'noopener,noreferrer')}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
-            >
-              ⚖️ Know Your Rights – UBCP
-            </button>
-            <button
-              onClick={() => window.open('https://ubcpactra.ca/production-list/', '_blank', 'noopener,noreferrer')}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
-            >
-              🎬 Current and Upcoming Productions in BC
-            </button>
-            <button
-              onClick={() => router.push('/journal')}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
-            >
-              📔 Journal
-            </button>
-            <button
-              onClick={() => router.push('/rate-calculator')}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
-            >
-              💰 Rate Calculator
-            </button>
-            <button
-              onClick={() => router.push('/glossary')}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
-            >
-              📖 Glossary
-            </button>
-            <button
-              onClick={() => router.push('/goals')}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
-            >
-              🎯 My Goals
-            </button>
-            <button
-              onClick={() => router.push('/contacts')}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
-            >
-              👥 Film Contacts
-            </button>
+          {/* QUICK ACTION GRID */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? 'repeat(4, 1fr)' : 'repeat(6, 1fr)',
+            gap: '10px',
+            marginBottom: '16px',
+          }}>
+            {quickActions.map((item) => (
+              <button
+                key={item.label}
+                onClick={() => handleQuickAction(item)}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '12px 4px',
+                  backgroundColor: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                  minHeight: '72px',
+                }}
+              >
+                <span style={{ fontSize: '24px', lineHeight: 1 }}>{item.icon}</span>
+                <span style={{
+                  fontSize: '10px',
+                  color: '#374151',
+                  textAlign: 'center',
+                  fontWeight: '500',
+                  lineHeight: '1.3',
+                }}>
+                  {item.label}
+                </span>
+              </button>
+            ))}
           </div>
 
           {showIOSTip && (
@@ -1218,6 +1217,8 @@ export default function Dashboard() {
             </div>
           )}
 
+          <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '0 0 24px' }} />
+
           {/* Section 1 Header */}
           <div className="flex items-center gap-3 mb-6">
             <div className="text-3xl">📚</div>
@@ -1242,7 +1243,7 @@ export default function Dashboard() {
                     onClick={() => setShowSubscribeModal(true)}
                     className="relative overflow-hidden rounded-2xl bg-white border border-gray-200 cursor-pointer hover:shadow-md hover:border-yellow-300 transition-all duration-300"
                   >
-                    <div className="p-5">
+                    <div style={{ padding: isMobile ? '10px 12px' : '20px' }}>
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-4">
                           <div className="text-4xl opacity-40">{moduleIcons[module.module_number] || '📘'}</div>
@@ -1270,12 +1271,12 @@ export default function Dashboard() {
                       : 'bg-white hover:shadow-md border border-gray-200'
                     }
                   `}>
-                    <div className="p-5">
+                    <div style={{ padding: isMobile ? '10px 12px' : '20px' }}>
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-4">
                           <div className="text-4xl">{moduleIcons[module.module_number] || '📘'}</div>
                           <div>
-                            <h3 className="font-bold text-lg text-gray-800">{module.title}</h3>
+                            <h3 className="font-bold text-gray-800" style={{ fontSize: isMobile ? '15px' : '18px' }}>{module.title}</h3>
                             <p className="text-sm text-gray-500 mt-1">{moduleSubtitles[module.module_number] || 'Complete this module to advance'}</p>
                           </div>
                         </div>
@@ -1353,7 +1354,8 @@ export default function Dashboard() {
                       <div
                         key={module.id}
                         onClick={() => setShowSection2Modal(true)}
-                        className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-5 border border-purple-200 cursor-pointer hover:shadow-md hover:border-purple-300 transition-all duration-200"
+                        className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl border border-purple-200 cursor-pointer hover:shadow-md hover:border-purple-300 transition-all duration-200"
+                        style={{ padding: isMobile ? '10px 12px' : '20px' }}
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex items-center gap-4">
@@ -1374,7 +1376,7 @@ export default function Dashboard() {
                   // Unlocked: full clickable card
                   return (
                     <Link href={`/module/${module.id}`} key={module.id}>
-                      <div className={`bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-5 hover:scale-[1.02] transition-all duration-300 hover:shadow-lg border border-purple-200 ${isCompleted ? 'border-l-4 border-green-500' : ''}`}>
+                      <div className={`bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl hover:scale-[1.02] transition-all duration-300 hover:shadow-lg border border-purple-200 ${isCompleted ? 'border-l-4 border-green-500' : ''}`} style={{ padding: isMobile ? '10px 12px' : '20px' }}>
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex items-center gap-4">
                             <div className="text-4xl">{moduleIcons[module.module_number] || '🎯'}</div>
@@ -1405,8 +1407,10 @@ export default function Dashboard() {
             </div>
           )}
 
+          <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '24px 0' }} />
+
           {/* MY CERTIFICATES SECTION */}
-          <div className="mt-12">
+          <div className="mt-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="text-3xl">🏆</div>
               <div>
@@ -1451,235 +1455,9 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* MY REFERRALS SECTION */}
-          <div className="mt-12">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="text-3xl">🤝</div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800">My Referrals</h2>
-                <p className="text-gray-500 text-sm">Earn 20% commission on every subscription you refer — paid monthly via e-transfer</p>
-              </div>
-            </div>
+          <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '0' }} />
 
-            {referralCode ? (
-              <>
-                {/* Referral code + link box */}
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-6">
-                  <p className="text-sm font-semibold text-blue-800 mb-2">Your Referral Code</p>
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-2xl font-bold font-mono text-blue-900 tracking-widest">{referralCode}</span>
-                    <button
-                      onClick={() => copyToClipboard(referralCode, 'code')}
-                      className="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
-                    >
-                      {copiedText === 'code' ? '✓ Copied!' : 'Copy Code'}
-                    </button>
-                  </div>
-                  <p className="text-xs font-medium text-blue-700 mb-1">Your referral link:</p>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <code className="text-xs text-blue-700 bg-blue-100 px-2 py-1 rounded break-all">
-                      {`https://www.setready.site/auth/sign-up?ref=${referralCode}`}
-                    </code>
-                    <button
-                      onClick={() => copyToClipboard(`https://www.setready.site/auth/sign-up?ref=${referralCode}`, 'link')}
-                      className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition whitespace-nowrap"
-                    >
-                      {copiedText === 'link' ? '✓ Copied!' : 'Copy Link'}
-                    </button>
-                  </div>
-                </div>
-
-                {/* How it works */}
-                <div className="bg-gray-50 rounded-xl p-5 mb-6 border border-gray-200">
-                  <p className="text-sm text-gray-700 mb-3">
-                    Share your referral code or link with friends. When they sign up and subscribe using your code, you earn 20% commission paid monthly via e-transfer.
-                  </p>
-                  <p className="text-sm font-semibold text-gray-800 mb-2">How to share:</p>
-                  <ol className="space-y-1 text-sm text-gray-600 list-none">
-                    <li>1. Copy your referral link above and send it to a friend</li>
-                    <li>2. Your friend signs up using your link</li>
-                    <li>3. Your friend subscribes to SetReady</li>
-                    <li>4. You earn 20% of their subscription fee</li>
-                    <li>5. Once you reach $10.00 in commissions, request your payout from this page. Payments are sent monthly via e-transfer to <a href="mailto:setready@mail.com" className="text-blue-600 hover:underline">setready@mail.com</a></li>
-                  </ol>
-                </div>
-
-                {/* Stats */}
-                {loadingReferral ? (
-                  <div className="text-center py-6 text-gray-400 text-sm">Loading referral stats...</div>
-                ) : referralStats ? (
-                  <>
-                    <div className="grid grid-cols-3 gap-4 mb-4">
-                      <div className="bg-white rounded-xl p-4 border border-gray-200 text-center shadow-sm">
-                        <p className="text-2xl font-bold text-gray-800">{referralStats.totalReferrals}</p>
-                        <p className="text-xs text-gray-500 mt-1">Total Referrals</p>
-                      </div>
-                      <div className="bg-white rounded-xl p-4 border border-gray-200 text-center shadow-sm">
-                        <p className="text-2xl font-bold text-orange-600">${referralStats.pendingCommission.toFixed(2)}</p>
-                        <p className="text-xs text-gray-500 mt-1">Pending</p>
-                      </div>
-                      <div className="bg-white rounded-xl p-4 border border-gray-200 text-center shadow-sm">
-                        <p className="text-2xl font-bold text-green-600">${referralStats.totalEarned.toFixed(2)}</p>
-                        <p className="text-xs text-gray-500 mt-1">Total Earned</p>
-                      </div>
-                    </div>
-
-                    {/* Minimum payout threshold notice */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-6 flex items-start gap-2">
-                      <span className="text-lg mt-0.5">💰</span>
-                      <div>
-                        <p className="text-sm font-semibold text-blue-800">Minimum payout threshold: $10.00</p>
-                        <p className="text-xs text-blue-700 mt-0.5">Commissions are paid monthly via e-transfer. Once you reach $10.00 in pending commissions, you can request your payout.</p>
-                      </div>
-                    </div>
-
-                    {/* Commission history */}
-                    {referralStats.commissions.length === 0 ? (
-                      <div className="bg-gray-50 rounded-xl p-6 text-center border border-dashed border-gray-300 mb-4">
-                        <p className="text-gray-500 text-sm">No commissions yet. Share your referral link to start earning!</p>
-                      </div>
-                    ) : (
-                      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4 shadow-sm">
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full divide-y divide-gray-200 text-sm">
-                            <thead className="bg-gray-50">
-                              <tr>
-                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Date</th>
-                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Referred User</th>
-                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Sale</th>
-                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Commission</th>
-                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Status</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                              {referralStats.commissions.map((c) => (
-                                <tr key={c.id} className="hover:bg-gray-50">
-                                  <td className="px-4 py-3 text-gray-600">{new Date(c.created_at).toLocaleDateString()}</td>
-                                  <td className="px-4 py-3 text-gray-600 font-mono text-xs">{c.referred_email}</td>
-                                  <td className="px-4 py-3 text-gray-700">${c.sale_amount.toFixed(2)}</td>
-                                  <td className="px-4 py-3 font-semibold text-green-700">${c.commission_amount.toFixed(2)}</td>
-                                  <td className="px-4 py-3">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${c.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                      {c.status}
-                                    </span>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Payout request */}
-                    {!showPayoutForm ? (
-                      <div>
-                        <button
-                          onClick={() => {
-                            setPayoutAmount(referralStats.pendingCommission.toFixed(2));
-                            setPayoutMessage('');
-                            setShowPayoutForm(true);
-                          }}
-                          disabled={referralStats.pendingCommission < 10.00}
-                          title={referralStats.pendingCommission < 10.00
-                            ? `Minimum payout is $10.00. You have $${referralStats.pendingCommission.toFixed(2)} pending.`
-                            : undefined}
-                          className="px-5 py-2 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition disabled:opacity-40 disabled:cursor-not-allowed text-sm"
-                        >
-                          💸 Request E-Transfer Payout
-                        </button>
-                        {referralStats.pendingCommission < 10.00 && referralStats.pendingCommission > 0 && (
-                          <p className="mt-2 text-xs text-gray-500">
-                            Minimum payout is $10.00. You have ${referralStats.pendingCommission.toFixed(2)} pending.
-                          </p>
-                        )}
-                        {payoutMessage && (
-                          <p className="mt-2 text-sm text-green-700">{payoutMessage}</p>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-                        <h3 className="font-semibold text-gray-800 mb-4">Request E-Transfer Payout</h3>
-                        <div className="space-y-3 mb-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Your Referral Code</label>
-                            <input
-                              type="text"
-                              value={referralCode}
-                              readOnly
-                              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-700 font-mono tracking-widest"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">E-Transfer Email</label>
-                            <input
-                              type="email"
-                              value={payoutEmail}
-                              onChange={(e) => setPayoutEmail(e.target.value)}
-                              placeholder="your@bank-email.com"
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-                            />
-                            <p className="text-xs text-gray-400 mt-1">Must be registered with your bank for Interac e-Transfer</p>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0.01"
-                              value={payoutAmount}
-                              onChange={(e) => setPayoutAmount(e.target.value)}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Note (optional)</label>
-                            <textarea
-                              value={payoutNote}
-                              onChange={(e) => setPayoutNote(e.target.value)}
-                              placeholder="Any additional details..."
-                              rows={2}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:outline-none resize-none"
-                            />
-                          </div>
-                        </div>
-                        {payoutMessage && (
-                          <p className={`text-sm mb-3 ${payoutMessage.includes('ubmitted') ? 'text-green-700' : 'text-red-600'}`}>
-                            {payoutMessage}
-                          </p>
-                        )}
-                        <div className="flex gap-3">
-                          <button
-                            onClick={submitPayoutRequest}
-                            disabled={payoutLoading}
-                            className="px-5 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50 text-sm"
-                          >
-                            {payoutLoading ? 'Submitting...' : 'Submit Request'}
-                          </button>
-                          <button
-                            onClick={() => { setShowPayoutForm(false); setPayoutMessage(''); setPayoutNote(''); }}
-                            className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition text-sm"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                ) : null}
-              </>
-            ) : (
-              <div className="bg-gray-50 rounded-xl p-6 text-center border border-dashed border-gray-300">
-                {loadingReferral
-                  ? <p className="text-gray-400 text-sm">Loading your referral code...</p>
-                  : <p className="text-gray-400 text-sm">Your referral code is being set up. Refresh the page in a moment.</p>
-                }
-              </div>
-            )}
-          </div>
-
-          {/* SPACER - Extra space BEFORE Work Log section */}
-          <div className="h-48"></div>
+          <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '24px 0' }} />
 
           {/* ===================================================== */}
           {/* WORK LOG SECTION */}
@@ -2188,6 +1966,246 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+
+          {/* MY REFERRALS SECTION - compact, collapsible */}
+          <div className="mt-8 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <span style={{ fontSize: '20px' }}>🤝</span>
+                <h2 className="text-base font-bold text-gray-800">My Referrals</h2>
+                <span className="text-xs text-gray-400 hidden sm:inline">— earn 20% commission</span>
+              </div>
+
+              {referralCode ? (
+                <>
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">Your code:</span>
+                      <span className="font-mono font-bold text-gray-900 tracking-wider text-sm">{referralCode}</span>
+                      <button
+                        onClick={() => copyToClipboard(referralCode, 'code')}
+                        className="px-2 py-0.5 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 transition"
+                      >
+                        {copiedText === 'code' ? '✓' : 'Copy'}
+                      </button>
+                    </div>
+                    <div className="text-sm">
+                      <span className="text-gray-500">Total earned: </span>
+                      <span className="font-semibold text-green-600">${referralStats?.totalEarned?.toFixed(2) ?? '0.00'}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setShowReferralDetails(!showReferralDetails)}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium transition"
+                  >
+                    {showReferralDetails ? 'Hide Details ▲' : 'Show Details ▼'}
+                  </button>
+
+                  {showReferralDetails && (
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      {/* Referral link */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                        <p className="text-xs font-medium text-blue-700 mb-1">Your referral link:</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <code className="text-xs text-blue-700 bg-blue-100 px-2 py-1 rounded break-all">
+                            {`https://www.setready.site/auth/sign-up?ref=${referralCode}`}
+                          </code>
+                          <button
+                            onClick={() => copyToClipboard(`https://www.setready.site/auth/sign-up?ref=${referralCode}`, 'link')}
+                            className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition whitespace-nowrap"
+                          >
+                            {copiedText === 'link' ? '✓ Copied!' : 'Copy Link'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* How it works */}
+                      <div className="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-200">
+                        <p className="text-sm font-semibold text-gray-800 mb-2">How it works:</p>
+                        <ol className="space-y-1 text-sm text-gray-600 list-none">
+                          <li>1. Share your referral link with friends</li>
+                          <li>2. They sign up and subscribe using your link</li>
+                          <li>3. You earn 20% commission, paid monthly via e-transfer</li>
+                          <li>4. Once you reach $10.00, request your payout below</li>
+                        </ol>
+                      </div>
+
+                      {/* Stats */}
+                      {loadingReferral ? (
+                        <div className="text-center py-4 text-gray-400 text-sm">Loading stats...</div>
+                      ) : referralStats ? (
+                        <>
+                          <div className="grid grid-cols-3 gap-3 mb-4">
+                            <div className="bg-white rounded-xl p-3 border border-gray-200 text-center shadow-sm">
+                              <p className="text-xl font-bold text-gray-800">{referralStats.totalReferrals}</p>
+                              <p className="text-xs text-gray-500 mt-1">Referrals</p>
+                            </div>
+                            <div className="bg-white rounded-xl p-3 border border-gray-200 text-center shadow-sm">
+                              <p className="text-xl font-bold text-orange-600">${referralStats.pendingCommission.toFixed(2)}</p>
+                              <p className="text-xs text-gray-500 mt-1">Pending</p>
+                            </div>
+                            <div className="bg-white rounded-xl p-3 border border-gray-200 text-center shadow-sm">
+                              <p className="text-xl font-bold text-green-600">${referralStats.totalEarned.toFixed(2)}</p>
+                              <p className="text-xs text-gray-500 mt-1">Earned</p>
+                            </div>
+                          </div>
+
+                          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4 flex items-start gap-2">
+                            <span className="text-lg mt-0.5">💰</span>
+                            <div>
+                              <p className="text-sm font-semibold text-blue-800">Minimum payout threshold: $10.00</p>
+                              <p className="text-xs text-blue-700 mt-0.5">Commissions paid monthly via e-transfer. Reach $10.00 to request payout.</p>
+                            </div>
+                          </div>
+
+                          {/* Commission history */}
+                          {referralStats.commissions.length === 0 ? (
+                            <div className="bg-gray-50 rounded-xl p-4 text-center border border-dashed border-gray-300 mb-4">
+                              <p className="text-gray-500 text-sm">No commissions yet. Share your link to start earning!</p>
+                            </div>
+                          ) : (
+                            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4 shadow-sm">
+                              <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200 text-sm">
+                                  <thead className="bg-gray-50">
+                                    <tr>
+                                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Date</th>
+                                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Referred User</th>
+                                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Commission</th>
+                                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Status</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-200">
+                                    {referralStats.commissions.map((c) => (
+                                      <tr key={c.id} className="hover:bg-gray-50">
+                                        <td className="px-4 py-3 text-gray-600">{new Date(c.created_at).toLocaleDateString()}</td>
+                                        <td className="px-4 py-3 text-gray-600 font-mono text-xs">{c.referred_email}</td>
+                                        <td className="px-4 py-3 font-semibold text-green-700">${c.commission_amount.toFixed(2)}</td>
+                                        <td className="px-4 py-3">
+                                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${c.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                            {c.status}
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Payout request */}
+                          {!showPayoutForm ? (
+                            <div>
+                              <button
+                                onClick={() => {
+                                  setPayoutAmount(referralStats.pendingCommission.toFixed(2));
+                                  setPayoutMessage('');
+                                  setShowPayoutForm(true);
+                                }}
+                                disabled={referralStats.pendingCommission < 10.00}
+                                title={referralStats.pendingCommission < 10.00
+                                  ? `Minimum payout is $10.00. You have $${referralStats.pendingCommission.toFixed(2)} pending.`
+                                  : undefined}
+                                className="px-5 py-2 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition disabled:opacity-40 disabled:cursor-not-allowed text-sm"
+                              >
+                                💸 Request E-Transfer Payout
+                              </button>
+                              {referralStats.pendingCommission < 10.00 && referralStats.pendingCommission > 0 && (
+                                <p className="mt-2 text-xs text-gray-500">
+                                  Minimum payout is $10.00. You have ${referralStats.pendingCommission.toFixed(2)} pending.
+                                </p>
+                              )}
+                              {payoutMessage && (
+                                <p className="mt-2 text-sm text-green-700">{payoutMessage}</p>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+                              <h3 className="font-semibold text-gray-800 mb-4">Request E-Transfer Payout</h3>
+                              <div className="space-y-3 mb-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Your Referral Code</label>
+                                  <input
+                                    type="text"
+                                    value={referralCode}
+                                    readOnly
+                                    className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-700 font-mono tracking-widest"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">E-Transfer Email</label>
+                                  <input
+                                    type="email"
+                                    value={payoutEmail}
+                                    onChange={(e) => setPayoutEmail(e.target.value)}
+                                    placeholder="your@bank-email.com"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                  />
+                                  <p className="text-xs text-gray-400 mt-1">Must be registered with your bank for Interac e-Transfer</p>
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0.01"
+                                    value={payoutAmount}
+                                    onChange={(e) => setPayoutAmount(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Note (optional)</label>
+                                  <textarea
+                                    value={payoutNote}
+                                    onChange={(e) => setPayoutNote(e.target.value)}
+                                    placeholder="Any additional details..."
+                                    rows={2}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:outline-none resize-none"
+                                  />
+                                </div>
+                              </div>
+                              {payoutMessage && (
+                                <p className={`text-sm mb-3 ${payoutMessage.includes('ubmitted') ? 'text-green-700' : 'text-red-600'}`}>
+                                  {payoutMessage}
+                                </p>
+                              )}
+                              <div className="flex gap-3">
+                                <button
+                                  onClick={submitPayoutRequest}
+                                  disabled={payoutLoading}
+                                  className="px-5 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50 text-sm"
+                                >
+                                  {payoutLoading ? 'Submitting...' : 'Submit Request'}
+                                </button>
+                                <button
+                                  onClick={() => { setShowPayoutForm(false); setPayoutMessage(''); setPayoutNote(''); }}
+                                  className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition text-sm"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ) : null}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="mt-2 text-gray-400 text-sm">
+                  {loadingReferral
+                    ? <p>Loading your referral code...</p>
+                    : <p>Your referral code is being set up. Refresh the page in a moment.</p>
+                  }
+                </div>
+              )}
+            </div>
+          </div>
+
+          <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '32px 0 0' }} />
 
           {/* CUSTOMER PORTAL BUTTON - 30-day minimum commitment lock */}
           {isSubscribed && (() => {
