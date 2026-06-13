@@ -9,10 +9,10 @@ const MODULE_NAMES: Record<number, string> = {
   3: 'Set Etiquette & Professional Conduct',
   4: 'Safety on Set',
   5: 'Industry Standards, Pay & Career Advancement',
-  6: 'Foundation (Stanislavski)',
-  7: 'Audition Technique (Shurtleff)',
-  8: 'Scene Study (Hagen)',
-  9: 'Advanced Technique (Meisner, Adler)',
+  6: 'Foundation',
+  7: 'Audition Technique',
+  8: 'Scene Study',
+  9: 'Advanced Technique',
 };
 
 // Admin client for all operations (uses service role key - bypasses RLS)
