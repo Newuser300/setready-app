@@ -1362,6 +1362,10 @@ export default function AdminPage() {
                     <div>
                       <div className="font-bold text-gray-800">{ag.agency_name || ag.name}</div>
                       <div className="text-sm text-gray-500">{ag.owner_email || ag.email}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">
+                        {[ag.city, ag.province].filter(Boolean).join(', ')}
+                        {ag.licence_number && <span className="ml-2 text-amber-600 font-medium">Lic. {ag.licence_number}</span>}
+                      </div>
                       <div className="flex items-center gap-2 mt-1.5">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${ag.is_suspended ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-700'}`}>
                           {ag.is_suspended ? '🚫 Suspended' : '✅ Active'}
@@ -1403,7 +1407,8 @@ export default function AdminPage() {
                         <tr>
                           <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Name</th>
                           <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Email</th>
-                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Union</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Union Status</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Priority</th>
                           <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">This Month</th>
                           <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Next Month</th>
                           <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Agency</th>
@@ -1414,10 +1419,18 @@ export default function AdminPage() {
                           <tr key={p.id} className="hover:bg-gray-50">
                             <td className="px-4 py-3 font-medium text-gray-800">{p.name || '—'}</td>
                             <td className="px-4 py-3 text-gray-500 text-xs">{p.email}</td>
-                            <td className="px-4 py-3 text-gray-500">{p.union_status || '—'}</td>
-                            <td className="px-4 py-3 text-gray-700 font-semibold">{p.this_month_available ?? '—'}</td>
-                            <td className="px-4 py-3 text-gray-700">{p.next_month_available ?? '—'}</td>
-                            <td className="px-4 py-3 text-gray-500">{p.agency_name || '—'}</td>
+                            <td className="px-4 py-3 text-gray-500 text-xs">{p.union_status || '—'}</td>
+                            <td className="px-4 py-3">
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                                p.union_priority === 1 ? 'bg-purple-100 text-purple-700'
+                                : p.union_priority === 2 ? 'bg-blue-100 text-blue-700'
+                                : p.union_priority === 3 ? 'bg-green-100 text-green-700'
+                                : 'bg-gray-100 text-gray-500'
+                              }`}>P{p.union_priority ?? 4}</span>
+                            </td>
+                            <td className="px-4 py-3 text-gray-700 font-semibold">{p.this_month_available ?? 0}</td>
+                            <td className="px-4 py-3 text-gray-700">{p.next_month_available ?? 0}</td>
+                            <td className="px-4 py-3 text-gray-500 text-xs">{p.agency_name || '—'}</td>
                           </tr>
                         ))}
                       </tbody>

@@ -1,28 +1,25 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
-import { jwtVerify } from 'jose'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-async function verifyAdmin() {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('admin_session')?.value
-  if (!token) return false
-  try {
-    const secret = new TextEncoder().encode(process.env.ADMIN_SECRET || 'admin-secret-change-me')
-    const { payload } = await jwtVerify(token, secret)
-    return payload.role === 'admin'
-  } catch {
-    return false
-  }
+async function isAdmin(req: NextRequest): Promise<boolean> {
+  const auth = req.headers.get('authorization')
+  if (!auth?.startsWith('Bearer ')) return false
+  const token = auth.slice(7)
+  const { data: { user } } = await supabaseAdmin.auth.getUser(token)
+  if (!user) return false
+  const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim())
+  if (adminEmails.includes(user.email || '')) return true
+  const { data } = await supabaseAdmin.from('admin_users').select('id').eq('email', user.email).maybeSingle()
+  return !!data
 }
 
-export async function GET(req: Request) {
-  if (!await verifyAdmin()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function GET(req: NextRequest) {
+  if (!await isAdmin(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const type = searchParams.get('type') || 'pending'
@@ -36,7 +33,7 @@ export async function GET(req: Request) {
         .order('created_at', { ascending: false }),
       supabaseAdmin
         .from('agencies')
-        .select('id, name, contact_name, email, phone, city, website, created_at')
+        .select('id, name, contact_name, email, phone, city, province, website, created_at')
         .eq('is_approved', false)
         .order('created_at', { ascending: false }),
     ])
@@ -85,11 +82,111 @@ export async function GET(req: Request) {
     return NextResponse.json(data || [])
   }
 
+  if (type === 'agents') {
+    const { data: agencies } = await supabaseAdmin
+      .from('agencies')
+      .select(`
+        id, name, email, phone, city, province, licence_number,
+        is_approved, is_suspended, can_receive_requests, created_at,
+        agent_accounts(name, email, role)
+      `)
+      .eq('is_approved', true)
+      .order('name')
+
+    const result = (agencies || []).map((ag: any) => {
+      const accounts: any[] = Array.isArray(ag.agent_accounts) ? ag.agent_accounts : ag.agent_accounts ? [ag.agent_accounts] : []
+      const owner = accounts.find((a: any) => a.role === 'owner') || accounts[0]
+      return {
+        id: ag.id,
+        agency_name: ag.name,
+        owner_name: owner?.name || '',
+        owner_email: owner?.email || ag.email,
+        city: ag.city,
+        province: ag.province || 'BC',
+        licence_number: ag.licence_number || null,
+        is_suspended: ag.is_suspended || false,
+        can_receive_requests: ag.can_receive_requests !== false,
+      }
+    })
+
+    return NextResponse.json(result)
+  }
+
+  if (type === 'performers') {
+    const now = new Date()
+    const thisYear = now.getFullYear()
+    const thisMonth = now.getMonth()
+    const thisMonthStart = `${thisYear}-${String(thisMonth + 1).padStart(2, '0')}-01`
+    const thisMonthEnd = new Date(thisYear, thisMonth + 1, 0).toISOString().slice(0, 10)
+    const nextMonthDate = new Date(thisYear, thisMonth + 1, 1)
+    const nextMonthStart = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, '0')}-01`
+    const nextMonthEnd = new Date(nextMonthDate.getFullYear(), nextMonthDate.getMonth() + 1, 0).toISOString().slice(0, 10)
+
+    const [{ data: performers }, { data: availability }, { data: rosterData }] = await Promise.all([
+      supabaseAdmin
+        .from('performer_profiles')
+        .select('id, union_status, union_priority')
+        .eq('is_public', true)
+        .order('union_priority', { ascending: true }),
+      supabaseAdmin
+        .from('performer_availability')
+        .select('user_id, date')
+        .eq('status', 'available')
+        .gte('date', thisMonthStart)
+        .lte('date', nextMonthEnd),
+      supabaseAdmin
+        .from('agency_roster')
+        .select('performer_id, agencies(name)')
+        .eq('status', 'approved'),
+    ])
+
+    if (!performers?.length) return NextResponse.json([])
+
+    const userIds = performers.map((p: any) => p.id)
+    const { data: users } = await supabaseAdmin
+      .from('users')
+      .select('id, email, name')
+      .in('id', userIds)
+
+    const userMap: Record<string, { email: string; name: string | null }> = {}
+    ;(users || []).forEach((u: any) => { userMap[u.id] = { email: u.email, name: u.name } })
+
+    const thisMonthCounts: Record<string, number> = {}
+    const nextMonthCounts: Record<string, number> = {}
+    ;(availability || []).forEach((a: any) => {
+      if (a.date >= thisMonthStart && a.date <= thisMonthEnd) {
+        thisMonthCounts[a.user_id] = (thisMonthCounts[a.user_id] || 0) + 1
+      } else if (a.date >= nextMonthStart && a.date <= nextMonthEnd) {
+        nextMonthCounts[a.user_id] = (nextMonthCounts[a.user_id] || 0) + 1
+      }
+    })
+
+    const agencyMap: Record<string, string> = {}
+    ;(rosterData || []).forEach((r: any) => {
+      if (!agencyMap[r.performer_id]) {
+        agencyMap[r.performer_id] = (r.agencies as any)?.name || ''
+      }
+    })
+
+    const result = performers.map((p: any) => ({
+      id: p.id,
+      name: userMap[p.id]?.name || null,
+      email: userMap[p.id]?.email || '',
+      union_status: p.union_status,
+      union_priority: p.union_priority ?? 4,
+      this_month_available: thisMonthCounts[p.id] || 0,
+      next_month_available: nextMonthCounts[p.id] || 0,
+      agency_name: agencyMap[p.id] || null,
+    }))
+
+    return NextResponse.json(result)
+  }
+
   return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
 }
 
-export async function POST(req: Request) {
-  if (!await verifyAdmin()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function POST(req: NextRequest) {
+  if (!await isAdmin(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
   const { action, id, entityType } = body
@@ -117,6 +214,22 @@ export async function POST(req: Request) {
       await supabaseAdmin.from('agencies').delete().eq('id', id)
     }
     return NextResponse.json({ success: true, reason })
+  }
+
+  if (action === 'suspend_agent') {
+    await supabaseAdmin
+      .from('agencies')
+      .update({ is_suspended: true, can_receive_requests: false })
+      .eq('id', id)
+    return NextResponse.json({ success: true })
+  }
+
+  if (action === 'restore_agent') {
+    await supabaseAdmin
+      .from('agencies')
+      .update({ is_suspended: false, can_receive_requests: true })
+      .eq('id', id)
+    return NextResponse.json({ success: true })
   }
 
   return NextResponse.json({ error: 'Invalid action' }, { status: 400 })

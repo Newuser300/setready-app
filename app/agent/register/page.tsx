@@ -6,7 +6,7 @@ import Logo from '@/components/Logo'
 export default function AgentRegisterPage() {
   const [form, setForm] = useState({
     agencyName: '', name: '', email: '',
-    phone: '', city: '', website: '',
+    phone: '', city: '', province: 'BC', licenceNumber: '', website: '',
     password: '', confirm: '',
   })
   const [loading, setLoading] = useState(false)
@@ -42,6 +42,8 @@ export default function AgentRegisterPage() {
         email: form.email,
         phone: form.phone,
         city: form.city,
+        province: form.province,
+        licenceNumber: form.licenceNumber,
         website: form.website,
         password: form.password,
       }),
@@ -145,6 +147,28 @@ export default function AgentRegisterPage() {
               <div>
                 <label style={labelStyle}>City *</label>
                 <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="Vancouver" required style={inputStyle} />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div>
+                <label style={labelStyle}>Province *</label>
+                <select value={form.province} onChange={e => set('province', e.target.value)} required style={inputStyle}>
+                  <option value="BC">British Columbia</option>
+                  <option value="AB">Alberta</option>
+                  <option value="ON">Ontario</option>
+                  <option value="QC">Quebec</option>
+                  <option value="NS">Nova Scotia</option>
+                  <option value="MB">Manitoba</option>
+                  <option value="SK">Saskatchewan</option>
+                  <option value="NB">New Brunswick</option>
+                  <option value="NL">Newfoundland</option>
+                  <option value="PE">PEI</option>
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Licence Number</label>
+                <input value={form.licenceNumber} onChange={e => set('licenceNumber', e.target.value)} placeholder="e.g. #467579" style={inputStyle} />
               </div>
             </div>
 

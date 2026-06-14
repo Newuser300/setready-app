@@ -21,7 +21,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { action, email, password, name, agencyName, phone, city, website } =
+  const { action, email, password, name, agencyName, phone, city, province, licenceNumber, website } =
     await req.json()
 
   if (action === 'login') {
@@ -80,6 +80,8 @@ export async function POST(req: Request) {
         email: email.toLowerCase(),
         phone,
         city,
+        province: province || 'BC',
+        licence_number: licenceNumber || null,
         website,
         password_hash: hash,
         is_approved: false,
