@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getCastingSession, supabaseAdmin } from '@/lib/casting-auth'
-import { notifyAllAgents } from '@/lib/casting-notify'
+import { notifyAllAgents, notifyIndependentPerformers } from '@/lib/casting-notify'
 
 export async function GET(req: Request) {
   const session = await getCastingSession()
@@ -112,6 +112,19 @@ export async function POST(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Fetch notification settings in one query
+  const { data: settingsRows } = await supabaseAdmin
+    .from('admin_settings')
+    .select('key, value')
+    .in('key', ['email_agents_on_request', 'notify_independent_performers', 'email_independent_performers'])
+
+  const settingsMap: Record<string, string> = {}
+  ;(settingsRows || []).forEach((row: any) => { settingsMap[row.key] = row.value })
+
+  const emailAgents = settingsMap['email_agents_on_request'] === 'true'
+  const notifyIndependent = settingsMap['notify_independent_performers'] === 'true'
+  const emailIndependent = settingsMap['email_independent_performers'] === 'true'
+
   // Notify agents
   if (notifyAll !== false) {
     await notifyAllAgents(
@@ -119,7 +132,9 @@ export async function POST(req: Request) {
       `New Casting Request: ${productionName}`,
       `${roleType} needed for ${shootDate}${location ? ` in ${location}` : ''}. ${performersNeeded || 1} performer${performersNeeded > 1 ? 's' : ''} needed.`,
       `/agent/dashboard`,
-      request.id
+      request.id,
+      request,
+      emailAgents
     )
   } else if (specificAgencyIds?.length) {
     const notifications = specificAgencyIds.map((agencyId: string) => ({
@@ -134,47 +149,13 @@ export async function POST(req: Request) {
     await supabaseAdmin.from('casting_notifications').insert(notifications)
   }
 
-  // Notify independent performers if setting is enabled
-  try {
-    const { data: notifySetting } = await supabaseAdmin
-      .from('admin_settings')
-      .select('value')
-      .eq('key', 'notify_independent_performers')
-      .maybeSingle()
-
-    if (notifySetting?.value === 'true') {
-      const [{ data: rosterData }, { data: exclusionData }] = await Promise.all([
-        supabaseAdmin.from('agency_roster').select('performer_id').eq('status', 'approved'),
-        supabaseAdmin.from('casting_notification_exclusions').select('user_id'),
-      ])
-
-      const agencyPerformerIds = new Set((rosterData || []).map((r: any) => r.performer_id))
-      const excludedIds = new Set((exclusionData || []).map((e: any) => e.user_id))
-
-      const { data: performers } = await supabaseAdmin
-        .from('performer_profiles')
-        .select('id')
-        .eq('is_public', true)
-
-      const independentIds = (performers || [])
-        .map((p: any) => p.id)
-        .filter((id: string) => !agencyPerformerIds.has(id) && !excludedIds.has(id))
-
-      if (independentIds.length > 0) {
-        const performerNotifs = independentIds.map((userId: string) => ({
-          recipient_type: 'performer',
-          recipient_id: userId,
-          type: 'new_casting_request',
-          title: `New Casting Opportunity: ${productionName}`,
-          message: `${roleType} needed${shootDate ? ` on ${shootDate}` : ''}${location ? ` in ${location}` : ''}. ${performersNeeded || 1} performer${(performersNeeded || 1) > 1 ? 's' : ''} needed.`,
-          action_url: '/casting-portal',
-          related_request_id: request.id,
-        }))
-        await supabaseAdmin.from('casting_notifications').insert(performerNotifs)
-      }
+  // Notify independent performers
+  if (notifyIndependent) {
+    try {
+      await notifyIndependentPerformers(request, emailIndependent)
+    } catch {
+      // Non-fatal: don't block request creation if notification fails
     }
-  } catch {
-    // Non-fatal: don't block request creation if notification fails
   }
 
   return NextResponse.json({ success: true, request })

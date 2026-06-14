@@ -142,6 +142,10 @@ export default function AdminPage() {
   // Independent performer notifications
   const [notifyIndependent, setNotifyIndependent] = useState(false);
   const [notifyIndependentLoading, setNotifyIndependentLoading] = useState(false);
+  const [emailIndependentPerformers, setEmailIndependentPerformers] = useState(false);
+  const [emailIndependentLoading, setEmailIndependentLoading] = useState(false);
+  const [emailAgentsOnRequest, setEmailAgentsOnRequest] = useState(false);
+  const [emailAgentsLoading, setEmailAgentsLoading] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [exclusions, setExclusions] = useState<any[]>([]);
   const [exclusionsLoading, setExclusionsLoading] = useState(false);
@@ -419,6 +423,8 @@ export default function AdminPage() {
       const data = await res.json();
       setReviewMode(data.casting_request_review_mode === 'true');
       setNotifyIndependent(data.notify_independent_performers === 'true');
+      setEmailIndependentPerformers(data.email_independent_performers === 'true');
+      setEmailAgentsOnRequest(data.email_agents_on_request === 'true');
     }
   }
 
@@ -432,6 +438,30 @@ export default function AdminPage() {
     });
     setNotifyIndependent(newVal);
     setNotifyIndependentLoading(false);
+  }
+
+  async function toggleEmailIndependentPerformers() {
+    setEmailIndependentLoading(true);
+    const newVal = !emailIndependentPerformers;
+    await fetch('/api/admin/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ key: 'email_independent_performers', value: String(newVal) }),
+    });
+    setEmailIndependentPerformers(newVal);
+    setEmailIndependentLoading(false);
+  }
+
+  async function toggleEmailAgentsOnRequest() {
+    setEmailAgentsLoading(true);
+    const newVal = !emailAgentsOnRequest;
+    await fetch('/api/admin/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ key: 'email_agents_on_request', value: String(newVal) }),
+    });
+    setEmailAgentsOnRequest(newVal);
+    setEmailAgentsLoading(false);
   }
 
   async function loadExclusions() {
@@ -1570,101 +1600,145 @@ export default function AdminPage() {
               </button>
             </div>
 
-            {/* Independent Performer Notifications */}
-            <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
-              <div className="flex items-center justify-between gap-4">
+            {/* Casting Request Notifications */}
+            <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '24px', marginTop: '4px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#1a1a2e', margin: '0 0 20px' }}>📢 Casting Request Notifications</h3>
+
+              {/* Toggle: Email agents on request */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px', marginBottom: '12px', border: '1px solid #e5e7eb' }}>
                 <div>
-                  <p className="font-semibold text-gray-800 text-sm">📢 Independent Performer Notifications</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {notifyIndependent
-                      ? 'ON — New casting requests also notify independent performers (not represented by an agency).'
-                      : 'OFF — Only agencies are notified of new casting requests.'}
-                  </p>
+                  <div style={{ fontWeight: '600', color: '#1a1a2e', fontSize: '15px' }}>📧 Email agents when request posted</div>
+                  <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
+                    All approved agents receive an email with full casting details when a new request is posted
+                  </div>
                 </div>
                 <button
-                  onClick={toggleNotifyIndependent}
-                  disabled={notifyIndependentLoading}
-                  style={{ flexShrink: 0, width: '52px', height: '28px', borderRadius: '14px', backgroundColor: notifyIndependent ? '#22c55e' : '#d1d5db', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}
+                  onClick={toggleEmailAgentsOnRequest}
+                  disabled={emailAgentsLoading}
+                  style={{ flexShrink: 0, width: '52px', height: '28px', borderRadius: '14px', backgroundColor: emailAgentsOnRequest ? '#22c55e' : '#d1d5db', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', marginLeft: '16px' }}
                 >
-                  <div style={{ position: 'absolute', top: '4px', left: notifyIndependent ? '28px' : '4px', width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'white', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                  <div style={{ position: 'absolute', top: '4px', left: emailAgentsOnRequest ? '28px' : '4px', width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'white', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
                 </button>
               </div>
 
-              {/* Exclusion list */}
-              <div className="border-t border-gray-100 pt-4">
-                <p className="text-xs font-bold text-gray-500 mb-2">Exclusion List <span className="font-normal text-gray-400">— excluded performers are never notified</span></p>
-
-                {/* Search */}
-                <div className="flex gap-2 mb-3">
-                  <input
-                    type="text"
-                    placeholder="Search by email or name..."
-                    value={exclusionSearch}
-                    onChange={e => setExclusionSearch(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && searchExclusionUsers()}
-                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
-                  />
+              {/* Toggle: Notify independent performers + sub-toggle for email */}
+              <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px', marginBottom: '12px', border: '1px solid #e5e7eb' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontWeight: '600', color: '#1a1a2e', fontSize: '15px' }}>👤 Notify self-represented performers</div>
+                    <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
+                      Performers with no agency receive in-app notifications for new casting requests
+                    </div>
+                  </div>
                   <button
-                    onClick={searchExclusionUsers}
-                    disabled={exclusionSearching}
-                    className="px-3 py-2 bg-gray-900 text-white text-xs font-bold rounded-lg hover:bg-gray-700 disabled:opacity-50"
+                    onClick={toggleNotifyIndependent}
+                    disabled={notifyIndependentLoading}
+                    style={{ flexShrink: 0, width: '52px', height: '28px', borderRadius: '14px', backgroundColor: notifyIndependent ? '#22c55e' : '#d1d5db', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', marginLeft: '16px' }}
                   >
-                    {exclusionSearching ? '...' : 'Search'}
+                    <div style={{ position: 'absolute', top: '4px', left: notifyIndependent ? '28px' : '4px', width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'white', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
                   </button>
                 </div>
 
-                {/* Search results */}
-                {exclusionSearchResults.length > 0 && (
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 mb-3 space-y-1">
-                    <input
-                      type="text"
-                      placeholder="Reason (optional)"
-                      value={exclusionReason}
-                      onChange={e => setExclusionReason(e.target.value)}
-                      className="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-lg mb-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"
-                    />
-                    {exclusionSearchResults.map((u: any) => (
-                      <div key={u.id} className="flex items-center justify-between gap-2 px-2 py-1.5 bg-white rounded border border-gray-100">
-                        <div>
-                          <span className="text-xs font-semibold text-gray-800">{u.email}</span>
-                          {u.name && <span className="text-xs text-gray-400 ml-2">{u.name}</span>}
-                        </div>
-                        <button
-                          onClick={() => addExclusion(u.id, u.email)}
-                          className="px-2 py-1 text-xs font-bold bg-red-50 text-red-600 border border-red-200 rounded hover:bg-red-100"
-                        >
-                          Exclude
-                        </button>
+                {/* Sub-toggle: Email independent performers — only when parent is ON */}
+                {notifyIndependent && (
+                  <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: '600', color: '#1a1a2e', fontSize: '14px' }}>📧 Also email these performers</div>
+                      <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
+                        Send email notification in addition to in-app notification
                       </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Current exclusions */}
-                {exclusionsLoading ? (
-                  <p className="text-xs text-gray-400">Loading...</p>
-                ) : exclusions.length === 0 ? (
-                  <p className="text-xs text-gray-400">No exclusions yet.</p>
-                ) : (
-                  <div className="space-y-1">
-                    {exclusions.map((ex: any) => (
-                      <div key={ex.id} className="flex items-center justify-between gap-2 px-3 py-2 bg-red-50 border border-red-100 rounded-lg">
-                        <div>
-                          <span className="text-xs font-semibold text-gray-800">{ex.user_email || ex.user_id}</span>
-                          {ex.user_name && <span className="text-xs text-gray-400 ml-2">{ex.user_name}</span>}
-                          {ex.reason && <span className="text-xs text-gray-400 ml-2">— {ex.reason}</span>}
-                        </div>
-                        <button
-                          onClick={() => removeExclusion(ex.user_id)}
-                          className="px-2 py-1 text-xs font-bold bg-white text-gray-600 border border-gray-200 rounded hover:bg-gray-50"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
+                    </div>
+                    <button
+                      onClick={toggleEmailIndependentPerformers}
+                      disabled={emailIndependentLoading}
+                      style={{ flexShrink: 0, width: '52px', height: '28px', borderRadius: '14px', backgroundColor: emailIndependentPerformers ? '#22c55e' : '#d1d5db', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', marginLeft: '16px' }}
+                    >
+                      <div style={{ position: 'absolute', top: '4px', left: emailIndependentPerformers ? '28px' : '4px', width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'white', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                    </button>
                   </div>
                 )}
               </div>
+
+              {/* Exclusion list — only when notifyIndependent is ON */}
+              {notifyIndependent && (
+                <div style={{ padding: '16px', backgroundColor: '#fff7ed', borderRadius: '8px', border: '1px solid #fed7aa' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '700', color: '#1a1a2e', margin: '0 0 6px' }}>🚫 Exclusion List</h4>
+                  <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 12px' }}>
+                    These performers will NOT receive casting notifications even when independent notifications are ON.
+                  </p>
+
+                  {/* Search */}
+                  <div className="flex gap-2 mb-3">
+                    <input
+                      type="text"
+                      placeholder="Search by email or name..."
+                      value={exclusionSearch}
+                      onChange={e => setExclusionSearch(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && searchExclusionUsers()}
+                      className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:outline-none bg-white"
+                    />
+                    <button
+                      onClick={searchExclusionUsers}
+                      disabled={exclusionSearching}
+                      className="px-3 py-2 bg-gray-900 text-white text-xs font-bold rounded-lg hover:bg-gray-700 disabled:opacity-50"
+                    >
+                      {exclusionSearching ? '...' : 'Search'}
+                    </button>
+                  </div>
+
+                  {/* Search results */}
+                  {exclusionSearchResults.length > 0 && (
+                    <div className="bg-white border border-orange-200 rounded-lg p-2 mb-3 space-y-1">
+                      <input
+                        type="text"
+                        placeholder="Reason (optional)"
+                        value={exclusionReason}
+                        onChange={e => setExclusionReason(e.target.value)}
+                        className="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-lg mb-2 focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                      />
+                      {exclusionSearchResults.map((u: any) => (
+                        <div key={u.id} className="flex items-center justify-between gap-2 px-2 py-1.5 bg-gray-50 rounded border border-gray-100">
+                          <div>
+                            <span className="text-xs font-semibold text-gray-800">{u.email}</span>
+                            {u.name && <span className="text-xs text-gray-400 ml-2">{u.name}</span>}
+                          </div>
+                          <button
+                            onClick={() => addExclusion(u.id, u.email)}
+                            className="px-2 py-1 text-xs font-bold bg-red-50 text-red-600 border border-red-200 rounded hover:bg-red-100"
+                          >
+                            Exclude
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Current exclusions */}
+                  {exclusionsLoading ? (
+                    <p className="text-xs text-gray-400">Loading...</p>
+                  ) : exclusions.length === 0 ? (
+                    <p className="text-xs text-gray-500">No exclusions yet.</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {exclusions.map((ex: any) => (
+                        <div key={ex.id} className="flex items-center justify-between gap-2 px-3 py-2 bg-white border border-orange-100 rounded-lg">
+                          <div>
+                            <span className="text-xs font-semibold text-gray-800">{ex.user_email || ex.user_id}</span>
+                            {ex.user_name && <span className="text-xs text-gray-400 ml-2">{ex.user_name}</span>}
+                            {ex.reason && <span className="text-xs text-gray-400 ml-2">— {ex.reason}</span>}
+                          </div>
+                          <button
+                            onClick={() => removeExclusion(ex.user_id)}
+                            className="px-2 py-1 text-xs font-bold bg-white text-gray-600 border border-gray-200 rounded hover:bg-gray-50"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Sub-tabs */}
