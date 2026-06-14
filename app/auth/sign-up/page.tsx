@@ -144,6 +144,18 @@ export default function SignUp() {
         })
       }
 
+      if (data.session) {
+        const { createBrowserClient } = await import('@supabase/ssr')
+        const browserClient = createBrowserClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+        await browserClient.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        })
+      }
+
       router.push('/dashboard');
     } else {
       setError('Sign up failed. Please try again.');

@@ -28,11 +28,22 @@ export default function SignIn() {
     setLoading(true);
     setError('');
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       setError(error.message);
     } else {
+      if (data.session) {
+        const { createBrowserClient } = await import('@supabase/ssr')
+        const browserClient = createBrowserClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+        await browserClient.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        })
+      }
       router.push('/dashboard');
     }
     setLoading(false);
