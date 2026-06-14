@@ -32,9 +32,12 @@ export default function AvailabilityPage() {
   // Auth guard — uses cookie-based client so server can read the same session
   useEffect(() => {
     const checkAuth = async () => {
-      const { createClientComponentClient } = await import('@supabase/auth-helpers-nextjs')
-      const supabaseClient = createClientComponentClient()
-      const { data: { session } } = await supabaseClient.auth.getSession()
+      const { createBrowserClient } = await import('@supabase/ssr')
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.push('/auth/sign-in'); return }
       setAuthReady(true)
     }
