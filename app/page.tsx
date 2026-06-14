@@ -263,10 +263,10 @@ export default function Home() {
               03 &nbsp;&nbsp; Get started
             </p>
             <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: '700', color: '#1a1a2e', margin: '0 0 52px' }}>
-              Three steps.
+              Four steps.
             </h2>
           </FadeIn>
-          <div className="grid sm:grid-cols-3 gap-10">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10">
             {[
               {
                 n: '1',
@@ -283,6 +283,12 @@ export default function Home() {
                 title: 'Train when you\'re ready',
                 desc: 'Subscribe to unlock 5 professional modules for $9.99. Cancel after 30 days.',
               },
+              {
+                n: '4',
+                title: 'Install it on your phone',
+                desc: 'Add SetReady to your home screen for instant access on set — works like a native app.',
+                sub: '📲 Install in seconds — free',
+              },
             ].map((step, i) => (
               <FadeIn key={step.n} delay={i * 80}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
@@ -291,6 +297,7 @@ export default function Home() {
                   </div>
                   <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1a1a2e', margin: 0 }}>{step.title}</h3>
                   <p style={{ fontSize: '14px', color: '#6b7280', lineHeight: '1.65', margin: 0 }}>{step.desc}</p>
+                  {(step as any).sub && <p style={{ fontSize: '12px', color: '#F59E0B', fontWeight: '600', margin: 0 }}>{(step as any).sub}</p>}
                 </div>
               </FadeIn>
             ))}

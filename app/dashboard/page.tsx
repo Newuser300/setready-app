@@ -83,6 +83,7 @@ const quickActions = [
   { icon: '🎭', label: 'Agency Click', action: 'modal' as const, modal: 'agencyClick' },
   { icon: '🎬', label: 'SetReady Casting', action: 'link' as const, href: '/casting-portal' },
   { icon: '📅', label: 'Availability', action: 'link' as const, href: '/availability' },
+  { icon: '📲', label: 'Install App', action: 'fn' as const, fn: 'showInstallGuide' },
 ];
 
 export default function Dashboard() {
@@ -106,6 +107,11 @@ export default function Dashboard() {
   const [promoCodeInput, setPromoCodeInput] = useState('');
   const [promoApplying, setPromoApplying] = useState(false);
   const [promoMsg, setPromoMsg] = useState<{ text: string; ok: boolean } | null>(null);
+
+  // INSTALL MODAL STATE
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
 
   // PAYMENT STATES - ADDED
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -387,6 +393,26 @@ export default function Dashboard() {
     }
   }, [])
 
+  // Capture Android install prompt + control install hero banner
+  useEffect(() => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    const bannerDismissed = localStorage.getItem('sr-install-dismissed')
+    if (!isStandalone && !bannerDismissed) {
+      setShowInstallBanner(true)
+    }
+
+    const handler = (e: any) => {
+      e.preventDefault()
+      setDeferredInstallPrompt(e)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+    window.addEventListener('appinstalled', () => {
+      setShowInstallBanner(false)
+      setShowInstallModal(false)
+    })
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handler);
@@ -611,6 +637,8 @@ export default function Dashboard() {
       window.open(item.href, '_blank', 'noopener,noreferrer');
     } else if (item.action === 'modal' && item.modal === 'agencyClick') {
       openAgencyClickModal();
+    } else if (item.action === 'fn' && item.fn === 'showInstallGuide') {
+      setShowInstallModal(true);
     }
   }
 
@@ -696,12 +724,45 @@ export default function Dashboard() {
                   style={{ width: `${progressPercentage}%`, height: '100%', backgroundColor: '#F59E0B', borderRadius: '9999px', transition: 'width 0.5s ease' }}
                 />
               </div>
-              <p className="text-sm text-blue-200 mt-2">
+              <p className="text-sm text-blue-100 mt-2">
                 {completedCount === section1Modules.length 
                   ? '🎉 Amazing! You\'ve unlocked the secret section!' 
                   : `${section1Modules.length - completedCount} more modules to unlock the secret section`}
               </p>
             </div>
+
+            {/* Install App Hero Banner */}
+            {showInstallBanner && (
+              <div style={{
+                marginTop: '12px',
+                border: '1px solid rgba(245,158,11,0.5)',
+                borderRadius: '12px',
+                padding: '11px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                backgroundColor: 'rgba(255,255,255,0.06)',
+              }}>
+                <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', lineHeight: '1.4', flex: 1 }}>
+                  📲 Add SetReady to your home screen for quick access on set
+                </span>
+                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                  <button
+                    onClick={() => setShowInstallModal(true)}
+                    style={{ padding: '6px 14px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', fontSize: '12px', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                  >
+                    Install
+                  </button>
+                  <button
+                    onClick={() => { setShowInstallBanner(false); localStorage.setItem('sr-install-dismissed', 'true'); }}
+                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '16px', padding: '0 4px', lineHeight: 1 }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -747,37 +808,7 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {showIOSTip && (
-            <div style={{
-              backgroundColor: '#1a1a2e',
-              border: '1px solid #F59E0B',
-              borderRadius: '10px',
-              padding: '12px 16px',
-              marginBottom: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '12px',
-            }}>
-              <span style={{ fontSize: '13px', color: 'white' }}>
-                📱 Add SetReady to your home screen: tap Share then &ldquo;Add to Home Screen&rdquo;
-              </span>
-              <button
-                onClick={() => {
-                  setShowIOSTip(false)
-                  localStorage.setItem('sr-ios-tip-dismissed', 'true')
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#6b7280',
-                  cursor: 'pointer',
-                  fontSize: '16px',
-                  flexShrink: 0,
-                }}
-              >✕</button>
-            </div>
-          )}
+          {/* iOS tip replaced by hero install banner above */}
 
           {/* PAYMENT STATUS CARDS - UPDATED to use Stripe functions */}
           {!isSubscribed && (
@@ -1473,6 +1504,130 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* INSTALL APP MODAL */}
+      {showInstallModal && (() => {
+        const ua = navigator.userAgent.toLowerCase()
+        const isIOS = /iphone|ipad|ipod/.test(ua)
+        const isAndroid = /android/.test(ua)
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+
+        return (
+          <div
+            onClick={() => setShowInstallModal(false)}
+            style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 99999, padding: '0' }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{ backgroundColor: 'white', borderRadius: '20px 20px 0 0', width: '100%', maxWidth: '480px', maxHeight: '85vh', overflowY: 'auto', padding: '24px 24px 40px', boxShadow: '0 -8px 40px rgba(0,0,0,0.2)' }}
+            >
+              {/* Handle bar */}
+              <div style={{ width: '40px', height: '4px', backgroundColor: '#e5e7eb', borderRadius: '2px', margin: '0 auto 20px' }} />
+
+              {/* SR badge */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '16px', color: '#F59E0B', fontFamily: 'Arial, sans-serif', flexShrink: 0 }}>SR</div>
+                <div>
+                  <div style={{ fontWeight: '800', fontSize: '17px', color: '#1a1a2e' }}>SetReady</div>
+                  <div style={{ fontSize: '12px', color: '#9ca3af' }}>Background Performer Platform</div>
+                </div>
+                <button onClick={() => setShowInstallModal(false)} style={{ marginLeft: 'auto', background: 'none', border: 'none', fontSize: '22px', color: '#9ca3af', cursor: 'pointer', lineHeight: 1 }}>×</button>
+              </div>
+
+              {isStandalone && (
+                <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                  <div style={{ fontSize: '52px', marginBottom: '12px' }}>✅</div>
+                  <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 8px' }}>SetReady is already installed!</h2>
+                  <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>You are using the installed app.</p>
+                </div>
+              )}
+
+              {!isStandalone && isIOS && (
+                <div>
+                  <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 6px' }}>Add SetReady to Your Home Screen</h2>
+                  <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 24px' }}>Follow these steps in Safari:</p>
+                  {[
+                    { icon: '⬆️', step: 'Tap the Share button', sub: 'At the bottom of your Safari browser' },
+                    { icon: '＋', step: 'Tap "Add to Home Screen"', sub: 'Scroll down in the share menu to find it' },
+                    { icon: '✓', step: 'Tap Add', sub: 'SetReady appears on your home screen instantly' },
+                  ].map((s, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', marginBottom: '20px' }}>
+                      <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>{s.icon}</div>
+                      <div>
+                        <div style={{ fontWeight: '700', fontSize: '15px', color: '#1a1a2e', marginBottom: '3px' }}>Step {i + 1}: {s.step}</div>
+                        <div style={{ fontSize: '13px', color: '#6b7280' }}>{s.sub}</div>
+                      </div>
+                    </div>
+                  ))}
+                  <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '12px 14px', fontSize: '13px', color: '#92400e' }}>
+                    ⚠️ Must be using <strong>Safari</strong>. Chrome on iPhone does not support home screen installation.
+                  </div>
+                </div>
+              )}
+
+              {!isStandalone && isAndroid && (
+                <div>
+                  <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 20px' }}>Install SetReady on Android</h2>
+                  {deferredInstallPrompt ? (
+                    <div style={{ textAlign: 'center', padding: '8px 0 16px' }}>
+                      <button
+                        onClick={async () => {
+                          deferredInstallPrompt.prompt()
+                          const { outcome } = await deferredInstallPrompt.userChoice
+                          if (outcome === 'accepted') { setShowInstallModal(false); setShowInstallBanner(false); }
+                          setDeferredInstallPrompt(null)
+                        }}
+                        style={{ width: '100%', padding: '16px', backgroundColor: '#1a1a2e', color: 'white', fontWeight: '700', fontSize: '16px', border: 'none', borderRadius: '12px', cursor: 'pointer' }}
+                      >
+                        📲 Install Now
+                      </button>
+                      <p style={{ fontSize: '13px', color: '#9ca3af', marginTop: '10px' }}>Tap to add SetReady to your home screen</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 20px' }}>Open Chrome and follow these steps:</p>
+                      {[
+                        { icon: '⋮', step: 'Open Chrome menu', sub: 'Tap the three-dot menu in the top right' },
+                        { icon: '＋', step: 'Tap "Add to Home Screen"', sub: 'Scroll down in the menu to find it' },
+                        { icon: '✓', step: 'Tap Install', sub: 'SetReady appears on your home screen' },
+                      ].map((s, i) => (
+                        <div key={i} style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', marginBottom: '20px' }}>
+                          <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '700', flexShrink: 0 }}>{s.icon}</div>
+                          <div>
+                            <div style={{ fontWeight: '700', fontSize: '15px', color: '#1a1a2e', marginBottom: '3px' }}>Step {i + 1}: {s.step}</div>
+                            <div style={{ fontSize: '13px', color: '#6b7280' }}>{s.sub}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!isStandalone && !isIOS && !isAndroid && (
+                <div>
+                  <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 12px' }}>Install SetReady on Your Computer</h2>
+                  <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 20px', lineHeight: '1.5' }}>
+                    Look for the install icon <strong>(⊕)</strong> in your browser address bar, or use your browser menu and select <strong>"Install SetReady"</strong>.
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+                    {['✓ Chrome', '✓ Edge', '✓ Brave'].map(b => (
+                      <div key={b} style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>{b}</div>
+                    ))}
+                    <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '4px' }}>Not supported in Firefox or Safari on desktop.</div>
+                  </div>
+                </div>
+              )}
+
+              {!isStandalone && (
+                <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #f3f4f6', fontSize: '13px', color: '#9ca3af', textAlign: 'center', lineHeight: '1.5' }}>
+                  Once installed, SetReady opens like a native app — no browser needed.
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* PRE-CHECKOUT REFERRAL MODAL (Feature 4) */}
       {showCheckoutModal && (
