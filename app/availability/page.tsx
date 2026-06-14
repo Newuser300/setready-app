@@ -229,6 +229,17 @@ export default function AvailabilityPage() {
 
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '16px' }}>
 
+        {/* Casting visibility banner */}
+        <div style={{ backgroundColor: '#1a1a2e', border: '1px solid #F59E0B', borderRadius: '12px', padding: '14px 16px', marginBottom: '16px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+          <span style={{ fontSize: '18px', flexShrink: 0, marginTop: '1px' }}>📅</span>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: '13px', color: 'white', margin: '0 0 6px', lineHeight: 1.5 }}>
+              Your availability is visible to approved agents and casting directors on SetReady Casting. Keep it updated to improve your chances of being booked.
+            </p>
+            <a href="/profile" style={{ fontSize: '12px', color: '#F59E0B', fontWeight: '600', textDecoration: 'none' }}>View My Casting Profile →</a>
+          </div>
+        </div>
+
         {/* Month navigation */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',

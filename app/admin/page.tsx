@@ -130,10 +130,22 @@ export default function AdminPage() {
   const [confirmDeleteUser, setConfirmDeleteUser] = useState(false);
 
   // Casting tab
-  const [castingSubTab, setCastingSubTab] = useState<'pending' | 'stats' | 'requests'>('pending');
+  const [castingSubTab, setCastingSubTab] = useState<'pending' | 'stats' | 'requests' | 'agents' | 'performers'>('pending');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [castingData, setCastingData] = useState<any>(null);
   const [castingLoading, setCastingLoading] = useState(false);
+
+  // Review mode toggle
+  const [reviewMode, setReviewMode] = useState(false);
+  const [reviewModeLoading, setReviewModeLoading] = useState(false);
+
+  // Agent controls
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [agents, setAgents] = useState<any[]>([]);
+  const [agentsLoading, setAgentsLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [performers, setPerformers] = useState<any[]>([]);
+  const [performersLoading, setPerformersLoading] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -372,6 +384,49 @@ export default function AdminPage() {
     setBackfillLoading(false);
   }
 
+  async function loadReviewMode() {
+    const res = await fetch('/api/admin/settings', { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (res.ok) {
+      const data = await res.json();
+      setReviewMode(data.casting_request_review_mode === 'true');
+    }
+  }
+
+  async function toggleReviewMode() {
+    setReviewModeLoading(true);
+    const newVal = !reviewMode;
+    await fetch('/api/admin/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ key: 'casting_request_review_mode', value: String(newVal) }),
+    });
+    setReviewMode(newVal);
+    setReviewModeLoading(false);
+  }
+
+  async function loadAgents() {
+    setAgentsLoading(true);
+    const res = await fetch('/api/admin/casting?type=agents', { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (res.ok) setAgents(await res.json());
+    setAgentsLoading(false);
+  }
+
+  async function toggleAgentSuspension(agentId: string, suspend: boolean) {
+    await fetch('/api/admin/casting', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ action: suspend ? 'suspend_agent' : 'restore_agent', id: agentId }),
+    });
+    loadAgents();
+  }
+
+  async function loadPerformers() {
+    setPerformersLoading(true);
+    const res = await fetch('/api/admin/casting?type=performers', { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (res.ok) setPerformers(await res.json());
+    setPerformersLoading(false);
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -464,6 +519,9 @@ export default function AdminPage() {
                 }
                 if (item.key === 'certificates') {
                   loadCertificates();
+                }
+                if (item.key === 'casting') {
+                  loadReviewMode();
                 }
               }}
               className={`px-4 py-3 text-sm font-medium transition border-b-2 whitespace-nowrap ${
@@ -1137,22 +1195,49 @@ export default function AdminPage() {
         ══════════════════════════════════════ */}
         {activeSection === 'casting' && (
           <div className="space-y-6">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center justify-between mb-2">
               <h2 className="text-xl font-bold text-gray-800">🎬 Casting Platform</h2>
             </div>
 
+            {/* Review Mode Toggle */}
+            <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between gap-4">
+              <div>
+                <p className="font-semibold text-gray-800 text-sm">Casting Request Review Mode</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {reviewMode
+                    ? 'ON — New casting requests require admin review before being sent to agents.'
+                    : 'OFF — Casting requests go directly to agents immediately.'}
+                </p>
+              </div>
+              <button
+                onClick={toggleReviewMode}
+                disabled={reviewModeLoading}
+                style={{ flexShrink: 0, width: '52px', height: '28px', borderRadius: '14px', backgroundColor: reviewMode ? '#22c55e' : '#d1d5db', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}
+              >
+                <div style={{ position: 'absolute', top: '4px', left: reviewMode ? '28px' : '4px', width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'white', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+              </button>
+            </div>
+
             {/* Sub-tabs */}
-            <div className="flex gap-2 border-b border-gray-200 pb-0">
-              {(['pending', 'stats', 'requests'] as const).map(t => (
-                <button key={t} onClick={async () => {
-                  setCastingSubTab(t)
+            <div className="flex gap-2 border-b border-gray-200 pb-0 overflow-x-auto">
+              {([
+                { key: 'pending',    label: 'Pending Applications' },
+                { key: 'stats',      label: 'Platform Stats' },
+                { key: 'requests',   label: 'All Requests' },
+                { key: 'agents',     label: 'Agents' },
+                { key: 'performers', label: 'Performers' },
+              ] as const).map(t => (
+                <button key={t.key} onClick={async () => {
+                  setCastingSubTab(t.key)
+                  if (t.key === 'agents') { loadAgents(); return; }
+                  if (t.key === 'performers') { loadPerformers(); return; }
                   setCastingLoading(true)
-                  const res = await fetch(`/api/admin/casting?type=${t}`)
+                  const res = await fetch(`/api/admin/casting?type=${t.key}`, { headers: { Authorization: `Bearer ${accessToken}` } })
                   setCastingLoading(false)
                   if (res.ok) setCastingData(await res.json())
                 }}
-                  className={`px-4 py-2 text-sm font-semibold border-b-2 transition -mb-px ${castingSubTab === t ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
-                  {t === 'pending' ? 'Pending Applications' : t === 'stats' ? 'Platform Stats' : 'All Requests'}
+                  className={`px-4 py-2 text-sm font-semibold border-b-2 transition -mb-px whitespace-nowrap ${castingSubTab === t.key ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                  {t.label}
                 </button>
               ))}
             </div>
@@ -1254,15 +1339,92 @@ export default function AdminPage() {
             )}
 
             {/* Load initial data on mount */}
-            {!castingLoading && !castingData && (
+            {!castingLoading && !castingData && castingSubTab !== 'agents' && castingSubTab !== 'performers' && (
               <button onClick={async () => {
                 setCastingLoading(true)
-                const res = await fetch('/api/admin/casting?type=pending')
+                const res = await fetch('/api/admin/casting?type=pending', { headers: { Authorization: `Bearer ${accessToken}` } })
                 setCastingLoading(false)
                 if (res.ok) setCastingData(await res.json())
               }} className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700">
                 Load Casting Data
               </button>
+            )}
+
+            {/* Agents Sub-tab */}
+            {castingSubTab === 'agents' && (
+              <div>
+                {agentsLoading ? (
+                  <div className="text-center py-10 text-gray-400">Loading agents...</div>
+                ) : agents.length === 0 ? (
+                  <p className="text-gray-400 text-sm">No agents found.</p>
+                ) : agents.map((ag: any) => (
+                  <div key={ag.id} className="bg-white border border-gray-200 rounded-xl p-4 mb-3 flex items-start justify-between gap-4">
+                    <div>
+                      <div className="font-bold text-gray-800">{ag.agency_name || ag.name}</div>
+                      <div className="text-sm text-gray-500">{ag.owner_email || ag.email}</div>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${ag.is_suspended ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-700'}`}>
+                          {ag.is_suspended ? '🚫 Suspended' : '✅ Active'}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${ag.can_receive_requests !== false ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
+                          {ag.can_receive_requests !== false ? 'Receiving Requests' : 'Requests Blocked'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      {ag.is_suspended ? (
+                        <button
+                          onClick={() => toggleAgentSuspension(ag.id, false)}
+                          className="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700"
+                        >Restore</button>
+                      ) : (
+                        <button
+                          onClick={() => { if (confirm(`Suspend ${ag.agency_name || ag.name}?`)) toggleAgentSuspension(ag.id, true) }}
+                          className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 text-xs font-bold rounded-lg hover:bg-red-100"
+                        >Suspend</button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Performers Sub-tab */}
+            {castingSubTab === 'performers' && (
+              <div>
+                {performersLoading ? (
+                  <div className="text-center py-10 text-gray-400">Loading performers...</div>
+                ) : performers.length === 0 ? (
+                  <p className="text-gray-400 text-sm">No performers with availability set.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm bg-white border border-gray-200 rounded-xl overflow-hidden">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Email</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Union</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">This Month</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Next Month</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Agency</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {performers.map((p: any) => (
+                          <tr key={p.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 font-medium text-gray-800">{p.name || '—'}</td>
+                            <td className="px-4 py-3 text-gray-500 text-xs">{p.email}</td>
+                            <td className="px-4 py-3 text-gray-500">{p.union_status || '—'}</td>
+                            <td className="px-4 py-3 text-gray-700 font-semibold">{p.this_month_available ?? '—'}</td>
+                            <td className="px-4 py-3 text-gray-700">{p.next_month_available ?? '—'}</td>
+                            <td className="px-4 py-3 text-gray-500">{p.agency_name || '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}

@@ -35,8 +35,6 @@ function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
 }
 
 const FREE_TOOLS = [
-  { icon: '📅', title: 'Availability Calendar', desc: 'Mark available dates. Agents and casting directors see you in real time.' },
-  { icon: '👤', title: 'Casting Profile', desc: 'Your headshot, stats and skills — visible to every approved agency and casting director.' },
   { icon: '📋', title: 'Work Log', desc: 'Log every booking. Track your earnings. Build your work history.' },
   { icon: '📄', title: 'Voucher Storage', desc: 'Photograph and store every voucher inside your work log. Always there when you need it.' },
   { icon: '💰', title: 'Rate Calculator', desc: 'Know your exact pay before you sign anything. Official 2025-2028 UBCP/ACTRA rates built in.' },
@@ -47,6 +45,8 @@ const FREE_TOOLS = [
   { icon: '📋', title: 'Proof of Residency', desc: 'Store your documents. Email them to production from your phone.' },
   { icon: '🎯', title: 'Goal Tracking', desc: 'Set milestones. Track progress. See your career grow.' },
   { icon: '🤝', title: 'Earn 20% Commission', desc: 'Refer performers. Earn 20% of every subscription they pay.' },
+  { icon: '📅', title: 'Availability Calendar', desc: 'Mark available dates. Agents and casting directors see you in real time.' },
+  { icon: '👤', title: 'Casting Profile', desc: 'Your headshot, stats and skills — visible to every approved agency and casting director.' },
 ];
 
 const MODULES = [
@@ -125,10 +125,10 @@ export default function Home() {
             Canada&apos;s Background Performer Platform
           </p>
           <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(44px, 8vw, 72px)', fontWeight: '700', color: '#1a1a2e', lineHeight: '1.1', letterSpacing: '-0.02em', margin: '0 0 28px' }}>
-            Everything you need<br />to work on set.
+            Everything a Background Performer<br />needs in one place.
           </h1>
           <p style={{ fontSize: 'clamp(17px, 2.5vw, 20px)', color: '#6b7280', maxWidth: '560px', margin: '0 auto 40px', lineHeight: '1.6' }}>
-            Work log. Rate calculator. Vouchers. Casting profile. Journal. Glossary. And professional training — all in one app.
+            Work log. Residency Docs. Rate calculator. Vouchers. Casting profile. Journal. Glossary. Availability calendar. Film contacts. And professional training — all in one app.
           </p>
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '20px' }}>
             <button
@@ -145,7 +145,7 @@ export default function Home() {
             </button>
           </div>
           <p style={{ fontSize: '13px', color: '#9ca3af', margin: 0 }}>
-            Free account &nbsp;·&nbsp; No credit card &nbsp;·&nbsp; Cancel training anytime
+            Free account &nbsp;·&nbsp; No credit card
           </p>
         </div>
       </section>
@@ -175,7 +175,7 @@ export default function Home() {
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <FadeIn>
             <p style={{ fontSize: '12px', color: '#F59E0B', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: '600', marginBottom: '16px' }}>
-              01 &nbsp;&nbsp; Free with every account
+              Free with every account
             </p>
             <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: '700', color: '#1a1a2e', margin: '0 0 20px' }}>
               Your career tools. No subscription.
@@ -378,7 +378,6 @@ export default function Home() {
           <div style={{ display: 'flex', gap: '24px', justifyContent: 'center' }}>
             <Link href="/terms" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'none' }}>Terms</Link>
             <Link href="/privacy" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'none' }}>Privacy</Link>
-            <a href="mailto:setready@mail.com" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'none' }}>Contact</a>
           </div>
         </div>
       </footer>

@@ -67,22 +67,22 @@ const moduleTitleOverrides: Record<number, string> = {
 };
 
 const quickActions = [
+  { icon: '👤', label: 'My Profile', action: 'link' as const, href: '/profile' },
+  { icon: '👔', label: 'What to Wear', action: 'link' as const, href: '/clothing' },
+  { icon: '📋', label: 'Residency Docs', action: 'link' as const, href: '/residency' },
   { icon: '📋', label: 'Work Log', action: 'link' as const, href: '/work-log' },
-  { icon: '🤝', label: 'My Referrals', action: 'link' as const, href: '/referrals' },
-  { icon: '💰', label: 'Rate Calculator', action: 'link' as const, href: '/rate-calculator' },
   { icon: '📔', label: 'Journal', action: 'link' as const, href: '/journal' },
   { icon: '👥', label: 'Contacts', action: 'link' as const, href: '/contacts' },
   { icon: '🎯', label: 'My Goals', action: 'link' as const, href: '/goals' },
   { icon: '📖', label: 'Glossary', action: 'link' as const, href: '/glossary' },
-  { icon: '📋', label: 'Residency Docs', action: 'link' as const, href: '/residency' },
-  { icon: '👔', label: 'What to Wear', action: 'link' as const, href: '/clothing' },
-  { icon: '🎭', label: 'Agency Click', action: 'modal' as const, modal: 'agencyClick' },
+  { icon: '💰', label: 'Rate Calculator', action: 'link' as const, href: '/rate-calculator' },
   { icon: '⚖️', label: 'Know Your Rights', action: 'external' as const, href: 'https://ubcpactra.ca/agreements/' },
+  { icon: '🤝', label: 'My Referrals', action: 'link' as const, href: '/referrals' },
   { icon: '🎬', label: 'Productions in BC', action: 'external' as const, href: 'https://ubcpactra.ca/production-list/' },
   { icon: '🍁', label: 'Find Agencies', action: 'link' as const, href: '/agencies' },
+  { icon: '🎭', label: 'Agency Click', action: 'modal' as const, modal: 'agencyClick' },
+  { icon: '🎬', label: 'SetReady Casting', action: 'link' as const, href: '/casting-portal' },
   { icon: '📅', label: 'Availability', action: 'link' as const, href: '/availability' },
-  { icon: '👤', label: 'My Profile', action: 'link' as const, href: '/profile' },
-  { icon: '🎬', label: 'Casting Platform', action: 'link' as const, href: '/casting/about' },
 ];
 
 export default function Dashboard() {
@@ -640,9 +640,9 @@ export default function Dashboard() {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
         {/* Hero Header */}
-        <div className="bg-gradient-to-r from-blue-700 via-purple-700 to-indigo-800 text-white">
+        <div style={{ backgroundColor: '#1a1a2e', color: 'white' }}>
           <div className="max-w-4xl mx-auto px-4" style={{ paddingTop: isMobile ? '16px' : '24px', paddingBottom: isMobile ? '16px' : '24px' }}>
             <div className="flex items-center justify-between">
               <div>
@@ -684,9 +684,8 @@ export default function Dashboard() {
                 <span className="text-2xl font-bold">{completedCount}/{section1Modules.length}</span>
               </div>
               <div className="h-3 bg-white/20 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full transition-all duration-500"
-                  style={{ width: `${progressPercentage}%` }}
+                <div
+                  style={{ width: `${progressPercentage}%`, height: '100%', backgroundColor: '#F59E0B', borderRadius: '9999px', transition: 'width 0.5s ease' }}
                 />
               </div>
               <p className="text-sm text-blue-200 mt-2">
@@ -896,7 +895,10 @@ export default function Dashboard() {
           <div className="my-8 rounded-2xl overflow-hidden shadow-lg" style={{ backgroundColor: '#F59E0B' }}>
             <div className="px-6 py-7 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
               <div>
-                <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-tight">🎭 Set Etiquette Simulator</h2>
+                <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-tight">
+                  🎭 Set Etiquette Simulator
+                  <span style={{ backgroundColor: '#22c55e', color: 'white', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '999px', marginLeft: '8px', display: 'inline-block', verticalAlign: 'middle' }}>FREE</span>
+                </h2>
                 <p className="text-gray-800 font-medium mt-1 text-base">Test your on-set knowledge with real scenarios</p>
               </div>
               <Link
@@ -1042,39 +1044,6 @@ export default function Dashboard() {
             )}
           </div>
 
-          <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '24px 0' }} />
-
-          {/* QUICK LINKS */}
-          <div id="quick-links-section">
-            <h2 className="text-lg font-bold text-gray-700 mb-4">Quick Links</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '12px' }}>
-
-              <button onClick={() => router.push('/work-log')} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 20px', backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', textAlign: 'left', width: '100%' }}>
-                <span style={{ fontSize: '24px' }}>📋</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: '700', fontSize: '14px', color: '#1a1a2e' }}>Work Log</div>
-                  <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>Track earnings & vouchers</div>
-                </div>
-                <span style={{ color: '#9ca3af', fontSize: '18px' }}>→</span>
-              </button>
-              <button onClick={() => router.push('/referrals')} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 20px', backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', textAlign: 'left', width: '100%' }}>
-                <span style={{ fontSize: '24px' }}>🤝</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: '700', fontSize: '14px', color: '#1a1a2e' }}>My Referrals</div>
-                  <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>Earn 20% commission</div>
-                </div>
-                <span style={{ color: '#9ca3af', fontSize: '18px' }}>→</span>
-              </button>
-              <button onClick={() => router.push('/availability')} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 20px', backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', textAlign: 'left', width: '100%' }}>
-                <span style={{ fontSize: '24px' }}>📅</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: '700', fontSize: '14px', color: '#1a1a2e' }}>Availability</div>
-                  <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>Manage your schedule</div>
-                </div>
-                <span style={{ color: '#9ca3af', fontSize: '18px' }}>→</span>
-              </button>
-            </div>
-          </div>
           <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '32px 0 0' }} />
 
           {/* CUSTOMER PORTAL BUTTON - 30-day minimum commitment lock */}

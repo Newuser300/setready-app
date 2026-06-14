@@ -38,15 +38,6 @@ export default function SignIn() {
     setLoading(false);
   };
 
-  const features = [
-    'Availability Calendar — seen by agents in real time',
-    'Casting Profile — visible to every approved agency',
-    'Work Log & Voucher Storage',
-    'Official 2025–2028 UBCP/ACTRA Rate Calculator',
-    'Film Set Glossary — A to Z, searchable on set',
-    'Earn 20% commission referring other performers',
-  ];
-
   const inputStyle: React.CSSProperties = {
     width: '100%',
     padding: '11px 14px',
@@ -101,7 +92,7 @@ export default function SignIn() {
             }}>SR</div>
             <div>
               <div style={{ fontFamily: 'Georgia, serif', fontSize: '24px', fontWeight: 700, color: 'white', lineHeight: 1 }}>SetReady</div>
-              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginTop: '4px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Film Industry Training</div>
+              <div style={{ fontSize: '11px', color: '#F59E0B', marginTop: '4px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Background Performer Platform</div>
             </div>
           </div>
 
@@ -109,21 +100,10 @@ export default function SignIn() {
           <div style={{ width: '48px', height: '3px', backgroundColor: '#F59E0B', borderRadius: '2px', marginBottom: '28px' }} />
 
           {/* Headline */}
-          <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '28px', color: 'white', fontWeight: 700, lineHeight: 1.3, margin: '0 0 28px' }}>
-            Everything you need to work on set — for free.
-          </h2>
+          <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, margin: '0 0 36px' }}>
+            Everything a Background Performer needs in one place — for free.
+          </p>
 
-          {/* Feature list */}
-          <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 36px', display: 'flex', flexDirection: 'column', gap: '13px' }}>
-            {features.map((f, i) => (
-              <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', color: 'rgba(255,255,255,0.8)', lineHeight: 1.45 }}>
-                <span style={{ color: '#F59E0B', fontWeight: 700, marginTop: '1px', flexShrink: 0 }}>✓</span>
-                {f}
-              </li>
-            ))}
-          </ul>
-
-          {/* Disclaimer */}
           <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', lineHeight: 1.6, margin: 0 }}>
             Trusted by performers across Canada. No credit card required. Free forever.
           </p>
@@ -260,8 +240,7 @@ export default function SignIn() {
 
         <div style={{ marginTop: '16px', textAlign: 'center' }}>
           <p style={{ fontSize: '11px', color: '#9ca3af', margin: 0 }}>
-            Need help?{' '}
-            <a href="mailto:setready@mail.com" style={{ color: '#9ca3af', textDecoration: 'underline' }}>setready@mail.com</a>
+            Need help? setready@mail.com
           </p>
         </div>
 
