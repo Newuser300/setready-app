@@ -4,13 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import Logo from '@/components/Logo';
 import Copyright from '@/components/Copyright';
 
 export default function SignUp() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [province, setProvince] = useState('');
   const [ageConfirmed, setAgeConfirmed] = useState(false);
@@ -20,6 +20,15 @@ export default function SignUp() {
   const [refFromUrl, setRefFromUrl] = useState(false);
   const [codeValidation, setCodeValidation] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
   const [referrerName, setReferrerName] = useState('');
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -60,7 +69,6 @@ export default function SignUp() {
     setLoading(true);
     setError('');
 
-    // Age verification check
     if (!ageConfirmed) {
       setError('You must confirm that you are 13 years or older to create an account.');
       setLoading(false);
@@ -83,7 +91,6 @@ export default function SignUp() {
 
     if (data.user) {
       const token = data.session?.access_token;
-
       const res = await fetch('/api/auth/create-profile', {
         method: 'POST',
         headers: {
@@ -112,72 +119,243 @@ export default function SignUp() {
     } else {
       setError('Sign up failed. Please try again.');
     }
-    
+
     setLoading(false);
   };
 
   const provinces = [
     'British Columbia', 'Ontario', 'Quebec (English)', 'Quebec (French)',
-    'Alberta', 'Saskatchewan', 'Manitoba', 'Maritimes', 'Newfoundland', 'Territories'
+    'Alberta', 'Saskatchewan', 'Manitoba', 'Maritimes', 'Newfoundland', 'Territories',
   ];
 
+  const features = [
+    'Availability Calendar — seen by agents in real time',
+    'Casting Profile — visible to every approved agency',
+    'Work Log & Voucher Storage',
+    'Official 2025–2028 UBCP/ACTRA Rate Calculator',
+    'Film Set Glossary — A to Z, searchable on set',
+    'Earn 20% commission referring other performers',
+  ];
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '11px 14px',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    fontSize: '14px',
+    color: '#1a1a2e',
+    outline: 'none',
+    boxSizing: 'border-box',
+    backgroundColor: '#fafafa',
+    fontFamily: 'inherit',
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: 'block',
+    fontSize: '11px',
+    fontWeight: 700,
+    color: '#6b7280',
+    marginBottom: '5px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow">
-        <div className="flex justify-center">
-          <Logo size="lg" darkBackground={false} showText={true} />
+    <div style={{ minHeight: '100vh', display: 'flex', fontFamily: '-apple-system, Arial, sans-serif' }}>
+
+      {/* ── LEFT BRAND PANEL ── */}
+      {!isMobile && (
+        <div style={{
+          width: '50%',
+          backgroundColor: '#1a1a2e',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          padding: '60px 52px',
+          position: 'sticky',
+          top: 0,
+          height: '100vh',
+          overflow: 'hidden',
+          flexShrink: 0,
+        }}>
+          {/* SR Badge + wordmark */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '32px' }}>
+            <div style={{
+              width: '52px', height: '52px',
+              backgroundColor: '#F59E0B',
+              borderRadius: '50%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontWeight: 900, fontSize: '18px', color: '#1a1a2e',
+              letterSpacing: '-0.5px',
+              flexShrink: 0,
+            }}>SR</div>
+            <div>
+              <div style={{ fontFamily: 'Georgia, serif', fontSize: '24px', fontWeight: 700, color: 'white', lineHeight: 1 }}>SetReady</div>
+              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginTop: '4px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Film Industry Training</div>
+            </div>
+          </div>
+
+          {/* Amber divider */}
+          <div style={{ width: '48px', height: '3px', backgroundColor: '#F59E0B', borderRadius: '2px', marginBottom: '28px' }} />
+
+          {/* Headline */}
+          <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '28px', color: 'white', fontWeight: 700, lineHeight: 1.3, marginBottom: '28px', margin: '0 0 28px' }}>
+            Everything you need to work on set — for free.
+          </h2>
+
+          {/* Feature list */}
+          <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 36px', display: 'flex', flexDirection: 'column', gap: '13px' }}>
+            {features.map((f, i) => (
+              <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', color: 'rgba(255,255,255,0.8)', lineHeight: 1.45 }}>
+                <span style={{ color: '#F59E0B', fontWeight: 700, marginTop: '1px', flexShrink: 0 }}>✓</span>
+                {f}
+              </li>
+            ))}
+          </ul>
+
+          {/* Disclaimer */}
+          <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', lineHeight: 1.6, margin: 0 }}>
+            Trusted by performers across Canada. No credit card required. Free forever.
+          </p>
         </div>
-        <p className="text-center text-gray-600">Create your account</p>
-        <p className="text-center text-sm text-gray-500 italic">
-          Essential Training for Every Film Industry Background Performer
-        </p>
-        <form className="mt-8 space-y-6" onSubmit={handleSignUp}>
-          <div className="space-y-4">
+      )}
+
+      {/* ── RIGHT FORM PANEL ── */}
+      <div style={{
+        width: isMobile ? '100%' : '50%',
+        backgroundColor: 'white',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-start',
+        padding: isMobile ? '40px 24px 60px' : '48px 52px 60px',
+        overflowY: 'auto',
+        minHeight: '100vh',
+      }}>
+
+        {/* Mobile SR circle */}
+        {isMobile && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '44px', height: '44px',
+                backgroundColor: '#F59E0B',
+                borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: 900, fontSize: '16px', color: '#1a1a2e',
+              }}>SR</div>
+              <span style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: 700, color: '#1a1a2e' }}>SetReady</span>
+            </div>
+          </div>
+        )}
+
+        {/* Form header */}
+        <div style={{ marginBottom: '28px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: '#F59E0B', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>
+            GET STARTED FREE
+          </div>
+          <h1 style={{ fontFamily: 'Georgia, serif', fontSize: isMobile ? '26px' : '30px', fontWeight: 700, color: '#1a1a2e', margin: 0, lineHeight: 1.2 }}>
+            Create your account
+          </h1>
+        </div>
+
+        <form onSubmit={handleSignUp} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+          {/* Full Name */}
+          <div>
+            <label style={labelStyle}>Full Name</label>
             <input
               type="text"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Full name"
+              placeholder="Your full name"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              style={inputStyle}
             />
+          </div>
+
+          {/* Email */}
+          <div>
+            <label style={labelStyle}>Email Address</label>
             <input
               type="email"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Email address"
+              placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              style={inputStyle}
             />
-            <input
-              type="password"
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Password (min 6 characters)"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+          </div>
+
+          {/* Password */}
+          <div>
+            <label style={labelStyle}>Password</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                placeholder="Min 6 characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{ ...inputStyle, paddingRight: '44px' }}
+              />
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: 0, display: 'flex', alignItems: 'center' }}
+              >
+                {showPassword ? (
+                  <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Province */}
+          <div>
+            <label style={labelStyle}>Province</label>
             <select
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={province}
               onChange={(e) => setProvince(e.target.value)}
+              style={{
+                ...inputStyle,
+                appearance: 'none',
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 14px center',
+                paddingRight: '36px',
+                cursor: 'pointer',
+              } as React.CSSProperties}
             >
               <option value="">Select your province</option>
               {provinces.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
+          </div>
 
-            {/* Referral Code */}
+          {/* Referral Code */}
+          <div>
+            <label style={labelStyle}>
+              Referral Code{' '}
+              <span style={{ color: '#9ca3af', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+            </label>
             {refFromUrl ? (
-              <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-300 rounded-lg text-sm text-green-700">
-                ✓ Referral code applied: <strong className="ml-1">{referralCode}</strong>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '11px 14px', backgroundColor: '#f0fdf4', border: '1px solid #86efac', borderRadius: '8px', fontSize: '14px', color: '#15803d' }}>
+                <span style={{ fontWeight: 700 }}>✓</span>
+                Referral code applied: <strong style={{ marginLeft: '4px' }}>{referralCode}</strong>
               </div>
             ) : (
               <div>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Referral code (optional) e.g. A3BC9F2D"
+                  placeholder="e.g. A3BC9F2D"
                   value={referralCode}
                   onChange={(e) => {
                     const val = e.target.value.toUpperCase();
@@ -186,63 +364,90 @@ export default function SignUp() {
                     setCodeValidation('idle');
                   }}
                   onBlur={() => validateReferralCode(referralCode)}
+                  style={inputStyle}
                 />
                 {codeValidation === 'checking' && (
-                  <p className="text-xs text-gray-400 mt-1">Checking code...</p>
+                  <p style={{ fontSize: '12px', color: '#9ca3af', margin: '4px 0 0' }}>Checking code...</p>
                 )}
                 {codeValidation === 'valid' && (
-                  <p className="text-xs text-green-600 mt-1">✓ Valid referral code{referrerName ? ` — referred by ${referrerName}` : ''}</p>
+                  <p style={{ fontSize: '12px', color: '#16a34a', margin: '4px 0 0' }}>
+                    ✓ Valid referral code{referrerName ? ` — referred by ${referrerName}` : ''}
+                  </p>
                 )}
                 {codeValidation === 'invalid' && (
-                  <p className="text-xs text-red-500 mt-1">✗ Code not found. Double-check and try again.</p>
+                  <p style={{ fontSize: '12px', color: '#dc2626', margin: '4px 0 0' }}>✗ Code not found. Double-check and try again.</p>
                 )}
               </div>
             )}
-
-            {/* Age Disclaimer Checkbox */}
-            <div className="space-y-2 pt-2">
-              <label className="flex items-start gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  required
-                  checked={ageConfirmed}
-                  onChange={(e) => setAgeConfirmed(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">
-                  I confirm that I am <strong>13 years of age or older</strong> and have read and agree to the{' '}
-                  <Link href="/terms" className="text-blue-600 hover:underline">
-                    Terms of Service
-                  </Link>
-                  {' '}and{' '}
-                  <Link href="/privacy" className="text-blue-600 hover:underline">
-                    Privacy Policy
-                  </Link>
-                  .
-                </span>
-              </label>
-              <p className="text-xs text-gray-500 pl-6">
-                SetReady is for users 13 and older. If you are under 13, please do not create an account.
-              </p>
-            </div>
           </div>
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+
+          {/* Age confirmation */}
+          <div style={{ padding: '14px 16px', backgroundColor: '#fafafa', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                required
+                checked={ageConfirmed}
+                onChange={(e) => setAgeConfirmed(e.target.checked)}
+                style={{ marginTop: '2px', width: '15px', height: '15px', accentColor: '#F59E0B', flexShrink: 0, cursor: 'pointer' }}
+              />
+              <span style={{ fontSize: '13px', color: '#374151', lineHeight: 1.5 }}>
+                I confirm I am <strong>13 years of age or older</strong> and agree to the{' '}
+                <Link href="/terms" style={{ color: '#F59E0B', textDecoration: 'none', fontWeight: 600 }}>Terms of Service</Link>
+                {' '}and{' '}
+                <Link href="/privacy" style={{ color: '#F59E0B', textDecoration: 'none', fontWeight: 600 }}>Privacy Policy</Link>.
+              </span>
+            </label>
+            <p style={{ fontSize: '11px', color: '#9ca3af', margin: '6px 0 0 25px', lineHeight: 1.4 }}>
+              SetReady is for users 13 and older. If you are under 13, please do not create an account.
+            </p>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div style={{ padding: '10px 14px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', fontSize: '13px', color: '#dc2626', lineHeight: 1.4 }}>
+              {error}
+            </div>
+          )}
+
+          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            style={{
+              width: '100%',
+              padding: '13px',
+              backgroundColor: loading ? '#e5e7eb' : '#F59E0B',
+              color: loading ? '#9ca3af' : '#1a1a2e',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '15px',
+              fontWeight: 700,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              letterSpacing: '0.02em',
+              fontFamily: 'inherit',
+              marginTop: '4px',
+            }}
           >
-            {loading ? 'Creating account...' : 'Sign Up'}
+            {loading ? 'Creating account...' : 'Create My Free Account'}
           </button>
         </form>
-        <p className="text-center text-sm">
+
+        {/* Sign in link */}
+        <p style={{ marginTop: '20px', fontSize: '13px', color: '#6b7280', textAlign: 'center' }}>
           Already have an account?{' '}
-          <Link href="/auth/sign-in" className="text-blue-600 hover:underline">
-            Sign in
-          </Link>
+          <Link href="/auth/sign-in" style={{ color: '#F59E0B', fontWeight: 600, textDecoration: 'none' }}>Sign in</Link>
         </p>
+
+        <div style={{ marginTop: '16px', textAlign: 'center' }}>
+          <p style={{ fontSize: '11px', color: '#9ca3af', margin: 0 }}>
+            Need help?{' '}
+            <a href="mailto:setready@mail.com" style={{ color: '#9ca3af', textDecoration: 'underline' }}>setready@mail.com</a>
+          </p>
+        </div>
+
+        <Copyright />
       </div>
-      <Copyright />
     </div>
   );
 }
