@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/utils/supabase/client'
+import { supabase } from '@/lib/supabase'
+import LoadingScreen from '@/components/LoadingScreen'
 
 const COLORS = {
   available: '#22c55e',
@@ -25,20 +26,22 @@ export default function AvailabilityPage() {
   const [availability, setAvailability] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [authReady, setAuthReady] = useState(false)
 
   const month = currentDate.toISOString().slice(0, 7)
 
-  // Auth guard
+  // Auth guard — gates all data fetches
   useEffect(() => {
-    const supabase = createClient()
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) router.push('/auth/sign-in')
+      if (!session) { router.push('/auth/sign-in'); return }
+      setAuthReady(true)
     })
   }, [router])
 
+  // Only fetch once auth is confirmed
   useEffect(() => {
-    fetchAvailability()
-  }, [month])
+    if (authReady) fetchAvailability()
+  }, [month, authReady])
 
   const fetchAvailability = async () => {
     setLoading(true)
@@ -205,6 +208,8 @@ export default function AvailabilityPage() {
     }
     setSaving(false)
   }
+
+  if (!authReady) return <LoadingScreen />
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', padding: '0 0 80px' }}>
