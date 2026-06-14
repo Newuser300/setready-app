@@ -6,23 +6,14 @@ import SignUpModal from '@/app/components/SignUpModal';
 import Logo from '@/components/Logo';
 import Copyright from '@/components/Copyright';
 
-/* ── Scroll-triggered fade-in wrapper ──────────────────────── */
-function FadeIn({
-  children,
-  delay = 0,
-  className = '',
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  className?: string;
-}) {
+function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
+      ([e]) => { if (e.isIntersecting) setVisible(true); },
       { threshold: 0.08 }
     );
     obs.observe(el);
@@ -31,435 +22,333 @@ function FadeIn({
   return (
     <div
       ref={ref}
-      style={{ transitionDelay: `${delay}ms` }}
-      className={`transition-all duration-700 ${
-        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
-      } ${className}`}
+      style={{
+        transition: `opacity 0.65s ease ${delay}ms, transform 0.65s ease ${delay}ms`,
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(20px)',
+      }}
     >
       {children}
     </div>
   );
 }
 
-/* ── Module data ────────────────────────────────────────────── */
 const section1Modules = [
-  {
-    num: '01',
-    title: 'Film Set Terminology',
-    desc: 'Master the language of the film set. The terms that separate professionals from amateurs on day one.',
-  },
-  {
-    num: '02',
-    title: 'Background Acting Terms & Performance',
-    desc: 'Understand your role on set. Deliver natural, professional background work every time.',
-  },
-  {
-    num: '03',
-    title: 'Set Etiquette & Professional Conduct',
-    desc: 'The unwritten rules that get you hired again. Professional conduct that builds your reputation.',
-  },
-  {
-    num: '04',
-    title: 'Safety on Set',
-    desc: 'Protect yourself and others. Know every protocol background performers must follow.',
-  },
-  {
-    num: '05',
-    title: 'Industry Standards, Pay & Career Advancement',
-    desc: 'Know your worth. Union rates, vouchers, and the path from background to principal performer.',
-  },
+  { num: '01', title: 'Film Set Terminology', desc: 'Master the language of the film set.' },
+  { num: '02', title: 'Background Acting Terms and Performance', desc: 'Your role, your performance, your reputation.' },
+  { num: '03', title: 'Set Etiquette and Professional Conduct', desc: 'The unwritten rules that get you hired again.' },
+  { num: '04', title: 'Safety on Set', desc: 'Protect yourself and others.' },
+  { num: '05', title: 'Industry Standards, Pay and Advancement', desc: 'Know what you are owed.' },
 ];
 
 const section2Modules = [
-  { num: '06', title: 'Foundation' },
-  { num: '07', title: 'Audition Technique' },
-  { num: '08', title: 'Scene Study' },
-  { num: '09', title: 'Advanced Technique' },
+  { num: '06', title: 'Foundation', desc: 'Build your acting foundation.' },
+  { num: '07', title: 'Audition Technique', desc: 'Land the role before you walk in.' },
+  { num: '08', title: 'Scene Study', desc: 'Break down scenes with confidence.' },
+  { num: '09', title: 'Advanced Technique', desc: 'Elevate your craft to the next level.' },
 ];
 
-/* ── Locked module card ─────────────────────────────────────── */
-function LockedCard({
-  num,
-  title,
-  desc,
-  accent,
-  onUnlock,
-}: {
-  num: string;
-  title: string;
-  desc?: string;
-  accent: 'gold' | 'silver';
-  onUnlock: () => void;
-}) {
-  const isGold = accent === 'gold';
-  return (
-    <button
-      onClick={onUnlock}
-      className={`group w-full text-left bg-gray-50 rounded-2xl p-6 relative
-        border border-gray-200 border-t-2 ${isGold ? 'border-t-amber-500' : 'border-t-gray-400'}
-        hover:shadow-md hover:border-gray-300 transition-all duration-200`}
-    >
-      {/* Lock icon */}
-      <span className="absolute top-4 right-4 text-base text-gray-400">
-        🔒
-      </span>
+const FREE_TOOLS = [
+  { icon: '📅', title: 'Availability Calendar', desc: 'Mark available dates. Agents and casting directors see you in real time.' },
+  { icon: '👤', title: 'Casting Profile', desc: 'Your headshot, stats and skills — visible to every approved agency and casting director.' },
+  { icon: '📋', title: 'Work Log', desc: 'Log every booking. Track your earnings. Build your work history.' },
+  { icon: '📄', title: 'Voucher Storage', desc: 'Photograph and store every voucher inside your work log. Always there when you need it.' },
+  { icon: '💰', title: 'Rate Calculator', desc: 'Know your exact pay before you sign anything. Official 2025-2028 UBCP/ACTRA rates built in.' },
+  { icon: '📖', title: 'Film Set Glossary', desc: 'A to Z film terminology. Searchable on set. Never feel like an outsider.' },
+  { icon: '🎭', title: 'Scenario Simulator', desc: 'Practice 10 real on-set situations before you are standing in one.' },
+  { icon: '📔', title: 'On-Set Journal', desc: 'Record who you met and what you learned. With photo upload.' },
+  { icon: '👥', title: 'Film Contacts', desc: 'Build your industry directory — directors, ADs, agents, performers.' },
+  { icon: '📋', title: 'Proof of Residency', desc: 'Store your documents. Email them to production from your phone.' },
+  { icon: '🎯', title: 'Goal Tracking', desc: 'Set milestones. Track progress. See your career grow.' },
+  { icon: '🤝', title: 'Referrals', desc: 'Refer performers. Earn 20% of every subscription they pay.' },
+];
 
-      {/* Module number badge */}
-      <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded-md mb-3 ${
-        isGold ? 'bg-amber-50 text-amber-600' : 'bg-gray-100 text-gray-500'
-      }`}>
-        {num}
-      </span>
+const TOOL_CHIPS = [
+  { icon: '📅', label: 'Availability' },
+  { icon: '👤', label: 'Casting Profile' },
+  { icon: '📋', label: 'Work Log' },
+  { icon: '📄', label: 'Vouchers' },
+  { icon: '💰', label: 'Rates' },
+  { icon: '📖', label: 'Glossary' },
+  { icon: '🎭', label: 'Simulator' },
+  { icon: '📔', label: 'Journal' },
+  { icon: '👥', label: 'Contacts' },
+  { icon: '📋', label: 'Residency Docs' },
+  { icon: '🎯', label: 'Goals' },
+  { icon: '🤝', label: 'Referrals' },
+];
 
-      {/* Title */}
-      <h3 className="text-gray-800 font-bold text-base mb-2 pr-6 leading-snug">{title}</h3>
-
-      {/* Description */}
-      {desc && <p className="text-gray-500 text-sm leading-relaxed mb-4">{desc}</p>}
-
-      {/* Footer */}
-      <p className={`text-xs font-medium ${isGold ? 'text-amber-600' : 'text-gray-500'}`}>
-        🔒 Sign up to access
-      </p>
-    </button>
-  );
-}
-
-/* ── Main component ─────────────────────────────────────────── */
 export default function PreviewPage() {
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div style={{ minHeight: '100vh', backgroundColor: 'white', fontFamily: '-apple-system, Arial, sans-serif', color: '#1a1a2e' }}>
       {showModal && <SignUpModal onClose={() => setShowModal(false)} />}
 
-      {/* ── STICKY NAV ──────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#1a1a2e] border-b border-gray-800 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
+      {/* ── NAV ──────────────────────────────────────────────── */}
+      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, backgroundColor: '#1a1a2e', height: '64px', display: 'flex', alignItems: 'center' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 20px', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Logo size="md" darkBackground={true} />
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button
               onClick={() => router.push('/auth/sign-in')}
-              className="px-3 sm:px-4 py-2 text-gray-300 hover:text-white text-sm transition"
+              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', fontSize: '14px', cursor: 'pointer', padding: '6px 8px' }}
             >
               Sign In
             </button>
             <button
               onClick={() => setShowModal(true)}
-              className="px-4 py-2 bg-amber-500 text-black rounded-xl hover:bg-amber-400 transition-all duration-200 font-semibold text-sm"
+              style={{ backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '8px', padding: '0 20px', height: '40px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}
             >
-              Get Started
+              Create Account
             </button>
           </div>
         </div>
       </nav>
 
-      {/* offset for fixed nav */}
-      <div className="pt-[52px]">
+      {/* ── SECTION 1 — PREVIEW HERO ─────────────────────────── */}
+      <section style={{ backgroundColor: 'white', padding: '120px 20px 60px', textAlign: 'center' }}>
+        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+          <p style={{ fontSize: '12px', color: '#F59E0B', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: '600', marginBottom: '20px' }}>
+            Preview
+          </p>
+          <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(36px, 7vw, 52px)', fontWeight: '700', color: '#1a1a2e', lineHeight: '1.15', margin: '0 0 20px', letterSpacing: '-0.01em' }}>
+            See everything SetReady includes.
+          </h1>
+          <p style={{ fontSize: '18px', color: '#6b7280', lineHeight: '1.6', margin: '0 0 32px' }}>
+            Explore every module and tool below. Create a free account to get started.
+          </p>
+          <button
+            onClick={() => setShowModal(true)}
+            style={{ backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '8px', height: '48px', padding: '0 28px', fontSize: '16px', fontWeight: '700', cursor: 'pointer' }}
+          >
+            Create Free Account
+          </button>
+          <p style={{ fontSize: '13px', color: '#9ca3af', marginTop: '12px' }}>
+            No credit card required.
+          </p>
+        </div>
+      </section>
 
-        {/* ── HERO AREA ───────────────────────────────────────── */}
-        <section className="bg-white border-b border-gray-200 px-4 py-14 sm:py-20">
-          <div className="max-w-6xl mx-auto">
-            <FadeIn>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-500/30 bg-amber-50 text-amber-600 text-xs font-semibold mb-6">
-                👁 Preview Mode — Explore the full curriculum
-              </div>
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 mb-5 leading-tight max-w-3xl">
-                SetReady
-              </h1>
-              <p className="text-gray-500 text-lg max-w-xl mb-8 leading-relaxed">
-                Explore our complete curriculum below. Sign up to unlock instant access to all modules,
-                quizzes, and certificates.
-              </p>
-
-              {/* Progress bar preview */}
-              <div className="max-w-sm">
-                <div className="flex justify-between text-xs text-gray-400 mb-1.5">
-                  <span>Your Progress</span>
-                  <span>0% Complete</span>
-                </div>
-                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div className="h-2 w-0 bg-amber-500 rounded-full" />
-                </div>
-                <p className="text-xs text-gray-400 mt-2">Sign up to start tracking your progress</p>
-              </div>
-            </FadeIn>
-          </div>
-        </section>
-
-        {/* ── SECTION 1 PREVIEW ───────────────────────────────── */}
-        <section className="bg-white px-4 py-14">
-          <div className="max-w-6xl mx-auto">
-
-            {/* Section header */}
-            <FadeIn>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 pl-4 border-l-4 border-amber-500">
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                    Section 1: Background Acting Essentials
-                  </h2>
-                  <p className="text-gray-500 text-sm mt-1">$9.99/month • Instant access to all 5 modules, quizzes, certificates, and all the tools you need to succeed.</p>
-                </div>
-                <div className="shrink-0 flex flex-col items-center gap-2">
-                  <p className="text-xs text-gray-400 italic text-center">Join performers across Canada who are showing up to set prepared and professional.</p>
-                  <button
-                    onClick={() => setShowModal(true)}
-                    className="px-6 py-2.5 bg-amber-500 text-black font-bold rounded-xl hover:bg-amber-400 hover:scale-105 transition-all duration-200 text-sm shadow-sm"
-                  >
-                    Unlock Full Access →
-                  </button>
-                </div>
-              </div>
-            </FadeIn>
-
-            {/* Module cards grid */}
-            <div className="grid sm:grid-cols-2 gap-4">
-              {section1Modules.map((mod, i) => (
-                <FadeIn key={mod.num} delay={i * 70}>
-                  <LockedCard
-                    num={mod.num}
-                    title={mod.title}
-                    desc={mod.desc}
-                    accent="gold"
-                    onUnlock={() => setShowModal(true)}
-                  />
-                </FadeIn>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── SCENARIO SIMULATOR PREVIEW ──────────────────────── */}
-        <section className="bg-white px-4 pb-10">
-          <div className="max-w-6xl mx-auto">
-            <FadeIn>
-              <button
-                onClick={() => setShowModal(true)}
-                className="group w-full text-left bg-gray-50 rounded-2xl p-6 sm:p-8 border border-gray-200 border-t-2 border-t-amber-500 hover:shadow-md hover:border-gray-300 transition-all duration-200 relative"
+      {/* ── SECTION 2 — FREE TOOLS STRIP ─────────────────────── */}
+      <section style={{ backgroundColor: '#f9fafb', padding: '40px 20px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <p style={{ fontSize: '12px', color: '#6b7280', letterSpacing: '0.12em', textTransform: 'uppercase', textAlign: 'center', marginBottom: '20px', fontWeight: '600' }}>
+            Free with every account
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+            {TOOL_CHIPS.map(chip => (
+              <div
+                key={chip.label}
+                style={{ display: 'flex', alignItems: 'center', gap: '7px', backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', color: '#374151', fontWeight: '500' }}
               >
-                {/* Lock badge */}
-                <span className="absolute top-4 right-4 text-base text-gray-400">🔒</span>
-
-                {/* Header */}
-                <div className="mb-4">
-                  <span className="inline-block text-xs font-bold px-2 py-0.5 rounded-md mb-3 bg-amber-50 text-amber-600">
-                    Bonus Tool
-                  </span>
-                  <h2 className="text-lg sm:text-xl font-bold text-gray-800 pr-8 mb-2">
-                    🎭 Set Etiquette Scenario Simulator
-                  </h2>
-                  <p className="text-gray-500 text-sm leading-relaxed max-w-xl">
-                    Test your on-set knowledge with real scenarios. Learn how to handle tricky situations like a professional.
-                  </p>
-                </div>
-
-                {/* Example scenarios */}
-                <div className="space-y-2 mb-5">
-                  {[
-                    'What do you do when you can\'t hear the director?',
-                    'How do you handle a phone going off on set?',
-                    'What\'s the correct way to approach a lead actor?',
-                  ].map((q) => (
-                    <div key={q} className="flex items-start gap-2 text-sm text-gray-600">
-                      <span className="text-amber-500 shrink-0 mt-0.5">→</span>
-                      <span>{q}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <p className="text-xs font-medium text-amber-600">🔒 Sign up to access</p>
-              </button>
-            </FadeIn>
+                <span>{chip.icon}</span>
+                <span>{chip.label}</span>
+                <span style={{ fontSize: '10px', backgroundColor: '#d1fae5', color: '#065f46', borderRadius: '4px', padding: '1px 5px', fontWeight: '700', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Free</span>
+              </div>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* ── SECTION 2 PREVIEW ───────────────────────────────── */}
-        <section className="bg-[#F9FAFB] px-4 py-14 border-y border-gray-200">
-          <div className="max-w-6xl mx-auto">
-
-            {/* Section header */}
-            <FadeIn>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 pl-4 border-l-4 border-gray-400">
-                <div>
-                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-semibold rounded uppercase tracking-wide">
-                      Advanced
+      {/* ── SECTION 3 — SECTION 1 MODULES ────────────────────── */}
+      <section style={{ backgroundColor: 'white', padding: '80px 20px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <FadeIn>
+            <p style={{ fontSize: '12px', color: '#F59E0B', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: '600', marginBottom: '16px' }}>
+              Section 1 &nbsp;·&nbsp; $9.99/month
+            </p>
+            <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(26px, 5vw, 36px)', fontWeight: '700', color: '#1a1a2e', margin: '0 0 10px' }}>
+              Background Acting Essentials
+            </h2>
+            <p style={{ fontSize: '16px', color: '#6b7280', margin: '0 0 28px' }}>
+              5 modules. Quizzes. Certificates. Instant access.
+            </p>
+            <button
+              onClick={() => setShowModal(true)}
+              style={{ backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '8px', padding: '12px 24px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', marginBottom: '36px' }}
+            >
+              Unlock Full Access →
+            </button>
+          </FadeIn>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {section1Modules.map((mod, i) => (
+              <FadeIn key={mod.num} delay={i * 60}>
+                <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderLeft: '3px solid #F59E0B', borderRadius: '0 8px 8px 0', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flex: 1 }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#F59E0B', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: '700', color: '#1a1a2e' }}>{mod.num}</span>
                     </div>
-                    <div className="inline-flex items-center px-2 py-0.5 bg-gray-50 text-gray-400 text-xs font-semibold rounded border border-gray-200 uppercase tracking-wide">
-                      Optional
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ fontSize: '17px', fontWeight: '700', color: '#1a1a2e', margin: '0 0 4px' }}>{mod.title}</h3>
+                      <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 10px', lineHeight: '1.5' }}>{mod.desc}</p>
+                      <p style={{ fontSize: '12px', color: '#F59E0B', fontWeight: '600', margin: 0 }}>Includes quiz + certificate</p>
                     </div>
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                    Section 2: Advanced Acting Techniques
-                  </h2>
-                  <p className="text-gray-500 text-sm mt-1">Unlocks after Section 1 is complete. Designed for those who want to act. One-time purchase fee.</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', flexShrink: 0 }}>
+                    <span style={{ fontSize: '15px' }}>🔒</span>
+                    <button
+                      onClick={() => setShowModal(true)}
+                      style={{ fontSize: '12px', color: '#F59E0B', fontWeight: '600', background: 'none', border: 'none', cursor: 'pointer', padding: 0, whiteSpace: 'nowrap' }}
+                    >
+                      Create account
+                    </button>
+                  </div>
                 </div>
-                <button
-                  onClick={() => setShowModal(true)}
-                  className="shrink-0 px-6 py-2.5 bg-transparent text-gray-700 border border-gray-300 font-bold rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 text-sm"
-                >
-                  Unlock Section 2 →
-                </button>
-              </div>
-            </FadeIn>
-
-            {/* Module cards grid */}
-            <div className="grid sm:grid-cols-2 gap-4">
-              {section2Modules.map((mod, i) => (
-                <FadeIn key={mod.num} delay={i * 70}>
-                  <LockedCard
-                    num={mod.num}
-                    title={mod.title}
-                    desc={mod.desc}
-                    accent="silver"
-                    onUnlock={() => setShowModal(true)}
-                  />
-                </FadeIn>
-              ))}
-            </div>
+              </FadeIn>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* ── FEATURES PREVIEW STRIP ──────────────────────────── */}
-        <section className="bg-white px-4 py-14">
-          <div className="max-w-6xl mx-auto">
-            <FadeIn>
-              <div className="mb-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-1">More Than a Course — A Complete Career Platform</h2>
-                <p className="text-gray-500 text-sm">Every tool a working background performer actually needs. All included.</p>
-              </div>
-            </FadeIn>
-
-            {/* 3-col grid on desktop, horizontal scroll on mobile */}
-            <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0">
-              {[
-                {
-                  icon: '📋',
-                  title: 'Work Log & Earnings Tracker',
-                  desc: '(Free) Track every booking — production name, role type, hours worked and total pay. Your complete film industry work history in one place.',
-                },
-                {
-                  icon: '💰',
-                  title: 'Rate Calculator',
-                  desc: '(Free) Calculate your exact pay for any booking. Union and non-union rates based on the official 2025-2028 UBCP/ACTRA agreement.',
-                },
-                {
-                  icon: '📄',
-                  title: 'Upload Work Vouchers',
-                  desc: '(Free) Photograph and store your union and non-union work vouchers directly inside each work log entry. Always have proof of your work days ready.',
-                },
-                {
-                  icon: '🏆',
-                  title: 'Certificates',
-                  desc: 'Earn a certificate for every module you complete. Download and share your achievements with agents and casting directors.',
-                },
-                {
-                  icon: '🤝',
-                  title: 'Referrals',
-                  desc: 'Refer friends and earn 20% commission on every subscription. Request payouts directly through the app.',
-                },
-                {
-                  icon: '🎭',
-                  title: 'Set Etiquette Simulator',
-                  desc: '(Free) Test your on-set knowledge with 10 real scenarios. Learn how to handle tricky situations before they happen on a real set.',
-                },
-                {
-                  icon: '📖',
-                  title: 'Glossary',
-                  desc: '(Free) A to Z reference of every film set term you need to know. Search instantly while you are on set.',
-                },
-                {
-                  icon: '🎯',
-                  title: 'Goal Tracking',
-                  desc: '(Free) Set career goals and track your progress. Days worked, agencies registered, vouchers earned and more.',
-                },
-                {
-                  icon: '👥',
-                  title: 'Film Contacts',
-                  desc: '(Free) Build your industry contact list. Save details for directors, ADs, agents, makeup artists and fellow performers you meet on set.',
-                },
-                {
-                  icon: '📔',
-                  title: 'On-Set Journal',
-                  desc: '(Free) Record your experiences after every booking. Who you met, what you learned and memorable moments — with photo upload.',
-                },
-                {
-                  icon: '📋',
-                  title: 'Proof of Residency',
-                  desc: '(Free) Store your residency documents securely. Email them to production directly from the app when requested on set.',
-                },
-                {
-                  icon: '👔',
-                  title: 'What to Wear on Set',
-                  desc: '(Free) A complete background performer clothing guide. Know exactly what to wear and what to avoid before every booking.',
-                },
-                {
-                  icon: '🎬',
-                  title: 'Discover What\'s Filming',
-                  desc: 'Direct link to the UBCP/ACTRA production list — see every active production currently filming in BC.',
-                },
-                {
-                  icon: '🤝',
-                  title: 'Find an Agent',
-                  desc: 'Browse our directory of background performer agencies across Canada organized by city and province.',
-                },
-              ].map((f, i) => (
-                <FadeIn key={f.title} delay={i * 60} className="snap-start shrink-0 w-72 sm:w-auto">
-                  <button
-                    onClick={() => setShowModal(true)}
-                    className="w-full h-full text-left bg-white rounded-2xl p-6 border border-gray-200 hover:border-amber-300 transition-all duration-200 group shadow-sm hover:shadow-md"
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <span className="text-3xl">{f.icon}</span>
-                      <span className="text-amber-500/70 text-sm group-hover:text-amber-500 transition">🔒</span>
-                    </div>
-                    <h3 className="text-gray-900 font-bold mb-2">{f.title}</h3>
-                    <p className="text-gray-500 text-sm leading-relaxed mb-4">{f.desc}</p>
-                    <p className="text-xs text-gray-400 group-hover:text-amber-600 transition">
-                      Sign up to access →
-                    </p>
-                  </button>
-                </FadeIn>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── BOTTOM CTA ──────────────────────────────────────── */}
-        <section className="bg-[#F9FAFB] border-t border-gray-200 px-4 py-20">
+      {/* ── SECTION 4 — SIMULATOR PREVIEW ────────────────────── */}
+      <section style={{ backgroundColor: '#f9fafb', padding: '60px 20px' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
           <FadeIn>
-            <div className="max-w-2xl mx-auto text-center">
-              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-                Ready to Begin?
-              </h2>
-              <p className="text-gray-500 text-lg mb-10 leading-relaxed">
-                Join performers already advancing their careers with SetReady
+            <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '32px 36px' }}>
+              <p style={{ fontSize: '11px', color: '#F59E0B', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: '700', margin: '0 0 14px' }}>
+                Bonus Tool · Free
               </p>
-
-              <button
-                onClick={() => setShowModal(true)}
-                className="px-10 py-4 bg-amber-500 text-black font-bold text-lg rounded-xl hover:bg-amber-400 hover:scale-105 transition-all duration-200 shadow-md mb-4"
-              >
-                Create Free Account
-              </button>
-              <p className="text-gray-500 text-sm mb-10">Subscribe for $9.99/month.</p>
-
-              {/* Trust badges */}
-              <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-gray-500 mb-8">
-                {['Instant Access', 'Secure Payment'].map(b => (
-                  <span key={b} className="flex items-center gap-1.5">
-                    <span className="text-green-500 font-bold">✓</span> {b}
-                  </span>
+              <h3 style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a2e', margin: '0 0 14px', lineHeight: '1.2' }}>
+                🎭 Set Etiquette Simulator
+              </h3>
+              <p style={{ fontSize: '16px', color: '#6b7280', lineHeight: '1.65', margin: '0 0 24px' }}>
+                Practice 10 real on-set scenarios before they happen. How do you handle a phone going off on set? What do you do when you miss your mark? Find out before day one.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+                {[
+                  'The director calls action — you missed your position. What do you do?',
+                  'A fellow extra is complaining loudly in holding. Do you engage?',
+                  'Wardrobe rejects your outfit. How do you handle it?',
+                ].map(s => (
+                  <div key={s} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                    <span style={{ color: '#F59E0B', flexShrink: 0, fontWeight: '700', marginTop: '1px' }}>→</span>
+                    <p style={{ fontSize: '14px', color: '#374151', margin: 0, lineHeight: '1.5', fontStyle: 'italic' }}>&ldquo;{s}&rdquo;</p>
+                  </div>
                 ))}
               </div>
-
+              <button
+                onClick={() => setShowModal(true)}
+                style={{ background: 'none', border: 'none', color: '#F59E0B', fontWeight: '700', fontSize: '14px', cursor: 'pointer', padding: 0 }}
+              >
+                Create account to access →
+              </button>
             </div>
           </FadeIn>
-        </section>
+        </div>
+      </section>
 
+      {/* ── SECTION 5 — SECTION 2 PREVIEW ────────────────────── */}
+      <section style={{ backgroundColor: 'white', padding: '80px 20px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <FadeIn>
+            <p style={{ fontSize: '12px', color: '#6b7280', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: '600', marginBottom: '16px' }}>
+              Section 2 &nbsp;·&nbsp; Optional upgrade
+            </p>
+            <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: '700', color: '#1a1a2e', margin: '0 0 12px' }}>
+              Advanced Acting Techniques
+            </h2>
+            <p style={{ fontSize: '16px', color: '#6b7280', maxWidth: '520px', margin: '0 0 36px', lineHeight: '1.6' }}>
+              For performers who want to pursue acting beyond background work. Unlocks after Section 1. One-time fee.
+            </p>
+          </FadeIn>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {section2Modules.map((mod, i) => (
+              <FadeIn key={mod.num} delay={i * 60}>
+                <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderLeft: '3px solid #9ca3af', borderRadius: '0 8px 8px 0', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <span style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280' }}>{mod.num}</span>
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '17px', fontWeight: '600', color: '#374151', margin: '0 0 2px' }}>{mod.title}</h3>
+                      <p style={{ fontSize: '13px', color: '#9ca3af', margin: 0 }}>{mod.desc}</p>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '15px', flexShrink: 0 }}>🔒</span>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── SECTION 6 — MORE TOOLS ───────────────────────────── */}
+      <section style={{ backgroundColor: '#f9fafb', padding: '80px 20px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <FadeIn>
+            <p style={{ fontSize: '12px', color: '#F59E0B', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: '600', marginBottom: '16px' }}>
+              More than a course
+            </p>
+            <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(26px, 4vw, 36px)', fontWeight: '700', color: '#1a1a2e', margin: '0 0 12px' }}>
+              A complete career platform.
+            </h2>
+            <p style={{ fontSize: '16px', color: '#6b7280', margin: '0 0 44px' }}>
+              Everything below is included with your free account. No subscription.
+            </p>
+          </FadeIn>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {FREE_TOOLS.map((tool, i) => (
+              <FadeIn key={tool.title} delay={i * 40}>
+                <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '24px', position: 'relative', height: '100%', boxSizing: 'border-box' }}>
+                  <span style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '10px', backgroundColor: '#d1fae5', color: '#065f46', borderRadius: '4px', padding: '2px 6px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Free
+                  </span>
+                  <span style={{ fontSize: '32px', display: 'block', marginBottom: '14px' }}>{tool.icon}</span>
+                  <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#1a1a2e', margin: '0 0 7px' }}>{tool.title}</h3>
+                  <p style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.6', margin: 0 }}>{tool.desc}</p>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── SECTION 7 — BOTTOM CTA ───────────────────────────── */}
+      <section style={{ backgroundColor: '#1a1a2e', padding: '100px 20px', textAlign: 'center' }}>
+        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+          <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(30px, 5vw, 44px)', fontWeight: '700', color: 'white', lineHeight: '1.2', margin: '0 0 20px' }}>
+            Ready to get started?
+          </h2>
+          <p style={{ fontSize: '18px', color: '#9ca3af', lineHeight: '1.6', margin: '0 0 36px' }}>
+            Create your free account. Your casting profile goes live immediately.
+          </p>
+          <button
+            onClick={() => setShowModal(true)}
+            style={{ backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '8px', height: '56px', padding: '0 32px', fontSize: '17px', fontWeight: '700', cursor: 'pointer' }}
+          >
+            Create Free Account
+          </button>
+          <p style={{ marginTop: '20px' }}>
+            <button
+              onClick={() => router.push('/auth/sign-in')}
+              style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: '14px', cursor: 'pointer', padding: 0 }}
+            >
+              Already have an account? Sign in →
+            </button>
+          </p>
+        </div>
+      </section>
+
+      {/* ── FOOTER ───────────────────────────────────────────── */}
+      <footer style={{ backgroundColor: '#1a1a2e', borderTop: '1px solid rgba(245,158,11,0.4)', padding: '48px 20px', textAlign: 'center' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ marginBottom: '18px' }}>
+            <Logo size="sm" darkBackground={true} />
+          </div>
+          <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 16px' }}>
+            © 2026 SetReady. All rights reserved.
+          </p>
+          <div style={{ display: 'flex', gap: '24px', justifyContent: 'center' }}>
+            <a href="/terms" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'none' }}>Terms</a>
+            <a href="/privacy" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'none' }}>Privacy</a>
+            <a href="mailto:setready@mail.com" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'none' }}>Contact</a>
+          </div>
+        </div>
+      </footer>
       <Copyright />
-      </div>{/* end pt-[52px] wrapper */}
+
     </div>
   );
 }

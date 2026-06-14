@@ -7,23 +7,14 @@ import Link from 'next/link';
 import Logo from '@/components/Logo';
 import Copyright from '@/components/Copyright';
 
-/* ── Scroll-triggered fade-in wrapper ──────────────────────── */
-function FadeIn({
-  children,
-  delay = 0,
-  className = '',
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  className?: string;
-}) {
+function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
+      ([e]) => { if (e.isIntersecting) setVisible(true); },
       { threshold: 0.1 }
     );
     obs.observe(el);
@@ -32,17 +23,40 @@ function FadeIn({
   return (
     <div
       ref={ref}
-      style={{ transitionDelay: `${delay}ms` }}
-      className={`transition-all duration-700 ${
-        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-      } ${className}`}
+      style={{
+        transition: `opacity 0.65s ease ${delay}ms, transform 0.65s ease ${delay}ms`,
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(22px)',
+      }}
     >
       {children}
     </div>
   );
 }
 
-/* ── Main component ─────────────────────────────────────────── */
+const FREE_TOOLS = [
+  { icon: '📅', title: 'Availability Calendar', desc: 'Mark available dates. Agents and casting directors see you in real time.' },
+  { icon: '👤', title: 'Casting Profile', desc: 'Your headshot, stats and skills — visible to every approved agency and casting director.' },
+  { icon: '📋', title: 'Work Log', desc: 'Log every booking. Track your earnings. Build your work history.' },
+  { icon: '📄', title: 'Voucher Storage', desc: 'Photograph and store every voucher inside your work log. Always there when you need it.' },
+  { icon: '💰', title: 'Rate Calculator', desc: 'Know your exact pay before you sign anything. Official 2025-2028 UBCP/ACTRA rates built in.' },
+  { icon: '📖', title: 'Film Set Glossary', desc: 'A to Z film terminology. Searchable on set. Never feel like an outsider.' },
+  { icon: '🎭', title: 'Scenario Simulator', desc: 'Practice 10 real on-set situations before you are standing in one.' },
+  { icon: '📔', title: 'On-Set Journal', desc: 'Record who you met and what you learned. With photo upload.' },
+  { icon: '👥', title: 'Film Contacts', desc: 'Build your industry directory — directors, ADs, agents, performers.' },
+  { icon: '📋', title: 'Proof of Residency', desc: 'Store your documents. Email them to production from your phone.' },
+  { icon: '🎯', title: 'Goal Tracking', desc: 'Set milestones. Track progress. See your career grow.' },
+  { icon: '🤝', title: 'Earn 20% Commission', desc: 'Refer performers. Earn 20% of every subscription they pay.' },
+];
+
+const MODULES = [
+  { num: '01', title: 'Film Set Terminology', desc: 'Master the language before day one.' },
+  { num: '02', title: 'Background Acting Terms', desc: 'Understand your role. Deliver professional work every time.' },
+  { num: '03', title: 'Set Etiquette and Conduct', desc: 'The unwritten rules that get you hired again.' },
+  { num: '04', title: 'Safety on Set', desc: 'Protocols every background performer must know.' },
+  { num: '05', title: 'Industry Standards and Pay', desc: 'Union rates, vouchers, and the path forward.' },
+];
+
 export default function Home() {
   const router = useRouter();
   const supabase = createClient();
@@ -53,7 +67,6 @@ export default function Home() {
     const params = new URLSearchParams(window.location.search);
     const ref = params.get('ref');
     if (ref) setRefCode(ref.toUpperCase());
-
     async function checkAuth() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) router.push('/dashboard');
@@ -66,371 +79,116 @@ export default function Home() {
     router.push(refCode ? `/auth/sign-up?ref=${refCode}` : '/auth/sign-up');
   }
 
+  function scrollToTools() {
+    document.getElementById('tools')?.scrollIntoView({ behavior: 'smooth' });
+  }
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white' }}>
+        <div
+          className="animate-spin"
+          style={{ width: '40px', height: '40px', border: '3px solid #F59E0B', borderTopColor: 'transparent', borderRadius: '50%' }}
+        />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div style={{ minHeight: '100vh', backgroundColor: 'white', fontFamily: '-apple-system, Arial, sans-serif', color: '#1a1a2e' }}>
 
-      {/* ── STICKY NAV ──────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#1a1a2e] border-b border-gray-800 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
+      {/* ── SECTION 0 — STICKY NAV ───────────────────────────── */}
+      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, backgroundColor: '#1a1a2e', height: '64px', display: 'flex', alignItems: 'center' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 20px', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Logo size="md" darkBackground={true} />
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button
               onClick={() => router.push('/auth/sign-in')}
-              className="px-3 sm:px-4 py-2 text-gray-300 hover:text-white text-sm transition"
+              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', fontSize: '14px', cursor: 'pointer', padding: '6px 8px' }}
             >
               Sign In
             </button>
             <button
               onClick={goToSignUp}
-              className="px-4 py-2 bg-amber-500 text-black rounded-xl hover:bg-amber-400 transition-all duration-200 font-semibold text-sm"
+              style={{ backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '8px', padding: '0 20px', height: '40px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}
             >
-              Get Started
+              Get Started Free
             </button>
           </div>
         </div>
       </nav>
 
-      {/* ── HERO ────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col justify-center items-center text-center px-4 overflow-hidden bg-white">
-        {/* Subtle amber radial glow */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,rgba(245,158,11,0.06)_0%,transparent_70%)]" />
-
-        <div className="relative z-10 max-w-4xl mx-auto">
-          <h2 className="text-6xl sm:text-7xl font-extrabold text-[#1a1a2e] text-center tracking-tight mb-4 animate-fade-in">
-            SetReady
-          </h2>
-
-          {/* Pill badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-50 text-amber-600 text-xs font-semibold mb-8 animate-fade-in">
-            🎬 Professional Background Performer Training
-          </div>
-
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-[#1a1a2e] mb-4 leading-tight animate-fade-in-up">
-            Everything a background performer needs. One app.
+      {/* ── SECTION 1 — HERO ─────────────────────────────────── */}
+      <section style={{ backgroundColor: 'white', paddingTop: '140px', paddingBottom: '100px', textAlign: 'center', padding: '140px 20px 100px' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <p style={{ fontSize: '12px', color: '#F59E0B', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: '600', marginBottom: '28px' }}>
+            Canada&apos;s Background Performer Platform
+          </p>
+          <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(44px, 8vw, 72px)', fontWeight: '700', color: '#1a1a2e', lineHeight: '1.1', letterSpacing: '-0.02em', margin: '0 0 28px' }}>
+            Everything you need<br />to work on set.
           </h1>
-
-          {/* Sub-headline */}
-          <p
-            className="text-lg sm:text-xl text-gray-600 mb-10 max-w-2xl mx-auto animate-fade-in-up"
-            style={{ animationDelay: '0.2s' }}
-          >
-            From your first call time to your hundredth set.
+          <p style={{ fontSize: 'clamp(17px, 2.5vw, 20px)', color: '#6b7280', maxWidth: '560px', margin: '0 auto 40px', lineHeight: '1.6' }}>
+            Work log. Rate calculator. Vouchers. Casting profile. Journal. Glossary. And professional training — all in one app.
           </p>
-
-          {/* CTA buttons */}
-          <div
-            className="flex flex-col sm:flex-row gap-4 justify-center mb-6 animate-fade-in-up"
-            style={{ animationDelay: '0.35s' }}
-          >
+          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '20px' }}>
             <button
-              onClick={() => router.push('/preview')}
-              className="px-8 py-4 bg-amber-500 text-black text-base font-bold rounded-xl hover:bg-amber-400 hover:scale-105 transition-all duration-200 shadow-lg shadow-amber-500/20"
+              onClick={goToSignUp}
+              style={{ backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '8px', padding: '0 28px', height: '48px', fontSize: '16px', fontWeight: '700', cursor: 'pointer' }}
             >
-              Start Learning →
+              Create Free Account
             </button>
             <button
-              onClick={() => router.push('/preview')}
-              className="px-8 py-4 bg-transparent text-gray-700 border border-gray-300 text-base font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200"
+              onClick={scrollToTools}
+              style={{ backgroundColor: 'transparent', color: '#1a1a2e', border: '1.5px solid #1a1a2e', borderRadius: '8px', padding: '0 28px', height: '48px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' }}
             >
-              View Curriculum
+              See What&apos;s Included
             </button>
           </div>
-
-          <p className="text-4xl font-bold text-amber-500 text-center mt-6 animate-fade-in-up">
-            $9.99
+          <p style={{ fontSize: '13px', color: '#9ca3af', margin: 0 }}>
+            Free account &nbsp;·&nbsp; No credit card &nbsp;·&nbsp; Cancel training anytime
           </p>
-
-        </div>
-
-        {/* Scroll arrow */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 opacity-20 animate-bounce text-gray-400">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 5v14M5 12l7 7 7-7" />
-          </svg>
         </div>
       </section>
 
-      {/* CHANGE 3: Marquee/ticker section removed entirely */}
-
-      {/* ── PROBLEM / SOLUTION ─────────────────────────────── */}
-      <section className="bg-[#F9FAFB] py-20 px-4">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 items-start">
-
-          {/* Problem */}
-          <FadeIn>
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 h-full">
-              <span className="inline-block px-3 py-1 bg-red-100 text-red-600 text-xs font-bold rounded-full mb-5 uppercase tracking-wide">
-                The Problem
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 leading-snug">
-                Breaking into the industry is harder than it looks.
-              </h2>
-              <div className="space-y-4">
-                {[
-                  'Not knowing set etiquette costs you callbacks.',
-                  'Missing industry terminology marks you as amateur.',
-                  'Not knowing what to do can be stressful.',
-                ].map(pt => (
-                  <div key={pt} className="flex items-start gap-3">
-                    <span className="text-red-500 font-bold text-lg mt-0.5 shrink-0">✗</span>
-                    <p className="text-gray-600 leading-snug">{pt}</p>
-                  </div>
-                ))}
-              </div>
+      {/* ── SECTION 2 — SPLIT STATEMENT ──────────────────────── */}
+      <section style={{ backgroundColor: '#1a1a2e', padding: '80px 20px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <div style={{ textAlign: 'center', padding: '24px 56px' }}>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(64px, 10vw, 96px)', fontWeight: '700', color: '#F59E0B', lineHeight: '1', margin: '0 0 10px' }}>17</p>
+              <p style={{ fontSize: '13px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>free tools</p>
             </div>
-          </FadeIn>
-
-          {/* Solution — CHANGE 1: button text updated */}
-          <FadeIn delay={150}>
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-amber-200 h-full">
-              <span className="inline-block px-3 py-1 bg-amber-50 text-amber-600 text-xs font-bold rounded-full mb-5 uppercase tracking-wide">
-                The Solution
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 leading-snug">
-                SetReady has you covered.
-              </h2>
-              <div className="space-y-4">
-                {[
-                  'Master professional set conduct in hours, not years.',
-                  'Speak the language that gets you hired again.',
-                  'Log your work. Upload vouchers. Track your earnings.',
-                  'Store residency docs. Build contacts. Know what to wear.',
-                  'Find an agent. Discover what\'s filming. Journal your journey.',
-                ].map(pt => (
-                  <div key={pt} className="flex items-start gap-3">
-                    <span className="text-amber-500 font-bold text-lg mt-0.5 shrink-0">✓</span>
-                    <p className="text-gray-600 leading-snug">{pt}</p>
-                  </div>
-                ))}
-              </div>
-              <button
-                onClick={goToSignUp}
-                className="mt-8 w-full py-3 bg-amber-500 text-black font-bold rounded-xl hover:bg-amber-400 transition-all duration-200"
-              >
-                Start Learning →
-              </button>
+            <div style={{ width: '1px', height: '80px', backgroundColor: '#F59E0B', opacity: 0.35, flexShrink: 0 }} />
+            <div style={{ textAlign: 'center', padding: '24px 56px' }}>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(64px, 10vw, 96px)', fontWeight: '700', color: 'white', lineHeight: '1', margin: '0 0 10px' }}>5</p>
+              <p style={{ fontSize: '13px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>training modules — $9.99</p>
             </div>
-          </FadeIn>
-        </div>
-      </section>
-
-      {/* ── CURRICULUM PREVIEW ─────────────────────────────── */}
-      <section className="bg-white py-20 px-4">
-        <div className="max-w-6xl mx-auto">
-          <FadeIn>
-            <div className="text-center mb-14">
-              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-                Everything You Need to Succeed
-              </h2>
-              <p className="text-gray-500 max-w-xl mx-auto">
-                Two comprehensive sections designed by industry professionals, and much more.
-              </p>
-            </div>
-          </FadeIn>
-
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-
-            {/* Section 1 — gold */}
-            <FadeIn delay={100}>
-              <div className="relative bg-white rounded-2xl p-8 border-2 border-amber-400 shadow-md h-full flex flex-col">
-                <span className="absolute -top-3.5 left-6 px-3 py-1 bg-amber-500 text-black text-xs font-bold rounded-full uppercase tracking-wide">
-                  Most Popular
-                </span>
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Background Acting Essentials</h3>
-                  <p className="text-amber-500 text-3xl font-bold">
-                    $9.99
-                    <span className="text-sm text-gray-500 font-normal">/month</span>
-                  </p>
-                </div>
-                <ul className="space-y-3 mb-6 flex-1">
-                  {[
-                    'Film Set Terminology',
-                    'Background Acting Terms & Performance',
-                    'Set Etiquette & Professional Conduct',
-                    'Safety on Set',
-                    'Industry Standards, Pay & Career Advancement',
-                  ].map(m => (
-                    <li key={m} className="flex items-start gap-2 text-sm text-gray-600">
-                      <span className="text-amber-500 font-bold shrink-0 mt-0.5">✓</span> {m}
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-xs text-gray-400 mb-6 border-t border-gray-100 pt-4">
-                  Includes: Quizzes, Certificates, 14 Career Tools
-                </p>
-                <button
-                  onClick={() => router.push('/preview')}
-                  className="w-full py-3 bg-amber-500 text-black font-bold rounded-xl hover:bg-amber-400 transition-all duration-200"
-                >
-                  Start Section 1 →
-                </button>
-              </div>
-            </FadeIn>
-
-            {/* Section 2 — silver */}
-            <FadeIn delay={200}>
-              <div className="relative bg-white rounded-2xl p-8 border border-gray-200 shadow-sm h-full flex flex-col">
-                <span className="absolute -top-3.5 left-6 px-3 py-1 bg-gray-200 text-gray-700 text-xs font-bold rounded-full uppercase tracking-wide">
-                  Advanced
-                </span>
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <h3 className="text-xl font-bold text-gray-900">Advanced Acting Techniques</h3>
-                    <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs font-semibold rounded-full border border-gray-200 uppercase tracking-wide">
-                      Optional
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-500">Unlocks after Section 1 is complete. One-time fee.</p>
-                </div>
-                <ul className="space-y-3 mb-6 flex-1">
-                  {[
-                    'Foundation',
-                    'Audition Technique',
-                    'Scene Study',
-                    'Advanced Technique',
-                  ].map(m => (
-                    <li key={m} className="flex items-start gap-2 text-sm text-gray-600">
-                      <span className="text-gray-400 font-bold shrink-0 mt-0.5">✓</span> {m}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  onClick={() => router.push('/preview')}
-                  className="w-full py-3 bg-transparent text-gray-700 border border-gray-300 font-bold rounded-xl hover:bg-gray-50 transition-all duration-200"
-                >
-                  Unlock Section 2 →
-                </button>
-              </div>
-            </FadeIn>
           </div>
-        </div>
-      </section>
-
-      {/* CHANGE 4: "Learn From The Masters" instructor section removed entirely */}
-
-      {/* CHANGE 5: "Everything Included" features section removed entirely */}
-
-      {/* ── REFERRAL SLIM BANNER ───────────────────────────── */}
-      <div className="bg-gray-50 border-y border-gray-200 py-3 text-center px-4">
-        <p className="text-sm text-gray-500">
-          💰 Know another performer? Refer them and earn 20% commission{' '}
-          <span className="text-gray-400">— paid monthly via e-transfer.</span>
-        </p>
-      </div>
-
-      {/* ── BOLD STATEMENT ─────────────────────────────────── */}
-      <section style={{ backgroundColor: '#F59E0B' }} className="py-10 px-4 text-center">
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#1a1a2e] mb-4">
-            Not just a course.<br />Your complete career companion.
-          </h2>
-          <p className="text-[#1a1a2e]/80 text-base leading-relaxed">
-            Most background performers learn through costly mistakes on the job. SetReady performers arrive prepared, professional and confident — from day one.
+          <p style={{ textAlign: 'center', fontSize: '18px', color: '#9ca3af', marginTop: '36px', lineHeight: '1.6' }}>
+            Most of SetReady is free. The training is optional.
           </p>
         </div>
       </section>
 
-      {/* ── MORE TOOLS INCLUDED ────────────────────────────── */}
-      <section className="bg-white py-20 px-4">
-        <div className="max-w-6xl mx-auto">
+      {/* ── SECTION 3 — FREE TOOLS GRID ──────────────────────── */}
+      <section id="tools" style={{ backgroundColor: 'white', padding: '100px 20px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <FadeIn>
-            <div className="text-center mb-14">
-              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-                More Than a Course — A Complete Career Platform
-              </h2>
-              <p className="text-gray-500 max-w-xl mx-auto">
-                Every tool a working background performer actually needs. Included with your subscription.
-              </p>
-            </div>
+            <p style={{ fontSize: '12px', color: '#F59E0B', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: '600', marginBottom: '16px' }}>
+              01 &nbsp;&nbsp; Free with every account
+            </p>
+            <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: '700', color: '#1a1a2e', margin: '0 0 20px' }}>
+              Your career tools. No subscription.
+            </h2>
+            <div style={{ width: '60px', height: '4px', backgroundColor: '#F59E0B', marginBottom: '52px' }} />
           </FadeIn>
-
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                icon: '📋',
-                title: 'Work Log & Earnings Tracker',
-                desc: 'Track every booking — production name, role type, hours worked and total pay. Your complete film industry work history in one place.',
-              },
-              {
-                icon: '💰',
-                title: 'Rate Calculator',
-                desc: 'Calculate your exact pay for any booking. Union and non-union rates based on the official 2025-2028 UBCP/ACTRA agreement.',
-              },
-              {
-                icon: '📄',
-                title: 'Upload Work Vouchers',
-                desc: 'Photograph and store your union and non-union work vouchers directly inside each work log entry. Always have proof of your work days ready.',
-              },
-              {
-                icon: '🏆',
-                title: 'Certificates',
-                desc: 'Earn a certificate for every module you complete. Download and share your achievements with agents and casting directors.',
-              },
-              {
-                icon: '🤝',
-                title: 'Referrals',
-                desc: 'Refer friends and earn 20% commission on every subscription. Request payouts directly through the app.',
-              },
-              {
-                icon: '🎭',
-                title: 'Set Etiquette Simulator',
-                desc: 'Test your on-set knowledge with 10 real scenarios. Learn how to handle tricky situations before they happen on a real set.',
-              },
-              {
-                icon: '📖',
-                title: 'Glossary',
-                desc: 'A to Z reference of every film set term you need to know. Search instantly while you are on set.',
-              },
-              {
-                icon: '🎯',
-                title: 'Goal Tracking',
-                desc: 'Set career goals and track your progress. Days worked, agencies registered, vouchers earned and more.',
-              },
-              {
-                icon: '👥',
-                title: 'Film Contacts',
-                desc: 'Build your industry contact list. Save details for directors, ADs, agents, makeup artists and fellow performers you meet on set.',
-              },
-              {
-                icon: '📔',
-                title: 'On-Set Journal',
-                desc: 'Record your experiences after every booking. Who you met, what you learned and memorable moments — with photo upload.',
-              },
-              {
-                icon: '📋',
-                title: 'Proof of Residency',
-                desc: 'Store your residency documents securely. Email them to production directly from the app when requested on set.',
-              },
-              {
-                icon: '👔',
-                title: 'What to Wear on Set',
-                desc: 'A complete background performer clothing guide. Know exactly what to wear and what to avoid before every booking.',
-              },
-              {
-                icon: '🎬',
-                title: "Discover What's Filming",
-                desc: 'Direct link to the UBCP/ACTRA production list — see every active production currently filming in BC.',
-              },
-              {
-                icon: '🤝',
-                title: 'Find an Agent',
-                desc: 'Browse our directory of background performer agencies across Canada organized by city and province.',
-              },
-            ].map((f, i) => (
-              <FadeIn key={f.title} delay={i * 50}>
-                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm h-full">
-                  <span className="text-3xl mb-4 block">{f.icon}</span>
-                  <h3 className="text-gray-900 font-bold mb-2">{f.title}</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
+            {FREE_TOOLS.map((tool, i) => (
+              <FadeIn key={tool.title} delay={i * 40}>
+                <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 10px rgba(0,0,0,0.07)', padding: '24px', height: '100%', boxSizing: 'border-box' }}>
+                  <span style={{ fontSize: '28px', display: 'block', marginBottom: '14px' }}>{tool.icon}</span>
+                  <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a2e', margin: '0 0 8px' }}>{tool.title}</h3>
+                  <p style={{ fontSize: '14px', color: '#6b7280', lineHeight: '1.6', margin: 0 }}>{tool.desc}</p>
                 </div>
               </FadeIn>
             ))}
@@ -438,48 +196,189 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── SETREADY CASTING ─────────────────────────────────── */}
-      <section style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', padding: '72px 24px', textAlign: 'center' }}>
-        <div style={{ maxWidth: '680px', margin: '0 auto' }}>
-          <div style={{ display: 'inline-block', padding: '5px 14px', backgroundColor: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '20px', color: '#4ade80', fontSize: '13px', fontWeight: '600', marginBottom: '18px' }}>
-            New — SetReady Casting
+      {/* ── SECTION 4 — THE TRAINING ─────────────────────────── */}
+      <section style={{ backgroundColor: '#f9fafb', padding: '100px 20px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <FadeIn>
+            <p style={{ fontSize: '12px', color: '#F59E0B', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: '600', marginBottom: '16px' }}>
+              02 &nbsp;&nbsp; Professional training
+            </p>
+            <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: '700', color: '#1a1a2e', margin: '0 0 52px' }}>
+              Train before you arrive.
+            </h2>
+          </FadeIn>
+
+          {/* Two-column layout: modules list + pricing card */}
+          <div style={{ display: 'flex', gap: '48px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+
+            {/* Module list — 60% */}
+            <div style={{ flex: '3 1 380px', minWidth: 0 }}>
+              {MODULES.map((mod, i) => (
+                <FadeIn key={mod.num} delay={i * 60}>
+                  <div style={{ borderBottom: i < MODULES.length - 1 ? '1px solid #e5e7eb' : 'none', padding: '22px 0' }}>
+                    <p style={{ fontSize: '12px', color: '#F59E0B', fontWeight: '700', margin: '0 0 6px', letterSpacing: '0.05em' }}>{mod.num}</p>
+                    <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1a1a2e', margin: '0 0 5px' }}>{mod.title}</h3>
+                    <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 10px', lineHeight: '1.5' }}>{mod.desc}</p>
+                    <p style={{ fontSize: '12px', color: '#F59E0B', fontWeight: '600', margin: 0 }}>Includes quiz + certificate</p>
+                  </div>
+                </FadeIn>
+              ))}
+            </div>
+
+            {/* Pricing card — 40% */}
+            <div style={{ flex: '2 1 260px' }}>
+              <div style={{ position: 'sticky', top: '84px', backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 4px 24px rgba(0,0,0,0.09)', borderTop: '4px solid #F59E0B', padding: '32px' }}>
+                <p style={{ fontFamily: 'Georgia, serif', fontSize: '48px', fontWeight: '700', color: '#1a1a2e', margin: '0 0 4px', lineHeight: '1' }}>$9.99</p>
+                <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 4px' }}>per month</p>
+                <p style={{ fontSize: '13px', color: '#9ca3af', margin: '0 0 28px' }}>Cancel after 30 days</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '28px' }}>
+                  {['All 5 modules', 'Quizzes after each module', '5 verifiable certificates', 'Instant access'].map(f => (
+                    <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ color: '#F59E0B', fontWeight: '700', fontSize: '16px' }}>✓</span>
+                      <span style={{ fontSize: '14px', color: '#374151' }}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => router.push('/preview')}
+                  style={{ width: '100%', backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '8px', padding: '15px', fontSize: '15px', fontWeight: '700', cursor: 'pointer' }}
+                >
+                  Start Training
+                </button>
+              </div>
+            </div>
           </div>
-          <h2 style={{ fontSize: 'clamp(28px, 5vw, 44px)', fontWeight: '900', color: 'white', margin: '0 0 14px', lineHeight: '1.1' }}>
-            Cast smarter. Confirm faster.
-          </h2>
-          <p style={{ fontSize: 'clamp(15px, 2.5vw, 18px)', color: '#9ca3af', margin: '0 auto 36px', lineHeight: '1.7', maxWidth: '520px' }}>
-            The only casting platform built around performer availability. Casting directors can see who is available before they even post a request.
+
+          <p style={{ textAlign: 'center', fontSize: '14px', color: '#9ca3af', marginTop: '48px' }}>
+            Optional: Advanced Acting Techniques — 4 additional modules. One-time upgrade.
           </p>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/casting/about" style={{ display: 'inline-block', padding: '13px 28px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '800', borderRadius: '10px', textDecoration: 'none', fontSize: '15px' }}>
-              I&apos;m a Casting Director
-            </Link>
-            <Link href="/agent/about" style={{ display: 'inline-block', padding: '13px 28px', backgroundColor: 'rgba(255,255,255,0.08)', color: 'white', fontWeight: '700', borderRadius: '10px', textDecoration: 'none', fontSize: '15px', border: '1px solid rgba(255,255,255,0.15)' }}>
-              I&apos;m an Agency
-            </Link>
+        </div>
+      </section>
+
+      {/* ── SECTION 5 — HOW IT WORKS ─────────────────────────── */}
+      <section style={{ backgroundColor: 'white', padding: '100px 20px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <FadeIn>
+            <p style={{ fontSize: '12px', color: '#F59E0B', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: '600', marginBottom: '16px' }}>
+              03 &nbsp;&nbsp; Get started
+            </p>
+            <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: '700', color: '#1a1a2e', margin: '0 0 52px' }}>
+              Three steps.
+            </h2>
+          </FadeIn>
+          <div className="grid sm:grid-cols-3 gap-10">
+            {[
+              {
+                n: '1',
+                title: 'Create your free account',
+                desc: 'No credit card. Takes 60 seconds. Your casting profile goes live immediately.',
+              },
+              {
+                n: '2',
+                title: 'Set your availability',
+                desc: 'Mark the dates you can work. Agents and casting directors see you in real time.',
+              },
+              {
+                n: '3',
+                title: 'Train when you\'re ready',
+                desc: 'Subscribe to unlock 5 professional modules for $9.99. Cancel after 30 days.',
+              },
+            ].map((step, i) => (
+              <FadeIn key={step.n} delay={i * 80}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ fontSize: '18px', fontWeight: '700', color: '#F59E0B' }}>{step.n}</span>
+                  </div>
+                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1a1a2e', margin: 0 }}>{step.title}</h3>
+                  <p style={{ fontSize: '14px', color: '#6b7280', lineHeight: '1.65', margin: 0 }}>{step.desc}</p>
+                </div>
+              </FadeIn>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ── FOOTER ─────────────────────────────────────────── */}
-      <footer className="bg-gray-900 border-t border-gray-800 py-12 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
-            <div>
-              <Logo size="md" darkBackground={true} />
-              <p className="text-gray-400 text-sm mt-1">Professional training for background performers</p>
-            </div>
-            <nav className="flex flex-wrap justify-center gap-6 text-sm text-gray-400">
-              <Link href="/terms"   className="hover:text-white transition">Terms</Link>
-              <Link href="/privacy" className="hover:text-white transition">Privacy</Link>
-              <a href="mailto:setready@mail.com" className="hover:text-white transition">Contact</a>
-            </nav>
+      {/* ── SECTION 6 — REFERRAL BANNER ──────────────────────── */}
+      <section style={{ backgroundColor: '#1a1a2e', padding: '60px 20px', textAlign: 'center' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(22px, 4vw, 28px)', fontWeight: '700', lineHeight: '1.3', margin: '0 0 16px' }}>
+            <span style={{ color: 'white' }}>Refer a fellow performer. </span>
+            <span style={{ color: '#F59E0B' }}>Earn 20% commission — paid monthly.</span>
+          </h2>
+          <p style={{ fontSize: '13px', color: '#9ca3af', margin: 0 }}>
+            Your referral code is in your dashboard from day one. No subscription required.
+          </p>
+        </div>
+      </section>
+
+      {/* ── SECTION 7 — CASTING PLATFORM CALLOUT ─────────────── */}
+      <section style={{ backgroundColor: 'white', padding: '100px 20px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', gap: '64px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <FadeIn>
+              <div style={{ flex: '1 1 320px', minWidth: 0 }}>
+                <p style={{ fontSize: '12px', color: '#F59E0B', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: '600', marginBottom: '16px' }}>
+                  SetReady Casting
+                </p>
+                <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: '700', color: '#1a1a2e', margin: '0 0 20px', lineHeight: '1.25' }}>
+                  Get discovered by agents and casting directors.
+                </h2>
+                <p style={{ fontSize: '16px', color: '#6b7280', lineHeight: '1.7', margin: '0 0 28px' }}>
+                  Your free performer profile is visible to every approved agency and casting director on SetReady Casting — Canada&apos;s background performer casting network.
+                </p>
+                <Link
+                  href="/casting/about"
+                  style={{ color: '#F59E0B', fontWeight: '600', fontSize: '15px', textDecoration: 'none' }}
+                >
+                  Learn More →
+                </Link>
+              </div>
+            </FadeIn>
+            <FadeIn delay={100}>
+              <div style={{ flex: '1 1 280px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {['Create your free profile', 'Mark your availability', 'Get added to agency rosters'].map((pt, i) => (
+                  <div key={pt} style={{ display: 'flex', alignItems: 'center', gap: '18px', borderLeft: '3px solid #F59E0B', paddingLeft: '20px' }}>
+                    <span style={{ fontSize: '13px', color: '#9ca3af', fontWeight: '700', flexShrink: 0 }}>0{i + 1}</span>
+                    <p style={{ fontSize: '17px', fontWeight: '600', color: '#1a1a2e', margin: 0 }}>{pt}</p>
+                  </div>
+                ))}
+              </div>
+            </FadeIn>
           </div>
-          <div className="mt-8 pt-6 border-t border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-2">
-            <p className="text-xs text-gray-500">© 2026 SetReady. All rights reserved.</p>
-            <a href="mailto:setready@mail.com" className="text-xs text-gray-500 hover:text-gray-300 transition">
-              setready@mail.com
-            </a>
+        </div>
+      </section>
+
+      {/* ── SECTION 8 — FINAL CTA ────────────────────────────── */}
+      <section style={{ backgroundColor: '#1a1a2e', padding: '100px 20px', textAlign: 'center' }}>
+        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+          <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(32px, 6vw, 48px)', fontWeight: '700', color: 'white', lineHeight: '1.15', margin: '0 0 40px' }}>
+            Your career starts with<br />a free account.
+          </h2>
+          <button
+            onClick={goToSignUp}
+            style={{ backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '8px', height: '56px', padding: '0 32px', fontSize: '17px', fontWeight: '700', cursor: 'pointer' }}
+          >
+            Create Free Account
+          </button>
+          <p style={{ fontSize: '13px', color: '#9ca3af', marginTop: '20px' }}>
+            Then subscribe from $9.99 when you are ready to train.
+          </p>
+        </div>
+      </section>
+
+      {/* ── FOOTER ───────────────────────────────────────────── */}
+      <footer style={{ backgroundColor: '#1a1a2e', borderTop: '1px solid rgba(245,158,11,0.4)', padding: '48px 20px', textAlign: 'center' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ marginBottom: '18px' }}>
+            <Logo size="sm" darkBackground={true} />
+          </div>
+          <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 16px' }}>
+            © 2026 SetReady. All rights reserved.
+          </p>
+          <div style={{ display: 'flex', gap: '24px', justifyContent: 'center' }}>
+            <Link href="/terms" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'none' }}>Terms</Link>
+            <Link href="/privacy" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'none' }}>Privacy</Link>
+            <a href="mailto:setready@mail.com" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'none' }}>Contact</a>
           </div>
         </div>
       </footer>
