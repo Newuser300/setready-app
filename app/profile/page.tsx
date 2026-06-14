@@ -3,169 +3,204 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 
-const HAIR_COLORS = ['Black', 'Brown', 'Blonde', 'Red', 'Grey', 'White', 'Bald', 'Other']
-const EYE_COLORS = ['Brown', 'Blue', 'Green', 'Hazel', 'Grey', 'Other']
-const ETHNICITIES = [
-  'Indigenous', 'Black', 'East Asian', 'South Asian',
-  'Southeast Asian', 'Latin', 'Middle Eastern', 'White', 'Mixed', 'Other'
-]
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const HAIR_COLORS = ['Black','Dark Brown','Medium Brown','Light Brown','Dirty Blonde','Blonde','Strawberry Blonde','Auburn','Red','Grey','White','Bald','Other']
+const HAIR_LENGTHS = ['Bald / Shaved','Very Short (< 1 inch)','Short (1–3 inches)','Medium Short (3–5 inches)','Medium (chin length)','Medium Long (shoulder length)','Long (below shoulder)','Very Long (past mid-back)']
+const HAIR_TEXTURES = ['Straight','Wavy','Curly','Coily / Kinky','Locs / Dreadlocks']
+const EYE_COLORS = ['Brown','Dark Brown','Light Brown / Hazel','Blue','Light Blue','Green','Grey','Amber','Two different colors']
+const BODY_TYPES = ['Slim / Lean','Athletic / Fit','Average / Medium','Stocky / Muscular','Heavyset / Large','Plus Size','Petite']
+const SKIN_TONES = ['Very Fair','Fair','Light','Light Medium','Medium','Medium Dark (olive)','Dark','Very Dark']
+const FACIAL_HAIR_OPTS = ['None / Clean Shaven','Stubble (1–3 days)','Short Beard','Full Beard','Long Beard','Moustache','Goatee','Sideburns','Not applicable']
+const ETHNICITY_OPTS = ['Indigenous / First Nations','Black / African Canadian','East Asian','South Asian','Southeast Asian','Middle Eastern','Latin / Hispanic','White / Caucasian','Mixed / Multiracial','Other']
 const UNION_STATUSES = [
-  { value: 'non-union',          label: 'Non-Union' },
-  { value: 'ubcp-permit',        label: 'UBCP Permit Member' },
-  { value: 'ubcp-apprentice',    label: 'UBCP Apprentice Member' },
-  { value: 'ubcp-full',          label: 'UBCP Full Member' },
-  { value: 'actra-apprentice',   label: 'ACTRA Apprentice Member' },
-  { value: 'actra-full',         label: 'ACTRA Full Member' },
+  { value: 'non-union', label: 'Non-Union' },
+  { value: 'ubcp-permit', label: 'UBCP Permit Member' },
+  { value: 'ubcp-apprentice', label: 'UBCP Apprentice Member' },
+  { value: 'ubcp-full', label: 'UBCP Full Member' },
+  { value: 'actra-apprentice', label: 'ACTRA Apprentice Member' },
+  { value: 'actra-full', label: 'ACTRA Full Member' },
 ]
+const SHIRT_SIZES = ['XS','S','M','L','XL','XXL','XXXL','4XL']
+const JACKET_SIZES = ['XS','S','M','L','XL','XXL','XXXL','4XL']
+const DRESS_SIZES = ['0','2','4','6','8','10','12','14','16','18','20','22','24']
+const HAT_SIZES = ['XS','S','M','L','XL']
+const EXPERIENCE_LEVELS = ['No experience (first time)','Beginner (1–5 background bookings)','Some experience (6–20 bookings)','Experienced (20–50 bookings)','Very experienced (50–100 bookings)','Veteran (100+ bookings)']
+const TRAINING_OPTS = ['No formal training','On-set experience only','Acting classes (ongoing)','Acting school / conservatory','University / college theatre program','SetReady training modules','Commercial acting classes','Voice training','Improv classes','Stunt training','Dance training','Singing lessons']
+const ACCENT_PRESETS = ['Canadian (neutral)','British (RP)','British (regional)','American (neutral)','American (Southern)','American (New York)','Australian','Irish','Scottish','French','French Canadian','Spanish','Italian','German','Russian','Indian','Jamaican / Caribbean']
+const SPORTS_OPTS = ['Hockey','Football (Canadian)','Basketball','Baseball','Soccer / Football','Tennis','Golf','Swimming','Skiing / Snowboarding','Skateboarding','Surfing','Martial Arts','Boxing / Wrestling','Cycling','Running / Track','Gymnastics','Cheerleading','Volleyball','Rugby','Lacrosse','Rock Climbing','Equestrian / Horse Riding']
+const DANCE_OPTS = ['Ballet','Jazz','Contemporary / Modern','Hip Hop','Ballroom','Latin (Salsa, Tango, etc.)','Tap','Swing / Lindy Hop','Pole Dancing','Aerial / Acrobatics','Belly Dancing','Folk / Cultural']
+const INSTRUMENT_PRESETS = ['Guitar (acoustic)','Guitar (electric)','Bass Guitar','Piano / Keyboard','Violin / Fiddle','Cello','Drums / Percussion','Trumpet','Saxophone','Flute','Ukulele','Banjo','Harp']
+const DRIVING_OPTS = ["Standard BC Driver's Licence",'Motorcycle Licence (Class 6)','Commercial Vehicle (Class 1–5)','ATV / Off-Road Vehicle','Boat / Watercraft','Forklift','Farm Equipment']
+const SWIMMING_LEVELS = ['Non-swimmer','Basic (can float, basic strokes)','Intermediate (comfortable in water)','Strong swimmer','Competitive swimmer / Lifeguard']
+const LANG_PRESETS = ['English','French','Mandarin','Cantonese','Punjabi','Hindi','Spanish','Portuguese','German','Italian','Japanese','Korean','Arabic','Ukrainian','Tagalog / Filipino','Vietnamese']
+const OTHER_SKILL_PRESETS = ['Stage combat','Juggling','Magic','Puppetry','Stilt walking','Fire performance','Parkour','Archery','Sword fighting','CPR certified','First aid','Security / bouncer','Military / police background','Medical background','Legal background','Cooking / chef','Bartending','Modeling','Yoga / Pilates instructor']
 
-const SHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
-const DRESS_SIZES = ['0', '2', '4', '6', '8', '10', '12', '14', '16', '18', '20']
-const JACKET_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
-const HAT_SIZES = ['S', 'M', 'L', 'XL']
-const PRESET_SKILLS = [
-  'Driving — Car', 'Driving — Truck', 'Driving — Motorcycle',
-  'Swimming', 'Horse Riding', 'Martial Arts', 'Singing', 'Weapons Handling',
-  'Dancing — Ballet', 'Dancing — Hip Hop', 'Dancing — Contemporary', 'Dancing — Latin',
-  'Musical Instrument — Guitar', 'Musical Instrument — Piano', 'Musical Instrument — Drums',
-  'Sports — Basketball', 'Sports — Baseball', 'Sports — Football',
-  'Sports — Soccer', 'Sports — Ice Hockey', 'Sports — Tennis',
-  'Sports — Golf', 'Sports — Boxing', 'Sports — Skiing / Snowboarding',
-]
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
-// ─── Shared sub-components ─────────────────────────────────────────────────
+const inp: React.CSSProperties = {
+  width: '100%', padding: '11px 14px', border: '1.5px solid #e5e7eb', borderRadius: '8px',
+  fontSize: '15px', color: '#1a1a2e', outline: 'none', boxSizing: 'border-box',
+  backgroundColor: 'white', height: '44px', fontFamily: 'inherit',
+}
+const sel: React.CSSProperties = {
+  ...inp, appearance: 'none',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', paddingRight: '32px',
+}
+const unitBtn: React.CSSProperties = {
+  padding: '0 14px', border: '1.5px solid #e5e7eb', borderRadius: '8px',
+  background: '#f3f4f6', cursor: 'pointer', fontSize: '12px', fontWeight: '700',
+  whiteSpace: 'nowrap', color: '#374151', flexShrink: 0, height: '44px',
+}
+const ta: React.CSSProperties = { ...inp, height: 'auto', resize: 'vertical', paddingTop: '11px' }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function CS({ title, children, open: defaultOpen = true }: { title: string; children: React.ReactNode; open?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen)
   return (
-    <div style={{
-      backgroundColor: 'white', borderRadius: '16px', padding: '16px',
-      marginBottom: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
-    }}>
-      <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#1a1a2e', marginBottom: '12px' }}>
-        {title}
-      </h2>
-      {children}
+    <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', marginBottom: '12px', overflow: 'hidden' }}>
+      <button onClick={() => setOpen(o => !o)} style={{ width: '100%', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+        <span style={{ fontSize: '15px', fontWeight: '700', color: '#1a1a2e' }}>{title}</span>
+        <span style={{ fontSize: '10px', color: '#9ca3af', display: 'inline-block', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+      </button>
+      {open && <div style={{ padding: '0 20px 20px' }}>{children}</div>}
     </div>
   )
 }
 
-function Label({ children }: { children: React.ReactNode }) {
+function FL({ children }: { children: React.ReactNode }) {
+  return <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#6b7280', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{children}</label>
+}
+
+function Chip({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
   return (
-    <label style={{
-      display: 'block', fontSize: '11px', fontWeight: '700',
-      color: '#6b7280', marginBottom: '5px',
-      textTransform: 'uppercase', letterSpacing: '0.06em'
-    }}>
-      {children}
-    </label>
+    <button onClick={onClick} style={{ padding: '6px 14px', borderRadius: '20px', border: `1px solid ${on ? '#F59E0B' : '#e5e7eb'}`, backgroundColor: on ? '#F59E0B' : 'white', color: on ? '#1a1a2e' : '#374151', fontSize: '13px', fontWeight: on ? '700' : '400', cursor: 'pointer', transition: 'all 0.1s', whiteSpace: 'nowrap' }}>
+      {on ? '✓ ' : ''}{label}
+    </button>
   )
 }
 
-const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 12px',
-  border: '1px solid #e5e7eb', borderRadius: '8px',
-  fontSize: '14px', color: '#1a1a2e', outline: 'none',
-  boxSizing: 'border-box', backgroundColor: 'white',
+function YesNo({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+      <span style={{ fontSize: '14px', color: '#374151', fontWeight: '500' }}>{label}</span>
+      <div style={{ display: 'flex', gap: '6px' }}>
+        <button onClick={() => onChange(true)} style={{ padding: '4px 14px', borderRadius: '6px', border: `1.5px solid ${value ? '#F59E0B' : '#e5e7eb'}`, backgroundColor: value ? '#F59E0B' : 'white', color: value ? '#1a1a2e' : '#6b7280', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}>Yes</button>
+        <button onClick={() => onChange(false)} style={{ padding: '4px 14px', borderRadius: '6px', border: `1.5px solid ${!value ? '#1a1a2e' : '#e5e7eb'}`, backgroundColor: !value ? '#1a1a2e' : 'white', color: !value ? 'white' : '#6b7280', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}>No</button>
+      </div>
+    </div>
+  )
 }
 
-const selectStyle: React.CSSProperties = {
-  ...inputStyle,
-  appearance: 'none',
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
-  backgroundRepeat: 'no-repeat',
-  backgroundPosition: 'right 12px center',
-  paddingRight: '32px',
-}
-
-const unitBtnStyle: React.CSSProperties = {
-  padding: '0 12px', border: '1px solid #e5e7eb', borderRadius: '8px',
-  background: '#f3f4f6', cursor: 'pointer', fontSize: '12px',
-  fontWeight: '700', whiteSpace: 'nowrap', color: '#374151',
-  flexShrink: 0,
-}
-
-// ─── Main page ──────────────────────────────────────────────────────────────
+// ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
   const router = useRouter()
   const supabase = createClient()
   const fileRef = useRef<HTMLInputElement>(null)
+  const fileFrontRef = useRef<HTMLInputElement>(null)
+  const fileSideRef = useRef<HTMLInputElement>(null)
+  const fileExtraRef = useRef<HTMLInputElement>(null)
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [toast, setToast] = useState('')
 
-  // Headshot
+  // Headshot + photos
   const [headshotUrl, setHeadshotUrl] = useState('')
   const [headshotFile, setHeadshotFile] = useState<File | null>(null)
+  const [photoFront, setPhotoFront] = useState('')
+  const [photoSide, setPhotoSide] = useState('')
+  const [photoExtra, setPhotoExtra] = useState('')
 
-  // Basic
-  const [bio, setBio] = useState('')
+  // Basics
+  const [isPublic, setIsPublic] = useState(true)
   const [gender, setGender] = useState('')
   const [dob, setDob] = useState('')
+  const [bio, setBio] = useState('')
+  const [videoReelUrl, setVideoReelUrl] = useState('')
+  const [unionStatus, setUnionStatus] = useState('')
+  const [memberNumber, setMemberNumber] = useState('')
+  const [agencyId, setAgencyId] = useState('')
+  const [agencyLinks, setAgencyLinks] = useState<Array<{ id: string; agency_id: string; agency_name: string; status: string }>>([])
 
-  // Physical — stored in cm / lbs internally
+  // Physical
   const [heightCm, setHeightCm] = useState('')
-  const [heightUnit, setHeightUnit] = useState<'cm' | 'ft'>('cm')
+  const [heightFt, setHeightFt] = useState('')
+  const [heightIn, setHeightIn] = useState('')
+  const [heightUnit, setHeightUnit] = useState<'ft' | 'cm'>('ft')
   const [weightLbs, setWeightLbs] = useState('')
   const [weightUnit, setWeightUnit] = useState<'lbs' | 'kg'>('lbs')
 
   // Appearance
   const [hairColor, setHairColor] = useState('')
+  const [hairLength, setHairLength] = useState('')
+  const [hairTexture, setHairTexture] = useState('')
   const [eyeColor, setEyeColor] = useState('')
+  const [bodyType, setBodyType] = useState('')
+  const [skinTone, setSkinTone] = useState('')
   const [ethnicities, setEthnicities] = useState<string[]>([])
+  const [facialHair, setFacialHair] = useState('')
 
-  // Industry
-  const [unionStatus, setUnionStatus] = useState('')
-  const [memberNumber, setMemberNumber] = useState('')
-  const [agencyId, setAgencyId] = useState('')
-  const [isPublic, setIsPublic] = useState(true)
+  // Distinguishing features
+  const [hasTattoos, setHasTattoos] = useState(false)
+  const [tattooDesc, setTattooDesc] = useState('')
+  const [hasPiercings, setHasPiercings] = useState(false)
+  const [piercingDesc, setPiercingDesc] = useState('')
+  const [hasScars, setHasScars] = useState(false)
+  const [scarDesc, setScarDesc] = useState('')
 
-  // Agency roster (read-only display)
-  const [agencyLinks, setAgencyLinks] = useState<Array<{ id: string; agency_id: string; agency_name: string; status: string }>>([])
-
-  // Wardrobe
+  // Clothing
   const [shirtSize, setShirtSize] = useState('')
-  const [pantsSize, setPantsSize] = useState('')
+  const [jacketSize, setJacketSize] = useState('')
+  const [pantsWaist, setPantsWaist] = useState('')
+  const [pantsInseam, setPantsInseam] = useState('')
   const [dressSize, setDressSize] = useState('')
   const [shoeSize, setShoeSize] = useState('')
-  const [shoeSizeType, setShoeSizeType] = useState<"Men's" | "Women's">("Men's")
-  const [jacketSize, setJacketSize] = useState('')
-  const [hatSize, setHatSize] = useState('')
-  const [inseam, setInseam] = useState('')
+  const [shoeSizeGender, setShoeSizeGender] = useState('unisex')
   const [neckSize, setNeckSize] = useState('')
   const [sleeveLength, setSleeveLength] = useState('')
+  const [chest, setChest] = useState('')
+  const [hips, setHips] = useState('')
+  const [hatSize, setHatSize] = useState('')
   const [wardrobeNotes, setWardrobeNotes] = useState('')
 
-  // Additional photos
-  const [photoFullBodyFront, setPhotoFullBodyFront] = useState('')
-  const [photoFullBodySide, setPhotoFullBodySide] = useState('')
-  const [photoAdditional, setPhotoAdditional] = useState('')
-  const fileFullBodyFrontRef = useRef<HTMLInputElement>(null)
-  const fileFullBodySideRef = useRef<HTMLInputElement>(null)
-  const fileAdditionalRef = useRef<HTMLInputElement>(null)
-
-  // Skills & Languages
-  const [skills, setSkills] = useState<string[]>([])
-  const [customSkill, setCustomSkill] = useState('')
+  // Skills
+  const [accents, setAccents] = useState<string[]>([])
+  const [accentInput, setAccentInput] = useState('')
+  const [sports, setSports] = useState<string[]>([])
+  const [danceStyles, setDanceStyles] = useState<string[]>([])
+  const [instruments, setInstruments] = useState<string[]>([])
+  const [instrumentInput, setInstrumentInput] = useState('')
+  const [driving, setDriving] = useState<string[]>([])
+  const [swimmingLevel, setSwimmingLevel] = useState('')
   const [languages, setLanguages] = useState<string[]>(['English'])
   const [langInput, setLangInput] = useState('')
+  const [otherSkills, setOtherSkills] = useState<string[]>([])
+  const [otherSkillInput, setOtherSkillInput] = useState('')
 
-  const [videoReelUrl, setVideoReelUrl] = useState('')
-  const [toast, setToast] = useState('')
+  // Experience
+  const [actingExperience, setActingExperience] = useState('')
+  const [training, setTraining] = useState<string[]>([])
+  const [credits, setCredits] = useState('')
+
+  // Contact
   const [userEmail, setUserEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [preferredContact, setPreferredContact] = useState('email')
   const [instagram, setInstagram] = useState('')
   const [imdbUrl, setImdbUrl] = useState('')
 
+  // ── Auth + load ─────────────────────────────────────────────────────────────
+
   useEffect(() => {
-    (async () => {
+    ;(async () => {
       const { createBrowserClient } = await import('@supabase/ssr')
-      const browserClient = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
-      const { data: { user }, error } = await browserClient.auth.getUser()
+      const bc = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+      const { data: { user }, error } = await bc.auth.getUser()
       if (error || !user) { router.push('/auth/sign-in'); return }
       setUserEmail(user.email || '')
       loadProfile()
@@ -181,33 +216,60 @@ export default function ProfilePage() {
         setBio(p.bio || '')
         setGender(p.gender || '')
         setDob(p.date_of_birth || '')
-        setHeightCm(p.height_cm?.toString() || '')
-        setWeightLbs(p.weight_lbs?.toString() || '')
-        setHairColor(p.hair_color || '')
-        setEyeColor(p.eye_color || '')
-        setEthnicities(p.ethnicity || [])
+        setIsPublic(p.is_public ?? true)
         setUnionStatus(p.union_status || '')
         setMemberNumber(p.member_number || '')
-        setSkills(p.special_skills || [])
-        setLanguages(p.languages?.length ? p.languages : ['English'])
         setAgencyId(p.agency_id || '')
-        setIsPublic(p.is_public ?? true)
         setHeadshotUrl(p.headshot_url || '')
         setVideoReelUrl(p.video_reel_url || '')
+        setPhotoFront(p.photo_full_body_front || '')
+        setPhotoSide(p.photo_full_body_side || '')
+        setPhotoExtra(p.photo_additional || '')
+        if (p.height_cm) {
+          setHeightCm(p.height_cm.toString())
+          const totalIn = Math.round(p.height_cm / 2.54)
+          setHeightFt(Math.floor(totalIn / 12).toString())
+          setHeightIn((totalIn % 12).toString())
+        }
+        if (p.weight_lbs) setWeightLbs(p.weight_lbs.toString())
+        setHairColor(p.hair_color || '')
+        setHairLength(p.hair_length || '')
+        setHairTexture(p.hair_texture || '')
+        setEyeColor(p.eye_color || '')
+        setBodyType(p.body_type || '')
+        setSkinTone(p.skin_tone || '')
+        setEthnicities(p.ethnicity || [])
+        setFacialHair(p.facial_hair || '')
+        setHasTattoos(p.has_tattoos || false)
+        setTattooDesc(p.tattoo_description || '')
+        setHasPiercings(p.has_piercings || false)
+        setPiercingDesc(p.piercing_description || '')
+        setHasScars(p.has_scars || false)
+        setScarDesc(p.scar_description || '')
         setShirtSize(p.shirt_size || '')
-        setPantsSize(p.pants_size || '')
+        setJacketSize(p.jacket_size || '')
+        setPantsWaist(p.waist_inches?.toString() || '')
+        setPantsInseam(p.inseam_inches?.toString() || '')
         setDressSize(p.dress_size || '')
         setShoeSize(p.shoe_size || '')
-        setShoeSizeType(p.shoe_size_type || "Men's")
-        setJacketSize(p.jacket_size || '')
+        setShoeSizeGender(p.shoe_gender || 'unisex')
+        setNeckSize(p.neck_inches?.toString() || '')
+        setSleeveLength(p.sleeve_inches?.toString() || '')
+        setChest(p.chest_inches?.toString() || '')
+        setHips(p.hips_inches?.toString() || '')
         setHatSize(p.hat_size || '')
-        setInseam(p.inseam?.toString() || '')
-        setNeckSize(p.neck_size?.toString() || '')
-        setSleeveLength(p.sleeve_length?.toString() || '')
         setWardrobeNotes(p.wardrobe_notes || '')
-        setPhotoFullBodyFront(p.photo_full_body_front || '')
-        setPhotoFullBodySide(p.photo_full_body_side || '')
-        setPhotoAdditional(p.photo_additional || '')
+        setAccents(p.accents || [])
+        setSports(p.sports || [])
+        setDanceStyles(p.dance_styles || [])
+        setInstruments(p.instruments || [])
+        setDriving(p.driving_licence || [])
+        setSwimmingLevel(p.swimming_level || '')
+        setLanguages(p.languages?.length ? p.languages : ['English'])
+        setOtherSkills(p.special_skills || [])
+        setActingExperience(p.acting_experience || '')
+        setTraining(p.training || [])
+        setCredits(p.credits || '')
         setPhone(p.phone || '')
         setPreferredContact(p.preferred_contact || 'email')
         setInstagram(p.instagram || '')
@@ -219,166 +281,125 @@ export default function ProfilePage() {
 
   async function loadAgencyLinks() {
     const res = await fetch('/api/profile/agency')
-    if (res.ok) {
-      const data = await res.json()
-      setAgencyLinks(data || [])
-    }
+    if (res.ok) setAgencyLinks((await res.json()) || [])
   }
 
   async function uploadAdditionalPhoto(file: File, type: 'full_body_front' | 'full_body_side' | 'additional') {
     if (file.size > 5 * 1024 * 1024) { setMessage('Image must be under 5 MB.'); return }
-    const formData = new FormData()
-    formData.append('photo', file)
-    formData.append('type', type)
-    const res = await fetch('/api/profile/photo', { method: 'POST', body: formData })
+    const fd = new FormData()
+    fd.append('photo', file)
+    fd.append('type', type)
+    const res = await fetch('/api/profile/photo', { method: 'POST', body: fd })
     if (res.ok) {
-      const data = await res.json()
-      if (type === 'full_body_front') setPhotoFullBodyFront(data.url)
-      if (type === 'full_body_side') setPhotoFullBodySide(data.url)
-      if (type === 'additional') setPhotoAdditional(data.url)
+      const d = await res.json()
+      if (type === 'full_body_front') setPhotoFront(d.url)
+      if (type === 'full_body_side') setPhotoSide(d.url)
+      if (type === 'additional') setPhotoExtra(d.url)
     } else {
       setMessage('❌ Failed to upload photo.')
     }
   }
 
-  // ── Height helpers ──────────────────────────────────────────────────────
+  // ── Height helpers ──────────────────────────────────────────────────────────
 
-  function heightDisplayVal() {
-    if (!heightCm) return ''
-    if (heightUnit === 'cm') return heightCm
-    // Show total inches when in ft mode
-    return String(Math.round(parseFloat(heightCm) / 2.54))
+  function onFtChange(v: string) {
+    setHeightFt(v)
+    const cm = Math.round(((parseInt(v) || 0) * 12 + (parseInt(heightIn) || 0)) * 2.54)
+    setHeightCm(cm > 0 ? cm.toString() : '')
   }
-
-  function onHeightChange(val: string) {
-    if (heightUnit === 'cm') {
-      setHeightCm(val)
-    } else {
-      const inches = parseFloat(val)
-      setHeightCm(isNaN(inches) ? '' : String(Math.round(inches * 2.54)))
-    }
+  function onInChange(v: string) {
+    setHeightIn(v)
+    const cm = Math.round(((parseInt(heightFt) || 0) * 12 + (parseInt(v) || 0)) * 2.54)
+    setHeightCm(cm > 0 ? cm.toString() : '')
   }
-
-  function toggleHeightUnit() {
-    setHeightUnit(u => (u === 'cm' ? 'ft' : 'cm'))
+  function onCmChange(v: string) {
+    setHeightCm(v)
+    if (v) {
+      const totalIn = Math.round(parseFloat(v) / 2.54)
+      setHeightFt(Math.floor(totalIn / 12).toString())
+      setHeightIn((totalIn % 12).toString())
+    } else { setHeightFt(''); setHeightIn('') }
   }
-
   function heightHint() {
     if (!heightCm) return ''
     const cm = parseFloat(heightCm)
-    if (heightUnit === 'cm') {
-      const totalIn = Math.round(cm / 2.54)
-      return `${Math.floor(totalIn / 12)}'${totalIn % 12}" (${cm} cm)`
-    }
-    return `${cm} cm`
+    const totalIn = Math.round(cm / 2.54)
+    return heightUnit === 'ft' ? `${cm} cm` : `${Math.floor(totalIn / 12)}'${totalIn % 12}"`
   }
 
-  // ── Weight helpers ──────────────────────────────────────────────────────
+  // ── Weight helpers ──────────────────────────────────────────────────────────
 
-  function weightDisplayVal() {
+  function weightDisplay() {
     if (!weightLbs) return ''
-    if (weightUnit === 'lbs') return weightLbs
-    return String(Math.round(parseFloat(weightLbs) * 0.453592))
+    return weightUnit === 'lbs' ? weightLbs : Math.round(parseFloat(weightLbs) * 0.453592).toString()
+  }
+  function onWeightChange(v: string) {
+    if (weightUnit === 'lbs') { setWeightLbs(v) }
+    else { setWeightLbs(v ? Math.round(parseFloat(v) / 0.453592).toString() : '') }
   }
 
-  function onWeightChange(val: string) {
-    if (weightUnit === 'lbs') {
-      setWeightLbs(val)
-    } else {
-      const kg = parseFloat(val)
-      setWeightLbs(isNaN(kg) ? '' : String(Math.round(kg / 0.453592)))
-    }
+  // ── Array toggles ───────────────────────────────────────────────────────────
+
+  const tog = (arr: string[], item: string, set: (v: string[]) => void) =>
+    set(arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item])
+
+  function addToArr(val: string, arr: string[], set: (v: string[]) => void, clearInput: () => void) {
+    const s = val.trim()
+    if (s && !arr.includes(s)) set([...arr, s])
+    clearInput()
   }
 
-  function toggleWeightUnit() {
-    setWeightUnit(u => (u === 'lbs' ? 'kg' : 'lbs'))
-  }
-
-  // ── Toggles ─────────────────────────────────────────────────────────────
-
-  function toggleEthnicity(e: string) {
-    setEthnicities(p => p.includes(e) ? p.filter(x => x !== e) : [...p, e])
-  }
-
-  function toggleSkill(s: string) {
-    setSkills(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s])
-  }
-
-  function addCustomSkill() {
-    const s = customSkill.trim()
-    if (s && !skills.includes(s)) { setSkills(p => [...p, s]); setCustomSkill('') }
-  }
-
-  function addLanguage() {
-    const l = langInput.trim()
-    if (l && !languages.includes(l)) { setLanguages(p => [...p, l]); setLangInput('') }
-  }
-
-  function handleHeadshotChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > 5 * 1024 * 1024) { setMessage('Image must be under 5 MB.'); return }
-    setHeadshotFile(file)
-    setHeadshotUrl(URL.createObjectURL(file))
-  }
-
-  // ── Save ────────────────────────────────────────────────────────────────
+  // ── Save ────────────────────────────────────────────────────────────────────
 
   async function save() {
     setSaving(true)
     setMessage('')
-
-    const formData = new FormData()
-    if (headshotFile) formData.append('headshot', headshotFile)
-
-    // Validate video URL if provided
     if (videoReelUrl && !/^https?:\/\/.+/.test(videoReelUrl)) {
       setMessage('❌ Video reel URL must start with https://')
       setSaving(false)
       return
     }
-
-    formData.append('data', JSON.stringify({
-      bio,
-      gender,
-      date_of_birth: dob || null,
+    const fd = new FormData()
+    if (headshotFile) fd.append('headshot', headshotFile)
+    fd.append('data', JSON.stringify({
+      bio, gender, date_of_birth: dob || null, is_public: isPublic,
+      union_status: unionStatus, member_number: memberNumber || null,
+      agency_id: agencyId || null, video_reel_url: videoReelUrl || null,
       height_cm: heightCm ? parseFloat(heightCm) : null,
+      height_feet: heightFt ? parseInt(heightFt) : null,
+      height_inches: heightIn ? parseInt(heightIn) : null,
       weight_lbs: weightLbs ? parseFloat(weightLbs) : null,
-      hair_color: hairColor,
-      eye_color: eyeColor,
-      ethnicity: ethnicities,
-      union_status: unionStatus,
-      member_number: memberNumber || null,
-      special_skills: skills,
-      languages,
-      agency_id: agencyId || null,
-      is_public: isPublic,
-      video_reel_url: videoReelUrl || null,
-      shirt_size: shirtSize || null,
-      pants_size: pantsSize || null,
-      dress_size: dressSize || null,
-      shoe_size: shoeSize || null,
-      shoe_size_type: shoeSizeType,
-      jacket_size: jacketSize || null,
-      hat_size: hatSize || null,
-      inseam: inseam ? parseFloat(inseam) : null,
-      neck_size: neckSize ? parseFloat(neckSize) : null,
-      sleeve_length: sleeveLength ? parseFloat(sleeveLength) : null,
-      wardrobe_notes: wardrobeNotes || null,
-      phone: phone || null,
-      preferred_contact: preferredContact,
-      instagram: instagram || null,
-      imdb_url: imdbUrl || null,
+      weight_kg: weightLbs ? Math.round(parseFloat(weightLbs) * 0.453592) : null,
+      hair_color: hairColor || null, hair_length: hairLength || null,
+      hair_texture: hairTexture || null, eye_color: eyeColor || null,
+      body_type: bodyType || null, skin_tone: skinTone || null,
+      ethnicity: ethnicities, facial_hair: facialHair || null,
+      has_tattoos: hasTattoos, tattoo_description: hasTattoos ? tattooDesc || null : null,
+      has_piercings: hasPiercings, piercing_description: hasPiercings ? piercingDesc || null : null,
+      has_scars: hasScars, scar_description: hasScars ? scarDesc || null : null,
+      shirt_size: shirtSize || null, jacket_size: jacketSize || null,
+      waist_inches: pantsWaist ? parseInt(pantsWaist) : null,
+      inseam_inches: pantsInseam ? parseInt(pantsInseam) : null,
+      dress_size: dressSize || null, shoe_size: shoeSize || null, shoe_gender: shoeSizeGender,
+      neck_inches: neckSize ? parseFloat(neckSize) : null,
+      sleeve_inches: sleeveLength ? parseFloat(sleeveLength) : null,
+      chest_inches: chest ? parseInt(chest) : null,
+      hips_inches: hips ? parseInt(hips) : null,
+      hat_size: hatSize || null, wardrobe_notes: wardrobeNotes || null,
+      accents, sports, dance_styles: danceStyles, instruments,
+      driving_licence: driving, swimming_level: swimmingLevel || null,
+      languages, special_skills: otherSkills,
+      acting_experience: actingExperience || null, training, credits: credits || null,
+      phone: phone || null, preferred_contact: preferredContact,
+      instagram: instagram || null, imdb_url: imdbUrl || null,
     }))
-
-    const res = await fetch('/api/profile', { method: 'POST', body: formData })
-
+    const res = await fetch('/api/profile', { method: 'POST', body: fd })
     if (res.ok) {
       const result = await res.json()
       if (result.headshot_url) setHeadshotUrl(result.headshot_url)
       setHeadshotFile(null)
       setMessage('')
-      setToast('✅ Profile saved successfully!')
+      setToast('✅ Profile saved!')
       setTimeout(() => setToast(''), 3000)
     } else {
       setMessage('❌ Failed to save. Please try again.')
@@ -386,7 +407,7 @@ export default function ProfilePage() {
     setSaving(false)
   }
 
-  // ── Loading state ───────────────────────────────────────────────────────
+  // ── Loading ──────────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -396,28 +417,38 @@ export default function ProfilePage() {
     )
   }
 
-  // ── Profile completion ───────────────────────────────────────────────────
+  // ── Completion score ─────────────────────────────────────────────────────────
 
-  const completionScore = [
-    headshotUrl ? 25 : 0,
-    bio.trim().length > 20 ? 10 : 0,
-    (heightCm && hairColor && eyeColor) ? 20 : 0,
-    unionStatus ? 10 : 0,
-    skills.length > 0 ? 10 : 0,
-    languages.length > 0 ? 5 : 0,
-    agencyLinks.some(l => l.status === 'approved') ? 20 : 0,
-  ].reduce((a, b) => a + b, 0)
+  const rawScore =
+    (headshotUrl ? 20 : 0) +
+    (bio.trim().length > 20 ? 5 : 0) +
+    (heightCm ? 5 : 0) +
+    (weightLbs ? 3 : 0) +
+    (hairColor ? 3 : 0) +
+    (eyeColor ? 3 : 0) +
+    (bodyType ? 3 : 0) +
+    (ethnicities.length > 0 ? 3 : 0) +
+    (hairLength ? 2 : 0) +
+    (skinTone ? 2 : 0) +
+    (shirtSize ? 3 : 0) +
+    (shoeSize ? 3 : 0) +
+    (unionStatus ? 5 : 0) +
+    (gender ? 3 : 0) +
+    (dob ? 3 : 0) +
+    (languages.length > 0 ? 3 : 0) +
+    ((phone || instagram) ? 3 : 0) +
+    ((otherSkills.length > 0 || sports.length > 0 || accents.length > 0) ? 5 : 0) +
+    (actingExperience ? 3 : 0)
 
-  const isProfileLive = headshotUrl && heightCm && hairColor && eyeColor && isPublic
+  const completionScore = Math.min(100, Math.round(rawScore / 80 * 100))
+  const completionColor = completionScore < 50 ? '#ef4444' : completionScore < 80 ? '#f59e0b' : '#22c55e'
+  const isProfileLive = !!(headshotUrl && heightCm && hairColor && eyeColor && isPublic)
 
-  const completionColor = completionScore < 40 ? '#ef4444' : completionScore < 80 ? '#f59e0b' : '#22c55e'
-
-  // ── Render ──────────────────────────────────────────────────────────────
+  // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', paddingBottom: '80px' }}>
 
-      {/* Toast */}
       {toast && (
         <div style={{ position: 'fixed', top: '16px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#1a1a2e', color: 'white', padding: '12px 24px', borderRadius: '10px', fontSize: '14px', fontWeight: '600', zIndex: 100, boxShadow: '0 4px 20px rgba(0,0,0,0.25)', whiteSpace: 'nowrap' }}>
           {toast}
@@ -426,20 +457,14 @@ export default function ProfilePage() {
 
       {/* Header */}
       <div style={{ backgroundColor: '#1a1a2e', color: 'white', padding: '20px 24px' }}>
-        <button
-          onClick={() => router.push('/dashboard')}
-          style={{ color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer', marginBottom: '8px', fontSize: '14px' }}
-        >
+        <button onClick={() => router.push('/dashboard')} style={{ color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer', marginBottom: '8px', fontSize: '14px' }}>
           ← Dashboard
         </button>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <h1 style={{ fontSize: '24px', fontWeight: '700', margin: '0 0 4px' }}>🎭 My Profile</h1>
-            <p style={{ color: '#9ca3af', margin: 0, fontSize: '14px' }}>
-              Your casting profile — visible to approved agents and casting directors
-            </p>
+            <p style={{ color: '#9ca3af', margin: 0, fontSize: '14px' }}>Your casting profile — visible to approved agents and casting directors</p>
           </div>
-          {/* Completion ring */}
           <div style={{ textAlign: 'center', flexShrink: 0 }}>
             <div style={{ position: 'relative', width: '52px', height: '52px' }}>
               <svg viewBox="0 0 36 36" style={{ width: '52px', height: '52px', transform: 'rotate(-90deg)' }}>
@@ -458,227 +483,441 @@ export default function ProfilePage() {
 
       <div style={{ maxWidth: '640px', margin: '0 auto', padding: '16px' }}>
 
-        {/* ── Profile Status Card ── */}
+        {/* Status */}
         {isProfileLive ? (
-          <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #86efac', borderRadius: '14px', padding: '16px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+          <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #86efac', borderRadius: '12px', padding: '14px 16px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <p style={{ fontWeight: '700', color: '#15803d', fontSize: '14px', margin: '0 0 3px' }}>✅ Your profile is LIVE</p>
-              <p style={{ fontSize: '12px', color: '#166534', margin: 0 }}>Visible to agents and casting directors on SetReady Casting</p>
+              <p style={{ fontWeight: '700', color: '#15803d', fontSize: '14px', margin: '0 0 2px' }}>✅ Your profile is LIVE</p>
+              <p style={{ fontSize: '12px', color: '#166534', margin: 0 }}>Visible to agents and casting directors</p>
             </div>
-            <a href="/casting-portal" style={{ fontSize: '12px', color: '#15803d', fontWeight: '600', textDecoration: 'none', whiteSpace: 'nowrap' }}>View Portal →</a>
           </div>
         ) : (
-          <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '14px', padding: '16px', marginBottom: '12px' }}>
+          <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '14px 16px', marginBottom: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
               <p style={{ fontWeight: '700', color: '#92400e', fontSize: '14px', margin: 0 }}>⚠️ Complete your profile</p>
               <span style={{ fontSize: '13px', fontWeight: '700', color: completionColor }}>{completionScore}%</span>
             </div>
-            <p style={{ fontSize: '12px', color: '#78350f', margin: '0 0 8px' }}>Add a headshot and your stats to appear in casting searches</p>
+            <p style={{ fontSize: '12px', color: '#78350f', margin: '0 0 8px' }}>Add a headshot and your physical stats to appear in casting searches</p>
             <div style={{ height: '6px', backgroundColor: '#fde68a', borderRadius: '3px', overflow: 'hidden' }}>
               <div style={{ width: `${completionScore}%`, height: '100%', backgroundColor: completionColor, transition: 'width 0.3s ease' }} />
             </div>
           </div>
         )}
 
-        {/* ── Headshot ── */}
-        <Section title="📸 Headshot">
+        {/* ── HEADSHOT ── */}
+        <CS title="📸 Headshot">
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{
-              width: '100px', height: '100px', borderRadius: '50%',
-              overflow: 'hidden', border: '3px solid #e5e7eb',
-              backgroundColor: '#f3f4f6', display: 'flex',
-              alignItems: 'center', justifyContent: 'center', flexShrink: 0
-            }}>
+            <div style={{ width: '100px', height: '100px', borderRadius: '50%', overflow: 'hidden', border: '3px solid #e5e7eb', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               {headshotUrl
                 ? <img src={headshotUrl} alt="Headshot" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : <span style={{ fontSize: '36px' }}>👤</span>
-              }
+                : <span style={{ fontSize: '36px' }}>👤</span>}
             </div>
             <div>
-              <button
-                onClick={() => fileRef.current?.click()}
-                style={{
-                  padding: '8px 16px', backgroundColor: '#F59E0B',
-                  color: '#1a1a2e', fontWeight: '700', border: 'none',
-                  borderRadius: '8px', cursor: 'pointer', fontSize: '14px'
-                }}
-              >
+              <button onClick={() => fileRef.current?.click()} style={{ padding: '8px 16px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px' }}>
                 {headshotUrl ? 'Change Photo' : 'Upload Photo'}
               </button>
-              <p style={{ fontSize: '11px', color: '#9ca3af', margin: '6px 0 0' }}>
-                JPG or PNG, max 5 MB
-              </p>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleHeadshotChange}
-                style={{ display: 'none' }}
-              />
+              <p style={{ fontSize: '11px', color: '#9ca3af', margin: '6px 0 0' }}>JPG or PNG, max 5 MB. Square crop works best.</p>
+              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={e => { const f = e.target.files?.[0]; if (!f) return; if (f.size > 5*1024*1024) { setMessage('Image must be under 5 MB.'); return }; setHeadshotFile(f); setHeadshotUrl(URL.createObjectURL(f)) }} style={{ display: 'none' }} />
             </div>
           </div>
-        </Section>
+        </CS>
 
-        {/* ── Visibility ── */}
-        <Section title="🔍 Profile Visibility">
-          <div
-            onClick={() => setIsPublic(v => !v)}
-            style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
-          >
-            <div style={{
-              width: '48px', height: '28px', borderRadius: '14px',
-              backgroundColor: isPublic ? '#22c55e' : '#d1d5db',
-              position: 'relative', transition: 'background 0.2s', flexShrink: 0
-            }}>
-              <div style={{
-                position: 'absolute', top: '4px',
-                left: isPublic ? '24px' : '4px',
-                width: '20px', height: '20px', borderRadius: '50%',
-                backgroundColor: 'white', transition: 'left 0.2s',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-              }} />
+        {/* ── VISIBILITY ── */}
+        <CS title="🔍 Profile Visibility">
+          <div onClick={() => setIsPublic(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+            <div style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: isPublic ? '#22c55e' : '#d1d5db', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+              <div style={{ position: 'absolute', top: '4px', left: isPublic ? '24px' : '4px', width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'white', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
             </div>
             <span style={{ fontSize: '14px', color: '#374151' }}>
-              {isPublic
-                ? '✅ Visible to approved agents and casting directors'
-                : '🔒 Profile hidden — not discoverable'}
+              {isPublic ? '✅ Visible to approved agents and casting directors' : '🔒 Profile hidden — not discoverable'}
             </span>
           </div>
-        </Section>
+        </CS>
 
-        {/* ── Basic info ── */}
-        <Section title="👤 Basic Info">
-          <div style={{ display: 'grid', gap: '12px' }}>
+        {/* ── SECTION 1: BASICS ── */}
+        <CS title="👤 Basics">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             <div>
-              <Label>Gender</Label>
-              <select value={gender} onChange={e => setGender(e.target.value)} style={selectStyle}>
+              <FL>Gender</FL>
+              <select value={gender} onChange={e => setGender(e.target.value)} style={sel}>
                 <option value="">Select gender</option>
-                {['Male', 'Female', 'Non-binary', 'Other'].map(g => (
-                  <option key={g}>{g}</option>
-                ))}
+                {['Male','Female','Non-binary','Other'].map(g => <option key={g}>{g}</option>)}
               </select>
             </div>
-
             <div>
-              <Label>Date of Birth</Label>
-              <input type="date" value={dob} onChange={e => setDob(e.target.value)} style={inputStyle} />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              {/* Height */}
-              <div>
-                <Label>Height</Label>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <input
-                    type="number"
-                    value={heightDisplayVal()}
-                    onChange={e => onHeightChange(e.target.value)}
-                    placeholder={heightUnit === 'cm' ? 'e.g. 175' : 'inches'}
-                    style={{ ...inputStyle, flex: 1 }}
-                  />
-                  <button onClick={toggleHeightUnit} style={unitBtnStyle}>{heightUnit}</button>
-                </div>
-                {heightHint() && (
-                  <p style={{ fontSize: '11px', color: '#9ca3af', margin: '3px 0 0' }}>{heightHint()}</p>
-                )}
-              </div>
-
-              {/* Weight */}
-              <div>
-                <Label>Weight</Label>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <input
-                    type="number"
-                    value={weightDisplayVal()}
-                    onChange={e => onWeightChange(e.target.value)}
-                    placeholder={weightUnit}
-                    style={{ ...inputStyle, flex: 1 }}
-                  />
-                  <button onClick={toggleWeightUnit} style={unitBtnStyle}>{weightUnit}</button>
-                </div>
-                {weightLbs && (
-                  <p style={{ fontSize: '11px', color: '#9ca3af', margin: '3px 0 0' }}>
-                    {weightUnit === 'lbs'
-                      ? `≈ ${Math.round(parseFloat(weightLbs) * 0.453592)} kg`
-                      : `${weightLbs} lbs`}
-                  </p>
-                )}
-              </div>
+              <FL>Date of Birth</FL>
+              <input type="date" value={dob} onChange={e => setDob(e.target.value)} style={inp} />
             </div>
           </div>
-        </Section>
+          <div style={{ marginBottom: '12px' }}>
+            <FL>Union Status</FL>
+            <select value={unionStatus} onChange={e => setUnionStatus(e.target.value)} style={sel}>
+              <option value="">Select status</option>
+              {UNION_STATUSES.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
+            </select>
+            {unionStatus && unionStatus !== 'non-union' && (
+              <div style={{ marginTop: '10px' }}>
+                <FL>Member Number</FL>
+                <input type="text" value={memberNumber} onChange={e => setMemberNumber(e.target.value)} placeholder="Your UBCP/ACTRA member number" style={inp} />
+              </div>
+            )}
+          </div>
+          <div style={{ marginBottom: '12px' }}>
+            <FL>Bio</FL>
+            <textarea value={bio} onChange={e => setBio(e.target.value.slice(0, 500))} placeholder="Tell casting directors about yourself — your experience, look, and personality..." rows={4} style={{ ...ta, fontFamily: 'inherit' }} />
+            <p style={{ fontSize: '11px', color: '#9ca3af', margin: '4px 0 0', textAlign: 'right' }}>{bio.length}/500</p>
+          </div>
+          <div>
+            <FL>Video Reel URL (YouTube or Vimeo)</FL>
+            <input value={videoReelUrl} onChange={e => setVideoReelUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." type="url" style={inp} />
+            {videoReelUrl && /youtube\.com|youtu\.be/.test(videoReelUrl) && (
+              <div style={{ marginTop: '10px', borderRadius: '8px', overflow: 'hidden', aspectRatio: '16/9' }}>
+                <iframe src={`https://www.youtube.com/embed/${videoReelUrl.match(/(?:v=|youtu\.be\/)([^&\s]+)/)?.[1]}`} style={{ width: '100%', height: '100%', border: 'none' }} allow="accelerometer; autoplay" allowFullScreen />
+              </div>
+            )}
+          </div>
+        </CS>
 
-        {/* ── Appearance ── */}
-        <Section title="👁 Appearance">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        {/* ── SECTION 2: PHYSICAL MEASUREMENTS ── */}
+        <CS title="📏 Physical Measurements">
+          {/* Height */}
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <FL>Height</FL>
+              <button onClick={() => setHeightUnit(u => u === 'ft' ? 'cm' : 'ft')} style={{ ...unitBtn, height: '28px', fontSize: '11px', padding: '0 10px' }}>
+                {heightUnit === 'ft' ? 'switch to cm' : 'switch to ft/in'}
+              </button>
+            </div>
+            {heightUnit === 'ft' ? (
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ flex: 1 }}>
+                  <input type="number" min="3" max="7" value={heightFt} onChange={e => onFtChange(e.target.value)} placeholder="5" style={inp} />
+                  <p style={{ fontSize: '11px', color: '#9ca3af', margin: '3px 0 0', textAlign: 'center' }}>feet</p>
+                </div>
+                <span style={{ color: '#9ca3af', fontWeight: '700', paddingBottom: '16px' }}>+</span>
+                <div style={{ flex: 1 }}>
+                  <input type="number" min="0" max="11" value={heightIn} onChange={e => onInChange(e.target.value)} placeholder="9" style={inp} />
+                  <p style={{ fontSize: '11px', color: '#9ca3af', margin: '3px 0 0', textAlign: 'center' }}>inches</p>
+                </div>
+              </div>
+            ) : (
+              <input type="number" min="100" max="250" value={heightCm} onChange={e => onCmChange(e.target.value)} placeholder="e.g. 175" style={inp} />
+            )}
+            {heightHint() && <p style={{ fontSize: '12px', color: '#6b7280', margin: '6px 0 0' }}>≈ {heightHint()}</p>}
+          </div>
+
+          {/* Weight */}
+          <div>
+            <FL>Weight</FL>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input type="number" value={weightDisplay()} onChange={e => onWeightChange(e.target.value)} placeholder={weightUnit === 'lbs' ? 'e.g. 160' : 'e.g. 73'} style={{ ...inp, flex: 1 }} />
+              <button onClick={() => setWeightUnit(u => u === 'lbs' ? 'kg' : 'lbs')} style={unitBtn}>{weightUnit}</button>
+            </div>
+            {weightLbs && (
+              <p style={{ fontSize: '12px', color: '#6b7280', margin: '6px 0 0' }}>
+                {weightUnit === 'lbs' ? `≈ ${Math.round(parseFloat(weightLbs) * 0.453592)} kg` : `${weightLbs} lbs`}
+              </p>
+            )}
+          </div>
+        </CS>
+
+        {/* ── SECTION 3: APPEARANCE ── */}
+        <CS title="💄 Appearance">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             <div>
-              <Label>Hair Color</Label>
-              <select value={hairColor} onChange={e => setHairColor(e.target.value)} style={selectStyle}>
+              <FL>Hair Color</FL>
+              <select value={hairColor} onChange={e => setHairColor(e.target.value)} style={sel}>
                 <option value="">Select</option>
                 {HAIR_COLORS.map(c => <option key={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <Label>Eye Color</Label>
-              <select value={eyeColor} onChange={e => setEyeColor(e.target.value)} style={selectStyle}>
+              <FL>Eye Color</FL>
+              <select value={eyeColor} onChange={e => setEyeColor(e.target.value)} style={sel}>
                 <option value="">Select</option>
                 {EYE_COLORS.map(c => <option key={c}>{c}</option>)}
               </select>
             </div>
-          </div>
-        </Section>
-
-        {/* ── Ethnicity ── */}
-        <Section title="🌍 Ethnicity">
-          <p style={{ fontSize: '12px', color: '#9ca3af', margin: '0 0 10px' }}>Select all that apply</p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {ETHNICITIES.map(e => {
-              const on = ethnicities.includes(e)
-              return (
-                <button
-                  key={e}
-                  onClick={() => toggleEthnicity(e)}
-                  style={{
-                    padding: '6px 14px', borderRadius: '20px',
-                    border: `1px solid ${on ? '#3b82f6' : '#e5e7eb'}`,
-                    backgroundColor: on ? '#eff6ff' : 'white',
-                    color: on ? '#1d4ed8' : '#374151',
-                    fontSize: '13px', fontWeight: on ? '600' : '400',
-                    cursor: 'pointer', transition: 'all 0.1s'
-                  }}
-                >
-                  {on ? '✓ ' : ''}{e}
-                </button>
-              )
-            })}
-          </div>
-        </Section>
-
-        {/* ── Union status ── */}
-        <Section title="🎬 Union Status">
-          <select value={unionStatus} onChange={e => setUnionStatus(e.target.value)} style={selectStyle}>
-            <option value="">Select status</option>
-            {UNION_STATUSES.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
-          </select>
-          {unionStatus && unionStatus !== 'non-union' && (
-            <div style={{ marginTop: '12px' }}>
-              <Label>Member Number</Label>
-              <input
-                type="text"
-                value={memberNumber}
-                onChange={e => setMemberNumber(e.target.value)}
-                placeholder="Your union member number"
-                style={inputStyle}
-              />
-              <p style={{ fontSize: '11px', color: '#9ca3af', margin: '4px 0 0' }}>
-                Your member number appears on your UBCP/ACTRA card.
-              </p>
+            <div>
+              <FL>Hair Length</FL>
+              <select value={hairLength} onChange={e => setHairLength(e.target.value)} style={sel}>
+                <option value="">Select</option>
+                {HAIR_LENGTHS.map(c => <option key={c}>{c}</option>)}
+              </select>
             </div>
-          )}
-        </Section>
+            <div>
+              <FL>Hair Texture</FL>
+              <select value={hairTexture} onChange={e => setHairTexture(e.target.value)} style={sel}>
+                <option value="">Select</option>
+                {HAIR_TEXTURES.map(c => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <FL>Body Type</FL>
+              <select value={bodyType} onChange={e => setBodyType(e.target.value)} style={sel}>
+                <option value="">Select</option>
+                {BODY_TYPES.map(c => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <FL>Skin Tone</FL>
+              <select value={skinTone} onChange={e => setSkinTone(e.target.value)} style={sel}>
+                <option value="">Select</option>
+                {SKIN_TONES.map(c => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ marginBottom: '12px' }}>
+            <FL>Facial Hair</FL>
+            <select value={facialHair} onChange={e => setFacialHair(e.target.value)} style={sel}>
+              <option value="">Select</option>
+              {FACIAL_HAIR_OPTS.map(c => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <FL>Ethnicity — select all that apply</FL>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
+              {ETHNICITY_OPTS.map(e => (
+                <Chip key={e} label={e} on={ethnicities.includes(e)} onClick={() => tog(ethnicities, e, setEthnicities)} />
+              ))}
+            </div>
+          </div>
+        </CS>
 
-        {/* ── Agency Roster ── */}
-        <Section title="🏢 My Agency">
+        {/* ── SECTION 4: DISTINGUISHING FEATURES ── */}
+        <CS title="✨ Distinguishing Features">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div>
+              <YesNo label="Visible tattoos?" value={hasTattoos} onChange={setHasTattoos} />
+              {hasTattoos && (
+                <div style={{ marginTop: '8px' }}>
+                  <FL>Describe location and visibility</FL>
+                  <textarea value={tattooDesc} onChange={e => setTattooDesc(e.target.value)} placeholder="e.g. Full sleeve left arm, neck tattoo, hand tattoos" rows={2} style={{ ...ta, fontFamily: 'inherit' }} />
+                  <p style={{ fontSize: '11px', color: '#9ca3af', margin: '4px 0 0' }}>Wardrobe may need to cover these.</p>
+                </div>
+              )}
+            </div>
+            <div>
+              <YesNo label="Visible piercings?" value={hasPiercings} onChange={setHasPiercings} />
+              {hasPiercings && (
+                <div style={{ marginTop: '8px' }}>
+                  <FL>Describe</FL>
+                  <textarea value={piercingDesc} onChange={e => setPiercingDesc(e.target.value)} placeholder="e.g. Ears, nose stud, eyebrow" rows={2} style={{ ...ta, fontFamily: 'inherit' }} />
+                </div>
+              )}
+            </div>
+            <div>
+              <YesNo label="Visible scars or birthmarks?" value={hasScars} onChange={setHasScars} />
+              {hasScars && (
+                <div style={{ marginTop: '8px' }}>
+                  <FL>Describe</FL>
+                  <textarea value={scarDesc} onChange={e => setScarDesc(e.target.value)} placeholder="e.g. Scar on left cheek, birthmark on right forearm" rows={2} style={{ ...ta, fontFamily: 'inherit' }} />
+                </div>
+              )}
+            </div>
+          </div>
+        </CS>
+
+        {/* ── SECTION 5: CLOTHING SIZES ── */}
+        <CS title="👔 Clothing Sizes">
+          <p style={{ fontSize: '12px', color: '#9ca3af', margin: '0 0 14px' }}>Wardrobe needs accurate sizes. Measure — do not estimate.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <FL>Shirt / Top Size</FL>
+              <select value={shirtSize} onChange={e => setShirtSize(e.target.value)} style={sel}>
+                <option value="">Select</option>
+                {SHIRT_SIZES.map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <FL>Jacket / Blazer Size</FL>
+              <select value={jacketSize} onChange={e => setJacketSize(e.target.value)} style={sel}>
+                <option value="">Select</option>
+                {JACKET_SIZES.map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <FL>Dress Size (if applicable)</FL>
+              <select value={dressSize} onChange={e => setDressSize(e.target.value)} style={sel}>
+                <option value="">Select</option>
+                {DRESS_SIZES.map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <FL>Hat Size</FL>
+              <select value={hatSize} onChange={e => setHatSize(e.target.value)} style={sel}>
+                <option value="">Select</option>
+                {HAT_SIZES.map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <FL>Pants Waist (inches)</FL>
+              <input type="number" value={pantsWaist} onChange={e => setPantsWaist(e.target.value)} placeholder="32" style={inp} />
+            </div>
+            <div>
+              <FL>Pants Inseam (inches)</FL>
+              <input type="number" value={pantsInseam} onChange={e => setPantsInseam(e.target.value)} placeholder="30" style={inp} />
+            </div>
+            <div>
+              <FL>Shoe Size</FL>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <input type="text" value={shoeSize} onChange={e => setShoeSize(e.target.value)} placeholder="10" style={{ ...inp, flex: 1 }} />
+                <button onClick={() => setShoeSizeGender(g => g === "Men's" ? "Women's" : g === "Women's" ? 'unisex' : "Men's")} style={unitBtn}>{shoeSizeGender}</button>
+              </div>
+            </div>
+            <div>
+              <FL>Neck Size (inches)</FL>
+              <input type="number" value={neckSize} onChange={e => setNeckSize(e.target.value)} placeholder="15.5" step="0.5" style={inp} />
+            </div>
+            <div>
+              <FL>Sleeve Length (inches)</FL>
+              <input type="number" value={sleeveLength} onChange={e => setSleeveLength(e.target.value)} placeholder="33" style={inp} />
+            </div>
+            <div>
+              <FL>Chest (inches)</FL>
+              <input type="number" value={chest} onChange={e => setChest(e.target.value)} placeholder="40" style={inp} />
+            </div>
+            <div>
+              <FL>Hips (inches)</FL>
+              <input type="number" value={hips} onChange={e => setHips(e.target.value)} placeholder="38" style={inp} />
+            </div>
+          </div>
+          <div style={{ marginTop: '12px' }}>
+            <FL>Wardrobe Notes</FL>
+            <textarea value={wardrobeNotes} onChange={e => setWardrobeNotes(e.target.value)} placeholder="e.g. I have tattoos on both arms that may need covering. I cannot wear high heels. I have a prosthetic leg." rows={3} style={{ ...ta, fontFamily: 'inherit' }} />
+          </div>
+        </CS>
+
+        {/* ── SECTION 6: SPECIAL SKILLS ── */}
+        <CS title="🎯 Special Skills and Abilities">
+          <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 16px' }}>These appear in casting searches for specific roles.</p>
+
+          {/* Accents */}
+          <div style={{ marginBottom: '18px' }}>
+            <FL>Accents</FL>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginBottom: '8px' }}>
+              {ACCENT_PRESETS.map(a => <Chip key={a} label={a} on={accents.includes(a)} onClick={() => tog(accents, a, setAccents)} />)}
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input value={accentInput} onChange={e => setAccentInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addToArr(accentInput, accents, setAccents, () => setAccentInput('')))} placeholder="Add other accent..." style={{ ...inp, flex: 1 }} />
+              <button onClick={() => addToArr(accentInput, accents, setAccents, () => setAccentInput(''))} style={{ padding: '0 16px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', border: 'none', borderRadius: '8px', cursor: 'pointer', height: '44px' }}>Add</button>
+            </div>
+            {accents.filter(a => !ACCENT_PRESETS.includes(a)).map(a => (
+              <span key={a} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', margin: '6px 6px 0 0', padding: '4px 10px', backgroundColor: '#F59E0B', borderRadius: '20px', fontSize: '12px', fontWeight: '700', color: '#1a1a2e' }}>
+                {a}<button onClick={() => setAccents(p => p.filter(x => x !== a))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1a1a2e', padding: 0, lineHeight: 1, fontSize: '14px' }}>×</button>
+              </span>
+            ))}
+          </div>
+
+          {/* Sports */}
+          <div style={{ marginBottom: '18px' }}>
+            <FL>Sports</FL>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
+              {SPORTS_OPTS.map(s => <Chip key={s} label={s} on={sports.includes(s)} onClick={() => tog(sports, s, setSports)} />)}
+            </div>
+          </div>
+
+          {/* Dance */}
+          <div style={{ marginBottom: '18px' }}>
+            <FL>Dance Styles</FL>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
+              {DANCE_OPTS.map(d => <Chip key={d} label={d} on={danceStyles.includes(d)} onClick={() => tog(danceStyles, d, setDanceStyles)} />)}
+            </div>
+          </div>
+
+          {/* Instruments */}
+          <div style={{ marginBottom: '18px' }}>
+            <FL>Musical Instruments</FL>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginBottom: '8px' }}>
+              {INSTRUMENT_PRESETS.map(i => <Chip key={i} label={i} on={instruments.includes(i)} onClick={() => tog(instruments, i, setInstruments)} />)}
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input value={instrumentInput} onChange={e => setInstrumentInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addToArr(instrumentInput, instruments, setInstruments, () => setInstrumentInput('')))} placeholder="Add other instrument..." style={{ ...inp, flex: 1 }} />
+              <button onClick={() => addToArr(instrumentInput, instruments, setInstruments, () => setInstrumentInput(''))} style={{ padding: '0 16px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', border: 'none', borderRadius: '8px', cursor: 'pointer', height: '44px' }}>Add</button>
+            </div>
+            {instruments.filter(i => !INSTRUMENT_PRESETS.includes(i)).map(i => (
+              <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', margin: '6px 6px 0 0', padding: '4px 10px', backgroundColor: '#F59E0B', borderRadius: '20px', fontSize: '12px', fontWeight: '700', color: '#1a1a2e' }}>
+                {i}<button onClick={() => setInstruments(p => p.filter(x => x !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1a1a2e', padding: 0, lineHeight: 1, fontSize: '14px' }}>×</button>
+              </span>
+            ))}
+          </div>
+
+          {/* Driving */}
+          <div style={{ marginBottom: '18px' }}>
+            <FL>Driving</FL>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
+              {DRIVING_OPTS.map(d => <Chip key={d} label={d} on={driving.includes(d)} onClick={() => tog(driving, d, setDriving)} />)}
+            </div>
+          </div>
+
+          {/* Swimming */}
+          <div style={{ marginBottom: '18px' }}>
+            <FL>Swimming Level</FL>
+            <select value={swimmingLevel} onChange={e => setSwimmingLevel(e.target.value)} style={sel}>
+              <option value="">Select</option>
+              {SWIMMING_LEVELS.map(s => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+
+          {/* Languages */}
+          <div style={{ marginBottom: '18px' }}>
+            <FL>Languages</FL>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginBottom: '8px' }}>
+              {LANG_PRESETS.map(l => <Chip key={l} label={l} on={languages.includes(l)} onClick={() => { if (l === 'English') return; tog(languages, l, setLanguages) }} />)}
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input value={langInput} onChange={e => setLangInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addToArr(langInput, languages, setLanguages, () => setLangInput('')))} placeholder="Add other language..." style={{ ...inp, flex: 1 }} />
+              <button onClick={() => addToArr(langInput, languages, setLanguages, () => setLangInput(''))} style={{ padding: '0 16px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', border: 'none', borderRadius: '8px', cursor: 'pointer', height: '44px' }}>Add</button>
+            </div>
+            {languages.filter(l => !LANG_PRESETS.includes(l)).map(l => (
+              <span key={l} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', margin: '6px 6px 0 0', padding: '4px 10px', backgroundColor: '#F59E0B', borderRadius: '20px', fontSize: '12px', fontWeight: '700', color: '#1a1a2e' }}>
+                {l}<button onClick={() => setLanguages(p => p.filter(x => x !== l))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1a1a2e', padding: 0, lineHeight: 1, fontSize: '14px' }}>×</button>
+              </span>
+            ))}
+          </div>
+
+          {/* Other skills */}
+          <div>
+            <FL>Other Special Skills</FL>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginBottom: '8px' }}>
+              {OTHER_SKILL_PRESETS.map(s => <Chip key={s} label={s} on={otherSkills.includes(s)} onClick={() => tog(otherSkills, s, setOtherSkills)} />)}
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input value={otherSkillInput} onChange={e => setOtherSkillInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addToArr(otherSkillInput, otherSkills, setOtherSkills, () => setOtherSkillInput('')))} placeholder="e.g. Juggling, Archery, Stage combat..." style={{ ...inp, flex: 1 }} />
+              <button onClick={() => addToArr(otherSkillInput, otherSkills, setOtherSkills, () => setOtherSkillInput(''))} style={{ padding: '0 16px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', border: 'none', borderRadius: '8px', cursor: 'pointer', height: '44px' }}>Add</button>
+            </div>
+            {otherSkills.filter(s => !OTHER_SKILL_PRESETS.includes(s)).map(s => (
+              <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', margin: '6px 6px 0 0', padding: '4px 10px', backgroundColor: '#F59E0B', borderRadius: '20px', fontSize: '12px', fontWeight: '700', color: '#1a1a2e' }}>
+                {s}<button onClick={() => setOtherSkills(p => p.filter(x => x !== s))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1a1a2e', padding: 0, lineHeight: 1, fontSize: '14px' }}>×</button>
+              </span>
+            ))}
+          </div>
+        </CS>
+
+        {/* ── SECTION 7: EXPERIENCE AND TRAINING ── */}
+        <CS title="🎬 Experience and Training">
+          <div style={{ marginBottom: '14px' }}>
+            <FL>Experience Level</FL>
+            <select value={actingExperience} onChange={e => setActingExperience(e.target.value)} style={sel}>
+              <option value="">Select your level</option>
+              {EXPERIENCE_LEVELS.map(l => <option key={l}>{l}</option>)}
+            </select>
+          </div>
+          <div style={{ marginBottom: '14px' }}>
+            <FL>Formal Training — select all that apply</FL>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginTop: '6px' }}>
+              {TRAINING_OPTS.map(t => <Chip key={t} label={t} on={training.includes(t)} onClick={() => tog(training, t, setTraining)} />)}
+            </div>
+          </div>
+          <div>
+            <FL>Notable Credits (optional)</FL>
+            <textarea value={credits} onChange={e => setCredits(e.target.value)} placeholder={'List any notable productions you have worked on.\ne.g. The Last of Us Season 2 (HBO), XYZ Commercial for Air Canada'} rows={4} style={{ ...ta, fontFamily: 'inherit' }} />
+            <p style={{ fontSize: '11px', color: '#9ca3af', margin: '4px 0 0' }}>Not required, but helps casting directors understand your experience.</p>
+          </div>
+        </CS>
+
+        {/* ── AGENCY ── */}
+        <CS title="🏢 My Agency">
           {agencyLinks.filter(l => l.status !== 'inactive').length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {agencyLinks.filter(l => l.status !== 'inactive').map(link => (
@@ -698,299 +937,51 @@ export default function ProfilePage() {
               <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>You are not currently on any agency roster. To join an agency, contact them directly.</p>
             </div>
           )}
-          <p style={{ fontSize: '11px', color: '#9ca3af', margin: '8px 0 0' }}>
-            Agency membership is managed directly through the agency.
-          </p>
-        </Section>
+          <p style={{ fontSize: '11px', color: '#9ca3af', margin: '8px 0 0' }}>Agency membership is managed directly through the agency.</p>
+        </CS>
 
-        {/* ── Contact Information ── */}
-        <Section title="📞 Contact Information">
+        {/* ── CONTACT AND LINKS ── */}
+        <CS title="📞 Contact and Links">
           <div style={{ marginBottom: '12px' }}>
-            <Label>Email Address</Label>
-            <input
-              type="email"
-              value={userEmail}
-              disabled
-              style={{ ...inputStyle, backgroundColor: '#f3f4f6', color: '#9ca3af', cursor: 'not-allowed' }}
-            />
+            <FL>Email Address</FL>
+            <input type="email" value={userEmail} disabled style={{ ...inp, backgroundColor: '#f3f4f6', color: '#9ca3af', cursor: 'not-allowed' }} />
             <p style={{ fontSize: '11px', color: '#9ca3af', margin: '4px 0 0' }}>Your sign-in email — change it in account settings.</p>
           </div>
           <div style={{ marginBottom: '12px' }}>
-            <Label>Phone Number (optional)</Label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={e => setPhone(e.target.value)}
-              placeholder="+1 (604) 555-0100"
-              style={inputStyle}
-            />
+            <FL>Phone Number (optional)</FL>
+            <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 (604) 555-0100" style={inp} />
           </div>
           <div style={{ marginBottom: '12px' }}>
-            <Label>Preferred Contact Method</Label>
+            <FL>Preferred Contact Method</FL>
             <div style={{ display: 'flex', gap: '20px', marginTop: '6px' }}>
-              {(['email', 'phone', 'either'] as const).map(opt => (
+              {(['email','phone','either'] as const).map(opt => (
                 <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: '#374151', cursor: 'pointer' }}>
-                  <input
-                    type="radio"
-                    name="preferredContact"
-                    value={opt}
-                    checked={preferredContact === opt}
-                    onChange={() => setPreferredContact(opt)}
-                    style={{ accentColor: '#F59E0B' }}
-                  />
+                  <input type="radio" name="preferredContact" value={opt} checked={preferredContact === opt} onChange={() => setPreferredContact(opt)} style={{ accentColor: '#F59E0B' }} />
                   {opt.charAt(0).toUpperCase() + opt.slice(1)}
                 </label>
               ))}
             </div>
           </div>
           <div style={{ marginBottom: '12px' }}>
-            <Label>Instagram (optional)</Label>
-            <input
-              type="text"
-              value={instagram}
-              onChange={e => setInstagram(e.target.value)}
-              placeholder="@yourusername"
-              style={inputStyle}
-            />
+            <FL>Instagram (optional)</FL>
+            <input type="text" value={instagram} onChange={e => setInstagram(e.target.value)} placeholder="@yourusername" style={inp} />
           </div>
           <div>
-            <Label>IMDb URL (optional)</Label>
-            <input
-              type="url"
-              value={imdbUrl}
-              onChange={e => setImdbUrl(e.target.value)}
-              placeholder="https://www.imdb.com/name/nm..."
-              style={inputStyle}
-            />
+            <FL>IMDb URL (optional)</FL>
+            <input type="url" value={imdbUrl} onChange={e => setImdbUrl(e.target.value)} placeholder="https://www.imdb.com/name/nm..." style={inp} />
           </div>
-        </Section>
+        </CS>
 
-        {/* ── Bio ── */}
-        <Section title="📝 Bio">
-          <textarea
-            value={bio}
-            onChange={e => setBio(e.target.value.slice(0, 500))}
-            placeholder="Tell casting directors about yourself — your experience, look, and personality..."
-            rows={4}
-            style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
-          />
-          <p style={{ fontSize: '11px', color: '#9ca3af', margin: '4px 0 0', textAlign: 'right' }}>
-            {bio.length}/500
-          </p>
-        </Section>
-
-        {/* ── Special Skills ── */}
-        <Section title="⭐ Special Skills">
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
-            {PRESET_SKILLS.map(s => {
-              const on = skills.includes(s)
-              return (
-                <button
-                  key={s}
-                  onClick={() => toggleSkill(s)}
-                  style={{
-                    padding: '5px 12px', borderRadius: '20px',
-                    border: `1px solid ${on ? '#F59E0B' : '#e5e7eb'}`,
-                    backgroundColor: on ? '#fffbeb' : 'white',
-                    color: on ? '#92400e' : '#374151',
-                    fontSize: '12px', fontWeight: on ? '600' : '400', cursor: 'pointer'
-                  }}
-                >
-                  {on ? '✓ ' : ''}{s}
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Custom skill input */}
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input
-              value={customSkill}
-              onChange={e => setCustomSkill(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustomSkill())}
-              placeholder="Add custom skill..."
-              style={{ ...inputStyle, flex: 1 }}
-            />
-            <button
-              onClick={addCustomSkill}
-              style={{ padding: '0 16px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-            >
-              Add
-            </button>
-          </div>
-
-          {/* Custom skill chips */}
-          {skills.filter(s => !PRESET_SKILLS.includes(s)).length > 0 && (
-            <div style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {skills.filter(s => !PRESET_SKILLS.includes(s)).map(s => (
-                <span key={s} style={{
-                  padding: '4px 10px', backgroundColor: '#fffbeb',
-                  border: '1px solid #F59E0B', borderRadius: '20px',
-                  fontSize: '12px', color: '#92400e',
-                  display: 'flex', alignItems: 'center', gap: '4px'
-                }}>
-                  {s}
-                  <button
-                    onClick={() => setSkills(p => p.filter(x => x !== s))}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#92400e', padding: '0', lineHeight: 1, fontSize: '14px' }}
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-        </Section>
-
-        {/* ── Languages ── */}
-        <Section title="🗣 Languages">
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
-            {languages.map(l => (
-              <span key={l} style={{
-                padding: '4px 10px', backgroundColor: '#eff6ff',
-                border: '1px solid #bfdbfe', borderRadius: '20px',
-                fontSize: '13px', color: '#1d4ed8',
-                display: 'flex', alignItems: 'center', gap: '4px'
-              }}>
-                {l}
-                {l !== 'English' && (
-                  <button
-                    onClick={() => setLanguages(p => p.filter(x => x !== l))}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1d4ed8', padding: '0', lineHeight: 1, fontSize: '14px' }}
-                  >
-                    ×
-                  </button>
-                )}
-              </span>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input
-              value={langInput}
-              onChange={e => setLangInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addLanguage())}
-              placeholder="Add language..."
-              style={{ ...inputStyle, flex: 1 }}
-            />
-            <button
-              onClick={addLanguage}
-              style={{ padding: '0 16px', backgroundColor: '#3b82f6', color: 'white', fontWeight: '700', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-            >
-              Add
-            </button>
-          </div>
-        </Section>
-
-        {/* ── Video Reel ── */}
-        <Section title="🎬 Video Reel">
-          <div>
-            <Label>YouTube or Vimeo URL</Label>
-            <input
-              value={videoReelUrl}
-              onChange={e => setVideoReelUrl(e.target.value)}
-              placeholder="https://youtube.com/watch?v=..."
-              type="url"
-              style={inputStyle}
-            />
-            <p style={{ fontSize: '11px', color: '#9ca3af', margin: '5px 0 0' }}>
-              Your showreel — visible to casting directors on your profile
-            </p>
-            {videoReelUrl && /youtube\.com|youtu\.be/.test(videoReelUrl) && (
-              <div style={{ marginTop: '10px', borderRadius: '8px', overflow: 'hidden', aspectRatio: '16/9' }}>
-                <iframe
-                  src={`https://www.youtube.com/embed/${videoReelUrl.match(/(?:v=|youtu\.be\/)([^&\s]+)/)?.[1]}`}
-                  style={{ width: '100%', height: '100%', border: 'none' }}
-                  allow="accelerometer; autoplay"
-                  allowFullScreen
-                />
-              </div>
-            )}
-          </div>
-        </Section>
-
-        {/* ── Wardrobe ── */}
-        <Section title="👔 My Wardrobe Specifications">
+        {/* ── ADDITIONAL PHOTOS ── */}
+        <CS title="📷 Additional Photos">
+          <p style={{ fontSize: '12px', color: '#9ca3af', margin: '0 0 14px' }}>Upload full body shots for wardrobe reference. Visible to agents and casting directors.</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div>
-              <Label>Shirt / Top Size</Label>
-              <select value={shirtSize} onChange={e => setShirtSize(e.target.value)} style={selectStyle}>
-                <option value="">Select</option>
-                {SHIRT_SIZES.map(s => <option key={s}>{s}</option>)}
-              </select>
-            </div>
-            <div>
-              <Label>Jacket / Blazer Size</Label>
-              <select value={jacketSize} onChange={e => setJacketSize(e.target.value)} style={selectStyle}>
-                <option value="">Select</option>
-                {JACKET_SIZES.map(s => <option key={s}>{s}</option>)}
-              </select>
-            </div>
-            <div>
-              <Label>Dress Size (if applicable)</Label>
-              <select value={dressSize} onChange={e => setDressSize(e.target.value)} style={selectStyle}>
-                <option value="">Select</option>
-                {DRESS_SIZES.map(s => <option key={s}>{s}</option>)}
-              </select>
-            </div>
-            <div>
-              <Label>Hat Size</Label>
-              <select value={hatSize} onChange={e => setHatSize(e.target.value)} style={selectStyle}>
-                <option value="">Select</option>
-                {HAT_SIZES.map(s => <option key={s}>{s}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
-            <div>
-              <Label>Pants / Trouser Size</Label>
-              <input type="text" value={pantsSize} onChange={e => setPantsSize(e.target.value)} placeholder="e.g. 32W x 30L" style={inputStyle} />
-            </div>
-            <div>
-              <Label>Shoe Size</Label>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <input type="text" value={shoeSize} onChange={e => setShoeSize(e.target.value)} placeholder="e.g. 10" style={{ ...inputStyle, flex: 1 }} />
-                <button onClick={() => setShoeSizeType(t => t === "Men's" ? "Women's" : "Men's")} style={unitBtnStyle}>{shoeSizeType}</button>
-              </div>
-            </div>
-            <div>
-              <Label>Inseam (inches)</Label>
-              <input type="number" value={inseam} onChange={e => setInseam(e.target.value)} placeholder="e.g. 30" style={inputStyle} />
-            </div>
-            <div>
-              <Label>Neck Size (inches)</Label>
-              <input type="number" value={neckSize} onChange={e => setNeckSize(e.target.value)} placeholder="e.g. 15.5" step="0.5" style={inputStyle} />
-            </div>
-            <div>
-              <Label>Sleeve Length (inches)</Label>
-              <input type="number" value={sleeveLength} onChange={e => setSleeveLength(e.target.value)} placeholder="e.g. 33" style={inputStyle} />
-            </div>
-          </div>
-
-          <div style={{ marginTop: '12px' }}>
-            <Label>Wardrobe Notes</Label>
-            <textarea
-              value={wardrobeNotes}
-              onChange={e => setWardrobeNotes(e.target.value)}
-              placeholder="e.g. I have tattoos that may need covering, I cannot wear high heels, etc."
-              rows={3}
-              style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
-            />
-          </div>
-        </Section>
-
-        {/* ── Additional Photos ── */}
-        <Section title="📸 Photos">
-          <p style={{ fontSize: '12px', color: '#9ca3af', margin: '0 0 14px' }}>
-            Upload your headshot and full body shots. These are visible to agents and casting directors.
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            {[
-              { label: 'Full Body — Front', url: photoFullBodyFront, setUrl: setPhotoFullBodyFront, ref: fileFullBodyFrontRef, type: 'full_body_front' as const },
-              { label: 'Full Body — Side', url: photoFullBodySide, setUrl: setPhotoFullBodySide, ref: fileFullBodySideRef, type: 'full_body_side' as const },
-              { label: 'Additional', url: photoAdditional, setUrl: setPhotoAdditional, ref: fileAdditionalRef, type: 'additional' as const },
-            ].map(slot => (
-              <div key={slot.label} style={{ border: '1px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden', position: 'relative' }}>
+            {([
+              { label: 'Full Body — Front', url: photoFront, setUrl: setPhotoFront, ref: fileFrontRef, type: 'full_body_front' as const },
+              { label: 'Full Body — Side', url: photoSide, setUrl: setPhotoSide, ref: fileSideRef, type: 'full_body_side' as const },
+              { label: 'Additional', url: photoExtra, setUrl: setPhotoExtra, ref: fileExtraRef, type: 'additional' as const },
+            ]).map(slot => (
+              <div key={slot.label} style={{ border: '1px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden' }}>
                 {slot.url ? (
                   <>
                     <img src={slot.url} alt={slot.label} style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', display: 'block' }} />
@@ -1000,55 +991,26 @@ export default function ProfilePage() {
                     </div>
                   </>
                 ) : (
-                  <button
-                    onClick={() => slot.ref.current?.click()}
-                    style={{ width: '100%', aspectRatio: '3/4', border: 'none', backgroundColor: '#f9fafb', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                  >
+                  <button onClick={() => slot.ref.current?.click()} style={{ width: '100%', aspectRatio: '3/4', border: 'none', backgroundColor: '#f9fafb', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                     <span style={{ fontSize: '28px' }}>📷</span>
                     <span style={{ fontSize: '11px', color: '#9ca3af', textAlign: 'center', padding: '0 8px' }}>{slot.label}</span>
                   </button>
                 )}
-                <input
-                  ref={slot.ref}
-                  type="file"
-                  accept="image/jpeg,image/png,image/heic"
-                  style={{ display: 'none' }}
-                  onChange={e => {
-                    const f = e.target.files?.[0]
-                    if (f) uploadAdditionalPhoto(f, slot.type)
-                  }}
-                />
+                <input ref={slot.ref} type="file" accept="image/jpeg,image/png,image/heic" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadAdditionalPhoto(f, slot.type) }} />
               </div>
             ))}
           </div>
           <p style={{ fontSize: '11px', color: '#9ca3af', margin: '8px 0 0' }}>JPG, PNG or HEIC. Max 5 MB per photo.</p>
-        </Section>
+        </CS>
 
-        {/* ── Save ── */}
+        {/* ── SAVE ── */}
         {message && (
-          <div style={{
-            padding: '12px 16px', borderRadius: '10px', marginBottom: '12px',
-            textAlign: 'center', fontSize: '14px', fontWeight: '600',
-            backgroundColor: message.startsWith('✅') ? '#f0fdf4' : '#fef2f2',
-            border: `1px solid ${message.startsWith('✅') ? '#86efac' : '#fca5a5'}`,
-            color: message.startsWith('✅') ? '#15803d' : '#dc2626',
-          }}>
+          <div style={{ padding: '12px 16px', borderRadius: '10px', marginBottom: '12px', textAlign: 'center', fontSize: '14px', fontWeight: '600', backgroundColor: message.startsWith('❌') ? '#fef2f2' : '#f0fdf4', border: `1px solid ${message.startsWith('❌') ? '#fca5a5' : '#86efac'}`, color: message.startsWith('❌') ? '#dc2626' : '#15803d' }}>
             {message}
           </div>
         )}
 
-        <button
-          onClick={save}
-          disabled={saving}
-          style={{
-            width: '100%', padding: '16px',
-            backgroundColor: saving ? '#9ca3af' : '#F59E0B',
-            color: saving ? 'white' : '#1a1a2e',
-            fontWeight: '700', fontSize: '16px',
-            border: 'none', borderRadius: '12px',
-            cursor: saving ? 'not-allowed' : 'pointer',
-          }}
-        >
+        <button onClick={save} disabled={saving} style={{ width: '100%', padding: '16px', backgroundColor: saving ? '#9ca3af' : '#F59E0B', color: saving ? 'white' : '#1a1a2e', fontWeight: '700', fontSize: '16px', border: 'none', borderRadius: '12px', cursor: saving ? 'not-allowed' : 'pointer' }}>
           {saving ? 'Saving...' : '💾 Save Profile'}
         </button>
 
