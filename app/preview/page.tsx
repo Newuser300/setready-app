@@ -337,17 +337,17 @@ export default function PreviewPage() {
                 {
                   icon: '📋',
                   title: 'Work Log & Earnings Tracker',
-                  desc: 'Track every booking — production name, role type, hours worked and total pay. Your complete film industry work history in one place.',
+                  desc: '(Free) Track every booking — production name, role type, hours worked and total pay. Your complete film industry work history in one place.',
                 },
                 {
                   icon: '💰',
                   title: 'Rate Calculator',
-                  desc: 'Calculate your exact pay for any booking. Union and non-union rates based on the official 2025-2028 UBCP/ACTRA agreement.',
+                  desc: '(Free) Calculate your exact pay for any booking. Union and non-union rates based on the official 2025-2028 UBCP/ACTRA agreement.',
                 },
                 {
                   icon: '📄',
                   title: 'Upload Work Vouchers',
-                  desc: 'Photograph and store your union and non-union work vouchers directly inside each work log entry. Always have proof of your work days ready.',
+                  desc: '(Free) Photograph and store your union and non-union work vouchers directly inside each work log entry. Always have proof of your work days ready.',
                 },
                 {
                   icon: '🏆',
@@ -362,37 +362,37 @@ export default function PreviewPage() {
                 {
                   icon: '🎭',
                   title: 'Set Etiquette Simulator',
-                  desc: 'Test your on-set knowledge with 10 real scenarios. Learn how to handle tricky situations before they happen on a real set.',
+                  desc: '(Free) Test your on-set knowledge with 10 real scenarios. Learn how to handle tricky situations before they happen on a real set.',
                 },
                 {
                   icon: '📖',
                   title: 'Glossary',
-                  desc: 'A to Z reference of every film set term you need to know. Search instantly while you are on set.',
+                  desc: '(Free) A to Z reference of every film set term you need to know. Search instantly while you are on set.',
                 },
                 {
                   icon: '🎯',
                   title: 'Goal Tracking',
-                  desc: 'Set career goals and track your progress. Days worked, agencies registered, vouchers earned and more.',
+                  desc: '(Free) Set career goals and track your progress. Days worked, agencies registered, vouchers earned and more.',
                 },
                 {
                   icon: '👥',
                   title: 'Film Contacts',
-                  desc: 'Build your industry contact list. Save details for directors, ADs, agents, makeup artists and fellow performers you meet on set.',
+                  desc: '(Free) Build your industry contact list. Save details for directors, ADs, agents, makeup artists and fellow performers you meet on set.',
                 },
                 {
                   icon: '📔',
                   title: 'On-Set Journal',
-                  desc: 'Record your experiences after every booking. Who you met, what you learned and memorable moments — with photo upload.',
+                  desc: '(Free) Record your experiences after every booking. Who you met, what you learned and memorable moments — with photo upload.',
                 },
                 {
                   icon: '📋',
                   title: 'Proof of Residency',
-                  desc: 'Store your residency documents securely. Email them to production directly from the app when requested on set.',
+                  desc: '(Free) Store your residency documents securely. Email them to production directly from the app when requested on set.',
                 },
                 {
                   icon: '👔',
                   title: 'What to Wear on Set',
-                  desc: 'A complete background performer clothing guide. Know exactly what to wear and what to avoid before every booking.',
+                  desc: '(Free) A complete background performer clothing guide. Know exactly what to wear and what to avoid before every booking.',
                 },
                 {
                   icon: '🎬',

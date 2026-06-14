@@ -580,12 +580,14 @@ export default function Dashboard() {
     // Section 2 modules are 6, 7, 8, 9
     const section2ModuleIds = [6, 7, 8, 9];
     
-    const { data: progressData } = await supabase
-      .from('user_progress')
-      .select('module_id, completed, section2_popup_shown')
-      .eq('user_id', user.id)
-      .in('module_id', section2ModuleIds);
-    
+    const { data: { session: s2session } } = await supabase.auth.getSession();
+    if (!s2session?.access_token) return;
+
+    const s2Res = await fetch(`/api/user-progress?moduleIds=${section2ModuleIds.join(',')}`, {
+      headers: { Authorization: `Bearer ${s2session.access_token}` },
+    });
+    const progressData: Array<{ module_id: number; completed: boolean; section2_popup_shown: boolean }> | null = s2Res.ok ? await s2Res.json() : null;
+
     if (!progressData || progressData.length === 0) return;
     
     // Check if all Section 2 modules are completed
@@ -676,18 +678,18 @@ export default function Dashboard() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
-      
-      const { data: prog } = await supabase
-        .from('user_progress')
-        .select('*')
-        .eq('user_id', session.user.id);
-      
+
+      const progRes = await fetch('/api/user-progress', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const prog = progRes.ok ? await progRes.json() : [];
+
       const progressMap: Record<string, Progress> = {};
-      prog?.forEach(p => {
+      prog?.forEach((p: Progress) => {
         progressMap[p.module_id] = p;
       });
       setProgress(progressMap);
-      
+
       // Check if section 1 is now complete
       const section1ModulesList = modules.filter(m => m.section === 1);
       const allCompleted = section1ModulesList.length > 0 && 
@@ -725,17 +727,17 @@ export default function Dashboard() {
     
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
-      const { data: prog } = await supabase
-        .from('user_progress')
-        .select('*')
-        .eq('user_id', session.user.id);
-      
+      const progRes = await fetch('/api/user-progress', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const prog = progRes.ok ? await progRes.json() : [];
+
       const progressMap: Record<string, Progress> = {};
-      prog?.forEach(p => {
+      prog?.forEach((p: Progress) => {
         progressMap[p.module_id] = p;
       });
       setProgress(progressMap);
-      
+
       const section1ModulesList = (data || []).filter(m => m.section === 1);
       const allCompleted = section1ModulesList.length > 0 && 
         section1ModulesList.every(m => progressMap[m.id]?.completed === true);
@@ -758,18 +760,15 @@ export default function Dashboard() {
   // Work Log Functions
   async function loadWorkLogs() {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
+    if (!session?.access_token) return;
 
-    const { data, error } = await supabase
-      .from('work_logs')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .order('work_date', { ascending: false });
-
-    if (error) {
-      console.error('Error loading work logs:', error);
+    const res = await fetch('/api/work-log/entries', {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (res.ok) {
+      setWorkLogs(await res.json());
     } else {
-      setWorkLogs(data || []);
+      console.error('Error loading work logs');
     }
   }
 
@@ -913,20 +912,25 @@ export default function Dashboard() {
     };
 
     try {
-      let result;
-      if (editingWorkLog) {
-        result = await supabase.from('work_logs').update(workLogData).eq('id', editingWorkLog.id).select();
-      } else {
-        result = await supabase.from('work_logs').insert([workLogData]).select();
-      }
+      const payload = editingWorkLog
+        ? { id: editingWorkLog.id, ...workLogData }
+        : workLogData;
 
-      if (result.error) {
-        alert(`Error saving: ${result.error.message || 'Unknown error'}`);
+      const saveRes = await fetch('/api/work-log/entries', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!saveRes.ok) {
+        const err = await saveRes.json().catch(() => ({}));
+        alert(`Error saving: ${err.error || 'Unknown error'}`);
         return;
       }
 
+      const saved = await saveRes.json();
       // Upload staged voucher if one was selected in the form
-      const savedId = editingWorkLog?.id ?? result.data?.[0]?.id;
+      const savedId = editingWorkLog?.id ?? saved?.id;
       if (formVoucherFile && savedId) {
         const fd = new FormData();
         fd.append('file', formVoucherFile);
@@ -955,16 +959,18 @@ export default function Dashboard() {
   async function deleteWorkLog(id: string) {
     if (!confirm('Are you sure you want to delete this entry?')) return;
 
-    const { error } = await supabase
-      .from('work_logs')
-      .delete()
-      .eq('id', id);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) { alert('Please sign in again'); return; }
 
-    if (error) {
-      console.error('Error deleting work log:', error);
-      alert('Error deleting work log');
-    } else {
+    const res = await fetch(`/api/work-log/entries?id=${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+
+    if (res.ok) {
       loadWorkLogs();
+    } else {
+      alert('Error deleting work log');
     }
   }
 
