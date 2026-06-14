@@ -1,7 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 import LoadingScreen from '@/components/LoadingScreen'
 
 const COLORS = {
@@ -30,13 +29,17 @@ export default function AvailabilityPage() {
 
   const month = currentDate.toISOString().slice(0, 7)
 
-  // Auth guard — gates all data fetches
+  // Auth guard — uses cookie-based client so server can read the same session
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const checkAuth = async () => {
+      const { createClientComponentClient } = await import('@supabase/auth-helpers-nextjs')
+      const supabaseClient = createClientComponentClient()
+      const { data: { session } } = await supabaseClient.auth.getSession()
       if (!session) { router.push('/auth/sign-in'); return }
       setAuthReady(true)
-    })
-  }, [router])
+    }
+    checkAuth()
+  }, [])
 
   // Only fetch once auth is confirmed
   useEffect(() => {
@@ -45,7 +48,7 @@ export default function AvailabilityPage() {
 
   const fetchAvailability = async () => {
     setLoading(true)
-    const res = await fetch(`/api/availability?month=${month}`)
+    const res = await fetch(`/api/availability?month=${month}`, { credentials: 'include' })
     if (res.status === 401) { router.push('/auth/sign-in'); return }
     const data = await res.json()
     const map: Record<string, string> = {}
@@ -68,6 +71,7 @@ export default function AvailabilityPage() {
       await fetch('/api/availability', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ date: dateStr })
       })
     } else {
@@ -76,6 +80,7 @@ export default function AvailabilityPage() {
       await fetch('/api/availability', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ date: dateStr, status: next })
       })
       setSaving(false)
@@ -99,6 +104,7 @@ export default function AvailabilityPage() {
         await fetch('/api/availability', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ date: d })
         })
       }
@@ -110,6 +116,7 @@ export default function AvailabilityPage() {
       await fetch('/api/availability', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ bulk: true, dates, status })
       })
       setSaving(false)
@@ -166,6 +173,7 @@ export default function AvailabilityPage() {
       await fetch('/api/availability', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ date, status }),
       })
     }
@@ -177,7 +185,7 @@ export default function AvailabilityPage() {
   async function copyPreviousMonth() {
     const prevDate = new Date(cYear, cMon - 1, 1)
     const prevMonth = prevDate.toISOString().slice(0, 7)
-    const res = await fetch(`/api/availability?month=${prevMonth}`)
+    const res = await fetch(`/api/availability?month=${prevMonth}`, { credentials: 'include' })
     if (!res.ok) return
     const prevData = await res.json()
     const prevMap: Record<string, string> = {}
@@ -203,6 +211,7 @@ export default function AvailabilityPage() {
       await fetch('/api/availability', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ date, status }),
       })
     }
