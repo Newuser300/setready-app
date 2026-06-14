@@ -182,6 +182,10 @@ export default function AgentDashboardPage() {
   const [agentName, setAgentName] = useState('')
   const [agencyName, setAgencyName] = useState('')
 
+  // Pro status
+  const [isPro, setIsPro] = useState(false)
+  const [rosterLimit, setRosterLimit] = useState<number | null>(25)
+
   // Loading
   const [loadingRoster, setLoadingRoster] = useState(false)
   const [loadingRequests, setLoadingRequests] = useState(false)
@@ -220,6 +224,13 @@ export default function AgentDashboardPage() {
       setAgentName(d.name || '')
       setAgencyName(d.agencyName || '')
     }).catch(() => router.push('/agent/login'))
+
+    fetch('/api/agent/pro-status').then(async res => {
+      if (!res.ok) return
+      const d = await res.json()
+      setIsPro(d.isPro)
+      setRosterLimit(d.rosterLimit)
+    })
   }, [router])
 
   const loadRoster = useCallback(async () => {
@@ -271,6 +282,10 @@ export default function AgentDashboardPage() {
 
   async function addPerformer() {
     if (!addEmail.trim()) return
+    if (rosterLimit !== null && roster.length >= rosterLimit) {
+      setAddError(`Free plan roster limit (${rosterLimit}) reached. Upgrade to Pro for unlimited performers.`)
+      return
+    }
     setAddLoading(true)
     setAddError('')
     setAddSuccess('')
@@ -497,7 +512,19 @@ export default function AgentDashboardPage() {
                 <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: 0 }}>
                   👥 My Roster
                 </h1>
-                <span style={{ fontSize: '13px', color: '#6b7280' }}>{roster.length} performers</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '13px', color: '#6b7280' }}>
+                    {roster.length}{rosterLimit !== null ? ` / ${rosterLimit}` : ''} performers
+                  </span>
+                  {!isPro && (
+                    <span
+                      onClick={() => router.push('/agent/settings')}
+                      style={{ fontSize: '11px', color: '#F59E0B', fontWeight: '700', cursor: 'pointer', padding: '2px 8px', border: '1px solid #F59E0B', borderRadius: '20px' }}
+                    >
+                      FREE
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Search + filter */}
@@ -888,7 +915,23 @@ export default function AgentDashboardPage() {
                   <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 4px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contact</p>
                   <p style={{ fontSize: '15px', margin: 0 }}>{agentName}</p>
                 </div>
-                <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '16px' }}>
+                <div style={{ marginBottom: '16px' }}>
+                  <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 4px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Plan</p>
+                  <span style={{
+                    display: 'inline-block', padding: '3px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700',
+                    backgroundColor: isPro ? '#fef3c7' : '#f3f4f6',
+                    color: isPro ? '#92400e' : '#6b7280',
+                  }}>
+                    {isPro ? 'PRO' : `FREE — ${rosterLimit} performer limit`}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', borderTop: '1px solid #f3f4f6', paddingTop: '16px' }}>
+                  <button
+                    onClick={() => router.push('/agent/settings')}
+                    style={{ padding: '10px 20px', border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white', color: '#374151', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}
+                  >
+                    Agency Settings & Team
+                  </button>
                   <button
                     onClick={async () => {
                       await fetch('/api/agent/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) })

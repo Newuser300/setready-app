@@ -69,7 +69,7 @@ type AdminRecord = {
   added_at: string;
 };
 
-type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools' | 'admins' | 'casting';
+type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools' | 'admins' | 'casting' | 'promos';
 
 export default function AdminPage() {
   const router = useRouter();
@@ -146,6 +146,14 @@ export default function AdminPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [performers, setPerformers] = useState<any[]>([]);
   const [performersLoading, setPerformersLoading] = useState(false);
+
+  // Promo codes
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [promoCodes, setPromoCodes] = useState<any[]>([]);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoForm, setPromoForm] = useState({ code: '', type: 'training', description: '', maxUses: '', expiresAt: '' });
+  const [promoSubmitting, setPromoSubmitting] = useState(false);
+  const [promoMsg, setPromoMsg] = useState('');
 
   useEffect(() => { loadData(); }, []);
 
@@ -427,6 +435,58 @@ export default function AdminPage() {
     setPerformersLoading(false);
   }
 
+  async function loadPromoCodes() {
+    setPromoLoading(true);
+    const res = await fetch('/api/admin/promo?type=codes', { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (res.ok) setPromoCodes(await res.json());
+    setPromoLoading(false);
+  }
+
+  async function createPromoCode() {
+    if (!promoForm.code.trim() || !promoForm.type) return;
+    setPromoSubmitting(true);
+    setPromoMsg('');
+    const res = await fetch('/api/admin/promo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({
+        code: promoForm.code.trim().toUpperCase(),
+        type: promoForm.type,
+        description: promoForm.description || null,
+        maxUses: promoForm.maxUses ? parseInt(promoForm.maxUses) : null,
+        expiresAt: promoForm.expiresAt || null,
+      }),
+    });
+    const data = await res.json();
+    setPromoSubmitting(false);
+    if (res.ok) {
+      setPromoMsg('✓ Code created');
+      setPromoForm({ code: '', type: 'training', description: '', maxUses: '', expiresAt: '' });
+      loadPromoCodes();
+    } else {
+      setPromoMsg('✗ ' + (data.error || 'Failed'));
+    }
+  }
+
+  async function togglePromoActive(id: string, is_active: boolean) {
+    await fetch('/api/admin/promo', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ id, is_active }),
+    });
+    loadPromoCodes();
+  }
+
+  async function deletePromoCode(id: string, code: string) {
+    if (!confirm(`Delete promo code "${code}"? This cannot be undone.`)) return;
+    await fetch('/api/admin/promo', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ id }),
+    });
+    loadPromoCodes();
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -486,6 +546,7 @@ export default function AdminPage() {
     { key: 'tools',        label: 'Tools',         icon: '🔧' },
     { key: 'admins',       label: 'Admins',        icon: '🔐' },
     { key: 'casting',      label: 'Casting',       icon: '🎬' },
+    { key: 'promos',       label: 'Promo Codes',   icon: '🎟️' },
   ];
 
   return (
@@ -522,6 +583,9 @@ export default function AdminPage() {
                 }
                 if (item.key === 'casting') {
                   loadReviewMode();
+                }
+                if (item.key === 'promos') {
+                  loadPromoCodes();
                 }
               }}
               className={`px-4 py-3 text-sm font-medium transition border-b-2 whitespace-nowrap ${
@@ -1193,6 +1257,154 @@ export default function AdminPage() {
         {/* ══════════════════════════════════════
             CASTING PLATFORM
         ══════════════════════════════════════ */}
+        {activeSection === 'promos' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold text-gray-800">🎟️ Promo Codes</h2>
+
+            {/* Create Code Form */}
+            <div className="bg-white border border-gray-200 rounded-xl p-5">
+              <h3 className="text-sm font-bold text-gray-700 mb-4">Create New Code</h3>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Code *</label>
+                  <input
+                    value={promoForm.code}
+                    onChange={e => setPromoForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
+                    placeholder="e.g. SETREADY2026"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm uppercase tracking-wider font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Type *</label>
+                  <select
+                    value={promoForm.type}
+                    onChange={e => setPromoForm(f => ({ ...f, type: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
+                  >
+                    <option value="training">Training (Performer)</option>
+                    <option value="agent_pro">Agent Pro</option>
+                    <option value="casting_pro">Casting Pro</option>
+                    <option value="press">Press (All types)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Description</label>
+                  <input
+                    value={promoForm.description}
+                    onChange={e => setPromoForm(f => ({ ...f, description: e.target.value }))}
+                    placeholder="e.g. Press access 2026"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Max Uses (blank = unlimited)</label>
+                  <input
+                    type="number"
+                    value={promoForm.maxUses}
+                    onChange={e => setPromoForm(f => ({ ...f, maxUses: e.target.value }))}
+                    placeholder="e.g. 100"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Expires At (blank = never)</label>
+                  <input
+                    type="date"
+                    value={promoForm.expiresAt}
+                    onChange={e => setPromoForm(f => ({ ...f, expiresAt: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={createPromoCode}
+                  disabled={promoSubmitting}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {promoSubmitting ? 'Creating...' : 'Create Code'}
+                </button>
+                {promoMsg && <span className={`text-sm font-medium ${promoMsg.startsWith('✓') ? 'text-green-600' : 'text-red-600'}`}>{promoMsg}</span>}
+              </div>
+            </div>
+
+            {/* Active Codes Table */}
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-gray-700">All Codes</h3>
+                <button onClick={loadPromoCodes} className="text-xs text-blue-600 font-semibold hover:underline">
+                  {promoLoading ? 'Loading...' : 'Refresh'}
+                </button>
+              </div>
+              {promoCodes.length === 0 ? (
+                <div className="p-8 text-center">
+                  <p className="text-gray-400 text-sm mb-3">No promo codes yet.</p>
+                  <button onClick={loadPromoCodes} className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700">
+                    Load Codes
+                  </button>
+                </div>
+              ) : (
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Code</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Type</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Description</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Uses</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Expires</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {promoCodes.map((p: any) => (
+                      <tr key={p.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 font-mono font-bold text-gray-800 tracking-wider">{p.code}</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                            p.type === 'training' ? 'bg-blue-50 text-blue-700'
+                            : p.type === 'agent_pro' ? 'bg-amber-50 text-amber-700'
+                            : p.type === 'casting_pro' ? 'bg-purple-50 text-purple-700'
+                            : 'bg-gray-100 text-gray-600'
+                          }`}>{p.type}</span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-500 text-xs">{p.description || '—'}</td>
+                        <td className="px-4 py-3 text-gray-700 font-semibold">
+                          {p.uses_count}{p.max_uses ? ` / ${p.max_uses}` : ''}
+                        </td>
+                        <td className="px-4 py-3 text-gray-500 text-xs">
+                          {p.expires_at ? new Date(p.expires_at).toLocaleDateString('en-CA') : '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${p.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                            {p.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => togglePromoActive(p.id, !p.is_active)}
+                              className="text-xs px-2 py-1 border border-gray-200 rounded hover:bg-gray-50 font-medium"
+                            >
+                              {p.is_active ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button
+                              onClick={() => deletePromoCode(p.id, p.code)}
+                              className="text-xs px-2 py-1 border border-red-200 text-red-600 rounded hover:bg-red-50 font-medium"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
+
         {activeSection === 'casting' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between mb-2">

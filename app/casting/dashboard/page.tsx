@@ -150,6 +150,7 @@ export default function CastingDashboardPage() {
   const [cdName, setCdName] = useState('')
   const [activeTab, setActiveTab] = useState<Tab>('Overview')
   const [unreadCount, setUnreadCount] = useState(0)
+  const [isCastingPro, setIsCastingPro] = useState(false)
 
   // Overview
   const [calMonth, setCalMonth] = useState(new Date().toISOString().slice(0, 7))
@@ -206,6 +207,10 @@ export default function CastingDashboardPage() {
         if (!d) { router.replace('/casting/login'); return }
         setCdName(d.name || d.email)
       })
+
+    fetch('/api/casting/pro-status')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setIsCastingPro(d.isPro) })
   }, [router])
 
   // ── Calendar ────────────────────────────────────────────────────────────────
@@ -546,33 +551,46 @@ export default function CastingDashboardPage() {
                     <input type="number" placeholder="Max" value={browseAgeMax} onChange={e => setBrowseAgeMax(e.target.value)} style={{ ...filterInput, width: '50%' }} />
                   </div>
                 </div>
-                <div>
-                  <label style={filterLabel}>Hair Color</label>
-                  <select value={browseHair} onChange={e => setBrowseHair(e.target.value)} style={filterInput}>
-                    {HAIR_OPTIONS.map(h => <option key={h} value={h}>{h || 'Any'}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={filterLabel}>Eye Color</label>
-                  <select value={browseEye} onChange={e => setBrowseEye(e.target.value)} style={filterInput}>
-                    {EYE_OPTIONS.map(e => <option key={e} value={e}>{e || 'Any'}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={filterLabel}>Union Status</label>
-                  <select value={browseUnion} onChange={e => setBrowseUnion(e.target.value)} style={filterInput}>
-                    {UNION_OPTIONS.map(u => <option key={u} value={u}>{u || 'Any'}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={filterLabel}>Skills</label>
-                  <input placeholder="e.g. driving, dance" value={browseSkills} onChange={e => setBrowseSkills(e.target.value)} style={filterInput} />
-                </div>
+                {isCastingPro ? (
+                  <>
+                    <div>
+                      <label style={filterLabel}>Hair Color</label>
+                      <select value={browseHair} onChange={e => setBrowseHair(e.target.value)} style={filterInput}>
+                        {HAIR_OPTIONS.map(h => <option key={h} value={h}>{h || 'Any'}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={filterLabel}>Eye Color</label>
+                      <select value={browseEye} onChange={e => setBrowseEye(e.target.value)} style={filterInput}>
+                        {EYE_OPTIONS.map(e => <option key={e} value={e}>{e || 'Any'}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={filterLabel}>Union Status</label>
+                      <select value={browseUnion} onChange={e => setBrowseUnion(e.target.value)} style={filterInput}>
+                        {UNION_OPTIONS.map(u => <option key={u} value={u}>{u || 'Any'}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={filterLabel}>Skills</label>
+                      <input placeholder="e.g. driving, dance" value={browseSkills} onChange={e => setBrowseSkills(e.target.value)} style={filterInput} />
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ gridColumn: '1 / -1', padding: '10px 14px', backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '16px' }}>🔒</span>
+                    <div>
+                      <span style={{ fontSize: '13px', fontWeight: '700', color: '#92400e' }}>Pro filters locked</span>
+                      <span style={{ fontSize: '12px', color: '#78350f', marginLeft: '6px' }}>Hair, eye, union &amp; skills filters require a Pro access code.</span>
+                    </div>
+                  </div>
+                )}
                 <div>
                   <label style={filterLabel}>Sort By</label>
                   <select value={browseSort} onChange={e => setBrowseSort(e.target.value)} style={filterInput}>
                     <option value="available">Available first</option>
                     <option value="name">Name A–Z</option>
+                    <option value="priority">Union Priority (Full → Non-Union)</option>
                   </select>
                 </div>
               </div>
@@ -587,7 +605,14 @@ export default function CastingDashboardPage() {
               ? <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>Loading performers...</div>
               : (
                 <>
-                  <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '12px' }}>{performers.length} performer{performers.length !== 1 ? 's' : ''} found</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '13px', color: '#6b7280' }}>{performers.length} performer{performers.length !== 1 ? 's' : ''} found</span>
+                    {browseSort === 'priority' && (
+                      <span style={{ fontSize: '12px', padding: '3px 10px', backgroundColor: '#f3e8ff', color: '#7e22ce', borderRadius: '20px', fontWeight: '600' }}>
+                        P1 = Full Union · P2 = Apprentice · P3 = Background · P4 = Non-Union
+                      </span>
+                    )}
+                  </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
                     {performers.map(p => (
                       <PerformerCard key={p.user_id} p={p} onClick={() => setQuickView(p)} />

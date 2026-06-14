@@ -102,6 +102,11 @@ export default function Dashboard() {
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
   const [showSection2Modal, setShowSection2Modal] = useState(false);
 
+  // PROMO CODE STATE
+  const [promoCodeInput, setPromoCodeInput] = useState('');
+  const [promoApplying, setPromoApplying] = useState(false);
+  const [promoMsg, setPromoMsg] = useState<{ text: string; ok: boolean } | null>(null);
+
   // PAYMENT STATES - ADDED
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [section2Unlocked, setSection2Unlocked] = useState(false);
@@ -338,10 +343,13 @@ export default function Dashboard() {
       }
       const { data } = await supabase
         .from('users')
-        .select('subscription_status')
+        .select('subscription_status, promo_training_expires_at')
         .eq('id', session.user.id)
         .maybeSingle();
-      setIsSubscribed(data?.subscription_status === 'active');
+      const hasPromo = data?.promo_training_expires_at
+        ? new Date(data.promo_training_expires_at) > new Date()
+        : false;
+      setIsSubscribed(data?.subscription_status === 'active' || hasPromo);
     } catch (error) {
       console.error('Failed to fetch subscription status:', error);
     }
@@ -772,6 +780,52 @@ export default function Dashboard() {
           )}
 
           {/* PAYMENT STATUS CARDS - UPDATED to use Stripe functions */}
+          {!isSubscribed && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+              <p className="font-semibold text-blue-800 mb-1">Have an access code?</p>
+              <p className="text-sm text-blue-700 mb-3">Enter a promo or access code to unlock training modules.</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={promoCodeInput}
+                  onChange={e => { setPromoCodeInput(e.target.value.toUpperCase()); setPromoMsg(null); }}
+                  placeholder="ENTER CODE"
+                  className="flex-1 px-3 py-2 border border-blue-200 rounded-lg text-sm uppercase tracking-wider"
+                />
+                <button
+                  onClick={async () => {
+                    if (!promoCodeInput.trim()) return;
+                    setPromoApplying(true);
+                    setPromoMsg(null);
+                    const { data: { session } } = await supabase.auth.getSession();
+                    const res = await fetch('/api/promo/apply', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+                      body: JSON.stringify({ code: promoCodeInput.trim(), userType: 'performer' }),
+                    });
+                    const d = await res.json();
+                    setPromoApplying(false);
+                    if (res.ok) {
+                      setPromoMsg({ text: 'Access activated! Reloading...', ok: true });
+                      setTimeout(() => window.location.reload(), 1200);
+                    } else {
+                      setPromoMsg({ text: d.error || 'Invalid code', ok: false });
+                    }
+                  }}
+                  disabled={promoApplying}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {promoApplying ? '...' : 'Apply'}
+                </button>
+              </div>
+              {promoMsg && (
+                <p className={`text-sm mt-2 ${promoMsg.ok ? 'text-green-700' : 'text-red-600'}`}>
+                  {promoMsg.ok ? '✓ ' : '✗ '}{promoMsg.text}
+                </p>
+              )}
+            </div>
+          )}
+
           {!isSubscribed && (
             <div id="subscribe-banner" className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
               <p className="font-semibold text-yellow-800">🔓 Unlock Section 1 Modules</p>

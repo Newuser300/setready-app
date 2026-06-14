@@ -32,6 +32,7 @@ export async function GET(req: Request) {
       eye_color,
       ethnicity,
       union_status,
+      union_priority,
       special_skills,
       languages,
       agency_id,
@@ -114,6 +115,10 @@ export async function GET(req: Request) {
       const bName = b.users?.raw_user_meta_data?.full_name || b.users?.email || ''
       return aName.localeCompare(bName)
     })
+  }
+
+  if (sort === 'priority') {
+    result.sort((a: any, b: any) => (a.union_priority ?? 4) - (b.union_priority ?? 4))
   }
 
   // Compute age for response
