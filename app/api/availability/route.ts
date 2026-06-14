@@ -39,35 +39,53 @@ export async function POST(req: Request) {
   const { date, status, notes, bulk, dates } = await req.json()
 
   if (bulk && dates?.length) {
+    console.log('API bulk upsert:', { count: dates.length, status, userId: user.id })
     const records = dates.map((d: string) => ({
       user_id: user.id,
       date: d,
       status,
-      notes,
+      notes: notes || null,
       is_public: true,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     }))
 
     const { error } = await supabaseAdmin
       .from('performer_availability')
-      .upsert(records, { onConflict: 'user_id,date' })
+      .upsert(records, { onConflict: 'user_id,date', ignoreDuplicates: false })
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json({ success: true })
+    if (error) {
+      console.error('Bulk upsert error:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, count: records.length })
   }
+
+  if (!date || !status) {
+    return NextResponse.json({ error: 'date and status required' }, { status: 400 })
+  }
+
+  console.log('API received:', { date, status, userId: user.id })
 
   const { error } = await supabaseAdmin
     .from('performer_availability')
-    .upsert({
-      user_id: user.id,
-      date,
-      status,
-      notes,
-      is_public: true,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id,date' })
+    .upsert(
+      {
+        user_id: user.id,
+        date,
+        status,
+        notes: notes || null,
+        is_public: true,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,date', ignoreDuplicates: false }
+    )
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('Upsert error:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
   return NextResponse.json({ success: true })
 }
 
@@ -76,11 +94,21 @@ export async function DELETE(req: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { date } = await req.json()
-  await supabaseAdmin
+
+  if (!date) {
+    return NextResponse.json({ error: 'date required' }, { status: 400 })
+  }
+
+  const { error } = await supabaseAdmin
     .from('performer_availability')
     .delete()
     .eq('user_id', user.id)
     .eq('date', date)
+
+  if (error) {
+    console.error('Delete error:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 
   return NextResponse.json({ success: true })
 }

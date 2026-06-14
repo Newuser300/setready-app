@@ -25,6 +25,8 @@ export default function AvailabilityPage() {
   const [availability, setAvailability] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [saveStatus, setSaveStatus] = useState('') // '' | 'saved' | 'error'
+  const [saveError, setSaveError] = useState('')
   const [authReady, setAuthReady] = useState(false)
 
   const month = currentDate.toISOString().slice(0, 7)
@@ -62,30 +64,50 @@ export default function AvailabilityPage() {
 
   const toggleDay = async (dateStr: string) => {
     const current = availability[dateStr]
-    const next = !current ? 'available'
+    const next: string | null = !current ? 'available'
       : current === 'available' ? 'unavailable'
       : current === 'unavailable' ? 'tentative'
       : null
 
-    if (next === null) {
-      const newMap = { ...availability }
-      delete newMap[dateStr]
-      setAvailability(newMap)
-      await fetch('/api/availability', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ date: dateStr })
-      })
-    } else {
-      setAvailability({ ...availability, [dateStr]: next })
-      setSaving(true)
-      await fetch('/api/availability', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ date: dateStr, status: next })
-      })
+    // Optimistic update
+    const prev = { ...availability }
+    const optimistic = { ...availability }
+    if (next === null) { delete optimistic[dateStr] } else { optimistic[dateStr] = next }
+    setAvailability(optimistic)
+
+    setSaving(true)
+    setSaveError('')
+    console.log('Saving date:', dateStr, 'status:', next)
+
+    try {
+      if (next === null) {
+        const res = await fetch('/api/availability', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ date: dateStr })
+        })
+        if (!res.ok) throw new Error(`Delete failed: ${res.status}`)
+      } else {
+        const res = await fetch('/api/availability', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ date: dateStr, status: next })
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          throw new Error(data.error || `Save failed: ${res.status}`)
+        }
+      }
+      setSaveStatus('saved')
+      setTimeout(() => setSaveStatus(''), 1500)
+    } catch (err: any) {
+      console.error('Save failed:', err)
+      setAvailability(prev) // revert
+      setSaveError('Failed to save. Please try again.')
+      setSaveStatus('error')
+    } finally {
       setSaving(false)
     }
   }
@@ -94,34 +116,49 @@ export default function AvailabilityPage() {
     const year = currentDate.getFullYear()
     const mon = currentDate.getMonth()
     const daysInMonth = new Date(year, mon + 1, 0).getDate()
+    const todayStr = new Date().toISOString().slice(0, 10)
     const dates = Array.from({ length: daysInMonth }, (_, i) => {
       const d = new Date(year, mon, i + 1)
       return d.toISOString().slice(0, 10)
-    })
+    }).filter(d => d >= todayStr) // future dates only
 
+    const prev = { ...availability }
+    const optimistic = { ...availability }
     if (status === null) {
-      const newMap = { ...availability }
-      dates.forEach(d => delete newMap[d])
-      setAvailability(newMap)
-      for (const d of dates) {
-        await fetch('/api/availability', {
-          method: 'DELETE',
+      dates.forEach(d => delete optimistic[d])
+    } else {
+      dates.forEach(d => { optimistic[d] = status })
+    }
+    setAvailability(optimistic)
+    setSaving(true)
+    setSaveError('')
+
+    try {
+      if (status === null) {
+        for (const date of dates) {
+          await fetch('/api/availability', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ date })
+          })
+        }
+      } else {
+        const res = await fetch('/api/availability', {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ date: d })
+          body: JSON.stringify({ bulk: true, dates, status })
         })
+        if (!res.ok) throw new Error('Bulk save failed')
       }
-    } else {
-      const newMap = { ...availability }
-      dates.forEach(d => { newMap[d] = status })
-      setAvailability(newMap)
-      setSaving(true)
-      await fetch('/api/availability', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ bulk: true, dates, status })
-      })
+      setSaveStatus('saved')
+      setTimeout(() => setSaveStatus(''), 2000)
+    } catch (err) {
+      console.error('Bulk save error:', err)
+      setAvailability(prev) // revert
+      setSaveError('Failed to save. Please try again.')
+    } finally {
       setSaving(false)
     }
   }
@@ -240,7 +277,19 @@ export default function AvailabilityPage() {
           Tap a day to cycle: Available → Unavailable → Tentative → Clear
         </p>
         {saving && (
-          <p style={{ color: '#F59E0B', fontSize: '12px', margin: '4px 0 0' }}>Saving...</p>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: 'rgba(245,158,11,0.15)', border: '1px solid #F59E0B', borderRadius: '999px', padding: '4px 12px', fontSize: '12px', color: '#F59E0B', marginTop: '6px' }}>
+            <span>●</span> Saving...
+          </div>
+        )}
+        {saveStatus === 'saved' && !saving && (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: 'rgba(34,197,94,0.15)', border: '1px solid #22c55e', borderRadius: '999px', padding: '4px 12px', fontSize: '12px', color: '#22c55e', marginTop: '6px' }}>
+            ✓ Saved
+          </div>
+        )}
+        {saveError && (
+          <div style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: '#DC2626', marginTop: '6px' }}>
+            {saveError}
+          </div>
         )}
       </div>
 
