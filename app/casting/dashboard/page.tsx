@@ -134,10 +134,18 @@ function PerformerCard({ p, onClick }: { p: Performer; onClick: () => void }) {
       </div>
       <div style={{ padding: '10px 12px' }}>
         <div style={{ fontWeight: '700', fontSize: '14px', color: '#1a1a2e', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</div>
-        <div style={{ fontSize: '12px', color: '#6b7280' }}>
+        <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
           {[p.gender, p.age ? `${p.age}y` : null, p.union_status].filter(Boolean).join(' · ')}
         </div>
-        {p.agencies && <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>{p.agencies.name}</div>}
+        {p.agencies ? (
+          <span style={{ display: 'inline-block', padding: '2px 8px', backgroundColor: '#1a1a2e', color: 'white', borderRadius: '20px', fontSize: '10px', fontWeight: '700' }}>
+            {p.agencies.name}
+          </span>
+        ) : (
+          <span style={{ display: 'inline-block', padding: '2px 8px', backgroundColor: '#F59E0B', color: '#1a1a2e', borderRadius: '20px', fontSize: '10px', fontWeight: '700' }}>
+            Self-Represented
+          </span>
+        )}
       </div>
     </div>
   )

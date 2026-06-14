@@ -18,6 +18,10 @@ type Profile = {
   languages: string[] | null
   video_reel_url: string | null
   agency_id: string | null
+  phone: string | null
+  preferred_contact: string | null
+  instagram: string | null
+  imdb_url: string | null
 }
 
 type Agency = {
@@ -180,14 +184,37 @@ export default function PublicProfilePage() {
 
           {/* Name + agency */}
           <div style={{ padding: '20px 20px 16px' }}>
-            <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 4px' }}>{displayName}</h1>
-            {agency && (
-              <p style={{ fontSize: '14px', color: '#F59E0B', fontWeight: '600', margin: 0 }}>
-                {agency.name}{agency.city ? ` · ${agency.city}` : ''}
-              </p>
-            )}
-            {!agency && (
-              <p style={{ fontSize: '13px', color: '#9ca3af', margin: 0 }}>Independent</p>
+            <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 8px' }}>{displayName}</h1>
+            {agency ? (
+              <div>
+                <p style={{ fontSize: '14px', color: '#F59E0B', fontWeight: '700', margin: '0 0 6px' }}>
+                  {agency.name}{agency.city ? ` · ${agency.city}` : ''}
+                </p>
+                <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>
+                  Contact {agency.name} to book this performer.
+                </p>
+              </div>
+            ) : (
+              <div>
+                <p style={{ fontSize: '13px', fontWeight: '700', color: '#374151', margin: '0 0 8px' }}>Self-Represented</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {profile.phone && (
+                    <p style={{ fontSize: '13px', color: '#374151', margin: 0 }}>
+                      📞 <a href={`tel:${profile.phone}`} style={{ color: '#374151', textDecoration: 'none' }}>{profile.phone}</a>
+                    </p>
+                  )}
+                  {profile.instagram && (
+                    <p style={{ fontSize: '13px', color: '#374151', margin: 0 }}>
+                      📷 <span style={{ color: '#374151' }}>{profile.instagram}</span>
+                    </p>
+                  )}
+                  {profile.imdb_url && (
+                    <p style={{ fontSize: '13px', color: '#374151', margin: 0 }}>
+                      🎬 <a href={profile.imdb_url} target="_blank" rel="noopener noreferrer" style={{ color: '#F59E0B', textDecoration: 'none' }}>IMDb Profile</a>
+                    </p>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         </div>

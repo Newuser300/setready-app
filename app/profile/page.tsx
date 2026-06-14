@@ -120,12 +120,8 @@ export default function ProfilePage() {
   const [agencyId, setAgencyId] = useState('')
   const [isPublic, setIsPublic] = useState(true)
 
-  // Agency roster
+  // Agency roster (read-only display)
   const [agencyLinks, setAgencyLinks] = useState<Array<{ id: string; agency_id: string; agency_name: string; status: string }>>([])
-  const [joinAgencyId, setJoinAgencyId] = useState('')
-  const [agencyLinkLoading, setAgencyLinkLoading] = useState(false)
-  const [agencyLinkMsg, setAgencyLinkMsg] = useState('')
-  const [confirmLeaveId, setConfirmLeaveId] = useState<string | null>(null)
 
   // Wardrobe
   const [shirtSize, setShirtSize] = useState('')
@@ -154,9 +150,13 @@ export default function ProfilePage() {
   const [languages, setLanguages] = useState<string[]>(['English'])
   const [langInput, setLangInput] = useState('')
 
-  const [agencies, setAgencies] = useState<{ id: string; name: string }[]>([])
   const [videoReelUrl, setVideoReelUrl] = useState('')
   const [toast, setToast] = useState('')
+  const [userEmail, setUserEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [preferredContact, setPreferredContact] = useState('email')
+  const [instagram, setInstagram] = useState('')
+  const [imdbUrl, setImdbUrl] = useState('')
 
   useEffect(() => {
     (async () => {
@@ -167,8 +167,8 @@ export default function ProfilePage() {
       )
       const { data: { user }, error } = await browserClient.auth.getUser()
       if (error || !user) { router.push('/auth/sign-in'); return }
+      setUserEmail(user.email || '')
       loadProfile()
-      loadAgencies()
       loadAgencyLinks()
     })()
   }, [router])
@@ -208,6 +208,10 @@ export default function ProfilePage() {
         setPhotoFullBodyFront(p.photo_full_body_front || '')
         setPhotoFullBodySide(p.photo_full_body_side || '')
         setPhotoAdditional(p.photo_additional || '')
+        setPhone(p.phone || '')
+        setPreferredContact(p.preferred_contact || 'email')
+        setInstagram(p.instagram || '')
+        setImdbUrl(p.imdb_url || '')
       }
     }
     setLoading(false)
@@ -219,36 +223,6 @@ export default function ProfilePage() {
       const data = await res.json()
       setAgencyLinks(data || [])
     }
-  }
-
-  async function requestJoinAgency() {
-    if (!joinAgencyId) return
-    setAgencyLinkLoading(true)
-    setAgencyLinkMsg('')
-    const res = await fetch('/api/profile/agency', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agencyId: joinAgencyId }),
-    })
-    const data = await res.json()
-    if (res.ok) {
-      setAgencyLinkMsg('Request sent! The agency will review your application.')
-      setJoinAgencyId('')
-      loadAgencyLinks()
-    } else {
-      setAgencyLinkMsg(data.error || 'Failed to send request.')
-    }
-    setAgencyLinkLoading(false)
-  }
-
-  async function leaveAgency(linkId: string) {
-    setAgencyLinkLoading(true)
-    const res = await fetch(`/api/profile/agency?id=${linkId}`, { method: 'DELETE' })
-    if (res.ok) {
-      loadAgencyLinks()
-      setConfirmLeaveId(null)
-    }
-    setAgencyLinkLoading(false)
   }
 
   async function uploadAdditionalPhoto(file: File, type: 'full_body_front' | 'full_body_side' | 'additional') {
@@ -265,15 +239,6 @@ export default function ProfilePage() {
     } else {
       setMessage('❌ Failed to upload photo.')
     }
-  }
-
-  async function loadAgencies() {
-    const { data } = await supabase
-      .from('agencies')
-      .select('id, name')
-      .eq('is_approved', true)
-      .order('name')
-    setAgencies(data || [])
   }
 
   // ── Height helpers ──────────────────────────────────────────────────────
@@ -400,6 +365,10 @@ export default function ProfilePage() {
       neck_size: neckSize ? parseFloat(neckSize) : null,
       sleeve_length: sleeveLength ? parseFloat(sleeveLength) : null,
       wardrobe_notes: wardrobeNotes || null,
+      phone: phone || null,
+      preferred_contact: preferredContact,
+      instagram: instagram || null,
+      imdb_url: imdbUrl || null,
     }))
 
     const res = await fetch('/api/profile', { method: 'POST', body: formData })
@@ -710,46 +679,90 @@ export default function ProfilePage() {
 
         {/* ── Agency Roster ── */}
         <Section title="🏢 My Agency">
-          {agencyLinks.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '12px' }}>
-              {agencyLinks.map(link => (
-                <div key={link.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: link.status === 'approved' ? '#f0fdf4' : '#f9fafb', border: `1px solid ${link.status === 'approved' ? '#86efac' : '#e5e7eb'}`, borderRadius: '8px' }}>
+          {agencyLinks.filter(l => l.status !== 'inactive').length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {agencyLinks.filter(l => l.status !== 'inactive').map(link => (
+                <div key={link.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', backgroundColor: link.status === 'approved' ? '#f0fdf4' : '#f9fafb', border: `1px solid ${link.status === 'approved' ? '#86efac' : '#e5e7eb'}`, borderRadius: '8px' }}>
                   <div>
                     <p style={{ fontWeight: '600', fontSize: '14px', color: '#1a1a2e', margin: '0 0 2px' }}>{link.agency_name}</p>
                     <span style={{ fontSize: '11px', fontWeight: '700', color: link.status === 'approved' ? '#16a34a' : '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      {link.status === 'approved' ? '✅ On Roster' : link.status === 'pending' ? '⏳ Pending Approval' : link.status}
+                      {link.status === 'approved' ? '✅ On Roster' : '⏳ Pending Approval'}
                     </span>
                   </div>
-                  {confirmLeaveId === link.id ? (
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <button onClick={() => leaveAgency(link.id)} disabled={agencyLinkLoading} style={{ padding: '4px 10px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>Confirm</button>
-                      <button onClick={() => setConfirmLeaveId(null)} style={{ padding: '4px 10px', backgroundColor: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}>Cancel</button>
-                    </div>
-                  ) : (
-                    <button onClick={() => setConfirmLeaveId(link.id)} style={{ padding: '4px 10px', backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}>Leave</button>
-                  )}
                 </div>
               ))}
             </div>
           ) : (
-            <p style={{ fontSize: '13px', color: '#9ca3af', margin: '0 0 12px' }}>Link your agency to appear on their roster.</p>
+            <div style={{ padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+              <p style={{ fontSize: '14px', fontWeight: '600', color: '#374151', margin: '0 0 4px' }}>Self-Represented</p>
+              <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>You are not currently on any agency roster. To join an agency, contact them directly.</p>
+            </div>
           )}
-
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <select value={joinAgencyId} onChange={e => setJoinAgencyId(e.target.value)} style={{ ...selectStyle, flex: 1 }}>
-              <option value="">Select an agency to join</option>
-              {agencies.filter(a => !agencyLinks.some(l => l.agency_id === a.id && l.status !== 'inactive')).map(a => (
-                <option key={a.id} value={a.id}>{a.name}</option>
-              ))}
-            </select>
-            <button onClick={requestJoinAgency} disabled={!joinAgencyId || agencyLinkLoading} style={{ padding: '0 16px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', border: 'none', borderRadius: '8px', cursor: joinAgencyId ? 'pointer' : 'not-allowed', opacity: joinAgencyId ? 1 : 0.5, whiteSpace: 'nowrap', fontSize: '13px' }}>
-              Request to Join
-            </button>
-          </div>
-          {agencyLinkMsg && <p style={{ fontSize: '12px', color: '#16a34a', margin: '6px 0 0' }}>{agencyLinkMsg}</p>}
-          <p style={{ fontSize: '11px', color: '#9ca3af', margin: '6px 0 0' }}>
-            The agency must approve your request before you appear on their roster.
+          <p style={{ fontSize: '11px', color: '#9ca3af', margin: '8px 0 0' }}>
+            Agency membership is managed directly through the agency.
           </p>
+        </Section>
+
+        {/* ── Contact Information ── */}
+        <Section title="📞 Contact Information">
+          <div style={{ marginBottom: '12px' }}>
+            <Label>Email Address</Label>
+            <input
+              type="email"
+              value={userEmail}
+              disabled
+              style={{ ...inputStyle, backgroundColor: '#f3f4f6', color: '#9ca3af', cursor: 'not-allowed' }}
+            />
+            <p style={{ fontSize: '11px', color: '#9ca3af', margin: '4px 0 0' }}>Your sign-in email — change it in account settings.</p>
+          </div>
+          <div style={{ marginBottom: '12px' }}>
+            <Label>Phone Number (optional)</Label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              placeholder="+1 (604) 555-0100"
+              style={inputStyle}
+            />
+          </div>
+          <div style={{ marginBottom: '12px' }}>
+            <Label>Preferred Contact Method</Label>
+            <div style={{ display: 'flex', gap: '20px', marginTop: '6px' }}>
+              {(['email', 'phone', 'either'] as const).map(opt => (
+                <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: '#374151', cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="preferredContact"
+                    value={opt}
+                    checked={preferredContact === opt}
+                    onChange={() => setPreferredContact(opt)}
+                    style={{ accentColor: '#F59E0B' }}
+                  />
+                  {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div style={{ marginBottom: '12px' }}>
+            <Label>Instagram (optional)</Label>
+            <input
+              type="text"
+              value={instagram}
+              onChange={e => setInstagram(e.target.value)}
+              placeholder="@yourusername"
+              style={inputStyle}
+            />
+          </div>
+          <div>
+            <Label>IMDb URL (optional)</Label>
+            <input
+              type="url"
+              value={imdbUrl}
+              onChange={e => setImdbUrl(e.target.value)}
+              placeholder="https://www.imdb.com/name/nm..."
+              style={inputStyle}
+            />
+          </div>
         </Section>
 
         {/* ── Bio ── */}
