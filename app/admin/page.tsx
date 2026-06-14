@@ -154,6 +154,9 @@ export default function AdminPage() {
   const [promoForm, setPromoForm] = useState({ code: '', type: 'training', description: '', maxUses: '', expiresAt: '' });
   const [promoSubmitting, setPromoSubmitting] = useState(false);
   const [promoMsg, setPromoMsg] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [promoUses, setPromoUses] = useState<any[]>([]);
+  const [promoUsesLoading, setPromoUsesLoading] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -493,6 +496,19 @@ export default function AdminPage() {
     loadPromoCodes();
   }
 
+  function generatePromoCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const random = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    setPromoForm(f => ({ ...f, code: 'SR' + random }));
+  }
+
+  async function loadPromoUses() {
+    setPromoUsesLoading(true);
+    const res = await fetch('/api/admin/promo?type=uses', { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (res.ok) setPromoUses(await res.json());
+    setPromoUsesLoading(false);
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -592,6 +608,7 @@ export default function AdminPage() {
                 }
                 if (item.key === 'promos') {
                   loadPromoCodes();
+                  loadPromoUses();
                 }
               }}
               className={`px-4 py-3 text-sm font-medium transition border-b-2 whitespace-nowrap ${
@@ -1273,12 +1290,22 @@ export default function AdminPage() {
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Code *</label>
-                  <input
-                    value={promoForm.code}
-                    onChange={e => setPromoForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
-                    placeholder="e.g. SETREADY2026"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm uppercase tracking-wider font-mono"
-                  />
+                  <div className="flex gap-1.5">
+                    <input
+                      value={promoForm.code}
+                      onChange={e => setPromoForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
+                      placeholder="e.g. SETREADY2026"
+                      className="flex-1 min-w-0 px-3 py-2 border border-gray-200 rounded-lg text-sm uppercase tracking-wider font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={generatePromoCode}
+                      className="px-2 py-2 bg-gray-100 text-gray-600 text-xs font-semibold rounded-lg hover:bg-gray-200 transition whitespace-nowrap"
+                      title="Auto-generate SR + 6 chars"
+                    >
+                      ✨ Generate
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Type *</label>
@@ -1401,6 +1428,46 @@ export default function AdminPage() {
                               Delete
                             </button>
                           </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {/* Usage History */}
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-gray-700">📋 Usage History</h3>
+                <button onClick={loadPromoUses} className="text-xs text-blue-600 font-semibold hover:underline">
+                  {promoUsesLoading ? 'Loading...' : 'Refresh'}
+                </button>
+              </div>
+              {promoUsesLoading ? (
+                <div className="p-6 text-center text-gray-400 text-sm">Loading...</div>
+              ) : promoUses.length === 0 ? (
+                <div className="p-6 text-center text-gray-400 text-sm">No usage records yet.</div>
+              ) : (
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Code</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Type</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">User</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Used At</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {promoUses.map((u: any) => (
+                      <tr key={u.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-2.5 font-mono font-bold text-gray-800 tracking-wider text-xs">{u.promo_codes?.code || '—'}</td>
+                        <td className="px-4 py-2.5">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600">{u.promo_codes?.type || '—'}</span>
+                        </td>
+                        <td className="px-4 py-2.5 text-gray-600 text-xs">{u.user_email || u.user_id || '—'}</td>
+                        <td className="px-4 py-2.5 text-gray-500 text-xs whitespace-nowrap">
+                          {u.used_at ? new Date(u.used_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                         </td>
                       </tr>
                     ))}

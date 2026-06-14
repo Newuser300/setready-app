@@ -20,13 +20,11 @@ const fmt = (n: number) => `$${n.toFixed(2)}`;
 export default function RateCalculator() {
   const [isUnion, setIsUnion]         = useState(true);
   const [role, setRole]               = useState<RoleKey>('General Background Performer');
-  const [days, setDays]               = useState(1);
   const [hours, setHours]             = useState(8);
   const [useCustom, setUseCustom]     = useState(false);
   const [customRate, setCustomRate]   = useState('');
 
   const calc = useMemo(() => {
-    const d   = Math.max(1, days);
     const hrs = Math.max(1, hours);
 
     const baseHours = Math.min(hrs, 8);
@@ -51,8 +49,8 @@ export default function RateCalculator() {
     const ot2Pay  = ot2h * ot2Rate;
     const dayTotal = basePay + ot1Pay + ot2Pay;
 
-    return { isUnion, baseHours, basePay, ot1h, ot1Rate, ot1Pay, ot2h, ot2Rate, ot2Pay, dayTotal, days: d, total: dayTotal * d };
-  }, [isUnion, role, days, hours, useCustom, customRate]);
+    return { isUnion, baseHours, basePay, ot1h, ot1Rate, ot1Pay, ot2h, ot2Rate, ot2Pay, dayTotal };
+  }, [isUnion, role, hours, useCustom, customRate]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -142,23 +140,13 @@ export default function RateCalculator() {
         {/* Work details */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-4">Work Details</p>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Number of Days</label>
-              <input
-                type="number" min={1} max={365} value={days}
-                onChange={e => setDays(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Hours Per Day</label>
-              <input
-                type="number" min={1} max={24} value={hours}
-                onChange={e => setHours(Math.max(1, Math.min(24, parseInt(e.target.value) || 8)))}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none"
-              />
-            </div>
+          <div className="mb-4">
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Hours Worked</label>
+            <input
+              type="number" min={1} max={24} value={hours}
+              onChange={e => setHours(Math.max(1, Math.min(24, parseInt(e.target.value) || 8)))}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none"
+            />
           </div>
 
           {hours > 8 && (
@@ -229,34 +217,44 @@ export default function RateCalculator() {
                     <span className="font-medium text-red-700">{fmt(calc.ot2Pay)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-sm border-t border-gray-100 pt-2">
-                  <span className="text-gray-500">Per day total</span>
-                  <span className="font-semibold text-gray-800">{fmt(calc.dayTotal)}</span>
-                </div>
-                {calc.days > 1 && (
-                  <div className="flex justify-between text-sm text-gray-400">
-                    <span>× {calc.days} days</span>
-                    <span></span>
-                  </div>
-                )}
               </div>
 
               {/* Total */}
               <div className="bg-gray-900 rounded-xl p-4 flex justify-between items-center">
-                <span className="text-white font-semibold">Total Gross — {calc.days} day{calc.days !== 1 ? 's' : ''}</span>
-                <span className="text-2xl font-bold text-amber-400">{fmt(calc.total)}</span>
+                <span className="text-white font-semibold">Gross Pay (1 day)</span>
+                <span className="text-2xl font-bold text-amber-400">{fmt(calc.dayTotal)}</span>
               </div>
 
-              {/* Union deductions notice */}
-              {(calc.isUnion || useCustom) && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                  <p className="text-xs font-bold text-amber-800 mb-1.5">⚠️ Union deductions not included above:</p>
-                  <ul className="text-xs text-amber-700 space-y-0.5 ml-3 list-disc">
-                    <li>Permit fee (permit members / non-members)</li>
-                    <li>2.25% working dues (full UBCP/ACTRA members)</li>
-                  </ul>
+              {/* Agent fee breakdown */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <p className="text-xs font-bold text-blue-800 mb-2">💼 If represented by an agent:</p>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs text-blue-700">
+                    <span>10% agent fee ({fmt(calc.dayTotal * 0.10)} deducted)</span>
+                    <span className="font-bold">Net: {fmt(calc.dayTotal * 0.90)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-blue-700">
+                    <span>15% agent fee ({fmt(calc.dayTotal * 0.15)} deducted)</span>
+                    <span className="font-bold">Net: {fmt(calc.dayTotal * 0.85)}</span>
+                  </div>
+                  {calc.isUnion && !useCustom && (
+                    <div className="flex justify-between text-xs text-blue-700 border-t border-blue-200 pt-1.5 mt-1">
+                      <span>2.25% working dues ({fmt(calc.dayTotal * 0.0225)} deducted)</span>
+                      <span className="font-bold">Net: {fmt(calc.dayTotal * 0.9775)}</span>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
+
+              {/* Agent fee note */}
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <p className="text-xs font-bold text-gray-700 mb-1.5">ℹ️ Agent &amp; Union Fees</p>
+                <ul className="text-xs text-gray-500 space-y-0.5 ml-3 list-disc">
+                  <li>Most agents charge 10–15% of your gross earnings as commission.</li>
+                  <li>Full UBCP/ACTRA members pay 2.25% working dues on each job.</li>
+                  <li>Permit members pay a permit fee — check with your union for current rates.</li>
+                </ul>
+              </div>
 
               {/* Source */}
               <div className="border-t border-gray-100 pt-4">

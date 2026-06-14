@@ -35,17 +35,25 @@ async function checkAndCreateMilestone(userId: string, qualifyingDays: number, u
   }
 }
 
+const PROVINCE_NAMES: Record<string, string> = {
+  BC: 'British Columbia', AB: 'Alberta', ON: 'Ontario', QC: 'Québec',
+  SK: 'Saskatchewan', MB: 'Manitoba', NS: 'Nova Scotia', NB: 'New Brunswick',
+  PE: 'Prince Edward Island', NL: 'Newfoundland & Labrador',
+  NT: 'Northwest Territories', NU: 'Nunavut', YT: 'Yukon',
+}
+
 export async function GET(req: NextRequest) {
   const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: profile } = await supabaseAdmin
     .from('users')
-    .select('raw_user_meta_data')
+    .select('province, raw_user_meta_data')
     .eq('id', user.id)
     .maybeSingle()
 
-  const province = profile?.raw_user_meta_data?.province || 'ON'
+  const province = profile?.province || profile?.raw_user_meta_data?.province || 'ON'
+  const provinceName = PROVINCE_NAMES[province] || province
 
   const { data: vouchers, error } = await supabaseAdmin
     .from('union_vouchers')
@@ -61,7 +69,7 @@ export async function GET(req: NextRequest) {
     ...calculateQualifyingDays(vouchers || [], rule),
   }))
 
-  return NextResponse.json({ vouchers: vouchers || [], progress, rules, province })
+  return NextResponse.json({ vouchers: vouchers || [], progress, rules, province, provinceName })
 }
 
 export async function POST(req: NextRequest) {
@@ -99,11 +107,11 @@ export async function POST(req: NextRequest) {
 
   const { data: profile } = await supabaseAdmin
     .from('users')
-    .select('raw_user_meta_data')
+    .select('province, raw_user_meta_data')
     .eq('id', user.id)
     .maybeSingle()
 
-  const province = profile?.raw_user_meta_data?.province || 'ON'
+  const province = profile?.province || profile?.raw_user_meta_data?.province || 'ON'
   const { data: allVouchers } = await supabaseAdmin
     .from('union_vouchers')
     .select('*')

@@ -97,6 +97,7 @@ export default function VoucherWallet() {
   const router = useRouter()
   const [vouchers, setVouchers] = useState<Voucher[]>([])
   const [province, setProvince] = useState('ON')
+  const [provinceName, setProvinceName] = useState('Ontario')
   const [rules, setRules] = useState<UnionRequirement[]>([])
   const [loading, setLoading] = useState(true)
   const [filterTab, setFilterTab] = useState<FilterTab>('all')
@@ -148,6 +149,7 @@ export default function VoucherWallet() {
     const data = await res.json()
     setVouchers(data.vouchers || [])
     setProvince(data.province || 'ON')
+    setProvinceName(data.provinceName || data.province || 'ON')
     setRules(data.rules || [])
     setLoading(false)
     fetchSignedUrls(data.vouchers || [])
@@ -342,7 +344,7 @@ export default function VoucherWallet() {
           {rule && calc && (
             <div style={{ backgroundColor: 'white', borderRadius: '16px', borderTop: '4px solid #F59E0B', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '16px' }}>
               <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
-                <span style={{ backgroundColor: '#fef3c7', color: '#92400e', fontWeight: '700', fontSize: '12px', padding: '4px 10px', borderRadius: '20px' }}>🍁 {province}</span>
+                <span style={{ backgroundColor: '#fef3c7', color: '#92400e', fontWeight: '700', fontSize: '12px', padding: '4px 10px', borderRadius: '20px' }}>🍁 {provinceName}</span>
                 <span style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', fontWeight: '700', fontSize: '12px', padding: '4px 10px', borderRadius: '20px' }}>{rule.unionName}</span>
                 <span style={{ backgroundColor: '#f0fdf4', color: '#166534', fontWeight: '600', fontSize: '12px', padding: '4px 10px', borderRadius: '20px' }}>{rule.targetTier}</span>
               </div>
@@ -686,7 +688,7 @@ export default function VoucherWallet() {
                 onClick={() => setShowInfoSection(s => !s)}
                 style={{ width: '100%', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
               >
-                <span style={{ fontWeight: '700', fontSize: '15px', color: '#1a1a2e' }}>📋 {province} Union Membership Rules</span>
+                <span style={{ fontWeight: '700', fontSize: '15px', color: '#1a1a2e' }}>📋 {provinceName} Union Membership Rules</span>
                 <span style={{ color: '#9ca3af', fontSize: '18px' }}>{showInfoSection ? '▲' : '▼'}</span>
               </button>
               {showInfoSection && (

@@ -74,8 +74,8 @@ const quickActions = [
   { icon: '🎫', label: 'Voucher Wallet', action: 'link' as const, href: '/voucher-wallet' },
   { icon: '📔', label: 'Journal', action: 'link' as const, href: '/journal' },
   { icon: '👥', label: 'Contacts', action: 'link' as const, href: '/contacts' },
-  { icon: '🎯', label: 'My Goals', action: 'link' as const, href: '/goals' },
   { icon: '📖', label: 'Glossary', action: 'link' as const, href: '/glossary' },
+  { icon: '🎭', label: 'Set Etiquette Simulator', action: 'link' as const, href: '/simulator', badge: 'FREE' },
   { icon: '💰', label: 'Rate Calculator', action: 'link' as const, href: '/rate-calculator' },
   { icon: '⚖️', label: 'Know Your Rights', action: 'external' as const, href: 'https://ubcpactra.ca/agreements/' },
   { icon: '🤝', label: 'My Referrals', action: 'link' as const, href: '/referrals' },
@@ -855,6 +855,7 @@ export default function Dashboard() {
                 key={item.label}
                 onClick={() => handleQuickAction(item)}
                 style={{
+                  position: 'relative',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -869,6 +870,11 @@ export default function Dashboard() {
                   minHeight: '72px',
                 }}
               >
+                {'badge' in item && item.badge && (
+                  <span style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '8px', fontWeight: '800', backgroundColor: '#22c55e', color: 'white', padding: '1px 5px', borderRadius: '4px', lineHeight: '1.6', letterSpacing: '0.02em' }}>
+                    {item.badge}
+                  </span>
+                )}
                 <span style={{ fontSize: '24px', lineHeight: 1 }}>{item.icon}</span>
                 <span style={{
                   fontSize: '10px',
@@ -885,18 +891,32 @@ export default function Dashboard() {
 
           {/* iOS tip replaced by hero install banner above */}
 
-          {/* PAYMENT STATUS CARDS - UPDATED to use Stripe functions */}
+          {/* PAYMENT STATUS CARDS */}
           {!isSubscribed && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
-              <p className="font-semibold text-blue-800 mb-1">Have an access code?</p>
-              <p className="text-sm text-blue-700 mb-3">Enter a promo or access code to unlock training modules.</p>
-              <div className="flex gap-2">
+            <div id="subscribe-banner" style={{ backgroundColor: '#1a1a2e', borderRadius: '16px', padding: '16px', marginBottom: '10px' }}>
+              <p style={{ fontWeight: '700', fontSize: '15px', color: 'white', margin: '0 0 4px' }}>🔓 Unlock Section 1 Modules</p>
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.65)', margin: '0 0 12px' }}>Subscribe for $9.99/month to access all training modules.</p>
+              <button
+                onClick={() => handleSection1Checkout()}
+                disabled={loadingPayment}
+                style={{ padding: '10px 20px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', fontSize: '14px', border: 'none', borderRadius: '10px', cursor: 'pointer', opacity: loadingPayment ? 0.5 : 1 }}
+              >
+                {loadingPayment ? 'Processing...' : 'Subscribe Now — $9.99/month'}
+              </button>
+            </div>
+          )}
+
+          {!isSubscribed && (
+            <div style={{ backgroundColor: '#fffbeb', border: '2px solid #F59E0B', borderRadius: '16px', padding: '14px 16px', marginBottom: '16px' }}>
+              <p style={{ fontWeight: '700', fontSize: '13px', color: '#1a1a2e', margin: '0 0 3px' }}>Have an access code?</p>
+              <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 10px' }}>Enter a promo or access code to unlock training modules.</p>
+              <div style={{ display: 'flex', gap: '8px' }}>
                 <input
                   type="text"
                   value={promoCodeInput}
                   onChange={e => { setPromoCodeInput(e.target.value.toUpperCase()); setPromoMsg(null); }}
                   placeholder="ENTER CODE"
-                  className="flex-1 px-3 py-2 border border-blue-200 rounded-lg text-sm uppercase tracking-wider"
+                  style={{ flex: 1, padding: '8px 12px', border: '1px solid #fde68a', borderRadius: '8px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.05em', backgroundColor: 'white', outline: 'none' }}
                 />
                 <button
                   onClick={async () => {
@@ -919,30 +939,16 @@ export default function Dashboard() {
                     }
                   }}
                   disabled={promoApplying}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  style={{ padding: '8px 16px', backgroundColor: '#1a1a2e', color: 'white', fontWeight: '700', fontSize: '13px', border: 'none', borderRadius: '8px', cursor: 'pointer', opacity: promoApplying ? 0.5 : 1 }}
                 >
                   {promoApplying ? '...' : 'Apply'}
                 </button>
               </div>
               {promoMsg && (
-                <p className={`text-sm mt-2 ${promoMsg.ok ? 'text-green-700' : 'text-red-600'}`}>
+                <p style={{ fontSize: '12px', marginTop: '6px', color: promoMsg.ok ? '#16a34a' : '#dc2626' }}>
                   {promoMsg.ok ? '✓ ' : '✗ '}{promoMsg.text}
                 </p>
               )}
-            </div>
-          )}
-
-          {!isSubscribed && (
-            <div id="subscribe-banner" className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
-              <p className="font-semibold text-yellow-800">🔓 Unlock Section 1 Modules</p>
-              <p className="text-sm text-yellow-700 mb-3">Subscribe for $9.99/month to access all training modules.</p>
-              <button
-                onClick={() => handleSection1Checkout()}
-                disabled={loadingPayment}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
-              >
-                {loadingPayment ? 'Processing...' : 'Subscribe Now - $9.99/month'}
-              </button>
             </div>
           )}
 
@@ -964,6 +970,23 @@ export default function Dashboard() {
           )}
 
           <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '0 0 24px' }} />
+
+          {/* ── Compact Simulator Card ── */}
+          <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '22px' }}>🎭</span>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontWeight: '700', fontSize: '14px', color: '#1a1a2e' }}>Set Etiquette Simulator</span>
+                  <span style={{ backgroundColor: '#22c55e', color: 'white', fontSize: '10px', fontWeight: '800', padding: '1px 6px', borderRadius: '4px' }}>FREE</span>
+                </div>
+                <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '1px' }}>Test your on-set knowledge with real scenarios</div>
+              </div>
+            </div>
+            <Link href="/simulator" style={{ padding: '7px 14px', backgroundColor: '#1a1a2e', color: 'white', fontWeight: '700', fontSize: '13px', borderRadius: '8px', textDecoration: 'none', flexShrink: 0, display: 'inline-block' }}>
+              Launch →
+            </Link>
+          </div>
 
           {/* Section 1 Header */}
           <div className="flex items-center gap-3 mb-6">
@@ -1051,24 +1074,6 @@ export default function Dashboard() {
             })}
           </div>
 
-          {/* ── Scenario Simulator Banner ── */}
-          <div className="my-8 rounded-2xl overflow-hidden shadow-lg" style={{ backgroundColor: '#F59E0B' }}>
-            <div className="px-6 py-7 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
-              <div>
-                <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-tight">
-                  🎭 Set Etiquette Simulator
-                  <span style={{ backgroundColor: '#22c55e', color: 'white', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '999px', marginLeft: '8px', display: 'inline-block', verticalAlign: 'middle' }}>FREE</span>
-                </h2>
-                <p className="text-gray-800 font-medium mt-1 text-base">Test your on-set knowledge with real scenarios</p>
-              </div>
-              <Link
-                href="/simulator"
-                className="shrink-0 px-7 py-3 bg-gray-900 text-white font-bold text-base rounded-xl hover:bg-gray-800 active:scale-95 transition shadow-md"
-              >
-                Launch Simulator →
-              </Link>
-            </div>
-          </div>
 
           {/* Secret Section 2 - LOCKED until all Section 1 complete */}
           {section2Visible ? (
