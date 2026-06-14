@@ -11,6 +11,11 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+async function writeMessages(records: any[]) {
+  if (!records.length) return
+  await supabaseAdmin.from('messages').insert(records)
+}
+
 // ── Single-recipient in-app notification ─────────────────────────────────────
 
 export async function notify({
@@ -73,6 +78,22 @@ export async function notifyAllAgents(
   }))
 
   await supabaseAdmin.from('casting_notifications').insert(notifications)
+
+  // Mirror to messages table
+  await writeMessages(
+    agents.map(agent => ({
+      sender_type: 'system',
+      sender_name: 'SetReady Casting',
+      recipient_type: 'agent',
+      recipient_id: agent.id,
+      subject: title,
+      body: message,
+      message_type: 'casting_request',
+      action_url: actionUrl,
+      action_label: 'View Request',
+      related_id: relatedRequestId || null,
+    }))
+  )
 
   if (sendEmailNotification && castingRequestData) {
     for (const agent of agents) {
@@ -142,6 +163,22 @@ export async function notifyIndependentPerformers(
 
   await supabaseAdmin.from('casting_notifications').insert(notifications)
 
+  // Mirror to messages table
+  await writeMessages(
+    independentIds.map((userId: string) => ({
+      sender_type: 'system',
+      sender_name: 'SetReady Casting',
+      recipient_type: 'performer',
+      recipient_id: userId,
+      subject: `New Casting: ${castingRequestData.production_name}`,
+      body: `A casting request has been posted for ${castingRequestData.shoot_date}. As a self-represented performer, you may be contacted directly.`,
+      message_type: 'casting_request',
+      action_url: '/casting-portal',
+      action_label: 'View Request',
+      related_id: castingRequestData.id,
+    }))
+  )
+
   // Emails (only if enabled)
   if (!sendEmailToPerformers) return
 
@@ -196,6 +233,20 @@ export async function notifyAgentOfConfirmation(
     related_request_id: castingRequestData.id,
   })
 
+  // Mirror to messages table
+  await writeMessages([{
+    sender_type: 'system',
+    sender_name: 'SetReady Casting',
+    recipient_type: 'agent',
+    recipient_id: agentId,
+    subject: `${performerName} Confirmed`,
+    body: `${performerName} has been confirmed for ${castingRequestData.production_name}.`,
+    message_type: 'booking_confirmed',
+    action_url: '/agent/dashboard',
+    action_label: 'View Dashboard',
+    related_id: castingRequestData.id,
+  }])
+
   if (agent.email) {
     await sendEmail({
       to: agent.email,
@@ -234,6 +285,20 @@ export async function notifyPerformerOfConfirmation(
     action_url: '/dashboard',
     related_request_id: castingRequestData.id,
   })
+
+  // Mirror to messages table
+  await writeMessages([{
+    sender_type: 'system',
+    sender_name: 'SetReady Casting',
+    recipient_type: 'performer',
+    recipient_id: performerUserId,
+    subject: `🎉 You've been confirmed for ${castingRequestData.production_name}!`,
+    body: `Congratulations! You have been confirmed for ${castingRequestData.production_name} on ${castingRequestData.shoot_date}. Your agency will be in touch with further details.`,
+    message_type: 'booking_confirmed',
+    action_url: '/dashboard',
+    action_label: 'View Dashboard',
+    related_id: castingRequestData.id,
+  }])
 
   if (user.email) {
     await sendEmail({

@@ -86,6 +86,7 @@ const quickActions = [
   { icon: '🎫', label: 'Voucher Wallet', action: 'link' as const, href: '/voucher-wallet' },
   { icon: '🤳', label: 'Headshot AI', action: 'link' as const, href: '/headshot-analyzer' },
   { icon: '🎮', label: 'Games', action: 'link' as const, href: '/games', badge: 'FREE' },
+  { icon: '📬', label: 'Messages', action: 'link' as const, href: '/messages' },
 ];
 
 export default function Dashboard() {
@@ -146,6 +147,9 @@ export default function Dashboard() {
   const [userHasReferral, setUserHasReferral] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  // Message center unread count
+  const [unreadMessages, setUnreadMessages] = useState(0)
+
   // Casting notifications
   const [showNotifPanel, setShowNotifPanel] = useState(false)
   const [castingNotifs, setCastingNotifs] = useState<Array<{ id: string; title: string; message: string; is_read: boolean; created_at: string; action_url?: string }>>([])
@@ -156,6 +160,14 @@ export default function Dashboard() {
   const [showUnionNotifPanel, setShowUnionNotifPanel] = useState(false)
   const [unionNotifs, setUnionNotifs] = useState<Array<{ id: string; type: string; title: string; message: string; is_read: boolean; created_at: string }>>([])
   const [unionUnread, setUnionUnread] = useState(0)
+
+  // Load message center unread count
+  useEffect(() => {
+    fetch('/api/messages/unread-count')
+      .then(r => r.ok ? r.json() : { count: 0 })
+      .then(d => setUnreadMessages(d.count || 0))
+      .catch(() => {})
+  }, [])
 
   // Load casting notifications on mount
   useEffect(() => {
@@ -869,11 +881,15 @@ export default function Dashboard() {
                   minHeight: '72px',
                 }}
               >
-                {'badge' in item && item.badge && (
+                {item.label === 'Messages' && unreadMessages > 0 ? (
+                  <span style={{ position: 'absolute', top: '4px', right: '4px', fontSize: '9px', fontWeight: '800', backgroundColor: '#ef4444', color: 'white', padding: '1px 5px', borderRadius: '999px', minWidth: '16px', textAlign: 'center' }}>
+                    {unreadMessages > 99 ? '99+' : unreadMessages}
+                  </span>
+                ) : 'badge' in item && item.badge ? (
                   <span style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '8px', fontWeight: '800', backgroundColor: '#22c55e', color: 'white', padding: '1px 5px', borderRadius: '4px', lineHeight: '1.6', letterSpacing: '0.02em' }}>
                     {item.badge}
                   </span>
-                )}
+                ) : null}
                 <span style={{ fontSize: '24px', lineHeight: 1 }}>{item.icon}</span>
                 <span style={{
                   fontSize: '10px',

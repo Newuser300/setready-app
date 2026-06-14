@@ -83,6 +83,7 @@ const NAV = [
   { key: 'submissions',    icon: '📨', label: 'Submissions' },
   { key: 'availability',   icon: '📅', label: 'Availability' },
   { key: 'notifications',  icon: '🔔', label: 'Notifications' },
+  { key: 'messages',       icon: '📬', label: 'Messages', href: '/agent/messages' },
   { key: 'settings',       icon: '⚙️', label: 'Settings' },
 ]
 
@@ -426,7 +427,7 @@ export default function AgentDashboardPage() {
             {NAV.map(n => (
               <button
                 key={n.key}
-                onClick={() => setActiveTab(n.key)}
+                onClick={() => (n as any).href ? router.push((n as any).href) : setActiveTab(n.key)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '10px',
                   width: '100%', padding: '10px 20px',
@@ -960,7 +961,7 @@ export default function AgentDashboardPage() {
           {NAV.map(n => (
             <button
               key={n.key}
-              onClick={() => setActiveTab(n.key)}
+              onClick={() => (n as any).href ? router.push((n as any).href) : setActiveTab(n.key)}
               style={{
                 flex: '0 0 auto', display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',

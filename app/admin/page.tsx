@@ -69,7 +69,7 @@ type AdminRecord = {
   added_at: string;
 };
 
-type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools' | 'admins' | 'casting' | 'promos';
+type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools' | 'admins' | 'casting' | 'promos' | 'messages';
 
 export default function AdminPage() {
   const router = useRouter();
@@ -162,6 +162,29 @@ export default function AdminPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [performers, setPerformers] = useState<any[]>([]);
   const [performersLoading, setPerformersLoading] = useState(false);
+
+  // Messages tab state
+  const [msgSubTab, setMsgSubTab] = useState<'compose' | 'sent' | 'all' | 'stats'>('compose')
+  const [msgRecipientType, setMsgRecipientType] = useState('all_performers')
+  const [msgSpecificRecipients, setMsgSpecificRecipients] = useState<any[]>([])
+  const [msgSearch, setMsgSearch] = useState('')
+  const [msgSearchResults, setMsgSearchResults] = useState<any[]>([])
+  const [msgSearching, setMsgSearching] = useState(false)
+  const [msgSubject, setMsgSubject] = useState('')
+  const [msgBody, setMsgBody] = useState('')
+  const [msgPriority, setMsgPriority] = useState('normal')
+  const [msgActionUrl, setMsgActionUrl] = useState('')
+  const [msgActionLabel, setMsgActionLabel] = useState('')
+  const [msgSendEmail, setMsgSendEmail] = useState(false)
+  const [msgSending, setMsgSending] = useState(false)
+  const [msgSentResult, setMsgSentResult] = useState<any>(null)
+  const [adminSentMessages, setAdminSentMessages] = useState<any[]>([])
+  const [adminSentLoading, setAdminSentLoading] = useState(false)
+  const [allPlatformMessages, setAllPlatformMessages] = useState<any[]>([])
+  const [allMessagesLoading, setAllMessagesLoading] = useState(false)
+  const [msgStats, setMsgStats] = useState<any>(null)
+  const [msgStatsLoading, setMsgStatsLoading] = useState(false)
+  const [msgViewDetail, setMsgViewDetail] = useState<any>(null)
 
   // Promo codes
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -605,6 +628,122 @@ export default function AdminPage() {
     setPromoUsesLoading(false);
   }
 
+  // ── Messages helpers ───────────────────────────────────────────────────────
+
+  async function loadAdminSentMessages() {
+    setAdminSentLoading(true)
+    const res = await fetch('/api/admin/messages?view=sent', { headers: { Authorization: `Bearer ${accessToken}` } })
+    if (res.ok) {
+      const data = await res.json()
+      setAdminSentMessages(data.messages || [])
+    }
+    setAdminSentLoading(false)
+  }
+
+  async function loadAllPlatformMessages() {
+    setAllMessagesLoading(true)
+    const res = await fetch('/api/admin/messages?view=all', { headers: { Authorization: `Bearer ${accessToken}` } })
+    if (res.ok) {
+      const data = await res.json()
+      setAllPlatformMessages(data.messages || [])
+    }
+    setAllMessagesLoading(false)
+  }
+
+  async function loadMsgStats() {
+    setMsgStatsLoading(true)
+    const res = await fetch('/api/admin/messages?view=stats', { headers: { Authorization: `Bearer ${accessToken}` } })
+    if (res.ok) setMsgStats(await res.json())
+    setMsgStatsLoading(false)
+  }
+
+  async function searchMsgRecipients() {
+    if (!msgSearch.trim()) return
+    setMsgSearching(true)
+    setMsgSearchResults([])
+    // Search users, agents, casting directors
+    const [usersRes, agentsRes] = await Promise.all([
+      fetch(`/api/admin/users?search=${encodeURIComponent(msgSearch.trim())}`, { headers: { Authorization: `Bearer ${accessToken}` } }),
+      fetch(`/api/admin/casting?type=agents&search=${encodeURIComponent(msgSearch.trim())}`, { headers: { Authorization: `Bearer ${accessToken}` } }),
+    ])
+    const results: any[] = []
+    if (usersRes.ok) {
+      const data = await usersRes.json()
+      const users = Array.isArray(data) ? data : (data.users || [])
+      users.forEach((u: any) => results.push({ id: u.id, email: u.email, name: u.name, type: 'performer' }))
+    }
+    if (agentsRes.ok) {
+      const data = await agentsRes.json()
+      const agents = Array.isArray(data) ? data : []
+      agents.forEach((a: any) => results.push({ id: a.id, email: a.email || a.owner_email, name: a.name || a.agency_name, type: 'agent' }))
+    }
+    setMsgSearchResults(results.slice(0, 10))
+    setMsgSearching(false)
+  }
+
+  function addMsgRecipient(recipient: any) {
+    if (!msgSpecificRecipients.find(r => r.id === recipient.id)) {
+      setMsgSpecificRecipients(prev => [...prev, recipient])
+    }
+    setMsgSearch('')
+    setMsgSearchResults([])
+  }
+
+  async function sendAdminMessage() {
+    if (!msgSubject.trim() || !msgBody.trim()) {
+      toast.error('Subject and body are required')
+      return
+    }
+    if (msgRecipientType === 'specific' && msgSpecificRecipients.length === 0) {
+      toast.error('Please add at least one recipient')
+      return
+    }
+    setMsgSending(true)
+    setMsgSentResult(null)
+
+    const res = await fetch('/api/admin/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({
+        recipientType: msgRecipientType === 'specific' ? undefined : msgRecipientType,
+        recipientIds: msgRecipientType === 'specific' ? msgSpecificRecipients : undefined,
+        subject: msgSubject.trim(),
+        body: msgBody.trim(),
+        messageType: 'general',
+        priority: msgPriority,
+        actionUrl: msgActionUrl.trim() || undefined,
+        actionLabel: msgActionLabel.trim() || undefined,
+        sendEmail: msgSendEmail,
+      }),
+    })
+    const data = await res.json()
+    setMsgSending(false)
+    if (res.ok) {
+      setMsgSentResult(data)
+      toast.success('Message sent!')
+      setMsgSubject('')
+      setMsgBody('')
+      setMsgActionUrl('')
+      setMsgActionLabel('')
+      setMsgPriority('normal')
+      setMsgSendEmail(false)
+      setMsgSpecificRecipients([])
+    } else {
+      toast.error(data.error || 'Failed to send message')
+    }
+  }
+
+  async function deleteAdminMessage(messageId: string) {
+    if (!confirm('Delete this message?')) return
+    await fetch('/api/admin/messages', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ messageId }),
+    })
+    setAdminSentMessages(prev => prev.filter(m => m.id !== messageId))
+    setAllPlatformMessages(prev => prev.filter(m => m.id !== messageId))
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -665,6 +804,7 @@ export default function AdminPage() {
     { key: 'admins',       label: 'Admins',        icon: '🔐' },
     { key: 'casting',      label: 'Casting',       icon: '🎬' },
     { key: 'promos',       label: 'Promo Codes',   icon: '🎟️' },
+    { key: 'messages',     label: 'Messages',      icon: '📬' },
   ];
 
   return (
@@ -706,6 +846,9 @@ export default function AdminPage() {
                 if (item.key === 'promos') {
                   loadPromoCodes();
                   loadPromoUses();
+                }
+                if (item.key === 'messages') {
+                  loadAdminSentMessages();
                 }
               }}
               className={`px-4 py-3 text-sm font-medium transition border-b-2 whitespace-nowrap ${
@@ -1965,6 +2108,417 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+
+      {/* ══════════════════════════════════════
+          MESSAGES
+      ══════════════════════════════════════ */}
+      {activeSection === 'messages' && (
+        <div className="space-y-6">
+          <h2 className="text-xl font-bold text-gray-800">📬 Message Center</h2>
+
+          {/* Sub-tabs */}
+          <div className="flex gap-2 border-b border-gray-200 overflow-x-auto">
+            {([
+              { key: 'compose', label: '📝 Compose' },
+              { key: 'sent',    label: '📤 Sent Messages' },
+              { key: 'all',     label: '🗂️ All Platform Messages' },
+              { key: 'stats',   label: '📊 Stats' },
+            ] as const).map(t => (
+              <button
+                key={t.key}
+                onClick={() => {
+                  setMsgSubTab(t.key)
+                  if (t.key === 'sent') loadAdminSentMessages()
+                  if (t.key === 'all') loadAllPlatformMessages()
+                  if (t.key === 'stats') loadMsgStats()
+                }}
+                className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px whitespace-nowrap transition ${msgSubTab === t.key ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* ── COMPOSE ── */}
+          {msgSubTab === 'compose' && (
+            <div className="space-y-5">
+              <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-5">
+
+                {/* Recipient selector */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-3">Recipients</label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {[
+                      { key: 'all_performers', label: '👥 All Performers' },
+                      { key: 'all_agents',     label: '🏢 All Agents' },
+                      { key: 'all_casting_directors', label: '🎬 All Casting Directors' },
+                      { key: 'all_users',      label: '🌐 Everyone' },
+                      { key: 'specific',       label: '👤 Specific User' },
+                    ].map(r => (
+                      <button
+                        key={r.key}
+                        onClick={() => { setMsgRecipientType(r.key); setMsgSpecificRecipients([]); setMsgSearchResults([]); setMsgSearch(''); }}
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold border transition ${msgRecipientType === r.key ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'}`}
+                      >
+                        {r.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {msgRecipientType === 'specific' && (
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={msgSearch}
+                          onChange={e => setMsgSearch(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && searchMsgRecipients()}
+                          placeholder="Search by name or email..."
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        />
+                        <button onClick={searchMsgRecipients} disabled={msgSearching} className="px-3 py-2 bg-gray-900 text-white text-xs font-bold rounded-lg hover:bg-gray-700 disabled:opacity-50">
+                          {msgSearching ? '...' : 'Search'}
+                        </button>
+                      </div>
+                      {msgSearchResults.length > 0 && (
+                        <div className="border border-gray-200 rounded-lg overflow-hidden">
+                          {msgSearchResults.map(u => (
+                            <button
+                              key={u.id}
+                              onClick={() => addMsgRecipient(u)}
+                              className="w-full flex items-center justify-between px-3 py-2 hover:bg-blue-50 text-left border-b border-gray-100 last:border-0"
+                            >
+                              <div>
+                                <span className="text-sm font-medium text-gray-800">{u.email}</span>
+                                {u.name && <span className="text-xs text-gray-400 ml-2">{u.name}</span>}
+                              </div>
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${u.type === 'agent' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                                {u.type}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {msgSpecificRecipients.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {msgSpecificRecipients.map(r => (
+                            <div key={r.id} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full text-sm text-blue-800">
+                              <span>{r.email}</span>
+                              <button onClick={() => setMsgSpecificRecipients(prev => prev.filter(x => x.id !== r.id))} className="text-blue-400 hover:text-blue-600 font-bold">×</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Priority */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">Priority</label>
+                  <div className="flex gap-2">
+                    {[
+                      { key: 'normal', label: 'Normal', color: 'bg-gray-100 text-gray-700 border-gray-200' },
+                      { key: 'high',   label: '⚡ High',   color: 'bg-amber-100 text-amber-800 border-amber-200' },
+                      { key: 'urgent', label: '🚨 Urgent', color: 'bg-red-100 text-red-700 border-red-200' },
+                    ].map(p => (
+                      <button
+                        key={p.key}
+                        onClick={() => setMsgPriority(p.key)}
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold border transition ${msgPriority === p.key ? 'ring-2 ring-offset-1 ring-blue-500 ' + p.color : p.color + ' opacity-60 hover:opacity-100'}`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Subject */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Subject *</label>
+                  <input
+                    type="text"
+                    value={msgSubject}
+                    onChange={e => setMsgSubject(e.target.value)}
+                    placeholder="Message subject..."
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                {/* Body */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Message *</label>
+                  <textarea
+                    value={msgBody}
+                    onChange={e => setMsgBody(e.target.value)}
+                    placeholder="Write your message here..."
+                    rows={6}
+                    style={{ minHeight: '150px' }}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-y"
+                  />
+                </div>
+
+                {/* Action button (optional) */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Button Label (optional)</label>
+                    <input
+                      type="text"
+                      value={msgActionLabel}
+                      onChange={e => setMsgActionLabel(e.target.value)}
+                      placeholder="e.g. View Dashboard"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Button URL (optional)</label>
+                    <input
+                      type="text"
+                      value={msgActionUrl}
+                      onChange={e => setMsgActionUrl(e.target.value)}
+                      placeholder="e.g. /dashboard"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Email toggle */}
+                <div className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div>
+                    <div className="text-sm font-semibold text-gray-800">Also send via email</div>
+                    <div className="text-xs text-gray-500">Sends an email in addition to the in-app message</div>
+                  </div>
+                  <button
+                    onClick={() => setMsgSendEmail(v => !v)}
+                    style={{ flexShrink: 0, width: '52px', height: '28px', borderRadius: '14px', backgroundColor: msgSendEmail ? '#22c55e' : '#d1d5db', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}
+                  >
+                    <div style={{ position: 'absolute', top: '4px', left: msgSendEmail ? '28px' : '4px', width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'white', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                  </button>
+                </div>
+
+                {/* Success result */}
+                {msgSentResult && (
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="font-semibold text-green-800">✅ Message sent successfully!</p>
+                    {msgSentResult.emailCount > 0 && (
+                      <p className="text-sm text-green-700 mt-1">📧 Emails sent to {msgSentResult.emailCount} address{msgSentResult.emailCount !== 1 ? 'es' : ''}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Send button */}
+                <button
+                  onClick={sendAdminMessage}
+                  disabled={msgSending || !msgSubject.trim() || !msgBody.trim()}
+                  className="w-full py-3 bg-amber-500 text-gray-900 font-bold text-base rounded-xl hover:bg-amber-400 disabled:opacity-50 transition"
+                >
+                  {msgSending ? 'Sending...' : '📬 Send Message'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── SENT MESSAGES ── */}
+          {msgSubTab === 'sent' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-gray-800">Sent by Admin</h3>
+                <button onClick={loadAdminSentMessages} className="text-xs text-blue-600 font-semibold hover:underline">{adminSentLoading ? 'Loading...' : 'Refresh'}</button>
+              </div>
+              {adminSentLoading ? (
+                <div className="text-center py-10 text-gray-400">Loading...</div>
+              ) : adminSentMessages.length === 0 ? (
+                <div className="text-center py-10 text-gray-400">No messages sent yet.</div>
+              ) : (
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Subject</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Recipients</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Type</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Email</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Sent</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {adminSentMessages.map((m: any) => (
+                          <tr key={m.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3">
+                              <p className="font-medium text-gray-800 text-sm">{m.subject}</p>
+                              <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{m.body?.slice(0, 60)}...</p>
+                            </td>
+                            <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">
+                              {m.recipient_type === 'all_performers' ? '👥 All Performers'
+                                : m.recipient_type === 'all_agents' ? '🏢 All Agents'
+                                : m.recipient_type === 'all_users' ? '🌐 Everyone'
+                                : m.recipient_type === 'all_casting_directors' ? '🎬 All CDs'
+                                : m.email_to || 'Specific user'}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700">{m.message_type}</span>
+                            </td>
+                            <td className="px-4 py-3 text-xs text-gray-500">
+                              {m.email_sent ? `📧 Sent` : 'In-app only'}
+                            </td>
+                            <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">
+                              {new Date(m.created_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex gap-2">
+                                <button onClick={() => setMsgViewDetail(m)} className="text-xs px-2 py-1 border border-gray-200 rounded hover:bg-gray-50">View</button>
+                                <button onClick={() => deleteAdminMessage(m.id)} className="text-xs px-2 py-1 border border-red-200 text-red-600 rounded hover:bg-red-50">Delete</button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── ALL PLATFORM MESSAGES ── */}
+          {msgSubTab === 'all' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-gray-800">All Platform Messages</h3>
+                <button onClick={loadAllPlatformMessages} className="text-xs text-blue-600 font-semibold hover:underline">{allMessagesLoading ? 'Loading...' : 'Refresh'}</button>
+              </div>
+              {allMessagesLoading ? (
+                <div className="text-center py-10 text-gray-400">Loading...</div>
+              ) : allPlatformMessages.length === 0 ? (
+                <div className="text-center py-10 text-gray-400">No messages on the platform yet.</div>
+              ) : (
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Subject</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">From</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">To</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Type</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Read</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Date</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {allPlatformMessages.map((m: any) => (
+                          <tr key={m.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-2.5 font-medium text-gray-800 text-sm">{m.subject}</td>
+                            <td className="px-4 py-2.5 text-xs text-gray-500">{m.sender_name}</td>
+                            <td className="px-4 py-2.5 text-xs text-gray-500">{m.recipient_type}</td>
+                            <td className="px-4 py-2.5">
+                              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600">{m.message_type}</span>
+                            </td>
+                            <td className="px-4 py-2.5">
+                              {m.is_read
+                                ? <span className="text-green-600 text-xs font-semibold">✓ Read</span>
+                                : <span className="text-gray-400 text-xs">Unread</span>}
+                            </td>
+                            <td className="px-4 py-2.5 text-xs text-gray-400 whitespace-nowrap">
+                              {new Date(m.created_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <div className="flex gap-2">
+                                <button onClick={() => setMsgViewDetail(m)} className="text-xs px-2 py-1 border border-gray-200 rounded hover:bg-gray-50">View</button>
+                                <button onClick={() => deleteAdminMessage(m.id)} className="text-xs px-2 py-1 border border-red-200 text-red-600 rounded hover:bg-red-50">Delete</button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── STATS ── */}
+          {msgSubTab === 'stats' && (
+            <div className="space-y-6">
+              {msgStatsLoading ? (
+                <div className="text-center py-10 text-gray-400">Loading stats...</div>
+              ) : msgStats ? (
+                <>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {[
+                      { label: 'Total Messages', value: msgStats.totalMessages, color: 'text-blue-600' },
+                      { label: 'This Week', value: msgStats.weekMessages, color: 'text-green-600' },
+                      { label: 'Email Delivery Rate', value: `${msgStats.emailDeliveryRate}%`, color: 'text-amber-600' },
+                      { label: 'Avg Read Rate', value: `${msgStats.averageReadRate}%`, color: 'text-purple-600' },
+                      { label: 'Top Message Type', value: msgStats.topMessageType, color: 'text-gray-700' },
+                    ].map(s => (
+                      <div key={s.label} className="bg-white border border-gray-200 rounded-xl p-5 text-center">
+                        <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
+                        <p className="text-xs text-gray-500 mt-1">{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {msgStats.dailyCounts && Object.keys(msgStats.dailyCounts).length > 0 && (
+                    <div className="bg-white border border-gray-200 rounded-xl p-5">
+                      <h4 className="font-bold text-gray-700 mb-4 text-sm">Messages per Day (Last 30 days)</h4>
+                      <div className="flex items-end gap-1" style={{ height: '80px' }}>
+                        {Object.entries(msgStats.dailyCounts).map(([day, count]: [string, any]) => {
+                          const maxCount = Math.max(...Object.values(msgStats.dailyCounts) as number[])
+                          const pct = maxCount > 0 ? (count / maxCount) * 100 : 0
+                          return (
+                            <div key={day} title={`${day}: ${count}`} style={{ flex: 1, backgroundColor: '#3b82f6', height: `${Math.max(pct, 4)}%`, borderRadius: '2px 2px 0 0', minWidth: '4px' }} />
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <button onClick={loadMsgStats} className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700">Load Stats</button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Message detail modal */}
+      {msgViewDetail && (
+        <div onClick={() => setMsgViewDetail(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div onClick={e => e.stopPropagation()} className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-800">Message Detail</h2>
+              <button onClick={() => setMsgViewDetail(null)} className="text-gray-400 hover:text-gray-600 text-xl font-bold">×</button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <p className="text-xs font-bold text-gray-500 uppercase mb-1">Subject</p>
+                <p className="font-semibold text-gray-800">{msgViewDetail.subject}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div><p className="text-xs font-bold text-gray-500 uppercase mb-1">From</p><p className="text-gray-700">{msgViewDetail.sender_name}</p></div>
+                <div><p className="text-xs font-bold text-gray-500 uppercase mb-1">To</p><p className="text-gray-700">{msgViewDetail.recipient_type}{msgViewDetail.email_to ? ` (${msgViewDetail.email_to})` : ''}</p></div>
+                <div><p className="text-xs font-bold text-gray-500 uppercase mb-1">Type</p><p className="text-gray-700">{msgViewDetail.message_type}</p></div>
+                <div><p className="text-xs font-bold text-gray-500 uppercase mb-1">Priority</p><p className="text-gray-700">{msgViewDetail.priority}</p></div>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-gray-500 uppercase mb-1">Body</p>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed bg-gray-50 p-4 rounded-lg">{msgViewDetail.body}</p>
+              </div>
+              {msgViewDetail.action_url && (
+                <div>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">Action</p>
+                  <p className="text-sm text-blue-600">{msgViewDetail.action_label || 'View Details'} → {msgViewDetail.action_url}</p>
+                </div>
+              )}
+              <p className="text-xs text-gray-400">Sent: {new Date(msgViewDetail.created_at).toLocaleString('en-CA')}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ══════════════════════════════════════
           REMOVE USER MODAL
