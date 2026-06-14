@@ -68,13 +68,12 @@ const moduleTitleOverrides: Record<number, string> = {
 
 const quickActions = [
   { icon: '👤', label: 'My Profile', action: 'link' as const, href: '/profile' },
+  { icon: '📖', label: 'Film Set Terms', action: 'link' as const, href: '/glossary' },
   { icon: '👔', label: 'What to Wear', action: 'link' as const, href: '/clothing' },
   { icon: '📋', label: 'Residency Docs', action: 'link' as const, href: '/residency' },
   { icon: '📋', label: 'Work Log', action: 'link' as const, href: '/work-log' },
-  { icon: '🎫', label: 'Voucher Wallet', action: 'link' as const, href: '/voucher-wallet' },
   { icon: '📔', label: 'Journal', action: 'link' as const, href: '/journal' },
   { icon: '👥', label: 'Contacts', action: 'link' as const, href: '/contacts' },
-  { icon: '📖', label: 'Glossary', action: 'link' as const, href: '/glossary' },
   { icon: '🎭', label: 'Set Etiquette Simulator', action: 'link' as const, href: '/simulator', badge: 'FREE' },
   { icon: '💰', label: 'Rate Calculator', action: 'link' as const, href: '/rate-calculator' },
   { icon: '⚖️', label: 'Know Your Rights', action: 'external' as const, href: 'https://ubcpactra.ca/agreements/' },
@@ -84,7 +83,9 @@ const quickActions = [
   { icon: '🎭', label: 'Agency Click', action: 'modal' as const, modal: 'agencyClick' },
   { icon: '🎬', label: 'SetReady Casting', action: 'link' as const, href: '/casting-portal' },
   { icon: '📅', label: 'Availability', action: 'link' as const, href: '/availability' },
-  { icon: '📲', label: 'Install App', action: 'fn' as const, fn: 'showInstallGuide' },
+  { icon: '🎫', label: 'Voucher Wallet', action: 'link' as const, href: '/voucher-wallet' },
+  { icon: '🤳', label: 'Headshot AI', action: 'link' as const, href: '/headshot-analyzer' },
+  { icon: '🎮', label: 'Games', action: 'link' as const, href: '/games', badge: 'FREE' },
 ];
 
 export default function Dashboard() {
@@ -665,8 +666,6 @@ export default function Dashboard() {
       window.open(item.href, '_blank', 'noopener,noreferrer');
     } else if (item.action === 'modal' && item.modal === 'agencyClick') {
       openAgencyClickModal();
-    } else if (item.action === 'fn' && item.fn === 'showInstallGuide') {
-      setShowInstallModal(true);
     }
   }
 

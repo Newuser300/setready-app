@@ -134,5 +134,48 @@ export async function POST(req: Request) {
     await supabaseAdmin.from('casting_notifications').insert(notifications)
   }
 
+  // Notify independent performers if setting is enabled
+  try {
+    const { data: notifySetting } = await supabaseAdmin
+      .from('admin_settings')
+      .select('value')
+      .eq('key', 'notify_independent_performers')
+      .maybeSingle()
+
+    if (notifySetting?.value === 'true') {
+      const [{ data: rosterData }, { data: exclusionData }] = await Promise.all([
+        supabaseAdmin.from('agency_roster').select('performer_id').eq('status', 'approved'),
+        supabaseAdmin.from('casting_notification_exclusions').select('user_id'),
+      ])
+
+      const agencyPerformerIds = new Set((rosterData || []).map((r: any) => r.performer_id))
+      const excludedIds = new Set((exclusionData || []).map((e: any) => e.user_id))
+
+      const { data: performers } = await supabaseAdmin
+        .from('performer_profiles')
+        .select('id')
+        .eq('is_public', true)
+
+      const independentIds = (performers || [])
+        .map((p: any) => p.id)
+        .filter((id: string) => !agencyPerformerIds.has(id) && !excludedIds.has(id))
+
+      if (independentIds.length > 0) {
+        const performerNotifs = independentIds.map((userId: string) => ({
+          recipient_type: 'performer',
+          recipient_id: userId,
+          type: 'new_casting_request',
+          title: `New Casting Opportunity: ${productionName}`,
+          message: `${roleType} needed${shootDate ? ` on ${shootDate}` : ''}${location ? ` in ${location}` : ''}. ${performersNeeded || 1} performer${(performersNeeded || 1) > 1 ? 's' : ''} needed.`,
+          action_url: '/casting-portal',
+          related_request_id: request.id,
+        }))
+        await supabaseAdmin.from('casting_notifications').insert(performerNotifs)
+      }
+    }
+  } catch {
+    // Non-fatal: don't block request creation if notification fails
+  }
+
   return NextResponse.json({ success: true, request })
 }

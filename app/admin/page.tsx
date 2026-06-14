@@ -139,6 +139,18 @@ export default function AdminPage() {
   const [reviewMode, setReviewMode] = useState(false);
   const [reviewModeLoading, setReviewModeLoading] = useState(false);
 
+  // Independent performer notifications
+  const [notifyIndependent, setNotifyIndependent] = useState(false);
+  const [notifyIndependentLoading, setNotifyIndependentLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [exclusions, setExclusions] = useState<any[]>([]);
+  const [exclusionsLoading, setExclusionsLoading] = useState(false);
+  const [exclusionSearch, setExclusionSearch] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [exclusionSearchResults, setExclusionSearchResults] = useState<any[]>([]);
+  const [exclusionSearching, setExclusionSearching] = useState(false);
+  const [exclusionReason, setExclusionReason] = useState('');
+
   // Agent controls
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [agents, setAgents] = useState<any[]>([]);
@@ -406,7 +418,61 @@ export default function AdminPage() {
     if (res.ok) {
       const data = await res.json();
       setReviewMode(data.casting_request_review_mode === 'true');
+      setNotifyIndependent(data.notify_independent_performers === 'true');
     }
+  }
+
+  async function toggleNotifyIndependent() {
+    setNotifyIndependentLoading(true);
+    const newVal = !notifyIndependent;
+    await fetch('/api/admin/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ key: 'notify_independent_performers', value: String(newVal) }),
+    });
+    setNotifyIndependent(newVal);
+    setNotifyIndependentLoading(false);
+  }
+
+  async function loadExclusions() {
+    setExclusionsLoading(true);
+    const res = await fetch('/api/admin/casting-exclusions', { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (res.ok) setExclusions(await res.json());
+    setExclusionsLoading(false);
+  }
+
+  async function searchExclusionUsers() {
+    if (!exclusionSearch.trim()) return;
+    setExclusionSearching(true);
+    setExclusionSearchResults([]);
+    const res = await fetch(`/api/admin/casting-exclusions?search=${encodeURIComponent(exclusionSearch.trim())}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setExclusionSearchResults(data.users || []);
+    }
+    setExclusionSearching(false);
+  }
+
+  async function addExclusion(userId: string, userEmail: string) {
+    await fetch('/api/admin/casting-exclusions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ userId, reason: exclusionReason || null }),
+    });
+    setExclusionSearchResults([]);
+    setExclusionSearch('');
+    setExclusionReason('');
+    loadExclusions();
+  }
+
+  async function removeExclusion(userId: string) {
+    await fetch(`/api/admin/casting-exclusions?userId=${userId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    loadExclusions();
   }
 
   async function toggleReviewMode() {
@@ -605,6 +671,7 @@ export default function AdminPage() {
                 }
                 if (item.key === 'casting') {
                   loadReviewMode();
+                  loadExclusions();
                 }
                 if (item.key === 'promos') {
                   loadPromoCodes();
@@ -1501,6 +1568,103 @@ export default function AdminPage() {
               >
                 <div style={{ position: 'absolute', top: '4px', left: reviewMode ? '28px' : '4px', width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'white', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
               </button>
+            </div>
+
+            {/* Independent Performer Notifications */}
+            <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-semibold text-gray-800 text-sm">📢 Independent Performer Notifications</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {notifyIndependent
+                      ? 'ON — New casting requests also notify independent performers (not represented by an agency).'
+                      : 'OFF — Only agencies are notified of new casting requests.'}
+                  </p>
+                </div>
+                <button
+                  onClick={toggleNotifyIndependent}
+                  disabled={notifyIndependentLoading}
+                  style={{ flexShrink: 0, width: '52px', height: '28px', borderRadius: '14px', backgroundColor: notifyIndependent ? '#22c55e' : '#d1d5db', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}
+                >
+                  <div style={{ position: 'absolute', top: '4px', left: notifyIndependent ? '28px' : '4px', width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'white', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                </button>
+              </div>
+
+              {/* Exclusion list */}
+              <div className="border-t border-gray-100 pt-4">
+                <p className="text-xs font-bold text-gray-500 mb-2">Exclusion List <span className="font-normal text-gray-400">— excluded performers are never notified</span></p>
+
+                {/* Search */}
+                <div className="flex gap-2 mb-3">
+                  <input
+                    type="text"
+                    placeholder="Search by email or name..."
+                    value={exclusionSearch}
+                    onChange={e => setExclusionSearch(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && searchExclusionUsers()}
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                  />
+                  <button
+                    onClick={searchExclusionUsers}
+                    disabled={exclusionSearching}
+                    className="px-3 py-2 bg-gray-900 text-white text-xs font-bold rounded-lg hover:bg-gray-700 disabled:opacity-50"
+                  >
+                    {exclusionSearching ? '...' : 'Search'}
+                  </button>
+                </div>
+
+                {/* Search results */}
+                {exclusionSearchResults.length > 0 && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 mb-3 space-y-1">
+                    <input
+                      type="text"
+                      placeholder="Reason (optional)"
+                      value={exclusionReason}
+                      onChange={e => setExclusionReason(e.target.value)}
+                      className="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-lg mb-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                    />
+                    {exclusionSearchResults.map((u: any) => (
+                      <div key={u.id} className="flex items-center justify-between gap-2 px-2 py-1.5 bg-white rounded border border-gray-100">
+                        <div>
+                          <span className="text-xs font-semibold text-gray-800">{u.email}</span>
+                          {u.name && <span className="text-xs text-gray-400 ml-2">{u.name}</span>}
+                        </div>
+                        <button
+                          onClick={() => addExclusion(u.id, u.email)}
+                          className="px-2 py-1 text-xs font-bold bg-red-50 text-red-600 border border-red-200 rounded hover:bg-red-100"
+                        >
+                          Exclude
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Current exclusions */}
+                {exclusionsLoading ? (
+                  <p className="text-xs text-gray-400">Loading...</p>
+                ) : exclusions.length === 0 ? (
+                  <p className="text-xs text-gray-400">No exclusions yet.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {exclusions.map((ex: any) => (
+                      <div key={ex.id} className="flex items-center justify-between gap-2 px-3 py-2 bg-red-50 border border-red-100 rounded-lg">
+                        <div>
+                          <span className="text-xs font-semibold text-gray-800">{ex.user_email || ex.user_id}</span>
+                          {ex.user_name && <span className="text-xs text-gray-400 ml-2">{ex.user_name}</span>}
+                          {ex.reason && <span className="text-xs text-gray-400 ml-2">— {ex.reason}</span>}
+                        </div>
+                        <button
+                          onClick={() => removeExclusion(ex.user_id)}
+                          className="px-2 py-1 text-xs font-bold bg-white text-gray-600 border border-gray-200 rounded hover:bg-gray-50"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Sub-tabs */}

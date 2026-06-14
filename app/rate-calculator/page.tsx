@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Copyright from '@/components/Copyright';
+import { PROVINCES, PROVINCE_LIST } from '@/lib/provinces';
 
 const UNION_RATES = {
   'General Background Performer': { daily: 270.30, hourly: 33.79, ot1: 50.69, ot2: 67.58 },
@@ -13,7 +14,6 @@ const UNION_RATES = {
 
 type RoleKey = keyof typeof UNION_RATES;
 const ROLE_KEYS = Object.keys(UNION_RATES) as RoleKey[];
-const NON_UNION_HOURLY = 18.25;
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 
@@ -23,6 +23,9 @@ export default function RateCalculator() {
   const [hours, setHours]             = useState(8);
   const [useCustom, setUseCustom]     = useState(false);
   const [customRate, setCustomRate]   = useState('');
+  const [province, setProvince]       = useState('BC');
+
+  const provinceInfo = PROVINCES[province] || PROVINCES['BC'];
 
   const calc = useMemo(() => {
     const hrs = Math.max(1, hours);
@@ -30,6 +33,9 @@ export default function RateCalculator() {
     const baseHours = Math.min(hrs, 8);
     const ot1h      = Math.min(Math.max(hrs - 8, 0), 4);
     const ot2h      = Math.max(hrs - 12, 0);
+
+    const prov = PROVINCES[province] || PROVINCES['BC'];
+    const nonUnionHourly = prov.nonUnionMin;
 
     let hourlyRate: number, dailyRate: number | null, ot1Rate: number, ot2Rate: number;
 
@@ -41,7 +47,10 @@ export default function RateCalculator() {
       const r = UNION_RATES[role];
       hourlyRate = r.hourly; dailyRate = r.daily; ot1Rate = r.ot1; ot2Rate = r.ot2;
     } else {
-      hourlyRate = NON_UNION_HOURLY; dailyRate = null; ot1Rate = NON_UNION_HOURLY * 1.5; ot2Rate = NON_UNION_HOURLY * 2;
+      hourlyRate = nonUnionHourly;
+      dailyRate = baseHours >= 8 ? prov.minCallPay : null;
+      ot1Rate = nonUnionHourly * 1.5;
+      ot2Rate = nonUnionHourly * 2;
     }
 
     const basePay = (dailyRate && baseHours >= 8) ? dailyRate : hourlyRate * baseHours;
@@ -50,7 +59,7 @@ export default function RateCalculator() {
     const dayTotal = basePay + ot1Pay + ot2Pay;
 
     return { isUnion, baseHours, basePay, ot1h, ot1Rate, ot1Pay, ot2h, ot2Rate, ot2Pay, dayTotal };
-  }, [isUnion, role, hours, useCustom, customRate]);
+  }, [isUnion, role, hours, useCustom, customRate, province]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -128,12 +137,38 @@ export default function RateCalculator() {
           </div>
         )}
 
+        {/* Province selector — non-union only */}
+        {!isUnion && !useCustom && (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Your Province</p>
+            <select
+              value={province}
+              onChange={e => setProvince(e.target.value)}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none"
+            >
+              {PROVINCE_LIST.map(p => (
+                <option key={p.code} value={p.code}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Non-union rate info */}
         {!isUnion && !useCustom && (
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">BC Minimum Wage</p>
-            <p className="text-2xl font-bold text-gray-900">{fmt(NON_UNION_HOURLY)}<span className="text-sm font-normal text-gray-500">/hour</span></p>
-            <p className="text-xs text-gray-400 mt-1">Effective June 1, 2026</p>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">
+              {province === 'BC' ? 'BC Minimum Wage' : province === 'ON' ? 'Non-Union Rate' : 'Provincial Minimum Wage'}
+            </p>
+            <p className="text-2xl font-bold text-gray-900">{fmt(provinceInfo.nonUnionMin)}<span className="text-sm font-normal text-gray-500">/hour</span></p>
+            <p className="text-xs text-gray-400 mt-1">{provinceInfo.rateNote}</p>
+            {provinceInfo.minCallPay > 0 && (
+              <p className="text-xs text-gray-500 mt-2">8-hour minimum call: <span className="font-semibold">{fmt(provinceInfo.minCallPay)}</span></p>
+            )}
+            {province !== 'BC' && province !== 'ON' && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-3">
+                ⚠️ Rates outside BC and Ontario vary. Always verify the current minimum wage for your province before accepting a booking.
+              </p>
+            )}
           </div>
         )}
 
@@ -192,7 +227,7 @@ export default function RateCalculator() {
                 }
               </p>
               <p className="text-xs text-gray-400 mt-0.5">
-                {calc.isUnion && !useCustom ? 'UBCP/ACTRA — March 29, 2026' : useCustom ? 'Custom hourly rate' : 'BC Minimum Wage — June 1, 2026'}
+                {calc.isUnion && !useCustom ? 'UBCP/ACTRA — March 29, 2026' : useCustom ? 'Custom hourly rate' : provinceInfo.rateNote}
               </p>
             </div>
 
@@ -273,6 +308,26 @@ export default function RateCalculator() {
               Enter a valid hourly rate above to see your breakdown.
             </div>
           )
+        )}
+
+        {/* Why go union? — non-union only */}
+        {!isUnion && !useCustom && (
+          <div className="bg-amber-50 border border-amber-300 rounded-2xl p-5">
+            <p className="text-sm font-bold text-amber-900 mb-1">💡 Why go union?</p>
+            <p className="text-xs text-amber-800 leading-relaxed mb-3">
+              Union performers earn significantly more. A UBCP/ACTRA General Background Performer earns{' '}
+              <strong>{fmt(UNION_RATES['General Background Performer'].daily)}/day</strong> — vs{' '}
+              <strong>{fmt(provinceInfo.minCallPay)}/day</strong> non-union in {provinceInfo.name}. That's{' '}
+              <strong>{fmt(UNION_RATES['General Background Performer'].daily - provinceInfo.minCallPay)} more per day</strong>, plus
+              health and retirement benefits.
+            </p>
+            <Link
+              href="/voucher-wallet"
+              className="inline-block text-xs font-bold text-amber-900 bg-amber-200 hover:bg-amber-300 transition px-4 py-2 rounded-lg"
+            >
+              Track your vouchers toward union membership →
+            </Link>
+          </div>
         )}
 
         <Copyright />

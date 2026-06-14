@@ -16,6 +16,7 @@ export default function SignUp() {
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const [referralCode, setReferralCode] = useState('');
   const [refFromUrl, setRefFromUrl] = useState(false);
   const [codeValidation, setCodeValidation] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
@@ -100,6 +101,7 @@ export default function SignUp() {
       password,
       options: {
         data: { name, province, age_verified: true },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 
@@ -109,54 +111,67 @@ export default function SignUp() {
       return;
     }
 
+    // Duplicate email: Supabase returns a user but with no identities
+    if (data.user && data.user.identities?.length === 0) {
+      setError('An account with this email already exists. Please sign in instead.');
+      setLoading(false);
+      return;
+    }
+
     if (data.user) {
       const token = data.session?.access_token;
-      const res = await fetch('/api/auth/create-profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          id: data.user.id,
-          email,
-          name,
-          province,
-          referred_by: referralCode || null,
-        }),
-      });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        console.error('Failed to create user profile:', errData);
-        setError('Account created but profile setup failed: ' + (errData.error || 'Unknown error'));
-        setLoading(false);
-        return;
-      }
-
-      sessionStorage.removeItem('referral_code');
-
-      if (promoCode.trim() && data.session?.access_token) {
-        await fetch('/api/promo/apply', {
+      if (token) {
+        // Session available — create profile and redirect immediately
+        const res = await fetch('/api/auth/create-profile', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` },
-          body: JSON.stringify({ code: promoCode.trim(), userType: 'performer' }),
-        })
-      }
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            id: data.user.id,
+            email,
+            name,
+            province,
+            referred_by: referralCode || null,
+          }),
+        });
 
-      if (data.session) {
-        const { createBrowserClient } = await import('@supabase/ssr')
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.error('Failed to create user profile:', errData);
+          setError('Account created but profile setup failed: ' + (errData.error || 'Unknown error'));
+          setLoading(false);
+          return;
+        }
+
+        sessionStorage.removeItem('referral_code');
+
+        if (promoCode.trim()) {
+          await fetch('/api/promo/apply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ code: promoCode.trim(), userType: 'performer' }),
+          });
+        }
+
+        const { createBrowserClient } = await import('@supabase/ssr');
         const browserClient = createBrowserClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
           process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        )
+        );
         await browserClient.auth.setSession({
-          access_token: data.session.access_token,
-          refresh_token: data.session.refresh_token,
-        })
-      }
+          access_token: data.session!.access_token,
+          refresh_token: data.session!.refresh_token,
+        });
 
-      router.push('/dashboard');
+        router.push('/dashboard');
+      } else {
+        // Email confirmation required — show confirmation screen
+        sessionStorage.removeItem('referral_code');
+        setShowConfirmation(true);
+      }
     } else {
       setError('Sign up failed. Please try again.');
     }
@@ -191,6 +206,35 @@ export default function SignUp() {
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
   };
+
+  if (showConfirmation) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb', fontFamily: '-apple-system, Arial, sans-serif', padding: '24px' }}>
+        <div style={{ maxWidth: '440px', width: '100%', textAlign: 'center' }}>
+          <div style={{ fontSize: '64px', marginBottom: '16px' }}>📧</div>
+          <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: '700', color: '#1a1a2e', margin: '0 0 10px' }}>Check your email</h1>
+          <p style={{ fontSize: '15px', color: '#6b7280', margin: '0 0 8px', lineHeight: '1.6' }}>
+            We sent a confirmation link to
+          </p>
+          <p style={{ fontSize: '15px', fontWeight: '700', color: '#1a1a2e', margin: '0 0 24px' }}>{email}</p>
+          <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '16px', marginBottom: '24px', textAlign: 'left' }}>
+            <p style={{ fontSize: '13px', color: '#92400e', margin: 0, lineHeight: '1.6' }}>
+              Click the link in the email to activate your account. If you don't see it, check your spam or junk folder.
+            </p>
+          </div>
+          <Link href="/auth/sign-in" style={{ display: 'block', padding: '13px', backgroundColor: '#1a1a2e', color: 'white', fontWeight: '700', fontSize: '15px', borderRadius: '10px', textDecoration: 'none' }}>
+            Go to Sign In
+          </Link>
+          <p style={{ marginTop: '16px', fontSize: '12px', color: '#9ca3af' }}>
+            Wrong email?{' '}
+            <button onClick={() => setShowConfirmation(false)} style={{ background: 'none', border: 'none', color: '#F59E0B', fontWeight: '600', cursor: 'pointer', fontSize: '12px', padding: 0 }}>
+              Go back
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', fontFamily: '-apple-system, Arial, sans-serif' }}>
