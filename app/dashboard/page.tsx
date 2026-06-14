@@ -71,6 +71,7 @@ const quickActions = [
   { icon: '👔', label: 'What to Wear', action: 'link' as const, href: '/clothing' },
   { icon: '📋', label: 'Residency Docs', action: 'link' as const, href: '/residency' },
   { icon: '📋', label: 'Work Log', action: 'link' as const, href: '/work-log' },
+  { icon: '🎫', label: 'Voucher Wallet', action: 'link' as const, href: '/voucher-wallet' },
   { icon: '📔', label: 'Journal', action: 'link' as const, href: '/journal' },
   { icon: '👥', label: 'Contacts', action: 'link' as const, href: '/contacts' },
   { icon: '🎯', label: 'My Goals', action: 'link' as const, href: '/goals' },
@@ -149,6 +150,12 @@ export default function Dashboard() {
   const [castingNotifs, setCastingNotifs] = useState<Array<{ id: string; title: string; message: string; is_read: boolean; created_at: string; action_url?: string }>>([])
   const [notifUnread, setNotifUnread] = useState(0)
 
+  // Union / voucher wallet
+  const [voucherSummary, setVoucherSummary] = useState<{ totalVouchers: number; qualifyingDays: number; daysRequired: number; percentComplete: number; isQualified: boolean; unionName: string; hasUnreadMilestone: boolean } | null>(null)
+  const [showUnionNotifPanel, setShowUnionNotifPanel] = useState(false)
+  const [unionNotifs, setUnionNotifs] = useState<Array<{ id: string; type: string; title: string; message: string; is_read: boolean; created_at: string }>>([])
+  const [unionUnread, setUnionUnread] = useState(0)
+
   // Load casting notifications on mount
   useEffect(() => {
     fetch('/api/notifications/casting')
@@ -158,6 +165,25 @@ export default function Dashboard() {
         setNotifUnread(data.filter(n => !n.is_read).length)
       })
       .catch(() => {})
+
+    // Load voucher summary + union notifications
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.access_token) return
+      const token = session.access_token
+
+      fetch('/api/voucher-wallet/summary', { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d) setVoucherSummary(d) })
+        .catch(() => {})
+
+      fetch('/api/voucher-wallet/notifications', { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.ok ? r.json() : [])
+        .then((d: Array<{ id: string; type: string; title: string; message: string; is_read: boolean; created_at: string }>) => {
+          setUnionNotifs(d)
+          setUnionUnread(d.filter(n => !n.is_read).length)
+        })
+        .catch(() => {})
+    })
   }, [])
 
   // Locks to prevent concurrent auth calls
@@ -693,6 +719,28 @@ export default function Dashboard() {
                     <span>Admin</span>
                   </Link>
                 )}
+                {/* Union milestone notifications */}
+                <button
+                  onClick={async () => {
+                    setShowUnionNotifPanel(true)
+                    if (unionUnread > 0) {
+                      const { data: { session } } = await supabase.auth.getSession()
+                      if (session?.access_token) {
+                        fetch('/api/voucher-wallet/notifications', { method: 'PATCH', headers: { Authorization: `Bearer ${session.access_token}` } })
+                          .then(() => setUnionUnread(0))
+                      }
+                    }
+                  }}
+                  style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'rgba(255,255,255,0.8)' }}
+                  title="Union milestone notifications"
+                >
+                  <span style={{ fontSize: '20px' }}>🎫</span>
+                  {unionUnread > 0 && (
+                    <span style={{ position: 'absolute', top: 0, right: 0, backgroundColor: '#F59E0B', color: '#1a1a2e', borderRadius: '50%', width: '16px', height: '16px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', lineHeight: 1 }}>
+                      {unionUnread > 9 ? '9+' : unionUnread}
+                    </span>
+                  )}
+                </button>
                 <button
                   onClick={() => { setShowNotifPanel(true); if (notifUnread > 0) fetch('/api/notifications/casting', { method: 'PATCH' }).then(() => setNotifUnread(0)) }}
                   style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'rgba(255,255,255,0.8)' }}
@@ -730,6 +778,31 @@ export default function Dashboard() {
                   : `${section1Modules.length - completedCount} more modules to unlock the secret section`}
               </p>
             </div>
+
+            {/* Voucher Wallet Progress Card */}
+            {voucherSummary && voucherSummary.totalVouchers > 0 && (
+              <div style={{ marginTop: '12px', backgroundColor: 'white', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid #F59E0B', display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: '700', fontSize: '13px', color: '#1a1a2e', marginBottom: '6px' }}>🎫 Union Progress</div>
+                  <div style={{ height: '6px', backgroundColor: '#f3f4f6', borderRadius: '3px', overflow: 'hidden', marginBottom: '6px' }}>
+                    <div style={{ height: '100%', width: `${voucherSummary.percentComplete}%`, backgroundColor: '#F59E0B', borderRadius: '3px', transition: 'width 0.5s ease' }} />
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                    {voucherSummary.qualifyingDays} of {voucherSummary.daysRequired} qualifying days
+                    {voucherSummary.isQualified && <span style={{ color: '#16a34a', fontWeight: '700', marginLeft: '6px' }}>🎉 You qualify!</span>}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ fontSize: '22px', fontWeight: '900', color: '#F59E0B', lineHeight: 1 }}>{voucherSummary.percentComplete}%</div>
+                  <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>{voucherSummary.unionName}</div>
+                  {voucherSummary.isQualified ? (
+                    <Link href="/voucher-wallet" style={{ display: 'inline-block', marginTop: '4px', fontSize: '11px', color: '#16a34a', fontWeight: '700', textDecoration: 'none' }}>Apply Now →</Link>
+                  ) : (
+                    <Link href="/voucher-wallet" style={{ display: 'inline-block', marginTop: '4px', fontSize: '11px', color: '#6b7280', textDecoration: 'none' }}>View →</Link>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Install App Hero Banner */}
             {showInstallBanner && (
@@ -1207,6 +1280,47 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* UNION NOTIFICATIONS PANEL */}
+      {showUnionNotifPanel && (
+        <div onClick={() => setShowUnionNotifPanel(false)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 99998, display: 'flex', justifyContent: 'flex-end' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '340px', maxWidth: '90vw', backgroundColor: 'white', height: '100%', boxShadow: '-4px 0 20px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontWeight: '700', fontSize: '16px', margin: 0, color: '#1a1a2e' }}>🎫 Union Milestones</h3>
+              <button onClick={() => setShowUnionNotifPanel(false)} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#9ca3af', lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+              {unionNotifs.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: '#9ca3af' }}>
+                  <div style={{ fontSize: '36px', marginBottom: '8px' }}>🎫</div>
+                  <p style={{ fontSize: '14px', margin: 0 }}>No milestones yet.</p>
+                  <p style={{ fontSize: '12px', marginTop: '6px' }}>Add vouchers to your wallet to start tracking union progress.</p>
+                </div>
+              ) : unionNotifs.map(n => (
+                <div
+                  key={n.id}
+                  onClick={() => { setShowUnionNotifPanel(false); router.push('/voucher-wallet') }}
+                  style={{ padding: '12px', borderRadius: '10px', marginBottom: '8px', backgroundColor: n.is_read ? '#f9fafb' : '#fffbeb', borderLeft: `3px solid ${n.is_read ? '#e5e7eb' : '#F59E0B'}`, cursor: 'pointer' }}
+                >
+                  <div style={{ fontWeight: '700', fontSize: '13px', color: '#1a1a2e', marginBottom: '3px' }}>{n.title}</div>
+                  <div style={{ fontSize: '12px', color: '#6b7280', lineHeight: '1.4' }}>{n.message}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+                    <span style={{ fontSize: '11px', color: '#9ca3af' }}>
+                      {new Date(n.created_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
+                    </span>
+                    <span style={{ fontSize: '11px', color: '#F59E0B', fontWeight: '700' }}>View Wallet →</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {unionUnread === 0 && unionNotifs.length > 0 && (
+              <div style={{ padding: '12px 16px', borderTop: '1px solid #f3f4f6', textAlign: 'center' }}>
+                <span style={{ fontSize: '12px', color: '#9ca3af' }}>All caught up</span>
+              </div>
+            )}
           </div>
         </div>
       )}
