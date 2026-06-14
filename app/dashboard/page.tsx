@@ -518,21 +518,23 @@ export default function Dashboard() {
     isCheckingUser = true;
     
     try {
-      // Use getSession() instead of getUser() to avoid token conflicts
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        console.error('Session error:', sessionError);
-        router.push('/auth/sign-in');
-        return;
+      const { createBrowserClient } = await import('@supabase/ssr')
+      const browserClient = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      const { data: { user }, error: userError } = await browserClient.auth.getUser()
+      if (userError || !user) {
+        console.error('Auth error:', userError)
+        router.push('/auth/sign-in')
+        return
       }
-      
-      const user = session.user;
-      setUser(user);
+      const { data: { session } } = await browserClient.auth.getSession()
+      setUser(user)
 
       try {
         const adminCheckRes = await fetch('/api/admin/check', {
-          headers: { Authorization: `Bearer ${session.access_token}` },
+          headers: { Authorization: `Bearer ${session?.access_token}` },
         });
         if (adminCheckRes.ok) {
           const adminData = await adminCheckRes.json();

@@ -39,15 +39,22 @@ export default function GoalsPage() {
   const [saving, setSaving]     = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) { router.push('/auth/sign-in'); return; }
-      setToken(session.access_token);
+    (async () => {
+      const { createBrowserClient } = await import('@supabase/ssr')
+      const browserClient = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      const { data: { user }, error } = await browserClient.auth.getUser()
+      if (error || !user) { router.push('/auth/sign-in'); return }
+      const { data: { session } } = await browserClient.auth.getSession()
+      setToken(session?.access_token ?? null)
       supabase
         .from('certificates')
         .select('id', { count: 'exact', head: true })
-        .eq('user_id', session.user.id)
-        .then(({ count }) => setCertCount(count ?? 0));
-    });
+        .eq('user_id', user.id)
+        .then(({ count }) => setCertCount(count ?? 0))
+    })()
   }, [router]);
 
   const fetchGoals = useCallback(async () => {

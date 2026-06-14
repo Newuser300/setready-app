@@ -14,12 +14,14 @@ export default function UpdatePasswordPage() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    // Check if we have a valid session (user clicked reset link)
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push('/auth/sign-in');
-      }
+      const { createBrowserClient } = await import('@supabase/ssr')
+      const browserClient = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      const { data: { user }, error } = await browserClient.auth.getUser()
+      if (error || !user) { router.push('/auth/sign-in'); }
     };
     checkSession();
   }, [router]);

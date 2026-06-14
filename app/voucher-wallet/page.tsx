@@ -127,7 +127,14 @@ export default function VoucherWallet() {
   })
 
   async function getToken() {
-    const { data: { session } } = await supabase.auth.getSession()
+    const { createBrowserClient } = await import('@supabase/ssr')
+    const browserClient = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+    const { data: { user }, error } = await browserClient.auth.getUser()
+    if (error || !user) return null
+    const { data: { session } } = await browserClient.auth.getSession()
     return session?.access_token
   }
 

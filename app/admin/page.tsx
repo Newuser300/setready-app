@@ -159,12 +159,18 @@ export default function AdminPage() {
 
   async function loadData() {
     setLoading(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) { router.push('/auth/sign-in'); return; }
-    setAccessToken(session.access_token);
+    const { createBrowserClient } = await import('@supabase/ssr')
+    const browserClient = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+    const { data: { user }, error } = await browserClient.auth.getUser()
+    if (error || !user) { router.push('/auth/sign-in'); return; }
+    const { data: { session } } = await browserClient.auth.getSession()
+    setAccessToken(session?.access_token ?? null);
 
     const res = await fetch('/api/admin/stats', {
-      headers: { Authorization: `Bearer ${session.access_token}` },
+      headers: { Authorization: `Bearer ${session?.access_token}` },
     });
     if (res.status === 403) { router.push('/dashboard'); return; }
     if (!res.ok) { setError('Failed to load admin data.'); setLoading(false); return; }

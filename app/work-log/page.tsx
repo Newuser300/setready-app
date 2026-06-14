@@ -78,10 +78,16 @@ export default function WorkLogPage() {
   }, [showWorkLogForm]);
 
   async function loadWorkLogs() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) { router.push('/auth/sign-in'); return; }
+    const { createBrowserClient } = await import('@supabase/ssr')
+    const browserClient = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+    const { data: { user }, error } = await browserClient.auth.getUser()
+    if (error || !user) { router.push('/auth/sign-in'); return; }
+    const { data: { session } } = await browserClient.auth.getSession()
     const res = await fetch('/api/work-log/entries', {
-      headers: { Authorization: `Bearer ${session.access_token}` },
+      headers: { Authorization: `Bearer ${session?.access_token}` },
     });
     if (res.ok) setWorkLogs(await res.json());
     setLoading(false);

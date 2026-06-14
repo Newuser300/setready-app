@@ -80,18 +80,21 @@ export default function ResidencyPage() {
   useEffect(() => { loadPage(); }, []);
 
   async function loadPage() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      router.push('/auth/sign-in');
-      return;
-    }
-    setAccessToken(session.access_token);
-    setUserId(session.user.id);
+    const { createBrowserClient } = await import('@supabase/ssr')
+    const browserClient = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+    const { data: { user }, error } = await browserClient.auth.getUser()
+    if (error || !user) { router.push('/auth/sign-in'); return; }
+    const { data: { session } } = await browserClient.auth.getSession()
+    setAccessToken(session?.access_token ?? null);
+    setUserId(user.id);
 
     const { data: profile } = await supabase
       .from('users')
       .select('name, email')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .maybeSingle();
 
     const name = profile?.name || profile?.email?.split('@')[0] || '';
@@ -101,7 +104,7 @@ export default function ResidencyPage() {
       `Hi,\n\nPlease find my proof of residency documents attached as requested.\n\n${name ? name + '\n' : ''}UBCP/ACTRA Member`
     );
 
-    await loadDocs(session.access_token);
+    await loadDocs(session?.access_token ?? '');
     setPageLoading(false);
   }
 
