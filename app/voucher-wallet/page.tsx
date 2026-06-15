@@ -530,15 +530,17 @@ export default function VoucherWallet() {
           {/* ── SECTION 3: ADD VOUCHER FORM ── */}
           <div style={{ marginBottom: '16px' }}>
             {!showForm ? (
-              <button
-                onClick={() => setShowForm(true)}
-                style={{ width: '100%', padding: '14px', backgroundColor: '#1a1a2e', color: 'white', fontWeight: '700', fontSize: '15px', border: 'none', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-              >
-                <span style={{ fontSize: '18px' }}>＋</span> Add Qualifying Voucher
-              </button>
-              <p style={{ fontSize: '12px', color: '#9ca3af', margin: '8px 0 0', textAlign: 'center' }}>
-                Only UBCP or ACTRA signatory productions count as qualifying days.
-              </p>
+              <>
+                <button
+                  onClick={() => setShowForm(true)}
+                  style={{ width: '100%', padding: '14px', backgroundColor: '#1a1a2e', color: 'white', fontWeight: '700', fontSize: '15px', border: 'none', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                >
+                  <span style={{ fontSize: '18px' }}>＋</span> Add Qualifying Voucher
+                </button>
+                <p style={{ fontSize: '12px', color: '#9ca3af', margin: '8px 0 0', textAlign: 'center' }}>
+                  Only UBCP or ACTRA signatory productions count as qualifying days.
+                </p>
+              </>
             ) : (
               <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
                 <h3 style={{ fontSize: '17px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 20px' }}>
