@@ -2,12 +2,8 @@ import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { createClient } from '@supabase/supabase-js'
-import {
-  resolveLocationToCoords,
-  fetchBookingWeather,
-  computeLeaveBy,
-  LEAVE_BY_BUFFER_MINUTES,
-} from '@/lib/booking-weather'
+import { fetchBookingWeather, computeCommute } from '@/lib/booking-weather'
+import { resolveLocationToRegion } from '@/lib/film-regions'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -49,34 +45,44 @@ export async function GET(req: Request) {
 
   if (!sub) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  // Fetch casting request details
-  const { data: castingReq } = await supabaseAdmin
-    .from('casting_requests')
-    .select('shoot_date, call_time, location, production_name, role_type')
-    .eq('id', requestId)
-    .single()
+  // Fetch casting request + performer home location in parallel
+  const [{ data: castingReq }, { data: userData }] = await Promise.all([
+    supabaseAdmin
+      .from('casting_requests')
+      .select('shoot_date, call_time, location, production_name, role_type')
+      .eq('id', requestId)
+      .single(),
+    supabaseAdmin
+      .from('users')
+      .select('home_lat,home_lng')
+      .eq('id', user.id)
+      .single(),
+  ])
 
   if (!castingReq) return NextResponse.json({ error: 'Request not found' }, { status: 404 })
 
   const { shoot_date, call_time, location, production_name, role_type } = castingReq
+  const homeLat: number | null = userData?.home_lat ?? null
+  const homeLng: number | null = userData?.home_lng ?? null
 
-  // Determine if the location resolves at all (to tell the UI whether to show "coming soon")
-  const coords = resolveLocationToCoords(location)
+  // Resolve destination region for both weather coords and commute
+  const destRegion = resolveLocationToRegion(location)
 
-  // Determine how far out the shoot is
+  // Days until shoot (for forecast window check)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const shoot = new Date(shoot_date + 'T00:00:00')
   const daysAway = Math.ceil((shoot.getTime() - today.getTime()) / 86400000)
 
-  const forecastComingSoon = !!coords && daysAway > 16
+  const forecastComingSoon = !!destRegion && daysAway > 16
 
-  // Only fetch weather when location resolves AND date is within window
-  const weather = coords && daysAway <= 16
-    ? await fetchBookingWeather(location, shoot_date)
-    : null
-
-  const leaveBy = computeLeaveBy(call_time)
+  // Fetch weather + commute in parallel (OSRM has its own 4s internal timeout)
+  const [weather, commute] = await Promise.all([
+    destRegion && daysAway <= 16
+      ? fetchBookingWeather(location, shoot_date)
+      : Promise.resolve(null),
+    computeCommute(call_time, homeLat, homeLng, destRegion?.lat ?? null, destRegion?.lng ?? null),
+  ])
 
   return NextResponse.json({
     shoot_date,
@@ -85,8 +91,7 @@ export async function GET(req: Request) {
     production_name,
     role_type,
     weather,
-    leaveBy,
+    commute,
     forecastComingSoon,
-    leaveByBufferMinutes: LEAVE_BY_BUFFER_MINUTES,
   })
 }

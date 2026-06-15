@@ -1212,7 +1212,7 @@ export default function Dashboard() {
                 <div style={{ fontSize: '28px' }}>🎭</div>
                 <div>
                   <div style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>Section 2 · Optional Upgrade</div>
-                  <div style={{ fontSize: isMobile ? '18px' : '22px', fontWeight: '800', color: 'white' }}>From Background to Acting</div>
+                  <div style={{ fontSize: isMobile ? '18px' : '22px', fontWeight: '800', color: '#1a1a2e' }}>From Background to Acting</div>
                   <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>Advanced techniques for the serious performer</div>
                 </div>
               </div>
@@ -1292,7 +1292,7 @@ export default function Dashboard() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
               <div style={{ fontSize: '28px' }}>🏆</div>
               <div>
-                <div style={{ fontSize: '18px', fontWeight: '800', color: 'white' }}>My Certificates</div>
+                <div style={{ fontSize: '18px', fontWeight: '800', color: '#1a1a2e' }}>My Certificates</div>
                 <div style={{ fontSize: '12px', color: '#9ca3af' }}>Earned completion certificates</div>
               </div>
             </div>

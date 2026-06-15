@@ -386,16 +386,93 @@ export function getRegionName(code: string): string {
   return FILM_REGIONS[code]?.name || code
 }
 
+// ── Internal normalization helpers ───────────────────────────────────────────
+
+const PROVINCE_WORDS = [
+  'british columbia', 'alberta', 'ontario', 'québec', 'quebec', 'saskatchewan',
+  'manitoba', 'nova scotia', 'new brunswick', 'newfoundland and labrador',
+  'newfoundland', 'prince edward island', 'northwest territories',
+  'nunavut', 'yukon', 'canada',
+  'bc', 'ab', 'on', 'qc', 'sk', 'mb', 'ns', 'nb', 'nl', 'pe', 'pei', 'yt', 'nt', 'nu',
+]
+
+const QUALIFIER_PREFIXES = [
+  'downtown', 'uptown', 'midtown', 'greater', 'metro', 'central',
+  'north', 'south', 'east', 'west', 'northeast', 'northwest', 'southeast', 'southwest',
+]
+
+function normalizeLocationInput(input: string): string {
+  let s = input.toLowerCase().trim()
+
+  // Strip everything after the first comma: "Vancouver, BC" → "vancouver"
+  const commaIdx = s.indexOf(',')
+  if (commaIdx !== -1) s = s.slice(0, commaIdx).trim()
+
+  // Strip province words at the tail or head (whole-word boundary)
+  for (const prov of PROVINCE_WORDS) {
+    if (s === prov) return ''
+    if (s.endsWith(' ' + prov)) s = s.slice(0, s.length - prov.length - 1).trim()
+    if (s.startsWith(prov + ' ')) s = s.slice(prov.length + 1).trim()
+  }
+
+  // Strip leading qualifier words — loop until stable (handles "Greater North Vancouver")
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const q of QUALIFIER_PREFIXES) {
+      if (s.startsWith(q + ' ')) {
+        s = s.slice(q.length + 1).trim()
+        changed = true
+        break
+      }
+    }
+  }
+
+  return s
+}
+
+// ── Region lookup ─────────────────────────────────────────────────────────────
+
 export function getRegionFromCity(city: string): string | null {
-  const normalized = city.toLowerCase().trim()
-  for (const region of Object.values(FILM_REGIONS)) {
-    if (region.cities.some(c =>
-      c.toLowerCase().includes(normalized) || normalized.includes(c.toLowerCase())
-    )) {
+  if (!city?.trim()) return null
+
+  const normalized = normalizeLocationInput(city)
+  if (!normalized) return null
+
+  const regions = Object.values(FILM_REGIONS)
+
+  // Pass 1: exact match (normalized input vs lowercase city name)
+  for (const region of regions) {
+    if (region.cities.some(c => c.toLowerCase() === normalized)) {
       return region.code
     }
   }
+
+  // Pass 2: contains in both directions (min 4 chars each side to avoid false hits)
+  if (normalized.length >= 4) {
+    for (const region of regions) {
+      if (region.cities.some(c => {
+        const cn = c.toLowerCase()
+        return cn.length >= 4 && (normalized.includes(cn) || cn.includes(normalized))
+      })) {
+        return region.code
+      }
+    }
+  }
+
   return null
+}
+
+// Returns region metadata alongside the code — used by the weather/commute layer
+export function resolveLocationToRegion(
+  text: string | null | undefined
+): { code: string; name: string; lat: number; lng: number } | null {
+  if (!text?.trim()) return null
+  const code = getRegionFromCity(text.trim())
+  if (!code) return null
+  const region = FILM_REGIONS[code]
+  if (!region) return null
+  return { code, name: region.name, lat: region.latitudeCenter, lng: region.longitudeCenter }
 }
 
 // Ordered list of regions for dropdowns — sorted by province then name

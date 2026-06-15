@@ -37,17 +37,22 @@ export async function GET() {
   const user = await getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data, error } = await supabaseAdmin
-    .from('performer_profiles')
-    .select('*')
-    .eq('user_id', user.id)
-    .single()
+  const [{ data, error }, { data: userData }] = await Promise.all([
+    supabaseAdmin.from('performer_profiles').select('*').eq('user_id', user.id).single(),
+    supabaseAdmin.from('users').select('home_city,home_region_code,home_lat,home_lng').eq('id', user.id).single(),
+  ])
 
   if (error && error.code !== 'PGRST116') {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json(data || {})
+  return NextResponse.json({
+    ...(data || {}),
+    home_city: userData?.home_city ?? null,
+    home_region_code: userData?.home_region_code ?? null,
+    home_lat: userData?.home_lat ?? null,
+    home_lng: userData?.home_lng ?? null,
+  })
 }
 
 export async function POST(req: Request) {
@@ -99,23 +104,33 @@ export async function POST(req: Request) {
   const body = await req.json()
   console.log('Fields received:', Object.keys(body))
 
+  // Separate home location fields (stored in users table) from performer_profiles fields
+  const { home_city, home_region_code, home_lat, home_lng, ...rest } = body
+
   const cleanBody = Object.fromEntries(
-    Object.entries(body).filter(([_, v]) => v !== undefined)
+    Object.entries(rest).filter(([_, v]) => v !== undefined)
   )
 
-  const { data, error } = await supabaseAdmin
-    .from('performer_profiles')
-    .upsert(
-      { ...cleanBody, user_id: user.id, updated_at: new Date().toISOString() },
-      { onConflict: 'user_id', ignoreDuplicates: false }
-    )
-    .select()
-    .single()
+  const [{ data, error }, { error: userError }] = await Promise.all([
+    supabaseAdmin
+      .from('performer_profiles')
+      .upsert(
+        { ...cleanBody, user_id: user.id, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id', ignoreDuplicates: false }
+      )
+      .select()
+      .single(),
+    supabaseAdmin
+      .from('users')
+      .update({ home_city: home_city ?? null, home_region_code: home_region_code ?? null, home_lat: home_lat ?? null, home_lng: home_lng ?? null })
+      .eq('id', user.id),
+  ])
 
   if (error) {
     console.error('Profile save error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+  if (userError) console.error('Home location save error:', userError)
 
   console.log('Profile saved:', data?.id)
   return NextResponse.json({ success: true, profile: data })

@@ -33,6 +33,14 @@ type WeatherResult = {
   regionName: string
 }
 
+type CommuteResult = {
+  driveMinutes: number | null
+  leaveBy: string
+  arriveBy: string
+  label: string
+  isFallback: boolean
+}
+
 type BookingDetail = {
   shoot_date: string
   call_time: string | null
@@ -40,7 +48,7 @@ type BookingDetail = {
   production_name: string
   role_type: string
   weather: WeatherResult | null
-  leaveBy: string | null
+  commute: CommuteResult | null
   forecastComingSoon: boolean
 }
 
@@ -457,10 +465,12 @@ export default function MessagesPage() {
                     ) : null}
 
                     {/* Commute row */}
-                    {bookingDetail.leaveBy && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'rgba(255,255,255,0.75)' }}>
-                        <span style={{ fontSize: '16px' }}>🕐</span>
-                        <span>{bookingDetail.leaveBy}</span>
+                    {bookingDetail.commute && (
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', color: 'rgba(255,255,255,0.75)' }}>
+                        <span style={{ fontSize: '16px', flexShrink: 0 }}>
+                          {bookingDetail.commute.isFallback ? '🕐' : ''}
+                        </span>
+                        <span>{bookingDetail.commute.label}</span>
                       </div>
                     )}
                   </>
