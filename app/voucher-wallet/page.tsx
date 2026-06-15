@@ -96,8 +96,8 @@ function Confetti() {
 export default function VoucherWallet() {
   const router = useRouter()
   const [vouchers, setVouchers] = useState<Voucher[]>([])
-  const [province, setProvince] = useState('ON')
-  const [provinceName, setProvinceName] = useState('Ontario')
+  const [province, setProvince] = useState('BC')
+  const [provinceName, setProvinceName] = useState('British Columbia')
   const [rules, setRules] = useState<UnionRequirement[]>([])
   const [loading, setLoading] = useState(true)
   const [filterTab, setFilterTab] = useState<FilterTab>('all')
@@ -112,6 +112,7 @@ export default function VoucherWallet() {
   const [showMilestoneModal, setShowMilestoneModal] = useState(false)
   const [milestoneData, setMilestoneData] = useState<MilestoneData | null>(null)
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({})
+  const [isMobile, setIsMobile] = useState(false)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
 
@@ -148,8 +149,9 @@ export default function VoucherWallet() {
     if (!res.ok) { setLoading(false); return }
     const data = await res.json()
     setVouchers(data.vouchers || [])
-    setProvince(data.province || 'ON')
-    setProvinceName(data.provinceName || data.province || 'ON')
+    console.log('Voucher wallet loaded province:', data.province, '| provinceName:', data.provinceName)
+    setProvince(data.province || 'BC')
+    setProvinceName(data.provinceName || data.province || 'British Columbia')
     setRules(data.rules || [])
     setLoading(false)
     fetchSignedUrls(data.vouchers || [])
@@ -173,6 +175,17 @@ export default function VoucherWallet() {
   }
 
   useEffect(() => { load() }, [])
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
+  useEffect(() => {
+    console.log('Province state updated:', { province, provinceName })
+  }, [province])
 
   const rule = rules[0]
   const calc = rule ? calculateQualifyingDays(vouchers, rule) : null
@@ -335,7 +348,7 @@ export default function VoucherWallet() {
               <Link href="/dashboard" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: '14px' }}>← Dashboard</Link>
             </div>
             <h1 style={{ fontSize: '24px', fontWeight: '800', margin: '0 0 4px' }}>🎫 Voucher Wallet</h1>
-            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>Track your union vouchers and your path to membership</p>
+            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>Track your qualifying days toward Background Membership — UBCP (BC/YT) or ACTRA AABP (all other provinces)</p>
           </div>
         </div>
 
@@ -343,6 +356,7 @@ export default function VoucherWallet() {
           {/* ── SECTION 1: PROGRESS TRACKER ── */}
           {rule && calc && (
             <div style={{ backgroundColor: 'white', borderRadius: '16px', borderTop: '4px solid #F59E0B', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '16px' }}>
+              <p style={{ fontSize: '11px', fontWeight: '800', color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>Your Path to Background Membership</p>
               <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
                 <span style={{ backgroundColor: '#fef3c7', color: '#92400e', fontWeight: '700', fontSize: '12px', padding: '4px 10px', borderRadius: '20px' }}>🍁 {provinceName}</span>
                 <span style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', fontWeight: '700', fontSize: '12px', padding: '4px 10px', borderRadius: '20px' }}>{rule.unionName}</span>
@@ -353,7 +367,7 @@ export default function VoucherWallet() {
                 <CircleProgress percent={calc.percentComplete} days={calc.qualifyingDays} required={rule.qualifyingDaysRequired} />
                 <div style={{ flex: 1, minWidth: '180px' }}>
                   <div style={{ marginBottom: '12px' }}>
-                    <div style={{ fontSize: '22px', fontWeight: '800', color: '#1a1a2e' }}>{calc.qualifyingDays} <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: '500' }}>qualifying days</span></div>
+                    <div style={{ fontSize: '22px', fontWeight: '800', color: '#1a1a2e' }}>{calc.qualifyingDays} <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: '500' }}>qualifying days toward Background Membership</span></div>
                     {calc.daysRemaining > 0 && (
                       <div style={{ fontSize: '14px', color: '#F59E0B', fontWeight: '600', marginTop: '4px' }}>{calc.daysRemaining} days still needed</div>
                     )}
@@ -414,6 +428,63 @@ export default function VoucherWallet() {
             </div>
           )}
 
+          {/* ── SECTION 2.5: UNION COMPARISON CARDS ── */}
+          <div style={{ marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 10px' }}>Background Membership Paths</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' }}>
+              {/* UBCP Card */}
+              <div style={{
+                backgroundColor: 'white', borderRadius: '14px', padding: '18px',
+                boxShadow: '0 1px 6px rgba(0,0,0,0.06)',
+                border: (province === 'BC' || province === 'YT') ? '2px solid #F59E0B' : '2px solid #f3f4f6',
+                position: 'relative',
+              }}>
+                {(province === 'BC' || province === 'YT') && (
+                  <span style={{ position: 'absolute', top: '-10px', left: '14px', backgroundColor: '#F59E0B', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 8px', borderRadius: '20px' }}>
+                    YOUR UNION
+                  </span>
+                )}
+                <div style={{ marginBottom: '10px' }}>
+                  <div style={{ fontWeight: '800', fontSize: '15px', color: '#1a1a2e' }}>UBCP/ACTRA</div>
+                  <div style={{ fontSize: '12px', color: '#6b7280' }}>British Columbia & Yukon</div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <div style={{ fontSize: '13px', color: '#374151' }}><span style={{ fontWeight: '700' }}>Target:</span> AABP Background Member</div>
+                  <div style={{ fontSize: '13px', color: '#374151' }}><span style={{ fontWeight: '700' }}>Required:</span> 15 qualifying days</div>
+                  <div style={{ fontSize: '13px', color: '#374151' }}><span style={{ fontWeight: '700' }}>Window:</span> Within 12 months</div>
+                </div>
+                <a href="https://ubcpactra.ca/membership/" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: '12px', fontSize: '12px', color: '#1d4ed8', fontWeight: '700', textDecoration: 'none' }}>
+                  ubcpactra.ca →
+                </a>
+              </div>
+              {/* ACTRA Card */}
+              <div style={{
+                backgroundColor: 'white', borderRadius: '14px', padding: '18px',
+                boxShadow: '0 1px 6px rgba(0,0,0,0.06)',
+                border: (province !== 'BC' && province !== 'YT') ? '2px solid #F59E0B' : '2px solid #f3f4f6',
+                position: 'relative',
+              }}>
+                {(province !== 'BC' && province !== 'YT') && (
+                  <span style={{ position: 'absolute', top: '-10px', left: '14px', backgroundColor: '#F59E0B', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 8px', borderRadius: '20px' }}>
+                    YOUR UNION
+                  </span>
+                )}
+                <div style={{ marginBottom: '10px' }}>
+                  <div style={{ fontWeight: '800', fontSize: '15px', color: '#1a1a2e' }}>ACTRA</div>
+                  <div style={{ fontSize: '12px', color: '#6b7280' }}>All other provinces</div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <div style={{ fontSize: '13px', color: '#374151' }}><span style={{ fontWeight: '700' }}>Target:</span> AABP Background Member</div>
+                  <div style={{ fontSize: '13px', color: '#374151' }}><span style={{ fontWeight: '700' }}>Required:</span> 15 qualifying days</div>
+                  <div style={{ fontSize: '13px', color: '#374151' }}><span style={{ fontWeight: '700' }}>Window:</span> Within 12 months</div>
+                </div>
+                <a href="https://www.actra.ca/membership/how-to-join/" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: '12px', fontSize: '12px', color: '#1d4ed8', fontWeight: '700', textDecoration: 'none' }}>
+                  actra.ca →
+                </a>
+              </div>
+            </div>
+          </div>
+
           {/* ── SECTION 3: ADD VOUCHER FORM ── */}
           <div style={{ marginBottom: '16px' }}>
             {!showForm ? (
@@ -421,12 +492,15 @@ export default function VoucherWallet() {
                 onClick={() => setShowForm(true)}
                 style={{ width: '100%', padding: '14px', backgroundColor: '#1a1a2e', color: 'white', fontWeight: '700', fontSize: '15px', border: 'none', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
               >
-                <span style={{ fontSize: '18px' }}>＋</span> Add Voucher
+                <span style={{ fontSize: '18px' }}>＋</span> Add Qualifying Voucher
               </button>
+              <p style={{ fontSize: '12px', color: '#9ca3af', margin: '8px 0 0', textAlign: 'center' }}>
+                Only UBCP or ACTRA signatory productions count as qualifying days.
+              </p>
             ) : (
               <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
                 <h3 style={{ fontSize: '17px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 20px' }}>
-                  {editingId ? 'Edit Voucher' : 'Add Voucher'}
+                  {editingId ? 'Edit Voucher' : 'Add Qualifying Voucher'}
                 </h3>
 
                 <div style={{ display: 'grid', gap: '16px' }}>
@@ -735,11 +809,17 @@ export default function VoucherWallet() {
               {milestoneData.type === 'qualified' && (
                 <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '16px', marginBottom: '20px', textAlign: 'left' }}>
                   <p style={{ fontWeight: '700', fontSize: '13px', color: '#166534', margin: '0 0 10px' }}>What to do next:</p>
-                  {[
-                    'Gather your vouchers (you have photos right here!)',
-                    `Contact ${milestoneData.unionName} to begin your application`,
-                    'Pay your initiation fee (if applicable)',
-                  ].map((step, i) => (
+                  {(province === 'BC' || province === 'YT' ? [
+                    'Gather your UBCP vouchers (photos are right here!)',
+                    'Visit ubcpactra.ca/membership/ to begin your UBCP/ACTRA application',
+                    'Pay your UBCP initiation fee',
+                    'Receive your AABP membership card and access union bookings',
+                  ] : [
+                    'Gather your ACTRA vouchers (photos are right here!)',
+                    'Visit actra.ca/membership/how-to-join/ to apply for AABP status',
+                    'Pay your ACTRA initiation fee',
+                    'Receive your AABP card and access to ACTRA-signatory productions',
+                  ]).map((step, i) => (
                     <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '6px', fontSize: '13px', color: '#374151' }}>
                       <span style={{ fontWeight: '700', color: '#16a34a', flexShrink: 0 }}>{i + 1}.</span>
                       <span>{step}</span>
@@ -751,12 +831,12 @@ export default function VoucherWallet() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {milestoneData.type === 'qualified' && (
                   <a
-                    href={milestoneData.website}
+                    href={(province === 'BC' || province === 'YT') ? 'https://ubcpactra.ca/membership/' : 'https://www.actra.ca/membership/how-to-join/'}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ display: 'block', padding: '13px', backgroundColor: '#16a34a', color: 'white', fontWeight: '700', fontSize: '15px', borderRadius: '12px', textDecoration: 'none' }}
                   >
-                    Apply for Membership →
+                    {(province === 'BC' || province === 'YT') ? 'Apply at UBCP/ACTRA →' : 'Apply at ACTRA →'}
                   </a>
                 )}
                 <button

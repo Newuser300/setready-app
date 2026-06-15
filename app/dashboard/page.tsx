@@ -1008,23 +1008,6 @@ export default function Dashboard() {
 
           <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '0 0 24px' }} />
 
-          {/* ── Compact Simulator Card ── */}
-          <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '22px' }}>🎭</span>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontWeight: '700', fontSize: '14px', color: '#1a1a2e' }}>Set Etiquette Simulator</span>
-                  <span style={{ backgroundColor: '#22c55e', color: 'white', fontSize: '10px', fontWeight: '800', padding: '1px 6px', borderRadius: '4px' }}>FREE</span>
-                </div>
-                <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '1px' }}>Test your on-set knowledge with real scenarios</div>
-              </div>
-            </div>
-            <Link href="/simulator" style={{ padding: '7px 14px', backgroundColor: '#1a1a2e', color: 'white', fontWeight: '700', fontSize: '13px', borderRadius: '8px', textDecoration: 'none', flexShrink: 0, display: 'inline-block' }}>
-              Launch →
-            </Link>
-          </div>
-
           {/* Section 1 Header */}
           <div className="flex items-center gap-3 mb-6">
             <div className="text-3xl">📚</div>

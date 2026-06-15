@@ -46,13 +46,15 @@ export async function GET(req: NextRequest) {
   const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabaseAdmin
+  const { data: userData, error: userError } = await supabaseAdmin
     .from('users')
-    .select('province, raw_user_meta_data')
+    .select('province')
     .eq('id', user.id)
     .maybeSingle()
 
-  const province = profile?.province || profile?.raw_user_meta_data?.province || 'ON'
+  console.log('Voucher wallet province fetch (GET):', { userId: user.id, userData, userError })
+  const province = userData?.province || 'BC'
+  console.log('Province being used:', province)
   const provinceName = PROVINCE_NAMES[province] || province
 
   const { data: vouchers, error } = await supabaseAdmin
@@ -105,13 +107,14 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const { data: profile } = await supabaseAdmin
+  const { data: postUserData } = await supabaseAdmin
     .from('users')
-    .select('province, raw_user_meta_data')
+    .select('province')
     .eq('id', user.id)
     .maybeSingle()
 
-  const province = profile?.province || profile?.raw_user_meta_data?.province || 'ON'
+  console.log('Voucher wallet province fetch (POST):', { userId: user.id, postUserData })
+  const province = postUserData?.province || 'BC'
   const { data: allVouchers } = await supabaseAdmin
     .from('union_vouchers')
     .select('*')
