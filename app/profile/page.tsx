@@ -103,6 +103,7 @@ export default function ProfilePage() {
   const fileFrontRef = useRef<HTMLInputElement>(null)
   const fileSideRef = useRef<HTMLInputElement>(null)
   const fileExtraRef = useRef<HTMLInputElement>(null)
+  const fileExtra2Ref = useRef<HTMLInputElement>(null)
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -117,6 +118,7 @@ export default function ProfilePage() {
   const [photoFront, setPhotoFront] = useState('')
   const [photoSide, setPhotoSide] = useState('')
   const [photoExtra, setPhotoExtra] = useState('')
+  const [photoExtra2, setPhotoExtra2] = useState('')
 
   // Basics
   const [isPublic, setIsPublic] = useState(true)
@@ -227,6 +229,7 @@ export default function ProfilePage() {
         setPhotoFront(p.photo_full_body_front || '')
         setPhotoSide(p.photo_full_body_side || '')
         setPhotoExtra(p.photo_additional || '')
+        setPhotoExtra2(p.photo_additional_2 || '')
         if (p.height_cm) {
           setHeightCm(p.height_cm.toString())
           const totalIn = Math.round(p.height_cm / 2.54)
@@ -286,17 +289,18 @@ export default function ProfilePage() {
     if (res.ok) setAgencyLinks((await res.json()) || [])
   }
 
-  async function uploadAdditionalPhoto(file: File, type: 'full_body_front' | 'full_body_side' | 'additional') {
+  async function uploadAdditionalPhoto(file: File, type: 'full_body_front' | 'full_body_side' | 'additional' | 'additional_2') {
     if (file.size > 5 * 1024 * 1024) { setMessage('Image must be under 5 MB.'); return }
     const fd = new FormData()
     fd.append('photo', file)
     fd.append('type', type)
-    const res = await fetch('/api/profile/photo', { method: 'POST', body: fd })
+    const res = await fetch('/api/profile/photo', { method: 'POST', body: fd, credentials: 'include' })
     if (res.ok) {
       const d = await res.json()
       if (type === 'full_body_front') setPhotoFront(d.url)
       if (type === 'full_body_side') setPhotoSide(d.url)
       if (type === 'additional') setPhotoExtra(d.url)
+      if (type === 'additional_2') setPhotoExtra2(d.url)
     } else {
       setMessage('❌ Failed to upload photo.')
     }
@@ -435,6 +439,10 @@ export default function ProfilePage() {
         instagram: instagram || null,
         imdb_url: imdbUrl || null,
         headshot_url: headshotUrl || null,
+        photo_full_body_front: photoFront || null,
+        photo_full_body_side: photoSide || null,
+        photo_additional: photoExtra || null,
+        photo_additional_2: photoExtra2 || null,
       }
 
       console.log('Saving profile:', profileData)
@@ -1037,7 +1045,8 @@ export default function ProfilePage() {
             {([
               { label: 'Full Body — Front', url: photoFront, setUrl: setPhotoFront, ref: fileFrontRef, type: 'full_body_front' as const },
               { label: 'Full Body — Side', url: photoSide, setUrl: setPhotoSide, ref: fileSideRef, type: 'full_body_side' as const },
-              { label: 'Additional', url: photoExtra, setUrl: setPhotoExtra, ref: fileExtraRef, type: 'additional' as const },
+              { label: 'Additional Photo 1', url: photoExtra, setUrl: setPhotoExtra, ref: fileExtraRef, type: 'additional' as const },
+              { label: 'Additional Photo 2', url: photoExtra2, setUrl: setPhotoExtra2, ref: fileExtra2Ref, type: 'additional_2' as const },
             ]).map(slot => (
               <div key={slot.label} style={{ border: '1px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden' }}>
                 {slot.url ? (
