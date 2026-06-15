@@ -113,8 +113,27 @@ export default function VoucherWallet() {
   const [milestoneData, setMilestoneData] = useState<MilestoneData | null>(null)
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({})
   const [isMobile, setIsMobile] = useState(false)
+  const [walletUnionStatus, setWalletUnionStatus] = useState('non-union')
   const photoInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
+
+  const UNION_STATUS_LABELS: Record<string, string> = {
+    'non-union': 'Non-Union',
+    'ubcp-permit': 'UBCP Permit Member',
+    'ubcp-background': 'UBCP Background Member',
+    'ubcp-apprentice': 'UBCP Apprentice Member',
+    'ubcp-full': 'UBCP Full Member',
+    'actra-aabp': 'ACTRA Additional Background Performer',
+    'actra-additional-bg': 'ACTRA Additional Background Performer',
+    'actra-apprentice': 'ACTRA Apprentice Member',
+    'actra-full': 'ACTRA Full Member',
+  }
+  const WALLET_UNION_MEMBER_STATUSES = [
+    'ubcp-background', 'ubcp-apprentice', 'ubcp-full',
+    'actra-aabp', 'actra-additional-bg', 'actra-apprentice', 'actra-full',
+  ]
+  const isWalletUnionMember = WALLET_UNION_MEMBER_STATUSES.includes(walletUnionStatus)
+  const unionStatusLabel = UNION_STATUS_LABELS[walletUnionStatus] || walletUnionStatus
 
   const [form, setForm] = useState({
     productionName: '',
@@ -143,9 +162,17 @@ export default function VoucherWallet() {
   async function load() {
     const token = await getToken()
     if (!token) { router.push('/auth/sign-in'); return }
-    const res = await fetch('/api/voucher-wallet', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+
+    const [res, profileRes] = await Promise.all([
+      fetch('/api/voucher-wallet', { headers: { Authorization: `Bearer ${token}` } }),
+      fetch('/api/profile', { credentials: 'include' }),
+    ])
+
+    if (profileRes.ok) {
+      const profileData = await profileRes.json()
+      setWalletUnionStatus(profileData.union_status || 'non-union')
+    }
+
     if (!res.ok) { setLoading(false); return }
     const data = await res.json()
     setVouchers(data.vouchers || [])
@@ -353,6 +380,21 @@ export default function VoucherWallet() {
         </div>
 
         <div style={{ maxWidth: '700px', margin: '0 auto', padding: '20px 16px 80px' }}>
+          {isWalletUnionMember && (
+            <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #86efac', borderRadius: '12px', padding: '16px 20px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontSize: '24px' }}>🏆</span>
+              <div>
+                <div style={{ fontWeight: '700', color: '#166534', fontSize: '15px', marginBottom: '4px' }}>
+                  You are already a union member!
+                </div>
+                <div style={{ color: '#16a34a', fontSize: '13px' }}>
+                  Your union status is set to <strong>{unionStatusLabel}</strong>.
+                  You no longer need to track vouchers toward Background Membership.
+                  Your voucher history is preserved below for your records.
+                </div>
+              </div>
+            </div>
+          )}
           {/* ── SECTION 1: PROGRESS TRACKER ── */}
           {rule && calc && (
             <div style={{ backgroundColor: 'white', borderRadius: '16px', borderTop: '4px solid #F59E0B', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '16px' }}>

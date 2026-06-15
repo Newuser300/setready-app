@@ -108,6 +108,8 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [toast, setToast] = useState('')
+  const [saveMessage, setSaveMessage] = useState('')
+  const [saveError, setSaveError] = useState('')
 
   // Headshot + photos
   const [headshotUrl, setHeadshotUrl] = useState('')
@@ -209,7 +211,7 @@ export default function ProfilePage() {
   }, [router])
 
   async function loadProfile() {
-    const res = await fetch('/api/profile')
+    const res = await fetch('/api/profile', { credentials: 'include' })
     if (res.ok) {
       const p = await res.json()
       if (p) {
@@ -351,60 +353,116 @@ export default function ProfilePage() {
 
   // ── Save ────────────────────────────────────────────────────────────────────
 
-  async function save() {
+  async function handleSave() {
     setSaving(true)
-    setMessage('')
-    if (videoReelUrl && !/^https?:\/\/.+/.test(videoReelUrl)) {
-      setMessage('❌ Video reel URL must start with https://')
+    setSaveMessage('')
+    setSaveError('')
+
+    try {
+      // Upload new headshot file first if one was selected
+      if (headshotFile) {
+        const hfd = new FormData()
+        hfd.append('headshot', headshotFile)
+        hfd.append('data', JSON.stringify({}))
+        const hRes = await fetch('/api/profile', {
+          method: 'POST',
+          body: hfd,
+          credentials: 'include',
+        })
+        if (hRes.ok) {
+          const hData = await hRes.json()
+          if (hData.headshot_url) {
+            setHeadshotUrl(hData.headshot_url)
+            setHeadshotFile(null)
+          }
+        }
+      }
+
+      const profileData = {
+        bio,
+        gender,
+        date_of_birth: dob || null,
+        is_public: isPublic,
+        union_status: unionStatus,
+        member_number: memberNumber || null,
+        agency_id: agencyId || null,
+        video_reel_url: videoReelUrl || null,
+        height_feet: heightFt ? parseInt(heightFt) : null,
+        height_inches: heightIn ? parseInt(heightIn) : null,
+        height_cm: heightCm ? parseInt(heightCm) : null,
+        weight_lbs: weightLbs ? parseInt(weightLbs) : null,
+        weight_kg: weightLbs ? Math.round(parseFloat(weightLbs) * 0.453592) : null,
+        hair_color: hairColor || null,
+        hair_length: hairLength || null,
+        hair_texture: hairTexture || null,
+        eye_color: eyeColor || null,
+        body_type: bodyType || null,
+        skin_tone: skinTone || null,
+        ethnicity: ethnicities,
+        facial_hair: facialHair || null,
+        has_tattoos: hasTattoos,
+        tattoo_description: hasTattoos ? tattooDesc || null : null,
+        has_piercings: hasPiercings,
+        piercing_description: hasPiercings ? piercingDesc || null : null,
+        has_scars: hasScars,
+        scar_description: hasScars ? scarDesc || null : null,
+        shirt_size: shirtSize || null,
+        jacket_size: jacketSize || null,
+        waist_inches: pantsWaist ? parseInt(pantsWaist) : null,
+        inseam_inches: pantsInseam ? parseInt(pantsInseam) : null,
+        dress_size: dressSize || null,
+        shoe_size: shoeSize || null,
+        shoe_gender: shoeSizeGender,
+        chest_inches: chest ? parseInt(chest) : null,
+        hips_inches: hips ? parseInt(hips) : null,
+        neck_inches: neckSize ? parseFloat(neckSize) : null,
+        sleeve_inches: sleeveLength ? parseFloat(sleeveLength) : null,
+        hat_size: hatSize || null,
+        wardrobe_notes: wardrobeNotes || null,
+        accents,
+        sports,
+        dance_styles: danceStyles,
+        instruments,
+        driving_licence: driving,
+        swimming_level: swimmingLevel || null,
+        languages,
+        special_skills: otherSkills,
+        acting_experience: actingExperience || null,
+        training,
+        credits: credits || null,
+        phone: phone || null,
+        preferred_contact: preferredContact,
+        instagram: instagram || null,
+        imdb_url: imdbUrl || null,
+        headshot_url: headshotUrl || null,
+      }
+
+      console.log('Saving profile:', profileData)
+
+      const res = await fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(profileData),
+      })
+
+      const data = await res.json()
+      console.log('Save response:', res.status, data)
+
+      if (!res.ok) {
+        setSaveError(data.error || 'Failed to save')
+        return
+      }
+
+      setSaveMessage('✅ Profile saved successfully!')
+      setTimeout(() => setSaveMessage(''), 3000)
+
+    } catch (err: any) {
+      console.error('Save error:', err)
+      setSaveError('Network error. Please try again.')
+    } finally {
       setSaving(false)
-      return
     }
-    const fd = new FormData()
-    if (headshotFile) fd.append('headshot', headshotFile)
-    fd.append('data', JSON.stringify({
-      bio, gender, date_of_birth: dob || null, is_public: isPublic,
-      union_status: unionStatus, member_number: memberNumber || null,
-      agency_id: agencyId || null, video_reel_url: videoReelUrl || null,
-      height_cm: heightCm ? parseFloat(heightCm) : null,
-      height_feet: heightFt ? parseInt(heightFt) : null,
-      height_inches: heightIn ? parseInt(heightIn) : null,
-      weight_lbs: weightLbs ? parseFloat(weightLbs) : null,
-      weight_kg: weightLbs ? Math.round(parseFloat(weightLbs) * 0.453592) : null,
-      hair_color: hairColor || null, hair_length: hairLength || null,
-      hair_texture: hairTexture || null, eye_color: eyeColor || null,
-      body_type: bodyType || null, skin_tone: skinTone || null,
-      ethnicity: ethnicities, facial_hair: facialHair || null,
-      has_tattoos: hasTattoos, tattoo_description: hasTattoos ? tattooDesc || null : null,
-      has_piercings: hasPiercings, piercing_description: hasPiercings ? piercingDesc || null : null,
-      has_scars: hasScars, scar_description: hasScars ? scarDesc || null : null,
-      shirt_size: shirtSize || null, jacket_size: jacketSize || null,
-      waist_inches: pantsWaist ? parseInt(pantsWaist) : null,
-      inseam_inches: pantsInseam ? parseInt(pantsInseam) : null,
-      dress_size: dressSize || null, shoe_size: shoeSize || null, shoe_gender: shoeSizeGender,
-      neck_inches: neckSize ? parseFloat(neckSize) : null,
-      sleeve_inches: sleeveLength ? parseFloat(sleeveLength) : null,
-      chest_inches: chest ? parseInt(chest) : null,
-      hips_inches: hips ? parseInt(hips) : null,
-      hat_size: hatSize || null, wardrobe_notes: wardrobeNotes || null,
-      accents, sports, dance_styles: danceStyles, instruments,
-      driving_licence: driving, swimming_level: swimmingLevel || null,
-      languages, special_skills: otherSkills,
-      acting_experience: actingExperience || null, training, credits: credits || null,
-      phone: phone || null, preferred_contact: preferredContact,
-      instagram: instagram || null, imdb_url: imdbUrl || null,
-    }))
-    const res = await fetch('/api/profile', { method: 'POST', body: fd })
-    if (res.ok) {
-      const result = await res.json()
-      if (result.headshot_url) setHeadshotUrl(result.headshot_url)
-      setHeadshotFile(null)
-      setMessage('')
-      setToast('✅ Profile saved!')
-      setTimeout(() => setToast(''), 3000)
-    } else {
-      setMessage('❌ Failed to save. Please try again.')
-    }
-    setSaving(false)
   }
 
   // ── Loading ──────────────────────────────────────────────────────────────────
@@ -1004,14 +1062,35 @@ export default function ProfilePage() {
         </CS>
 
         {/* ── SAVE ── */}
-        {message && (
-          <div style={{ padding: '12px 16px', borderRadius: '10px', marginBottom: '12px', textAlign: 'center', fontSize: '14px', fontWeight: '600', backgroundColor: message.startsWith('❌') ? '#fef2f2' : '#f0fdf4', border: `1px solid ${message.startsWith('❌') ? '#fca5a5' : '#86efac'}`, color: message.startsWith('❌') ? '#dc2626' : '#15803d' }}>
-            {message}
+        {saveMessage && (
+          <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #86efac', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', color: '#16a34a', fontWeight: '600', fontSize: '14px' }}>
+            {saveMessage}
           </div>
         )}
 
-        <button onClick={save} disabled={saving} style={{ width: '100%', padding: '16px', backgroundColor: saving ? '#9ca3af' : '#F59E0B', color: saving ? 'white' : '#1a1a2e', fontWeight: '700', fontSize: '16px', border: 'none', borderRadius: '12px', cursor: saving ? 'not-allowed' : 'pointer' }}>
-          {saving ? 'Saving...' : '💾 Save Profile'}
+        {saveError && (
+          <div style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', color: '#DC2626', fontSize: '14px' }}>
+            {saveError}
+          </div>
+        )}
+
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          style={{
+            backgroundColor: saving ? '#9ca3af' : '#F59E0B',
+            color: '#1a1a2e',
+            border: 'none',
+            borderRadius: '10px',
+            padding: '14px 32px',
+            fontSize: '16px',
+            fontWeight: '700',
+            cursor: saving ? 'not-allowed' : 'pointer',
+            width: '100%',
+            marginTop: '8px',
+          }}
+        >
+          {saving ? 'Saving...' : 'Save Profile'}
         </button>
 
       </div>

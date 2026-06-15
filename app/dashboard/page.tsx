@@ -152,6 +152,7 @@ export default function Dashboard() {
   const [subscribeLoading, setSubscribeLoading] = useState(false)
   const [subscribeSuccess, setSubscribeSuccess] = useState(false)
   const [castingMsgCount, setCastingMsgCount] = useState(0)
+  const [dashUnionStatus, setDashUnionStatus] = useState('non-union')
 
   // Casting notifications
   const [showNotifPanel, setShowNotifPanel] = useState(false)
@@ -164,7 +165,7 @@ export default function Dashboard() {
   const [unionNotifs, setUnionNotifs] = useState<Array<{ id: string; type: string; title: string; message: string; is_read: boolean; created_at: string }>>([])
   const [unionUnread, setUnionUnread] = useState(0)
 
-  // Load message center unread count
+  // Load message center unread count + union status
   useEffect(() => {
     fetch('/api/messages/unread-count')
       .then(r => r.ok ? r.json() : { count: 0 })
@@ -173,6 +174,10 @@ export default function Dashboard() {
     fetch('/api/messages/casting-count')
       .then(r => r.ok ? r.json() : { count: 0 })
       .then(d => setCastingMsgCount(d.count || 0))
+      .catch(() => {})
+    fetch('/api/profile', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : {})
+      .then(d => setDashUnionStatus(d.union_status || 'non-union'))
       .catch(() => {})
   }, [])
 
@@ -769,6 +774,17 @@ export default function Dashboard() {
     </div>
   );
 
+  const UNION_MEMBER_STATUSES = [
+    'ubcp-background', 'ubcp-apprentice', 'ubcp-full',
+    'actra-aabp', 'actra-additional-bg', 'actra-apprentice', 'actra-full',
+  ]
+  const FULL_MEMBER_STATUSES = ['ubcp-full', 'actra-full']
+  const isUnionMember = UNION_MEMBER_STATUSES.includes(dashUnionStatus)
+  const isFullMember = FULL_MEMBER_STATUSES.includes(dashUnionStatus)
+  const visibleActions = isFullMember
+    ? quickActions.filter(a => a.label !== 'Voucher Wallet')
+    : quickActions
+
   const section1Modules = modules.filter(m => m.section === 1);
   const section2Modules = modules.filter(m => m.section === 2);
   const completedCount = section1Modules.filter(m => progress[m.id]?.completed).length;
@@ -865,8 +881,8 @@ export default function Dashboard() {
               </p>
             </div>
 
-            {/* Voucher Wallet Progress Card */}
-            {voucherSummary && voucherSummary.totalVouchers > 0 && (
+            {/* Voucher Wallet Progress Card — hidden for union members */}
+            {!isUnionMember && voucherSummary && voucherSummary.totalVouchers > 0 && (
               <div style={{ marginTop: '12px', backgroundColor: 'white', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid #F59E0B', display: 'flex', alignItems: 'center', gap: '14px' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: '700', fontSize: '13px', color: '#1a1a2e', marginBottom: '6px' }}>🎫 Union Progress</div>
@@ -976,7 +992,7 @@ export default function Dashboard() {
             gap: '10px',
             marginBottom: '16px',
           }}>
-            {quickActions.map((item) => (
+            {visibleActions.map((item) => (
               <button
                 key={item.label}
                 onClick={() => handleQuickAction(item)}
