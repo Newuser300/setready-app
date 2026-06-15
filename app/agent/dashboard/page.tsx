@@ -520,6 +520,9 @@ export default function AgentDashboardPage() {
             <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
               <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white', margin: 0, flex: 1 }}>My Roster</h1>
               <span style={{ fontSize: '13px', color: '#9ca3af' }}>{filteredRoster.length} performers</span>
+              <a href="/agent/import" style={{ padding: '9px 16px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', fontSize: '13px', borderRadius: '8px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                ⬆ Import CSV
+              </a>
             </div>
 
             {/* Add performer */}

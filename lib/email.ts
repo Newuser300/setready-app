@@ -359,6 +359,51 @@ export function bookingConfirmedPerformerEmailHtml({
 </html>`
 }
 
+export function rosterInviteEmailHtml({
+  firstName,
+  agencyName,
+  claimUrl,
+}: {
+  firstName: string
+  agencyName: string
+  claimUrl: string
+}) {
+  return `<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+      <td align="center" style="padding:40px 20px;">
+        <table width="600" style="background:white;border-radius:16px;overflow:hidden;">
+          <tr><td style="background:#1a1a2e;padding:24px 32px;"><span style="color:white;font-size:20px;font-weight:700;">🎬 SetReady</span></td></tr>
+          <tr><td style="background:#F59E0B;height:4px;"></td></tr>
+          <tr>
+            <td style="padding:32px;">
+              <h1 style="color:#1a1a2e;font-family:Georgia,serif;margin:0 0 8px;">You've been invited to SetReady</h1>
+              <p style="color:#6b7280;margin:0 0 20px;">Hi ${firstName},</p>
+              <p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 20px;">
+                <strong>${agencyName}</strong> has added you to their roster on SetReady — Canada's platform for background performers and talent agents.
+              </p>
+              <p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 24px;">
+                Click the button below to claim your profile, review the information added on your behalf, and set your own password. Your profile stays <strong>private</strong> until you confirm it — nothing is shared with casting until you do.
+              </p>
+              <a href="${claimUrl}" style="display:inline-block;background:#F59E0B;color:#1a1a2e;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">Claim My SetReady Profile</a>
+              <p style="font-size:13px;color:#9ca3af;margin:24px 0 0;line-height:1.6;">
+                This invite link is unique to you and expires after use. If you don't know <strong>${agencyName}</strong> or weren't expecting this email, you can safely ignore it — no account will be created.
+              </p>
+            </td>
+          </tr>
+          <tr><td style="padding:16px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;font-size:12px;color:#9ca3af;">
+            SetReady · <a href="https://www.setready.site" style="color:#F59E0B;">setready.site</a>
+          </td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+}
+
 export function buildAvailabilityReminderEmail({
   performerName,
   nextMonth,
