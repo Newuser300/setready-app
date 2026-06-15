@@ -1,13 +1,16 @@
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+let _client: ReturnType<typeof createBrowserClient> | null = null
 
-console.log('Supabase URL loaded:', supabaseUrl ? 'Yes' : 'No')
-console.log('Supabase Key loaded:', supabaseAnonKey ? 'Yes' : 'No')
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Check .env.local file.')
+export function getSupabaseClient() {
+  if (!_client) {
+    _client = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+  }
+  return _client
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Singleton — same instance reused across all imports
+export const supabase = getSupabaseClient()
