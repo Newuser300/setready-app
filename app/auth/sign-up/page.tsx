@@ -180,8 +180,19 @@ export default function SignUp() {
   };
 
   const provinces = [
-    'British Columbia', 'Ontario', 'Quebec (English)', 'Quebec (French)',
-    'Alberta', 'Saskatchewan', 'Manitoba', 'Maritimes', 'Newfoundland', 'Territories',
+    { code: 'BC', name: 'British Columbia' },
+    { code: 'AB', name: 'Alberta' },
+    { code: 'SK', name: 'Saskatchewan' },
+    { code: 'MB', name: 'Manitoba' },
+    { code: 'ON', name: 'Ontario' },
+    { code: 'QC', name: 'Quebec' },
+    { code: 'NS', name: 'Nova Scotia' },
+    { code: 'NB', name: 'New Brunswick' },
+    { code: 'PE', name: 'Prince Edward Island' },
+    { code: 'NL', name: 'Newfoundland & Labrador' },
+    { code: 'YT', name: 'Yukon' },
+    { code: 'NT', name: 'Northwest Territories' },
+    { code: 'NU', name: 'Nunavut' },
   ];
 
   const inputStyle: React.CSSProperties = {
@@ -401,7 +412,7 @@ export default function SignUp() {
               } as React.CSSProperties}
             >
               <option value="">Select your province</option>
-              {provinces.map(p => <option key={p} value={p}>{p}</option>)}
+              {provinces.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
             </select>
           </div>
 

@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { getUnionRules, calculateQualifyingDays, type UnionRequirement } from '@/lib/union-rules'
+import { isUBCPProvince, calculateQualifyingDays, type UnionMembershipPath } from '@/lib/union-rules'
 
 type Voucher = {
   id: string
@@ -98,7 +98,7 @@ export default function VoucherWallet() {
   const [vouchers, setVouchers] = useState<Voucher[]>([])
   const [province, setProvince] = useState('BC')
   const [provinceName, setProvinceName] = useState('British Columbia')
-  const [rules, setRules] = useState<UnionRequirement[]>([])
+  const [rule, setRule] = useState<UnionMembershipPath | null>(null)
   const [loading, setLoading] = useState(true)
   const [filterTab, setFilterTab] = useState<FilterTab>('all')
   const [showForm, setShowForm] = useState(false)
@@ -179,7 +179,7 @@ export default function VoucherWallet() {
     console.log('Voucher wallet loaded province:', data.province, '| provinceName:', data.provinceName)
     setProvince(data.province || 'BC')
     setProvinceName(data.provinceName || data.province || 'British Columbia')
-    setRules(data.rules || [])
+    setRule(data.rules || null)
     setLoading(false)
     fetchSignedUrls(data.vouchers || [])
   }
@@ -214,7 +214,6 @@ export default function VoucherWallet() {
     console.log('Province state updated:', { province, provinceName })
   }, [province])
 
-  const rule = rules[0]
   const calc = rule ? calculateQualifyingDays(vouchers, rule) : null
 
   const windowStart = calc?.windowStart
@@ -226,10 +225,10 @@ export default function VoucherWallet() {
   function getStatusMessage() {
     if (!calc || !rule) return ''
     const d = calc.qualifyingDays
-    if (d >= rule.qualifyingDaysRequired) return `🎉 YOU QUALIFY! You have enough qualifying days to apply for ${rule.unionName} membership.`
+    if (d >= rule.qualifyingDaysRequired) return `🎉 YOU QUALIFY! You have enough qualifying days to apply for ${rule.unionOrganization} membership.`
     if (d >= 14) return `⚡ One more day! You're SO close to qualifying.`
     if (d >= 10) return `🔥 Almost there! Just ${calc.daysRemaining} more qualifying days needed.`
-    if (d >= 5) return `📈 Good progress! You're ${calc.percentComplete}% of the way to ${rule?.unionName} membership.`
+    if (d >= 5) return `📈 Good progress! You're ${calc.percentComplete}% of the way to ${rule?.unionOrganization} membership.`
     return `🌱 You're just getting started. Keep booking!`
   }
 
@@ -302,15 +301,14 @@ export default function VoucherWallet() {
         const d = await res.json()
         voucher = d.voucher
         if (d.milestone && !editingId) {
-          const currentRule = rules[0]
           setMilestoneData({
             title: d.milestone.title,
             message: d.milestone.message,
             type: d.milestone.type,
             qualifyingDays: calc?.qualifyingDays || 0,
-            unionName: currentRule?.unionName || '',
-            tierName: currentRule?.targetTier || '',
-            website: currentRule?.website || '',
+            unionName: rule?.unionShortName || '',
+            tierName: rule?.entryTierName || '',
+            website: rule?.applicationUrl || '',
           })
           setShowMilestoneModal(true)
         }
@@ -400,9 +398,9 @@ export default function VoucherWallet() {
             <div style={{ backgroundColor: 'white', borderRadius: '16px', borderTop: '4px solid #F59E0B', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', padding: '24px', marginBottom: '16px' }}>
               <p style={{ fontSize: '11px', fontWeight: '800', color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>Your Path to Background Membership</p>
               <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
-                <span style={{ backgroundColor: '#fef3c7', color: '#92400e', fontWeight: '700', fontSize: '12px', padding: '4px 10px', borderRadius: '20px' }}>🍁 {provinceName}</span>
-                <span style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', fontWeight: '700', fontSize: '12px', padding: '4px 10px', borderRadius: '20px' }}>{rule.unionName}</span>
-                <span style={{ backgroundColor: '#f0fdf4', color: '#166534', fontWeight: '600', fontSize: '12px', padding: '4px 10px', borderRadius: '20px' }}>{rule.targetTier}</span>
+                <span style={{ backgroundColor: '#1a1a2e', color: 'white', fontWeight: '700', fontSize: '12px', padding: '4px 12px', borderRadius: '999px' }}>🍁 {provinceName}</span>
+                <span style={{ backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', fontSize: '12px', padding: '4px 12px', borderRadius: '999px' }}>{rule.unionOrganization}</span>
+                <span style={{ backgroundColor: '#f0fdf4', color: '#166534', fontWeight: '600', fontSize: '12px', padding: '4px 10px', borderRadius: '20px' }}>{rule.entryTierName}</span>
               </div>
 
               <div style={{ display: 'flex', gap: '28px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -426,7 +424,7 @@ export default function VoucherWallet() {
                   {getStatusMessage()}
                 </p>
                 {calc.isQualified && (
-                  <a href={rule.website} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: '10px', backgroundColor: '#16a34a', color: 'white', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '700', textDecoration: 'none' }}>
+                  <a href={rule.applicationUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: '10px', backgroundColor: '#16a34a', color: 'white', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '700', textDecoration: 'none' }}>
                     Apply for Membership →
                   </a>
                 )}
@@ -435,15 +433,20 @@ export default function VoucherWallet() {
               <div style={{ marginTop: '16px', backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '14px' }}>
                 <p style={{ fontWeight: '700', fontSize: '13px', color: '#92400e', margin: '0 0 8px' }}>⚠️ Important — Read Before You Count</p>
                 <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '12px', color: '#78350f', lineHeight: '1.8' }}>
-                  <li>Only vouchers from {rule.unionName}-signatory productions count as qualifying days.</li>
+                  <li>Only vouchers from {rule.unionOrganization}-signatory productions count as qualifying days.</li>
                   <li>Days must be within the last {rule.timeWindowLabel} to count.</li>
                   <li>Each voucher = 1 qualifying day unless you worked multiple days.</li>
-                  <li>{rule.notes}</li>
+                  <li>{rule.entryTierNotes}</li>
                 </ul>
-                <a href={rule.website} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: '8px', fontSize: '12px', color: '#92400e', fontWeight: '700' }}>
+                <a href={rule.applicationUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: '8px', fontSize: '12px', color: '#92400e', fontWeight: '700' }}>
                   Verify Requirements →
                 </a>
               </div>
+              {!isUBCPProvince(province) && (
+                <div style={{ backgroundColor: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: '8px', padding: '12px 16px', fontSize: '13px', color: '#92400e', marginTop: '8px' }}>
+                  ⚠️ Once you join ACTRA as an AABP member you cannot accept non-union work. Make sure union work is consistently available in your area before applying.
+                </div>
+              )}
             </div>
           )}
 
@@ -812,15 +815,15 @@ export default function VoucherWallet() {
               {showInfoSection && (
                 <div style={{ padding: '0 20px 20px', borderTop: '1px solid #f3f4f6' }}>
                   <div style={{ paddingTop: '16px', display: 'grid', gap: '12px' }}>
-                    <div><span style={{ fontWeight: '700', fontSize: '13px', color: '#374151' }}>Union:</span> <span style={{ fontSize: '13px', color: '#6b7280' }}>{rule.unionName}</span></div>
-                    <div><span style={{ fontWeight: '700', fontSize: '13px', color: '#374151' }}>Target Tier:</span> <span style={{ fontSize: '13px', color: '#6b7280' }}>{rule.targetTier}</span></div>
+                    <div><span style={{ fontWeight: '700', fontSize: '13px', color: '#374151' }}>Union:</span> <span style={{ fontSize: '13px', color: '#6b7280' }}>{rule.unionOrganization}</span></div>
+                    <div><span style={{ fontWeight: '700', fontSize: '13px', color: '#374151' }}>Entry Tier:</span> <span style={{ fontSize: '13px', color: '#6b7280' }}>{rule.entryTierName}</span></div>
                     <div><span style={{ fontWeight: '700', fontSize: '13px', color: '#374151' }}>Days Required:</span> <span style={{ fontSize: '13px', color: '#6b7280' }}>{rule.qualifyingDaysRequired} qualifying days within {rule.timeWindowLabel}</span></div>
-                    <div><span style={{ fontWeight: '700', fontSize: '13px', color: '#374151' }}>Notes:</span> <span style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.6', display: 'block', marginTop: '4px' }}>{rule.notes}</span></div>
-                    {rule.nextTier && (
-                      <div><span style={{ fontWeight: '700', fontSize: '13px', color: '#374151' }}>Next Tier:</span> <span style={{ fontSize: '13px', color: '#6b7280' }}>{rule.nextTier} — {rule.nextTierRequirement}</span></div>
+                    <div><span style={{ fontWeight: '700', fontSize: '13px', color: '#374151' }}>Notes:</span> <span style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.6', display: 'block', marginTop: '4px' }}>{rule.entryTierNotes}</span></div>
+                    {rule.nextTierName && (
+                      <div><span style={{ fontWeight: '700', fontSize: '13px', color: '#374151' }}>Next Tier:</span> <span style={{ fontSize: '13px', color: '#6b7280' }}>{rule.nextTierName} — {rule.nextTierRequirement}</span></div>
                     )}
-                    <a href={rule.website} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#1d4ed8', fontSize: '13px', fontWeight: '700', textDecoration: 'none' }}>
-                      Visit {rule.unionName} →
+                    <a href={rule.applicationUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#1d4ed8', fontSize: '13px', fontWeight: '700', textDecoration: 'none' }}>
+                      Visit {rule.unionOrganization} →
                     </a>
                   </div>
                 </div>
@@ -875,12 +878,12 @@ export default function VoucherWallet() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {milestoneData.type === 'qualified' && (
                   <a
-                    href={(province === 'BC' || province === 'YT') ? 'https://ubcpactra.ca/membership/' : 'https://www.actra.ca/membership/how-to-join/'}
+                    href={rule?.applicationUrl || ''}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ display: 'block', padding: '13px', backgroundColor: '#16a34a', color: 'white', fontWeight: '700', fontSize: '15px', borderRadius: '12px', textDecoration: 'none' }}
                   >
-                    {(province === 'BC' || province === 'YT') ? 'Apply at UBCP/ACTRA →' : 'Apply at ACTRA →'}
+                    {isUBCPProvince(province) ? 'Apply at UBCP/ACTRA →' : 'Apply at ACTRA →'}
                   </a>
                 )}
                 <button

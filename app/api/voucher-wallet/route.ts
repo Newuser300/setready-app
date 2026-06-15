@@ -35,13 +35,6 @@ async function checkAndCreateMilestone(userId: string, qualifyingDays: number, u
   }
 }
 
-const PROVINCE_NAMES: Record<string, string> = {
-  BC: 'British Columbia', AB: 'Alberta', ON: 'Ontario', QC: 'Québec',
-  SK: 'Saskatchewan', MB: 'Manitoba', NS: 'Nova Scotia', NB: 'New Brunswick',
-  PE: 'Prince Edward Island', NL: 'Newfoundland & Labrador',
-  NT: 'Northwest Territories', NU: 'Nunavut', YT: 'Yukon',
-}
-
 export async function GET(req: NextRequest) {
   const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -53,9 +46,8 @@ export async function GET(req: NextRequest) {
     .maybeSingle()
 
   console.log('Voucher wallet province fetch (GET):', { userId: user.id, userData, userError })
-  const province = userData?.province || 'BC'
-  console.log('Province being used:', province)
-  const provinceName = PROVINCE_NAMES[province] || province
+  const userProvince = (userData?.province || 'BC').trim()
+  console.log('Province code used:', userProvince)
 
   const { data: vouchers, error } = await supabaseAdmin
     .from('union_vouchers')
@@ -65,13 +57,23 @@ export async function GET(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const rules = getUnionRules(province)
-  const progress = rules.map(rule => ({
-    rule,
-    ...calculateQualifyingDays(vouchers || [], rule),
-  }))
+  const rules = getUnionRules(userProvince)
+  console.log('Union rules:', { province: userProvince, union: rules.unionShortName, entryTier: rules.entryTierName })
 
-  return NextResponse.json({ vouchers: vouchers || [], progress, rules, province, provinceName })
+  const progress = {
+    rule: rules,
+    ...calculateQualifyingDays(vouchers || [], rules),
+  }
+
+  return NextResponse.json({
+    vouchers: vouchers || [],
+    progress,
+    rules,
+    province: rules.provinceCode,
+    provinceName: rules.provinceName,
+    unionName: rules.unionShortName,
+    unionOrganization: rules.unionOrganization,
+  })
 }
 
 export async function POST(req: NextRequest) {
@@ -121,11 +123,8 @@ export async function POST(req: NextRequest) {
     .eq('user_id', user.id)
 
   const rules = getUnionRules(province)
-  const rule = rules[0]
-  if (rule) {
-    const calc = calculateQualifyingDays(allVouchers || [], rule)
-    await checkAndCreateMilestone(user.id, calc.qualifyingDays, rule.unionName, rule.targetTier, rule.qualifyingDaysRequired)
-  }
+  const calc = calculateQualifyingDays(allVouchers || [], rules)
+  await checkAndCreateMilestone(user.id, calc.qualifyingDays, rules.unionShortName, rules.entryTierName, rules.qualifyingDaysRequired)
 
   const { data: latestNotif } = await supabaseAdmin
     .from('union_notifications')
