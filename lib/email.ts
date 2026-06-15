@@ -304,3 +304,100 @@ export function agentConfirmationEmailHtml({
 </body>
 </html>`
 }
+
+export function bookingConfirmedPerformerEmailHtml({
+  performerName,
+  productionName,
+  shootDate,
+  callTime,
+  location,
+  roleType,
+  rate,
+}: {
+  performerName: string
+  productionName: string
+  shootDate: string
+  callTime?: string | null
+  location?: string | null
+  roleType?: string | null
+  rate?: string | null
+}) {
+  return `<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+      <td align="center" style="padding:40px 20px;">
+        <table width="600" style="background:white;border-radius:16px;overflow:hidden;">
+          <tr><td style="background:#1a1a2e;padding:24px 32px;"><span style="color:white;font-size:20px;font-weight:700;">🎬 SetReady</span></td></tr>
+          <tr><td style="background:#22c55e;height:4px;"></td></tr>
+          <tr>
+            <td style="padding:32px;">
+              <h1 style="color:#1a1a2e;font-family:Georgia,serif;margin:0 0 8px;">✅ You're Booked!</h1>
+              <p style="color:#6b7280;margin:0 0 20px;">Hello ${performerName},</p>
+              <p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 20px;">
+                Congratulations — your booking has been confirmed for <strong>${productionName}</strong>!
+              </p>
+              <table style="background:#f9fafb;border-radius:10px;padding:16px 20px;width:100%;border:1px solid #e5e7eb;border-collapse:separate;border-spacing:0;">
+                <tr><td style="padding:6px 0;font-size:13px;color:#6b7280;font-weight:600;">Production</td><td style="padding:6px 0;font-size:14px;color:#1a1a2e;font-weight:700;">${productionName}</td></tr>
+                <tr><td style="padding:6px 0;font-size:13px;color:#6b7280;font-weight:600;">Date</td><td style="padding:6px 0;font-size:14px;color:#1a1a2e;font-weight:700;">${shootDate}</td></tr>
+                ${callTime ? `<tr><td style="padding:6px 0;font-size:13px;color:#6b7280;font-weight:600;">Call Time</td><td style="padding:6px 0;font-size:14px;color:#1a1a2e;font-weight:700;">${callTime}</td></tr>` : ''}
+                ${location ? `<tr><td style="padding:6px 0;font-size:13px;color:#6b7280;font-weight:600;">Location</td><td style="padding:6px 0;font-size:14px;color:#1a1a2e;font-weight:700;">${location}</td></tr>` : ''}
+                ${roleType ? `<tr><td style="padding:6px 0;font-size:13px;color:#6b7280;font-weight:600;">Role</td><td style="padding:6px 0;font-size:14px;color:#1a1a2e;font-weight:700;">${roleType}</td></tr>` : ''}
+                ${rate ? `<tr><td style="padding:6px 0;font-size:13px;color:#6b7280;font-weight:600;">Rate</td><td style="padding:6px 0;font-size:14px;color:#1a1a2e;font-weight:700;">${rate}</td></tr>` : ''}
+              </table>
+              <p style="font-size:13px;color:#9ca3af;line-height:1.6;margin-top:20px;">Your agent or the casting director will contact you with further details. Please ensure your availability is up to date.</p>
+              <a href="https://www.setready.site/dashboard" style="display:inline-block;background:#F59E0B;color:#1a1a2e;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;margin-top:20px;">View Your Dashboard</a>
+            </td>
+          </tr>
+          <tr><td style="padding:16px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;font-size:12px;color:#9ca3af;">SetReady · <a href="https://www.setready.site" style="color:#F59E0B;">setready.site</a></td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+}
+
+export function buildAvailabilityReminderEmail({
+  performerName,
+  nextMonth,
+}: {
+  performerName: string
+  nextMonth: string
+}) {
+  return `<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+      <td align="center" style="padding:40px 20px;">
+        <table width="600" style="background:white;border-radius:16px;overflow:hidden;">
+          <tr><td style="background:#1a1a2e;padding:24px 32px;"><span style="color:white;font-size:20px;font-weight:700;">📅 SetReady</span></td></tr>
+          <tr><td style="background:#F59E0B;height:4px;"></td></tr>
+          <tr>
+            <td style="padding:32px;">
+              <h1 style="color:#1a1a2e;font-family:Georgia,serif;margin:0 0 8px;">Update Your Availability</h1>
+              <p style="color:#6b7280;margin:0 0 20px;">Hello ${performerName},</p>
+              <p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 20px;">
+                It's time to update your availability for <strong>${nextMonth}</strong>. Casting directors and agents search for available performers daily — keeping your calendar current helps you get booked.
+              </p>
+              <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+                <p style="font-size:14px;color:#92400e;margin:0;line-height:1.6;">
+                  💡 <strong>Tip:</strong> Mark yourself as available for the days you're free in ${nextMonth}. It only takes 2 minutes!
+                </p>
+              </div>
+              <a href="https://www.setready.site/availability" style="display:inline-block;background:#F59E0B;color:#1a1a2e;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">Update My Availability</a>
+            </td>
+          </tr>
+          <tr><td style="padding:16px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;font-size:12px;color:#9ca3af;">
+            SetReady · <a href="https://www.setready.site" style="color:#F59E0B;">setready.site</a>
+            <br><a href="https://www.setready.site/api/unsubscribe?type=reminders" style="color:#9ca3af;">Unsubscribe from reminders</a>
+          </td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+}

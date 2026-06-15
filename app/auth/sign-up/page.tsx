@@ -13,6 +13,7 @@ export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [province, setProvince] = useState('');
+  const [city, setCity] = useState('');
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -100,7 +101,7 @@ export default function SignUp() {
       email,
       password,
       options: {
-        data: { name, province, age_verified: true },
+        data: { name, province, city, age_verified: true },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
@@ -134,6 +135,7 @@ export default function SignUp() {
             email,
             name,
             province,
+            city: city || null,
             referred_by: referralCode || null,
           }),
         });
@@ -147,6 +149,15 @@ export default function SignUp() {
         }
 
         sessionStorage.removeItem('referral_code');
+
+        // Auto-detect film region from city
+        if (city.trim()) {
+          await fetch('/api/performers/location', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ city: city.trim() }),
+          }).catch(() => {})
+        }
 
         if (promoCode.trim()) {
           await fetch('/api/promo/apply', {
@@ -414,6 +425,21 @@ export default function SignUp() {
               <option value="">Select your province</option>
               {provinces.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
             </select>
+          </div>
+
+          {/* City */}
+          <div>
+            <label style={labelStyle}>
+              City{' '}
+              <span style={{ color: '#9ca3af', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(helps casting directors find local talent)</span>
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. Vancouver, Calgary, Toronto"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              style={inputStyle}
+            />
           </div>
 
           {/* Referral Code */}

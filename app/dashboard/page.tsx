@@ -1285,46 +1285,39 @@ export default function Dashboard() {
             </div>
           )}
 
-          <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '24px 0' }} />
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', margin: '28px 0' }} />
 
-          {/* MY CERTIFICATES SECTION */}
-          <div className="mt-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="text-3xl">🏆</div>
+          {/* MY CERTIFICATES */}
+          <div style={{ marginBottom: '28px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ fontSize: '28px' }}>🏆</div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-800">My Certificates</h2>
-                <p className="text-gray-500 text-sm">Your earned completion certificates</p>
+                <div style={{ fontSize: '18px', fontWeight: '800', color: 'white' }}>My Certificates</div>
+                <div style={{ fontSize: '12px', color: '#9ca3af' }}>Earned completion certificates</div>
               </div>
             </div>
             {loadingCertificates ? (
-              <div className="text-center py-8 text-gray-400">Loading certificates...</div>
+              <div style={{ textAlign: 'center', padding: '32px', color: '#9ca3af' }}>Loading...</div>
             ) : certificates.length === 0 ? (
-              <div className="bg-gray-50 rounded-2xl p-8 text-center border border-dashed border-gray-300">
-                <div className="text-4xl mb-3">🏅</div>
-                <p className="text-gray-500">Complete modules to earn certificates</p>
+              <div style={{ backgroundColor: '#1a1a2e', borderRadius: '16px', padding: '32px', textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                <div style={{ fontSize: '36px', marginBottom: '8px' }}>🏅</div>
+                <div style={{ color: '#9ca3af', fontSize: '14px' }}>Complete modules to earn certificates</div>
               </div>
             ) : (
-              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
                 {certificates.map((cert) => (
-                  <div key={cert.id} className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm flex flex-col gap-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="font-semibold text-gray-800 text-sm leading-snug">
-                        {shortName(cert.module_name ?? cert.section_name)}
-                      </p>
-                      <span className="text-2xl flex-shrink-0">🏆</span>
+                  <div key={cert.id} style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '16px', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                      <div style={{ fontWeight: '700', color: 'white', fontSize: '13px', lineHeight: '1.4' }}>{shortName(cert.module_name ?? cert.section_name)}</div>
+                      <span style={{ fontSize: '22px', flexShrink: 0 }}>🏆</span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-gray-500">
-                      <span className="bg-green-100 text-green-700 font-medium px-2 py-0.5 rounded-full">{cert.score}%</span>
-                      <span>{formatDate(cert.issued_at)}</span>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <span style={{ padding: '2px 8px', backgroundColor: 'rgba(34,197,94,0.15)', color: '#22c55e', borderRadius: '20px', fontSize: '11px', fontWeight: '700' }}>{cert.score}%</span>
+                      <span style={{ fontSize: '11px', color: '#6b7280' }}>{formatDate(cert.issued_at)}</span>
                     </div>
                     {cert.pdf_url && (
-                      <a
-                        href={cert.pdf_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
-                      >
-                        ⬇️ Download
+                      <a href={cert.pdf_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#F59E0B', fontWeight: '600', textDecoration: 'none' }}>
+                        ⬇️ Download PDF
                       </a>
                     )}
                   </div>
@@ -1333,9 +1326,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '32px 0 0' }} />
-
-          {/* CUSTOMER PORTAL BUTTON - 30-day minimum commitment lock */}
+          {/* MANAGE BILLING */}
           {isSubscribed && (() => {
             const startedMs = subscriptionStartedAt ? new Date(subscriptionStartedAt).getTime() : null;
             const canCancel = startedMs ? (Date.now() - startedMs) >= 30 * 24 * 60 * 60 * 1000 : true;
@@ -1343,39 +1334,27 @@ export default function Dashboard() {
               ? new Date(startedMs + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })
               : null;
             return (
-              <div className="mt-3 text-center">
+              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
                 {canCancel ? (
-                  <button
-                    onClick={handleManageBilling}
-                    disabled={loadingPortal}
-                    className="text-sm text-blue-600 hover:text-blue-800 transition underline"
-                  >
+                  <button onClick={handleManageBilling} disabled={loadingPortal} style={{ fontSize: '13px', color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
                     {loadingPortal ? 'Loading...' : 'Manage Billing →'}
                   </button>
                 ) : (
-                  <div className="inline-block text-center">
-                    <div className="text-xs text-gray-400 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 max-w-xs">
-                      <span className="text-gray-500 font-semibold">🔒 30-Day Commitment Active</span>
-                      <br />
-                      <span className="text-gray-400">Billing management available {cancelUnlockDate ? `on ${cancelUnlockDate}` : 'after 30 days'}</span>
-                    </div>
+                  <div style={{ display: 'inline-block', backgroundColor: '#1a1a2e', borderRadius: '10px', padding: '10px 16px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '600' }}>🔒 30-Day Commitment Active</div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>Billing available {cancelUnlockDate ? `on ${cancelUnlockDate}` : 'after 30 days'}</div>
                   </div>
                 )}
               </div>
             );
           })()}
 
-          {/* Footer Links */}
-          <div className="mt-12 pt-6 border-t border-gray-200 flex justify-center gap-6 text-sm text-gray-400">
-            <Link href="/privacy" className="hover:text-gray-600 transition">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-gray-600 transition">Terms of Service</Link>
-            <button
-              onClick={async () => {
-                await supabase.auth.signOut();
-                router.push('/auth/sign-in');
-              }}
-              className="hover:text-gray-600 transition"
-            >
+          {/* Footer */}
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px', display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
+            <Link href="/privacy" style={{ fontSize: '12px', color: '#6b7280', textDecoration: 'none' }}>Privacy Policy</Link>
+            <Link href="/terms" style={{ fontSize: '12px', color: '#6b7280', textDecoration: 'none' }}>Terms of Service</Link>
+            <Link href="/donate" style={{ fontSize: '12px', color: '#F59E0B', fontWeight: '600', textDecoration: 'none' }}>☕ Support SetReady</Link>
+            <button onClick={async () => { await supabase.auth.signOut(); router.push('/auth/sign-in'); }} style={{ fontSize: '12px', color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer' }}>
               Sign Out
             </button>
           </div>

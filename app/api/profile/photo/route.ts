@@ -13,6 +13,9 @@ const TYPE_TO_COLUMN: Record<string, string> = {
   full_body_side: 'photo_full_body_side',
   additional: 'photo_additional',
   additional_2: 'photo_additional_2',
+  headshot_alt: 'headshot_alt',
+  wardrobe_formal: 'wardrobe_formal',
+  wardrobe_casual: 'wardrobe_casual',
 }
 
 async function getUser() {

@@ -2,64 +2,105 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Logo from '@/components/Logo'
+import { FILM_REGION_LIST, getRegionName, unionBadge, unionTierLabel } from '@/lib/film-regions'
 
-// ─── Types ──────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-type RosterEntry = {
+interface RosterPerformer {
   id: string
   status: string
   user_id: string
-  users: { id: string; email: string; raw_user_meta_data: any } | null
+  users: { id: string; email: string; raw_user_meta_data: { full_name?: string } } | null
   performer_profiles: {
-    headshot_url?: string
-    union_status?: string
-    height_cm?: number
-    hair_color?: string
-    eye_color?: string
-    gender?: string
+    headshot_url?: string | null
+    union_status?: string | null
+    union_priority?: number | null
+    height_cm?: number | null
+    hair_color?: string | null
+    eye_color?: string | null
+    gender?: string | null
+    film_region_code?: string | null
+    special_skills?: string[] | null
+    bio?: string | null
+    age?: number | null
   } | null
   weekAvailability: { date: string; status: string | null }[]
+  tags?: string[]
+  privateNote?: string
 }
 
-type CastingRequest = {
+interface CastingRequest {
   id: string
   production_name: string
+  project_type?: string | null
   shoot_date: string
-  location: string
+  call_time?: string | null
+  location?: string | null
+  shoot_region_code?: string | null
   role_type: string
-  gender_needed?: string
-  age_min?: number
-  age_max?: number
-  union_status?: string
   performers_needed: number
-  rate?: string
-  rate_notes?: string
-  description?: string
+  gender_needed?: string | null
+  age_min?: number | null
+  age_max?: number | null
+  union_status?: string | null
+  rate?: string | null
+  rate_notes?: string | null
+  description?: string | null
+  wardrobe_notes?: string | null
   status: string
   mySubmissionCount: number
-  casting_directors?: { name: string; company: string }
+  casting_directors?: { name: string; company: string } | null
 }
 
-type Submission = {
+interface Submission {
   id: string
   status: string
   submitted_at: string
-  casting_requests: { production_name: string; shoot_date: string; location: string; role_type: string } | null
-  performer_profiles: { headshot_url?: string } | null
-  users: { id: string; email: string; raw_user_meta_data: any } | null
+  notes?: string | null
+  casting_requests: { production_name: string; shoot_date: string; location?: string | null; role_type: string } | null
+  performer_profiles: { headshot_url?: string | null; union_status?: string | null; union_priority?: number | null } | null
+  users: { id: string; email: string; raw_user_meta_data: { full_name?: string } } | null
 }
 
-type Notification = {
+interface Commission {
   id: string
-  type: string
-  title: string
-  message: string
-  is_read: boolean
-  created_at: string
-  action_url?: string
+  booking_date: string
+  production_name: string
+  performer_name: string
+  gross_pay: number
+  commission_rate: number
+  commission_amount: number
+  paid: boolean
+  notes?: string | null
 }
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+interface AvailCheck {
+  id: string
+  check_id: string
+  performer_id: string
+  message: string
+  date_needed: string
+  responded: boolean
+  available?: boolean | null
+  users: { email: string; raw_user_meta_data: { full_name?: string } } | null
+}
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const TABS = ['Overview','Roster','Union','Requests','Submissions','Calendar','Financials','Avail','Settings'] as const
+type Tab = typeof TABS[number]
+
+const TAB_LABELS: Record<Tab, string> = {
+  Overview: '🏠 Overview',
+  Roster: '👥 My Roster',
+  Union: '🏆 Union Members',
+  Requests: '📋 Casting Requests',
+  Submissions: '📤 Submissions',
+  Calendar: '📅 Booking Calendar',
+  Financials: '💰 Financials',
+  Avail: '✅ Avail Check',
+  Settings: '⚙️ Settings',
+}
 
 const AVAIL_COLOR: Record<string, string> = {
   available: '#22c55e',
@@ -68,1047 +109,871 @@ const AVAIL_COLOR: Record<string, string> = {
   tentative: '#f59e0b',
 }
 
-const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
-  submitted:   { bg: '#f3f4f6', color: '#374151' },
-  shortlisted: { bg: '#fef9c3', color: '#854d0e' },
-  confirmed:   { bg: '#dcfce7', color: '#15803d' },
-  rejected:    { bg: '#fee2e2', color: '#b91c1c' },
-  pending:     { bg: '#eff6ff', color: '#1d4ed8' },
+const STATUS_PILL: Record<string, { bg: string; color: string }> = {
+  submitted:   { bg: 'rgba(107,114,128,0.2)',  color: '#9ca3af' },
+  in_review:   { bg: 'rgba(59,130,246,0.2)',   color: '#60a5fa' },
+  shortlisted: { bg: 'rgba(245,158,11,0.2)',   color: '#F59E0B' },
+  confirmed:   { bg: 'rgba(34,197,94,0.2)',    color: '#22c55e' },
+  rejected:    { bg: 'rgba(239,68,68,0.2)',    color: '#ef4444' },
+  waitlisted:  { bg: 'rgba(139,92,246,0.2)',   color: '#a78bfa' },
 }
 
-const NAV = [
-  { key: 'overview',       icon: '🏠', label: 'Dashboard' },
-  { key: 'roster',         icon: '👥', label: 'My Roster' },
-  { key: 'requests',       icon: '📋', label: 'Casting Requests' },
-  { key: 'submissions',    icon: '📨', label: 'Submissions' },
-  { key: 'availability',   icon: '📅', label: 'Availability' },
-  { key: 'notifications',  icon: '🔔', label: 'Notifications' },
-  { key: 'messages',       icon: '📬', label: 'Messages', href: '/agent/messages' },
-  { key: 'settings',       icon: '⚙️', label: 'Settings' },
-]
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function displayName(user: RosterEntry['users'] | null) {
-  if (!user) return 'Unknown'
-  return user.raw_user_meta_data?.full_name || user.raw_user_meta_data?.name || user.email?.split('@')[0] || 'Performer'
+function pName(r: RosterPerformer) {
+  return r.users?.raw_user_meta_data?.full_name || r.users?.email?.split('@')[0] || 'Performer'
+}
+function sName(s: Submission) {
+  return s.users?.raw_user_meta_data?.full_name || s.users?.email?.split('@')[0] || 'Performer'
+}
+function fmtDate(d: string) {
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' })
+}
+function fmtMoney(n: number) {
+  return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+function daysUntil(d: string) {
+  return Math.ceil((new Date(d + 'T00:00:00').getTime() - new Date().setHours(0,0,0,0)) / 86400000)
 }
 
-function initials(name: string) {
-  return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-}
+// ─── Roster Performer Card ────────────────────────────────────────────────────
 
-function fmtHeight(cm?: number) {
-  if (!cm) return '—'
-  const totalIn = Math.round(cm / 2.54)
-  return `${Math.floor(totalIn / 12)}'${totalIn % 12}"`
-}
+function RosterCard({ r, onSelect }: { r: RosterPerformer; onSelect: () => void }) {
+  const name = pName(r)
+  const badge = unionBadge(r.performer_profiles?.union_status)
+  const tier = unionTierLabel(r.performer_profiles?.union_status)
+  const today = new Date().toISOString().slice(0, 10)
+  const todayAvail = r.weekAvailability?.find(d => d.date === today)
+  const availDots = (r.weekAvailability || []).slice(0, 7)
 
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime()
-  const m = Math.floor(diff / 60000)
-  if (m < 1) return 'just now'
-  if (m < 60) return `${m}m ago`
-  const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h ago`
-  return `${Math.floor(h / 24)}d ago`
-}
-
-// ─── Sub-components ──────────────────────────────────────────────────────────
-
-function StatCard({ icon, label, value, color }: { icon: string; label: string; value: number | string; color?: string }) {
   return (
-    <div style={{
-      backgroundColor: 'white', borderRadius: '14px', padding: '16px 20px',
-      boxShadow: '0 1px 4px rgba(0,0,0,0.08)', display: 'flex',
-      alignItems: 'center', gap: '14px'
-    }}>
-      <div style={{ fontSize: '28px', lineHeight: 1 }}>{icon}</div>
-      <div>
-        <p style={{ margin: 0, fontSize: '24px', fontWeight: '800', color: color || '#1a1a2e' }}>{value}</p>
-        <p style={{ margin: 0, fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>{label}</p>
+    <div onClick={onSelect} style={{ backgroundColor: '#1e1e35', borderRadius: '14px', overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.06)', transition: 'transform 0.15s' }}
+      onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-2px)')}
+      onMouseLeave={e => (e.currentTarget.style.transform = 'none')}>
+      <div style={{ aspectRatio: '3/4', backgroundColor: '#0f0f1a', position: 'relative', overflow: 'hidden' }}>
+        {r.performer_profiles?.headshot_url
+          ? <img src={r.performer_profiles.headshot_url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px' }}>👤</div>
+        }
+        <div style={{ position: 'absolute', top: '6px', left: '6px', fontSize: '16px' }}>{badge}</div>
+        {todayAvail?.status && (
+          <div style={{ position: 'absolute', top: '6px', right: '6px', width: '10px', height: '10px', borderRadius: '50%', backgroundColor: AVAIL_COLOR[todayAvail.status] || '#6b7280', boxShadow: `0 0 6px ${AVAIL_COLOR[todayAvail.status] || '#6b7280'}` }} />
+        )}
+      </div>
+      <div style={{ padding: '8px 10px' }}>
+        <div style={{ fontWeight: '700', fontSize: '13px', color: 'white', marginBottom: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</div>
+        <div style={{ fontSize: '11px', color: '#F59E0B', fontWeight: '600', marginBottom: '4px' }}>{tier}</div>
+        {r.performer_profiles?.film_region_code && <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px' }}>📍 {getRegionName(r.performer_profiles.film_region_code)}</div>}
+        {/* 7-day avail dots */}
+        <div style={{ display: 'flex', gap: '2px' }}>
+          {availDots.map(d => (
+            <div key={d.date} title={`${d.date}: ${d.status || 'unknown'}`} style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: d.status ? (AVAIL_COLOR[d.status] || '#6b7280') : '#374151' }} />
+          ))}
+        </div>
+        {r.tags?.length ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', marginTop: '5px' }}>
+            {r.tags.slice(0, 2).map(t => <span key={t} style={{ fontSize: '9px', padding: '1px 5px', backgroundColor: 'rgba(59,130,246,0.2)', color: '#60a5fa', borderRadius: '10px' }}>{t}</span>)}
+          </div>
+        ) : null}
       </div>
     </div>
   )
 }
 
-function HeadshotCircle({ url, name, size = 44 }: { url?: string; name: string; size?: number }) {
-  if (url) {
-    return (
-      <img src={url} alt={name} style={{
-        width: size, height: size, borderRadius: '50%',
-        objectFit: 'cover', flexShrink: 0, border: '2px solid #e5e7eb'
-      }} />
-    )
-  }
-  return (
-    <div style={{
-      width: size, height: size, borderRadius: '50%', flexShrink: 0,
-      backgroundColor: '#F59E0B', display: 'flex',
-      alignItems: 'center', justifyContent: 'center',
-      fontWeight: '700', fontSize: size * 0.35, color: '#1a1a2e'
-    }}>
-      {initials(name)}
-    </div>
-  )
-}
-
-function Badge({ text, style }: { text: string; style?: React.CSSProperties }) {
-  return (
-    <span style={{
-      display: 'inline-block', padding: '2px 8px',
-      borderRadius: '20px', fontSize: '11px', fontWeight: '600',
-      backgroundColor: '#f3f4f6', color: '#374151',
-      ...style
-    }}>
-      {text}
-    </span>
-  )
-}
-
-// ─── Main dashboard ──────────────────────────────────────────────────────────
+// ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function AgentDashboardPage() {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState('overview')
-  const [isMobile, setIsMobile] = useState(
-    typeof window !== 'undefined' && window.innerWidth < 768
-  )
-
-  // Data
-  const [roster, setRoster] = useState<RosterEntry[]>([])
-  const [requests, setRequests] = useState<CastingRequest[]>([])
-  const [submissions, setSubmissions] = useState<Submission[]>([])
-  const [notifications, setNotifications] = useState<Notification[]>([])
   const [agentName, setAgentName] = useState('')
-  const [agencyName, setAgencyName] = useState('')
+  const [agencyId, setAgencyId] = useState('')
+  const [activeTab, setActiveTab] = useState<Tab>('Overview')
+  const [isMobile, setIsMobile] = useState(false)
 
-  // Pro status
-  const [isPro, setIsPro] = useState(false)
-  const [rosterLimit, setRosterLimit] = useState<number | null>(25)
+  // Overview stats
+  const [stats, setStats] = useState({ rosterCount: 0, pendingRequests: 0, pendingSubmissions: 0, monthCommissions: 0 })
 
-  // Loading
-  const [loadingRoster, setLoadingRoster] = useState(false)
-  const [loadingRequests, setLoadingRequests] = useState(false)
-  const [loadingSubmissions, setLoadingSubmissions] = useState(false)
-
-  // Roster UI
-  const [rosterSearch, setRosterSearch] = useState('')
-  const [rosterFilter, setRosterFilter] = useState('')
+  // Roster
+  const [roster, setRoster] = useState<RosterPerformer[]>([])
+  const [rosterLoading, setRosterLoading] = useState(false)
   const [addEmail, setAddEmail] = useState('')
-  const [addError, setAddError] = useState('')
   const [addLoading, setAddLoading] = useState(false)
-  const [addSuccess, setAddSuccess] = useState('')
+  const [addError, setAddError] = useState('')
+  const [selectedPerformer, setSelectedPerformer] = useState<RosterPerformer | null>(null)
+  const [noteText, setNoteText] = useState('')
+  const [noteLoading, setNoteLoading] = useState(false)
+  const [tagInput, setTagInput] = useState('')
+  const [allTags, setAllTags] = useState<Record<string, string[]>>({})
+  const [rosterFilter, setRosterFilter] = useState('')
+  const [rosterRegion, setRosterRegion] = useState('')
 
-  // Submit performers modal
-  const [submitModal, setSubmitModal] = useState<CastingRequest | null>(null)
-  const [submitIds, setSubmitIds] = useState<string[]>([])
-  const [submitting, setSubmitting] = useState(false)
-  const [submitMsg, setSubmitMsg] = useState('')
-  const [submitNotes, setSubmitNotes] = useState('')
-  const [submitSearch, setSubmitSearch] = useState('')
+  // Requests
+  const [requests, setRequests] = useState<CastingRequest[]>([])
+  const [reqLoading, setReqLoading] = useState(false)
+  const [expandedReq, setExpandedReq] = useState<string | null>(null)
+  const [submittingFor, setSubmittingFor] = useState<{ reqId: string; performerId: string; notes: string } | null>(null)
 
-  // Submission filters
-  const [subStatusFilter, setSubStatusFilter] = useState('')
+  // Submissions
+  const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [subLoading, setSubLoading] = useState(false)
+  const [subFilter, setSubFilter] = useState<'all'|'submitted'|'shortlisted'|'confirmed'|'rejected'>('all')
+
+  // Commissions
+  const [commissions, setCommissions] = useState<Commission[]>([])
+  const [commLoading, setCommLoading] = useState(false)
+  const [commMonthTotal, setCommMonthTotal] = useState(0)
+  const [commUnpaidTotal, setCommUnpaidTotal] = useState(0)
+  const [newComm, setNewComm] = useState({ booking_date: '', production_name: '', performer_name: '', gross_pay: '', commission_rate: '15', notes: '' })
+  const [addingComm, setAddingComm] = useState(false)
+
+  // Availability check
+  const [availDate, setAvailDate] = useState('')
+  const [availMessage, setAvailMessage] = useState('')
+  const [availPerformerIds, setAvailPerformerIds] = useState<string[]>([])
+  const [availSending, setAvailSending] = useState(false)
+  const [availCheckId, setAvailCheckId] = useState('')
+  const [availResponses, setAvailResponses] = useState<AvailCheck[]>([])
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768)
-    window.addEventListener('resize', handler)
-    return () => window.removeEventListener('resize', handler)
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
   }, [])
 
-  // Load session info
   useEffect(() => {
-    fetch('/api/agent/auth', { method: 'GET' }).then(async res => {
-      if (!res.ok) { router.push('/agent/login'); return }
-      const d = await res.json()
-      setAgentName(d.name || '')
-      setAgencyName(d.agencyName || '')
-    }).catch(() => router.push('/agent/login'))
-
-    fetch('/api/agent/pro-status').then(async res => {
-      if (!res.ok) return
-      const d = await res.json()
-      setIsPro(d.isPro)
-      setRosterLimit(d.rosterLimit)
+    fetch('/api/agent/auth').then(r => r.ok ? r.json() : null).then(d => {
+      if (!d) { router.replace('/agent/login'); return }
+      setAgentName(d.name || d.email)
+      setAgencyId(d.agencyId || '')
     })
   }, [router])
 
-  const loadRoster = useCallback(async () => {
-    setLoadingRoster(true)
-    const res = await fetch('/api/agent/roster')
-    if (res.ok) setRoster(await res.json())
-    setLoadingRoster(false)
-  }, [])
-
-  const loadRequests = useCallback(async () => {
-    setLoadingRequests(true)
-    const res = await fetch('/api/agent/requests')
-    if (res.ok) setRequests(await res.json())
-    setLoadingRequests(false)
-  }, [])
-
-  const loadSubmissions = useCallback(async () => {
-    setLoadingSubmissions(true)
-    const res = await fetch('/api/agent/submissions')
-    if (res.ok) setSubmissions(await res.json())
-    setLoadingSubmissions(false)
-  }, [])
-
-  const loadNotifications = useCallback(async () => {
-    const res = await fetch('/api/agent/notifications')
-    if (res.ok) setNotifications(await res.json())
-  }, [])
+  // ── Load by tab ─────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (activeTab === 'roster' || activeTab === 'overview') loadRoster()
-    if (activeTab === 'requests' || activeTab === 'overview') loadRequests()
-    if (activeTab === 'submissions') loadSubmissions()
-    if (activeTab === 'notifications') loadNotifications()
-  }, [activeTab, loadRoster, loadRequests, loadSubmissions, loadNotifications])
+    if (activeTab === 'Overview') loadStats()
+    if (activeTab === 'Roster') loadRoster()
+    if (activeTab === 'Union') loadRoster()
+    if (activeTab === 'Requests') loadRequests()
+    if (activeTab === 'Submissions') loadSubmissions()
+    if (activeTab === 'Financials') loadCommissions()
+  }, [activeTab])
 
-  // ── Stats ──────────────────────────────────────────────────────────────────
+  async function loadStats() {
+    const [rRes, sRes, cRes] = await Promise.all([
+      fetch('/api/agent/roster'),
+      fetch('/api/agent/submissions'),
+      fetch('/api/agent/commissions'),
+    ])
+    const r = rRes.ok ? await rRes.json() : []
+    const s = sRes.ok ? await sRes.json() : []
+    const c = cRes.ok ? await cRes.json() : []
+    const month = new Date().getMonth()
+    const year = new Date().getFullYear()
+    const monthComm = (c as Commission[]).filter(x => {
+      const d = new Date(x.booking_date)
+      return d.getMonth() === month && d.getFullYear() === year && !x.paid
+    }).reduce((a: number, x: Commission) => a + x.commission_amount, 0)
+    setStats({
+      rosterCount: r.length,
+      pendingRequests: 0,
+      pendingSubmissions: (s as Submission[]).filter(x => x.status === 'submitted').length,
+      monthCommissions: monthComm,
+    })
+  }
 
-  const todayStr = new Date().toISOString().slice(0, 10)
-  const filteredSubmissions = subStatusFilter
-    ? submissions.filter(s => s.status === subStatusFilter)
-    : submissions
-  const availableToday = roster.filter(r =>
-    r.weekAvailability.find(w => w.date === todayStr)?.status === 'available'
-  ).length
-  const openRequests = requests.filter(r => r.status === 'open').length
-  const pendingSubmissions = submissions.filter(s => s.status === 'submitted').length
+  const loadRoster = useCallback(async () => {
+    setRosterLoading(true)
+    const res = await fetch('/api/agent/roster')
+    setRosterLoading(false)
+    if (!res.ok) return
+    const data: RosterPerformer[] = await res.json()
 
-  // ── Add performer ──────────────────────────────────────────────────────────
+    // Load tags in parallel
+    const tagsRes = await fetch('/api/agent/tags')
+    let tags: Record<string, string[]> = {}
+    if (tagsRes.ok) tags = await tagsRes.json()
+    setAllTags(tags)
 
-  async function addPerformer() {
+    // Attach tags
+    const withTags = data.map(r => ({ ...r, tags: tags[r.user_id] || [] }))
+    setRoster(withTags)
+  }, [])
+
+  async function loadRequests() {
+    setReqLoading(true)
+    const res = await fetch('/api/agent/requests')
+    setReqLoading(false)
+    if (res.ok) setRequests(await res.json())
+  }
+
+  async function loadSubmissions() {
+    setSubLoading(true)
+    const res = await fetch('/api/agent/submissions')
+    setSubLoading(false)
+    if (res.ok) setSubmissions(await res.json())
+  }
+
+  async function loadCommissions() {
+    setCommLoading(true)
+    const res = await fetch('/api/agent/commissions')
+    setCommLoading(false)
+    if (!res.ok) return
+    const data: Commission[] = await res.json()
+    setCommissions(data)
+    const month = new Date().getMonth(); const year = new Date().getFullYear()
+    setCommMonthTotal(data.filter(c => { const d = new Date(c.booking_date); return d.getMonth() === month && d.getFullYear() === year }).reduce((a, c) => a + c.commission_amount, 0))
+    setCommUnpaidTotal(data.filter(c => !c.paid).reduce((a, c) => a + c.commission_amount, 0))
+  }
+
+  async function addToRoster() {
     if (!addEmail.trim()) return
-    if (rosterLimit !== null && roster.length >= rosterLimit) {
-      setAddError(`Free plan roster limit (${rosterLimit}) reached. Upgrade to Pro for unlimited performers.`)
-      return
-    }
-    setAddLoading(true)
-    setAddError('')
-    setAddSuccess('')
-
-    const res = await fetch('/api/agent/roster', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: addEmail.trim() }),
-    })
-    const data = await res.json()
+    setAddLoading(true); setAddError('')
+    const res = await fetch('/api/agent/roster', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: addEmail }) })
     setAddLoading(false)
-
-    if (!res.ok) {
-      setAddError(data.error || 'Failed to add performer')
-    } else {
-      setAddSuccess(`Invite sent to ${addEmail.trim()}`)
-      setAddEmail('')
-      loadRoster()
-    }
+    if (res.ok) { setAddEmail(''); loadRoster() }
+    else { const d = await res.json(); setAddError(d.error || 'Failed to add') }
   }
 
-  async function removeFromRoster(rosterId: string) {
+  async function removeFromRoster(userId: string) {
     if (!confirm('Remove this performer from your roster?')) return
-    await fetch('/api/agent/roster', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rosterId }),
-    })
-    loadRoster()
+    await fetch('/api/agent/roster', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }) })
+    setRoster(prev => prev.filter(r => r.user_id !== userId))
+    setSelectedPerformer(null)
   }
 
-  // ── Submit performers ──────────────────────────────────────────────────────
+  async function openPerformerDetail(r: RosterPerformer) {
+    setSelectedPerformer(r)
+    setTagInput('')
+    // Load private note
+    const res = await fetch(`/api/agent/notes?performerId=${r.user_id}`)
+    if (res.ok) { const d = await res.json(); setNoteText(d.note || '') }
+  }
 
-  async function submitPerformers() {
-    if (!submitModal || !submitIds.length) return
-    setSubmitting(true)
-    setSubmitMsg('')
+  async function saveNote() {
+    if (!selectedPerformer) return
+    setNoteLoading(true)
+    await fetch('/api/agent/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ performerId: selectedPerformer.user_id, note: noteText }) })
+    setNoteLoading(false)
+  }
 
-    const res = await fetch('/api/agent/submissions', {
+  async function addTag(performerId: string) {
+    const tag = tagInput.trim()
+    if (!tag) return
+    await fetch('/api/agent/tags', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ performerId, tag }) })
+    setTagInput('')
+    setAllTags(prev => ({ ...prev, [performerId]: [...(prev[performerId] || []), tag] }))
+    setSelectedPerformer(prev => prev ? { ...prev, tags: [...(prev.tags || []), tag] } : prev)
+    setRoster(prev => prev.map(r => r.user_id === performerId ? { ...r, tags: [...(r.tags || []), tag] } : r))
+  }
+
+  async function removeTag(performerId: string, tag: string) {
+    await fetch('/api/agent/tags', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ performerId, tag }) })
+    setAllTags(prev => ({ ...prev, [performerId]: (prev[performerId] || []).filter(t => t !== tag) }))
+    setSelectedPerformer(prev => prev ? { ...prev, tags: (prev.tags || []).filter(t => t !== tag) } : prev)
+    setRoster(prev => prev.map(r => r.user_id === performerId ? { ...r, tags: (r.tags || []).filter(t => t !== tag) } : r))
+  }
+
+  async function submitPerformer() {
+    if (!submittingFor) return
+    const res = await fetch('/api/agent/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(submittingFor) })
+    if (res.ok) { setSubmittingFor(null); loadRequests() }
+  }
+
+  async function sendAvailCheck() {
+    if (!availDate || availPerformerIds.length === 0) return
+    setAvailSending(true)
+    const res = await fetch('/api/agent/availability-check', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ castingRequestId: submitModal.id, performerIds: submitIds, notes: submitNotes || null }),
+      body: JSON.stringify({ performerIds: availPerformerIds, dateNeeded: availDate, message: availMessage }),
     })
-    const data = await res.json()
-    setSubmitting(false)
-
+    setAvailSending(false)
     if (res.ok) {
-      setSubmitMsg(`✅ ${data.submitted} performer${data.submitted !== 1 ? 's' : ''} submitted!`)
-      loadRequests()
-      setTimeout(() => { setSubmitModal(null); setSubmitIds([]); setSubmitMsg(''); setSubmitNotes(''); setSubmitSearch('') }, 1500)
-    } else {
-      setSubmitMsg(`❌ ${data.error}`)
+      const data = await res.json()
+      setAvailCheckId(data.checkId)
+      setAvailResponses([])
     }
   }
 
-  async function markAllRead() {
-    await fetch('/api/agent/notifications', { method: 'PATCH' })
-    setNotifications(n => n.map(x => ({ ...x, is_read: true })))
+  async function loadAvailResponses() {
+    if (!availCheckId) return
+    const res = await fetch(`/api/agent/availability-check?checkId=${availCheckId}`)
+    if (res.ok) setAvailResponses(await res.json())
   }
 
-  // ── Roster filtering ───────────────────────────────────────────────────────
+  async function addCommission() {
+    if (!newComm.booking_date || !newComm.production_name || !newComm.gross_pay) return
+    const res = await fetch('/api/agent/commissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...newComm, grossPay: parseFloat(newComm.gross_pay), commissionRate: parseFloat(newComm.commission_rate) }),
+    })
+    if (res.ok) {
+      setNewComm({ booking_date: '', production_name: '', performer_name: '', gross_pay: '', commission_rate: '15', notes: '' })
+      setAddingComm(false)
+      loadCommissions()
+    }
+  }
+
+  async function markCommPaid(id: string) {
+    await fetch('/api/agent/commissions', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, paid: true }) })
+    setCommissions(prev => prev.map(c => c.id === id ? { ...c, paid: true } : c))
+  }
+
+  async function signOut() {
+    await fetch('/api/agent/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) })
+    router.replace('/agent/login')
+  }
+
+  // ─── Filtered roster ─────────────────────────────────────────────────────
 
   const filteredRoster = roster.filter(r => {
-    const name = displayName(r.users).toLowerCase()
+    if (rosterRegion && r.performer_profiles?.film_region_code !== rosterRegion) return false
+    if (!rosterFilter) return true
+    const name = pName(r).toLowerCase()
     const email = (r.users?.email || '').toLowerCase()
-    const matchSearch = !rosterSearch || name.includes(rosterSearch.toLowerCase()) || email.includes(rosterSearch.toLowerCase())
-    const matchFilter = !rosterFilter || r.performer_profiles?.union_status === rosterFilter
-    return matchSearch && matchFilter
+    const q = rosterFilter.toLowerCase()
+    return name.includes(q) || email.includes(q) || (r.tags || []).some(t => t.toLowerCase().includes(q))
   })
 
-  // ── Roster for submit modal ────────────────────────────────────────────────
+  const unionRoster = roster.filter(r => (r.performer_profiles?.union_priority ?? 5) <= 2)
 
-  const eligibleForRequest = (req: CastingRequest) => roster.filter(r => {
-    const avail = r.weekAvailability.find(w => w.date === req.shoot_date)
-    const matchGender = !req.gender_needed || req.gender_needed === 'Any' ||
-      r.performer_profiles?.gender?.toLowerCase() === req.gender_needed.toLowerCase()
-    return avail?.status === 'available' && matchGender
-  })
-
-  // ── Sidebar / bottom nav ───────────────────────────────────────────────────
-
-  const unreadCount = notifications.filter(n => !n.is_read).length
-
-  // ── Shared section header ──────────────────────────────────────────────────
-
-  const sectionStyle: React.CSSProperties = {
-    backgroundColor: 'white', borderRadius: '14px',
-    padding: '20px', marginBottom: '16px',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-  }
-
-  // ── Render ─────────────────────────────────────────────────────────────────
-
-  const SIDEBAR_W = 220
+  // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#0f0f1a', display: 'flex', flexDirection: 'column' }}>
 
       {/* Top bar */}
-      <div style={{
-        backgroundColor: '#1a1a2e', color: 'white',
-        padding: '12px 20px', display: 'flex',
-        alignItems: 'center', justifyContent: 'space-between',
-        position: 'sticky', top: 0, zIndex: 40,
-      }}>
+      <div style={{ backgroundColor: '#1a1a2e', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50, borderBottom: '1px solid rgba(245,158,11,0.15)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Logo size="sm" darkBackground={true} showText={true} />
-          <span style={{ color: '#9ca3af', fontSize: '13px' }}>Agent</span>
+          <Logo size="sm" darkBackground showText />
+          <span style={{ color: '#9ca3af', fontSize: '13px' }}>/ Agent</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ fontSize: '13px', color: '#d1d5db' }}>
-            {agencyName || agentName}
-          </span>
-          <button
-            onClick={async () => {
-              await fetch('/api/agent/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) })
-              router.push('/agent/login')
-            }}
-            style={{ fontSize: '12px', color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            Sign Out
-          </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          {agentName && <span style={{ color: '#e5e7eb', fontSize: '14px' }}>{agentName}</span>}
+          <button onClick={signOut} style={{ color: '#9ca3af', fontSize: '13px', background: 'none', border: 'none', cursor: 'pointer' }}>Sign out</button>
         </div>
       </div>
 
-      <div style={{ display: 'flex', flex: 1, position: 'relative' }}>
-
-        {/* Desktop sidebar */}
-        {!isMobile && (
-          <div style={{
-            width: SIDEBAR_W, backgroundColor: 'white',
-            borderRight: '1px solid #e5e7eb',
-            position: 'sticky', top: '52px',
-            height: 'calc(100vh - 52px)',
-            overflowY: 'auto', flexShrink: 0,
-            padding: '16px 0',
-          }}>
-            {NAV.map(n => (
-              <button
-                key={n.key}
-                onClick={() => (n as any).href ? router.push((n as any).href) : setActiveTab(n.key)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '10px',
-                  width: '100%', padding: '10px 20px',
-                  background: activeTab === n.key ? '#fffbeb' : 'none',
-                  border: 'none',
-                  borderLeft: activeTab === n.key ? '3px solid #F59E0B' : '3px solid transparent',
-                  color: activeTab === n.key ? '#92400e' : '#374151',
-                  fontWeight: activeTab === n.key ? '700' : '400',
-                  fontSize: '14px', cursor: 'pointer', textAlign: 'left',
-                  position: 'relative',
-                }}
-              >
-                <span style={{ fontSize: '18px' }}>{n.icon}</span>
-                {n.label}
-                {n.key === 'notifications' && unreadCount > 0 && (
-                  <span style={{
-                    position: 'absolute', right: '14px',
-                    backgroundColor: '#ef4444', color: 'white',
-                    borderRadius: '10px', padding: '0 6px',
-                    fontSize: '11px', fontWeight: '700',
-                  }}>
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Main content */}
-        <div style={{ flex: 1, padding: isMobile ? '12px 12px 80px' : '20px 24px', minWidth: 0 }}>
-
-          {/* ── OVERVIEW ── */}
-          {activeTab === 'overview' && (
-            <div>
-              <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 16px' }}>
-                Dashboard
-              </h1>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
-                <StatCard icon="👥" label="Total on Roster" value={roster.length} />
-                <StatCard icon="✅" label="Available Today" value={availableToday} color="#22c55e" />
-                <StatCard icon="📋" label="Open Requests" value={openRequests} color="#3b82f6" />
-                <StatCard icon="📨" label="Pending Submissions" value={pendingSubmissions} color="#f59e0b" />
-              </div>
-
-              {/* Recent requests */}
-              <div style={sectionStyle}>
-                <h2 style={{ fontSize: '15px', fontWeight: '700', margin: '0 0 12px' }}>🗓 Upcoming Shoot Dates</h2>
-                {loadingRequests ? (
-                  <p style={{ color: '#9ca3af', fontSize: '14px' }}>Loading...</p>
-                ) : requests.slice(0, 5).map(r => (
-                  <div key={r.id} style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '10px 0', borderBottom: '1px solid #f3f4f6',
-                  }}>
-                    <div>
-                      <p style={{ margin: 0, fontWeight: '600', fontSize: '14px' }}>{r.production_name}</p>
-                      <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#6b7280' }}>
-                        {r.shoot_date} · {r.location} · {r.role_type}
-                      </p>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <p style={{ margin: 0, fontSize: '12px', color: '#6b7280' }}>
-                        {r.mySubmissionCount}/{r.performers_needed} submitted
-                      </p>
-                      <button
-                        onClick={() => { setActiveTab('requests') }}
-                        style={{ fontSize: '12px', color: '#F59E0B', fontWeight: '600', background: 'none', border: 'none', cursor: 'pointer' }}
-                      >
-                        View →
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── ROSTER ── */}
-          {activeTab === 'roster' && (
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-                <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: 0 }}>
-                  👥 My Roster
-                </h1>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '13px', color: '#6b7280' }}>
-                    {roster.length}{rosterLimit !== null ? ` / ${rosterLimit}` : ''} performers
-                  </span>
-                  {!isPro && (
-                    <span
-                      onClick={() => router.push('/agent/settings')}
-                      style={{ fontSize: '11px', color: '#F59E0B', fontWeight: '700', cursor: 'pointer', padding: '2px 8px', border: '1px solid #F59E0B', borderRadius: '20px' }}
-                    >
-                      FREE
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Search + filter */}
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                <input
-                  value={rosterSearch}
-                  onChange={e => setRosterSearch(e.target.value)}
-                  placeholder="Search by name or email..."
-                  style={{ flex: 1, minWidth: '200px', padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }}
-                />
-                <select
-                  value={rosterFilter}
-                  onChange={e => setRosterFilter(e.target.value)}
-                  style={{ padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', backgroundColor: 'white' }}
-                >
-                  <option value="">All union statuses</option>
-                  <option value="Non-Union">Non-Union</option>
-                  <option value="UBCP/ACTRA Permit">Permit</option>
-                  <option value="UBCP/ACTRA Full Member">Full Member</option>
-                </select>
-              </div>
-
-              {/* Add performer */}
-              <div style={{ ...sectionStyle, marginBottom: '16px' }}>
-                <h2 style={{ fontSize: '14px', fontWeight: '700', margin: '0 0 10px' }}>➕ Add Performer</h2>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    value={addEmail}
-                    onChange={e => setAddEmail(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && addPerformer()}
-                    placeholder="performer@email.com"
-                    type="email"
-                    style={{ flex: 1, padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }}
-                  />
-                  <button
-                    onClick={addPerformer}
-                    disabled={addLoading}
-                    style={{
-                      padding: '9px 20px', backgroundColor: '#F59E0B', color: '#1a1a2e',
-                      fontWeight: '700', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px',
-                    }}
-                  >
-                    {addLoading ? '...' : 'Add'}
-                  </button>
-                </div>
-                {addError && <p style={{ color: '#dc2626', fontSize: '13px', margin: '6px 0 0' }}>{addError}</p>}
-                {addSuccess && <p style={{ color: '#16a34a', fontSize: '13px', margin: '6px 0 0' }}>{addSuccess}</p>}
-              </div>
-
-              {/* Roster cards */}
-              {loadingRoster ? (
-                <p style={{ color: '#9ca3af' }}>Loading roster...</p>
-              ) : filteredRoster.length === 0 ? (
-                <div style={{ ...sectionStyle, textAlign: 'center', padding: '40px' }}>
-                  <p style={{ color: '#9ca3af' }}>No performers on your roster yet.</p>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {filteredRoster.map(r => {
-                    const name = displayName(r.users)
-                    const prof = r.performer_profiles
-                    return (
-                      <div key={r.id} style={{
-                        backgroundColor: 'white', borderRadius: '12px', padding: '14px 16px',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.07)',
-                        display: 'flex', gap: '12px', alignItems: 'flex-start',
-                      }}>
-                        <HeadshotCircle url={prof?.headshot_url} name={name} size={52} />
-
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                            <span style={{ fontWeight: '700', fontSize: '15px' }}>{name}</span>
-                            {r.status === 'pending' && <Badge text="Pending" style={{ backgroundColor: '#eff6ff', color: '#1d4ed8' }} />}
-                            {prof?.union_status && <Badge text={prof.union_status} />}
-                          </div>
-
-                          <p style={{ margin: '3px 0', fontSize: '12px', color: '#6b7280' }}>
-                            {[fmtHeight(prof?.height_cm), prof?.hair_color, prof?.eye_color].filter(Boolean).join(' · ') || 'No profile yet'}
-                          </p>
-
-                          {/* Week availability dots */}
-                          <div style={{ display: 'flex', gap: '4px', margin: '8px 0 0', alignItems: 'center' }}>
-                            <span style={{ fontSize: '11px', color: '#9ca3af', marginRight: '2px' }}>This week:</span>
-                            {r.weekAvailability.map(w => (
-                              <div
-                                key={w.date}
-                                title={`${w.date}: ${w.status || 'not set'}`}
-                                style={{
-                                  width: '12px', height: '12px', borderRadius: '50%',
-                                  backgroundColor: w.status ? AVAIL_COLOR[w.status] || '#9ca3af' : '#e5e7eb',
-                                  flexShrink: 0,
-                                }}
-                              />
-                            ))}
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0 }}>
-                          <button
-                            onClick={() => router.push(`/profile/${r.user_id}`)}
-                            style={{ padding: '5px 10px', fontSize: '12px', fontWeight: '600', border: '1px solid #e5e7eb', borderRadius: '6px', background: 'white', cursor: 'pointer', color: '#374151' }}
-                          >
-                            👤 Profile
-                          </button>
-                          <button
-                            onClick={() => router.push(`/availability?userId=${r.user_id}`)}
-                            style={{ padding: '5px 10px', fontSize: '12px', fontWeight: '600', border: '1px solid #e5e7eb', borderRadius: '6px', background: 'white', cursor: 'pointer', color: '#374151' }}
-                          >
-                            📅 Avail
-                          </button>
-                          <button
-                            onClick={() => removeFromRoster(r.id)}
-                            style={{ padding: '5px 10px', fontSize: '12px', fontWeight: '600', border: '1px solid #fca5a5', borderRadius: '6px', background: 'white', cursor: 'pointer', color: '#dc2626' }}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── CASTING REQUESTS ── */}
-          {activeTab === 'requests' && (
-            <div>
-              <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 16px' }}>
-                📋 Casting Requests
-              </h1>
-
-              {loadingRequests ? (
-                <p style={{ color: '#9ca3af' }}>Loading...</p>
-              ) : requests.length === 0 ? (
-                <div style={{ ...sectionStyle, textAlign: 'center', padding: '40px' }}>
-                  <p style={{ color: '#9ca3af' }}>No open casting requests right now.</p>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {requests.map(req => (
-                    <div key={req.id} style={{ ...sectionStyle, marginBottom: 0 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '6px' }}>
-                            <span style={{ fontWeight: '800', fontSize: '16px' }}>{req.production_name}</span>
-                            <Badge text={req.role_type} style={{ backgroundColor: '#eff6ff', color: '#1d4ed8' }} />
-                          </div>
-                          <p style={{ margin: '0 0 6px', fontSize: '13px', color: '#6b7280' }}>
-                            📅 {req.shoot_date} · 📍 {req.location}
-                          </p>
-                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            {req.gender_needed && <Badge text={`Gender: ${req.gender_needed}`} />}
-                            {(req.age_min || req.age_max) && (
-                              <Badge text={`Age: ${req.age_min || '?'}–${req.age_max || '?'}`} />
-                            )}
-                            {req.union_status && <Badge text={req.union_status} />}
-                            {req.rate && <Badge text={`$${req.rate}`} style={{ backgroundColor: '#f0fdf4', color: '#15803d' }} />}
-                          </div>
-                          {req.description && (
-                            <p style={{ margin: '8px 0 0', fontSize: '13px', color: '#374151' }}>{req.description}</p>
-                          )}
-                        </div>
-
-                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <p style={{ margin: '0 0 6px', fontSize: '12px', color: '#6b7280' }}>
-                            {req.mySubmissionCount}/{req.performers_needed} submitted
-                          </p>
-                          <button
-                            onClick={() => {
-                              setSubmitModal(req)
-                              setSubmitIds([])
-                              setSubmitMsg('')
-                              setSubmitNotes('')
-                              setSubmitSearch('')
-                            }}
-                            style={{
-                              padding: '8px 16px', backgroundColor: '#1a1a2e',
-                              color: 'white', fontWeight: '700', fontSize: '13px',
-                              border: 'none', borderRadius: '8px', cursor: 'pointer',
-                            }}
-                          >
-                            Submit Performers
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── SUBMISSIONS ── */}
-          {activeTab === 'submissions' && (
-            <div>
-              <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 12px' }}>📨 Submissions</h1>
-
-              {/* Submission stats bar */}
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
-                {([
-                  { status: '', label: 'All' },
-                  { status: 'submitted', label: 'Submitted' },
-                  { status: 'shortlisted', label: 'Shortlisted' },
-                  { status: 'confirmed', label: 'Confirmed' },
-                  { status: 'rejected', label: 'Rejected' },
-                ] as const).map(({ status, label }) => {
-                  const count = status ? submissions.filter(s => s.status === status).length : submissions.length
-                  const sc = STATUS_COLORS[status || 'submitted'] || STATUS_COLORS.submitted
-                  const isActive = subStatusFilter === status
-                  return (
-                    <button
-                      key={status}
-                      onClick={() => setSubStatusFilter(status)}
-                      style={{
-                        padding: '5px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700',
-                        border: isActive ? '2px solid #1a1a2e' : '2px solid transparent',
-                        backgroundColor: status ? sc.bg : (isActive ? '#1a1a2e' : '#f3f4f6'),
-                        color: status ? sc.color : (isActive ? 'white' : '#374151'),
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {label} ({count})
-                    </button>
-                  )
-                })}
-              </div>
-
-              {loadingSubmissions ? (
-                <p style={{ color: '#9ca3af' }}>Loading...</p>
-              ) : submissions.length === 0 ? (
-                <div style={{ ...sectionStyle, textAlign: 'center', padding: '40px' }}>
-                  <p style={{ color: '#9ca3af' }}>No submissions yet.</p>
-                </div>
-              ) : filteredSubmissions.length === 0 ? (
-                <div style={{ ...sectionStyle, textAlign: 'center', padding: '40px' }}>
-                  <p style={{ color: '#9ca3af' }}>No {subStatusFilter} submissions.</p>
-                </div>
-              ) : (
-                <div style={{ backgroundColor: 'white', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                      <thead>
-                        <tr style={{ backgroundColor: '#f9fafb' }}>
-                          {['Performer', 'Production', 'Shoot Date', 'Status', 'Submitted'].map(h => (
-                            <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: '700', color: '#6b7280', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
-                              {h}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredSubmissions.map(s => {
-                          const name = displayName(s.users)
-                          const sc = STATUS_COLORS[s.status] || STATUS_COLORS.submitted
-                          return (
-                            <tr key={s.id} style={{ borderTop: '1px solid #f3f4f6' }}>
-                              <td style={{ padding: '10px 14px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <HeadshotCircle url={s.performer_profiles?.headshot_url} name={name} size={32} />
-                                  <span style={{ fontWeight: '600' }}>{name}</span>
-                                </div>
-                              </td>
-                              <td style={{ padding: '10px 14px', color: '#374151' }}>
-                                {s.casting_requests?.production_name || '—'}
-                              </td>
-                              <td style={{ padding: '10px 14px', color: '#6b7280', whiteSpace: 'nowrap' }}>
-                                {s.casting_requests?.shoot_date || '—'}
-                              </td>
-                              <td style={{ padding: '10px 14px' }}>
-                                <span style={{
-                                  display: 'inline-block', padding: '2px 10px',
-                                  borderRadius: '20px', fontSize: '11px', fontWeight: '700',
-                                  backgroundColor: sc.bg, color: sc.color,
-                                }}>
-                                  {s.status}
-                                </span>
-                              </td>
-                              <td style={{ padding: '10px 14px', color: '#9ca3af', whiteSpace: 'nowrap' }}>
-                                {timeAgo(s.submitted_at)}
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── AVAILABILITY ── */}
-          {activeTab === 'availability' && (
-            <div>
-              <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 16px' }}>
-                📅 Roster Availability
-              </h1>
-              <div style={sectionStyle}>
-                <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '12px' }}>
-                  View or update availability for a performer on your roster:
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {roster.map(r => {
-                    const name = displayName(r.users)
-                    return (
-                      <div key={r.id} style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '10px 0', borderBottom: '1px solid #f9fafb',
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <HeadshotCircle url={r.performer_profiles?.headshot_url} name={name} size={36} />
-                          <span style={{ fontWeight: '600', fontSize: '14px' }}>{name}</span>
-                        </div>
-                        <button
-                          onClick={() => router.push(`/availability?userId=${r.user_id}`)}
-                          style={{ padding: '6px 14px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', fontSize: '13px', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-                        >
-                          View Calendar
-                        </button>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── NOTIFICATIONS ── */}
-          {activeTab === 'notifications' && (
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: 0 }}>🔔 Notifications</h1>
-                {unreadCount > 0 && (
-                  <button
-                    onClick={markAllRead}
-                    style={{ fontSize: '13px', color: '#F59E0B', fontWeight: '600', background: 'none', border: 'none', cursor: 'pointer' }}
-                  >
-                    Mark all read
-                  </button>
-                )}
-              </div>
-
-              {notifications.length === 0 ? (
-                <div style={{ ...sectionStyle, textAlign: 'center', padding: '40px' }}>
-                  <p style={{ color: '#9ca3af' }}>No notifications yet.</p>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {notifications.map(n => (
-                    <div
-                      key={n.id}
-                      onClick={() => n.action_url && router.push(n.action_url)}
-                      style={{
-                        backgroundColor: n.is_read ? 'white' : '#fffbeb',
-                        borderRadius: '12px', padding: '14px 16px',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                        cursor: n.action_url ? 'pointer' : 'default',
-                        borderLeft: n.is_read ? 'none' : '3px solid #F59E0B',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <p style={{ margin: '0 0 3px', fontWeight: '700', fontSize: '14px', color: '#1a1a2e' }}>
-                          {n.title}
-                        </p>
-                        <span style={{ fontSize: '11px', color: '#9ca3af', flexShrink: 0, marginLeft: '8px' }}>
-                          {timeAgo(n.created_at)}
-                        </span>
-                      </div>
-                      <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>{n.message}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── SETTINGS ── */}
-          {activeTab === 'settings' && (
-            <div>
-              <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 16px' }}>⚙️ Settings</h1>
-              <div style={sectionStyle}>
-                <div style={{ marginBottom: '16px' }}>
-                  <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 4px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Agency</p>
-                  <p style={{ fontSize: '16px', fontWeight: '700', margin: 0 }}>{agencyName}</p>
-                </div>
-                <div style={{ marginBottom: '16px' }}>
-                  <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 4px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contact</p>
-                  <p style={{ fontSize: '15px', margin: 0 }}>{agentName}</p>
-                </div>
-                <div style={{ marginBottom: '16px' }}>
-                  <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 4px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Plan</p>
-                  <span style={{
-                    display: 'inline-block', padding: '3px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700',
-                    backgroundColor: isPro ? '#fef3c7' : '#f3f4f6',
-                    color: isPro ? '#92400e' : '#6b7280',
-                  }}>
-                    {isPro ? 'PRO' : `FREE — ${rosterLimit} performer limit`}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', borderTop: '1px solid #f3f4f6', paddingTop: '16px' }}>
-                  <button
-                    onClick={() => router.push('/agent/settings')}
-                    style={{ padding: '10px 20px', border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white', color: '#374151', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}
-                  >
-                    Agency Settings & Team
-                  </button>
-                  <button
-                    onClick={async () => {
-                      await fetch('/api/agent/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) })
-                      router.push('/agent/login')
-                    }}
-                    style={{ padding: '10px 20px', border: '1px solid #fca5a5', borderRadius: '8px', background: 'white', color: '#dc2626', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-        </div>
-      </div>
-
-      {/* Mobile bottom tabs */}
-      {isMobile && (
-        <div style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0,
-          backgroundColor: 'white', borderTop: '1px solid #e5e7eb',
-          display: 'flex', overflowX: 'auto',
-          zIndex: 50,
-        }}>
-          {NAV.map(n => (
-            <button
-              key={n.key}
-              onClick={() => (n as any).href ? router.push((n as any).href) : setActiveTab(n.key)}
-              style={{
-                flex: '0 0 auto', display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center',
-                padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer',
-                color: activeTab === n.key ? '#F59E0B' : '#9ca3af',
-                position: 'relative',
-              }}
-            >
-              <span style={{ fontSize: '20px' }}>{n.icon}</span>
-              <span style={{ fontSize: '10px', fontWeight: activeTab === n.key ? '700' : '400', marginTop: '2px' }}>
-                {n.label.split(' ')[0]}
-              </span>
-              {n.key === 'notifications' && unreadCount > 0 && (
-                <span style={{
-                  position: 'absolute', top: '4px', right: '6px',
-                  backgroundColor: '#ef4444', color: 'white',
-                  borderRadius: '8px', padding: '0 4px',
-                  fontSize: '10px', fontWeight: '700',
-                }}>
-                  {unreadCount}
-                </span>
-              )}
+      {/* Tab bar */}
+      <div style={{ backgroundColor: '#1a1a2e', borderBottom: '1px solid rgba(255,255,255,0.06)', overflowX: 'auto' }}>
+        <div style={{ display: 'flex', padding: '0 12px', gap: '2px', minWidth: 'max-content' }}>
+          {TABS.map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab)} style={{ padding: '12px 12px', fontSize: '13px', fontWeight: activeTab === tab ? '700' : '400', color: activeTab === tab ? '#F59E0B' : '#9ca3af', background: 'none', border: 'none', borderBottom: activeTab === tab ? '2px solid #F59E0B' : '2px solid transparent', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              {TAB_LABELS[tab]}
             </button>
           ))}
         </div>
-      )}
+      </div>
 
-      {/* Submit performers modal */}
-      {submitModal && (
-        <div
-          onClick={e => { if (e.target === e.currentTarget) { setSubmitModal(null); setSubmitIds([]); setSubmitNotes(''); setSubmitSearch('') } }}
-          style={{
-            position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)',
-            zIndex: 60, display: 'flex', alignItems: 'flex-end',
-            justifyContent: 'center', padding: isMobile ? '0' : '20px',
-          }}
-        >
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: isMobile ? '20px 20px 0 0' : '16px',
-            padding: '20px', width: '100%', maxWidth: '560px',
-            maxHeight: '85vh', overflowY: 'auto',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-              <div>
-                <h2 style={{ fontSize: '16px', fontWeight: '800', margin: '0 0 4px' }}>
-                  Submit Performers
-                </h2>
-                <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>
-                  {submitModal.production_name} · {submitModal.shoot_date}
-                </p>
-              </div>
-              <button onClick={() => { setSubmitModal(null); setSubmitIds([]); setSubmitNotes(''); setSubmitSearch('') }} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#9ca3af' }}>×</button>
+      {/* Content */}
+      <div style={{ flex: 1, padding: isMobile ? '14px 12px' : '24px 20px', maxWidth: '1280px', width: '100%', margin: '0 auto' }}>
+
+        {/* ── OVERVIEW ──────────────────────────────────────────────────── */}
+        {activeTab === 'Overview' && (
+          <div>
+            <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white', margin: '0 0 20px' }}>Agency Dashboard</h1>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px', marginBottom: '28px' }}>
+              {[
+                { label: 'Roster Size', value: stats.rosterCount, icon: '👥', color: '#F59E0B' },
+                { label: 'Active Submissions', value: stats.pendingSubmissions, icon: '📤', color: '#3b82f6' },
+                { label: 'Monthly Commissions', value: fmtMoney(stats.monthCommissions), icon: '💰', color: '#22c55e' },
+              ].map(s => (
+                <div key={s.label} style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '20px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ fontSize: '24px', marginBottom: '8px' }}>{s.icon}</div>
+                  <div style={{ fontSize: '26px', fontWeight: '900', color: s.color }}>{s.value}</div>
+                  <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>{s.label}</div>
+                </div>
+              ))}
             </div>
 
-            {(() => {
-              const allEligible = eligibleForRequest(submitModal)
-              const eligible = allEligible.filter(r =>
-                !submitSearch ||
-                displayName(r.users).toLowerCase().includes(submitSearch.toLowerCase()) ||
-                (r.users?.email || '').toLowerCase().includes(submitSearch.toLowerCase())
-              )
-              return allEligible.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '24px', color: '#9ca3af' }}>
-                  <p>No available performers match this request on {submitModal.shoot_date}.</p>
-                  <p style={{ fontSize: '12px' }}>Performers must be marked Available on that date.</p>
-                </div>
-              ) : (
-                <>
-                  <input
-                    value={submitSearch}
-                    onChange={e => setSubmitSearch(e.target.value)}
-                    placeholder="Search performers by name..."
-                    style={{ width: '100%', padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', marginBottom: '10px', boxSizing: 'border-box' }}
-                  />
-                  <p style={{ fontSize: '13px', color: '#374151', margin: '0 0 10px' }}>
-                    {eligible.length}{submitSearch ? ` of ${allEligible.length}` : ''} performer{allEligible.length !== 1 ? 's' : ''} available on shoot date:
-                  </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-                    {eligible.length === 0 ? (
-                      <p style={{ textAlign: 'center', color: '#9ca3af', fontSize: '13px', padding: '16px 0' }}>No performers match your search.</p>
-                    ) : eligible.map(r => {
-                      const name = displayName(r.users)
-                      const selected = submitIds.includes(r.user_id)
-                      return (
-                        <label
-                          key={r.id}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: '12px',
-                            padding: '10px 14px', borderRadius: '10px', cursor: 'pointer',
-                            backgroundColor: selected ? '#fffbeb' : '#f9fafb',
-                            border: `1px solid ${selected ? '#F59E0B' : '#e5e7eb'}`,
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selected}
-                            onChange={() => setSubmitIds(prev => selected ? prev.filter(id => id !== r.user_id) : [...prev, r.user_id])}
-                            style={{ width: '16px', height: '16px', flexShrink: 0 }}
-                          />
-                          <HeadshotCircle url={r.performer_profiles?.headshot_url} name={name} size={36} />
-                          <div>
-                            <p style={{ margin: 0, fontWeight: '600', fontSize: '14px' }}>{name}</p>
-                            <p style={{ margin: 0, fontSize: '12px', color: '#6b7280' }}>
-                              {[r.performer_profiles?.union_status, fmtHeight(r.performer_profiles?.height_cm)].filter(Boolean).join(' · ')}
-                            </p>
-                          </div>
-                        </label>
-                      )
-                    })}
-                  </div>
-                  <div style={{ marginBottom: '16px' }}>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#6b7280', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Note to Casting Director (optional)
-                    </label>
-                    <textarea
-                      value={submitNotes}
-                      onChange={e => setSubmitNotes(e.target.value)}
-                      placeholder="Add any notes about these performers or the submission..."
-                      rows={3}
-                      style={{ width: '100%', padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }}
-                    />
-                  </div>
-                </>
-              )
-            })()}
+            {/* Quick actions */}
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: '10px', marginBottom: '20px' }}>
+              {([
+                { label: '📋 View Requests', tab: 'Requests' as Tab },
+                { label: '👥 Manage Roster', tab: 'Roster' as Tab },
+                { label: '✅ Avail Check', tab: 'Avail' as Tab },
+                { label: '💰 Financials', tab: 'Financials' as Tab },
+              ]).map(a => (
+                <button key={a.label} onClick={() => setActiveTab(a.tab)} style={{ padding: '12px', backgroundColor: '#1e1e35', color: 'white', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '13px', textAlign: 'center' }}>
+                  {a.label}
+                </button>
+              ))}
+            </div>
 
-            {submitMsg && (
-              <p style={{ textAlign: 'center', fontSize: '14px', fontWeight: '600', color: submitMsg.startsWith('✅') ? '#15803d' : '#dc2626', margin: '0 0 12px' }}>
-                {submitMsg}
-              </p>
+            <div style={{ backgroundColor: '#1a1a2e', borderRadius: '12px', padding: '16px 20px', border: '1px solid rgba(245,158,11,0.2)' }}>
+              <div style={{ fontSize: '13px', color: '#F59E0B', fontWeight: '700', marginBottom: '6px' }}>Union Member Priority Reminder</div>
+              <div style={{ fontSize: '12px', color: '#9ca3af', lineHeight: '1.6' }}>
+                👑 Full Members must be offered work first for UBCP/ACTRA productions.<br />
+                ⭐ Apprentice Members have second preference. Always submit union members first.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── ROSTER ────────────────────────────────────────────────────── */}
+        {activeTab === 'Roster' && (
+          <div>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white', margin: 0, flex: 1 }}>My Roster</h1>
+              <span style={{ fontSize: '13px', color: '#9ca3af' }}>{filteredRoster.length} performers</span>
+            </div>
+
+            {/* Add performer */}
+            <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '16px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <input value={addEmail} onChange={e => setAddEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && addToRoster()} placeholder="Add performer by email..." style={{ flex: 1, minWidth: '200px', padding: '10px 13px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '14px', color: 'white', backgroundColor: '#0f0f1a', outline: 'none' }} />
+                <button onClick={addToRoster} disabled={addLoading || !addEmail.trim()} style={{ padding: '10px 20px', backgroundColor: addEmail.trim() ? '#F59E0B' : '#374151', color: addEmail.trim() ? '#1a1a2e' : '#6b7280', fontWeight: '800', border: 'none', borderRadius: '8px', cursor: addEmail.trim() ? 'pointer' : 'not-allowed', fontSize: '14px', whiteSpace: 'nowrap' }}>
+                  {addLoading ? 'Adding...' : '+ Add'}
+                </button>
+              </div>
+              {addError && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '6px' }}>{addError}</div>}
+            </div>
+
+            {/* Filters */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
+              <input value={rosterFilter} onChange={e => setRosterFilter(e.target.value)} placeholder="Search name, email, tag..." style={{ flex: 1, minWidth: '160px', padding: '8px 12px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '13px', color: 'white', backgroundColor: '#1e1e35', outline: 'none' }} />
+              <select value={rosterRegion} onChange={e => setRosterRegion(e.target.value)} style={{ padding: '8px 12px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '13px', color: 'white', backgroundColor: '#1e1e35', outline: 'none' }}>
+                <option value="">All regions</option>
+                {FILM_REGION_LIST.map(r => <option key={r.code} value={r.code}>{r.provinceCode} — {r.name}</option>)}
+              </select>
+            </div>
+
+            {rosterLoading
+              ? <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>Loading...</div>
+              : filteredRoster.length === 0
+                ? <div style={{ textAlign: 'center', padding: '60px', color: '#9ca3af', backgroundColor: '#1e1e35', borderRadius: '14px' }}>No performers yet. Add them by email above.</div>
+                : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px' }}>
+                    {filteredRoster.map(r => <RosterCard key={r.id} r={r} onSelect={() => openPerformerDetail(r)} />)}
+                  </div>
+            }
+          </div>
+        )}
+
+        {/* ── UNION MEMBERS ─────────────────────────────────────────────── */}
+        {activeTab === 'Union' && (
+          <div>
+            <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white', margin: '0 0 8px' }}>Union Members on Roster</h1>
+            <div style={{ backgroundColor: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '10px', padding: '12px 16px', fontSize: '13px', color: '#d97706', marginBottom: '20px' }}>
+              These performers have UBCP/ACTRA Full or Apprentice status. They have preference of engagement on all union productions.
+            </div>
+            {unionRoster.length === 0
+              ? <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af', backgroundColor: '#1e1e35', borderRadius: '14px' }}>No union members on your roster yet.</div>
+              : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px' }}>
+                  {unionRoster.map(r => <RosterCard key={r.id} r={r} onSelect={() => openPerformerDetail(r)} />)}
+                </div>
+            }
+          </div>
+        )}
+
+        {/* ── CASTING REQUESTS ─────────────────────────────────────────── */}
+        {activeTab === 'Requests' && (
+          <div>
+            <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white', margin: '0 0 20px' }}>Casting Requests</h1>
+            {reqLoading
+              ? <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>Loading...</div>
+              : requests.length === 0
+                ? <div style={{ textAlign: 'center', padding: '60px', color: '#9ca3af', backgroundColor: '#1e1e35', borderRadius: '14px' }}>No open casting requests right now.</div>
+                : requests.map(req => {
+                    const isExpanded = expandedReq === req.id
+                    const days = daysUntil(req.shoot_date)
+                    return (
+                      <div key={req.id} style={{ backgroundColor: '#1e1e35', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '10px', overflow: 'hidden' }}>
+                        <div onClick={() => setExpandedReq(isExpanded ? null : req.id)} style={{ padding: '16px 18px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '4px' }}>
+                              <span style={{ fontWeight: '800', fontSize: '16px', color: 'white' }}>{req.production_name}</span>
+                              <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: '700', backgroundColor: days <= 2 ? 'rgba(239,68,68,0.15)' : days <= 7 ? 'rgba(245,158,11,0.15)' : 'rgba(34,197,94,0.15)', color: days <= 2 ? '#ef4444' : days <= 7 ? '#F59E0B' : '#22c55e' }}>
+                                {days <= 0 ? 'TODAY' : `${days}d`}
+                              </span>
+                              {req.shoot_region_code && <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '10px', backgroundColor: 'rgba(59,130,246,0.15)', color: '#3b82f6' }}>📍 {getRegionName(req.shoot_region_code)}</span>}
+                            </div>
+                            <div style={{ fontSize: '13px', color: '#9ca3af' }}>
+                              {req.role_type} · {fmtDate(req.shoot_date)}
+                              {req.location ? ` · ${req.location}` : ''}
+                              {req.rate ? ` · ${req.rate}` : ''}
+                            </div>
+                            <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                              {req.union_status && <span style={{ fontSize: '11px', padding: '2px 7px', borderRadius: '20px', backgroundColor: 'rgba(245,158,11,0.1)', color: '#F59E0B' }}>{req.union_status}</span>}
+                              {req.gender_needed && req.gender_needed !== 'Any' && <span style={{ fontSize: '11px', padding: '2px 7px', borderRadius: '20px', backgroundColor: 'rgba(255,255,255,0.05)', color: '#9ca3af' }}>{req.gender_needed}</span>}
+                              {(req.age_min || req.age_max) && <span style={{ fontSize: '11px', padding: '2px 7px', borderRadius: '20px', backgroundColor: 'rgba(255,255,255,0.05)', color: '#9ca3af' }}>Age {req.age_min||'?'}–{req.age_max||'?'}</span>}
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                            <div style={{ fontSize: '20px', color: '#F59E0B', fontWeight: '900' }}>{req.mySubmissionCount}</div>
+                            <div style={{ fontSize: '10px', color: '#6b7280' }}>submitted</div>
+                            <div style={{ marginTop: '6px', fontSize: '18px' }}>{isExpanded ? '▲' : '▼'}</div>
+                          </div>
+                        </div>
+
+                        {isExpanded && (
+                          <div style={{ padding: '0 18px 16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                            {req.description && <p style={{ fontSize: '13px', color: '#d1d5db', marginBottom: '12px', lineHeight: '1.6' }}>{req.description}</p>}
+                            {req.wardrobe_notes && <p style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '12px' }}>👔 {req.wardrobe_notes}</p>}
+                            <div style={{ fontSize: '13px', fontWeight: '700', color: '#F59E0B', marginBottom: '8px' }}>Submit a performer:</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              {roster.slice(0, 8).map(r => (
+                                <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '8px 10px', backgroundColor: '#1a1a2e', borderRadius: '8px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#374151', overflow: 'hidden', flexShrink: 0 }}>
+                                      {r.performer_profiles?.headshot_url
+                                        ? <img src={r.performer_profiles.headshot_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>👤</div>
+                                      }
+                                    </div>
+                                    <div>
+                                      <div style={{ fontSize: '13px', fontWeight: '600', color: 'white' }}>{pName(r)}</div>
+                                      <div style={{ fontSize: '11px', color: '#F59E0B' }}>{unionBadge(r.performer_profiles?.union_status)} {unionTierLabel(r.performer_profiles?.union_status)}</div>
+                                    </div>
+                                  </div>
+                                  <button onClick={() => setSubmittingFor({ reqId: req.id, performerId: r.user_id, notes: '' })} style={{ padding: '6px 12px', backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', whiteSpace: 'nowrap' }}>Submit</button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })
+            }
+          </div>
+        )}
+
+        {/* ── SUBMISSIONS ───────────────────────────────────────────────── */}
+        {activeTab === 'Submissions' && (
+          <div>
+            <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white', margin: '0 0 16px' }}>Submissions</h1>
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
+              {(['all','submitted','shortlisted','confirmed','rejected'] as const).map(f => (
+                <button key={f} onClick={() => setSubFilter(f)} style={{ padding: '7px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '12px', backgroundColor: subFilter === f ? '#F59E0B' : '#1e1e35', color: subFilter === f ? '#1a1a2e' : '#9ca3af' }}>
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                </button>
+              ))}
+            </div>
+            {subLoading
+              ? <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>Loading...</div>
+              : (() => {
+                  const filtered = subFilter === 'all' ? submissions : submissions.filter(s => s.status === subFilter)
+                  return filtered.length === 0
+                    ? <div style={{ textAlign: 'center', padding: '60px', color: '#9ca3af', backgroundColor: '#1e1e35', borderRadius: '14px' }}>No {subFilter !== 'all' ? subFilter : ''} submissions.</div>
+                    : filtered.map(sub => {
+                        const pill = STATUS_PILL[sub.status] || STATUS_PILL.submitted
+                        const days = sub.casting_requests ? daysUntil(sub.casting_requests.shoot_date) : 0
+                        return (
+                          <div key={sub.id} style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#374151', overflow: 'hidden', flexShrink: 0 }}>
+                              {sub.performer_profiles?.headshot_url
+                                ? <img src={sub.performer_profiles.headshot_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>👤</div>
+                              }
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: '700', fontSize: '14px', color: 'white' }}>{sName(sub)}</div>
+                              <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>
+                                {sub.casting_requests?.production_name} · {sub.casting_requests?.role_type}
+                                {sub.casting_requests?.shoot_date ? ` · ${fmtDate(sub.casting_requests.shoot_date)}` : ''}
+                              </div>
+                              {sub.performer_profiles?.union_priority && (
+                                <div style={{ fontSize: '11px', color: '#F59E0B', marginTop: '2px' }}>
+                                  {unionBadge(sub.performer_profiles?.union_status)} {unionTierLabel(sub.performer_profiles?.union_status)}
+                                </div>
+                              )}
+                            </div>
+                            <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                              <span style={{ padding: '3px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: '700', backgroundColor: pill.bg, color: pill.color }}>
+                                {sub.status.replace('_', ' ')}
+                              </span>
+                              {days > 0 && <span style={{ fontSize: '10px', color: '#6b7280' }}>{days}d</span>}
+                            </div>
+                          </div>
+                        )
+                      })
+                })()
+            }
+          </div>
+        )}
+
+        {/* ── BOOKING CALENDAR ─────────────────────────────────────────── */}
+        {activeTab === 'Calendar' && (
+          <div>
+            <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white', margin: '0 0 20px' }}>Booking Calendar</h1>
+            <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '24px', border: '1px solid rgba(255,255,255,0.06)', textAlign: 'center' }}>
+              <div style={{ fontSize: '40px', marginBottom: '12px' }}>📅</div>
+              <div style={{ fontSize: '15px', color: 'white', fontWeight: '700', marginBottom: '8px' }}>Confirmed Bookings</div>
+              <div style={{ fontSize: '13px', color: '#9ca3af', marginBottom: '20px' }}>Showing confirmed submissions for your roster performers.</div>
+              {submissions.filter(s => s.status === 'confirmed').length === 0
+                ? <div style={{ color: '#6b7280', fontSize: '14px' }}>No confirmed bookings yet.</div>
+                : submissions.filter(s => s.status === 'confirmed').sort((a, b) => {
+                    const da = a.casting_requests?.shoot_date || ''
+                    const db = b.casting_requests?.shoot_date || ''
+                    return da < db ? -1 : 1
+                  }).map(sub => (
+                    <div key={sub.id} style={{ backgroundColor: '#1a1a2e', borderRadius: '10px', padding: '12px 14px', marginBottom: '8px', textAlign: 'left', display: 'flex', gap: '12px', alignItems: 'center', border: '1px solid rgba(34,197,94,0.2)' }}>
+                      <div style={{ fontSize: '24px' }}>✅</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '700', color: 'white', fontSize: '14px' }}>{sName(sub)}</div>
+                        <div style={{ fontSize: '12px', color: '#22c55e', fontWeight: '600' }}>{sub.casting_requests?.production_name}</div>
+                        <div style={{ fontSize: '11px', color: '#9ca3af' }}>{sub.casting_requests?.shoot_date ? fmtDate(sub.casting_requests.shoot_date) : ''} · {sub.casting_requests?.role_type}</div>
+                      </div>
+                    </div>
+                  ))
+              }
+            </div>
+          </div>
+        )}
+
+        {/* ── FINANCIALS ────────────────────────────────────────────────── */}
+        {activeTab === 'Financials' && (
+          <div>
+            <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white', margin: '0 0 20px' }}>Commissions & Financials</h1>
+
+            {/* Summary */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+              {[
+                { label: 'This Month Earned', value: fmtMoney(commMonthTotal), color: '#22c55e' },
+                { label: 'Total Unpaid', value: fmtMoney(commUnpaidTotal), color: '#F59E0B' },
+              ].map(s => (
+                <div key={s.label} style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '20px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ fontSize: '24px', fontWeight: '900', color: s.color }}>{s.value}</div>
+                  <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Add commission */}
+            <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '16px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: addingComm ? '14px' : '0' }}>
+                <span style={{ fontWeight: '700', color: 'white', fontSize: '14px' }}>Log Commission</span>
+                <button onClick={() => setAddingComm(v => !v)} style={{ padding: '6px 14px', backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>
+                  {addingComm ? 'Cancel' : '+ Add'}
+                </button>
+              </div>
+              {addingComm && (
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: '10px' }}>
+                  <div><label style={lbl}>Booking Date *</label><input type="date" value={newComm.booking_date} onChange={e => setNewComm(f => ({ ...f, booking_date: e.target.value }))} style={inp} /></div>
+                  <div><label style={lbl}>Production *</label><input value={newComm.production_name} onChange={e => setNewComm(f => ({ ...f, production_name: e.target.value }))} placeholder="Show name" style={inp} /></div>
+                  <div><label style={lbl}>Performer</label><input value={newComm.performer_name} onChange={e => setNewComm(f => ({ ...f, performer_name: e.target.value }))} placeholder="Full name" style={inp} /></div>
+                  <div><label style={lbl}>Gross Pay ($) *</label><input type="number" value={newComm.gross_pay} onChange={e => setNewComm(f => ({ ...f, gross_pay: e.target.value }))} placeholder="1500" style={inp} /></div>
+                  <div><label style={lbl}>Rate (%)</label><input type="number" value={newComm.commission_rate} onChange={e => setNewComm(f => ({ ...f, commission_rate: e.target.value }))} style={inp} /></div>
+                  <div><label style={lbl}>Notes</label><input value={newComm.notes} onChange={e => setNewComm(f => ({ ...f, notes: e.target.value }))} placeholder="Optional" style={inp} /></div>
+                  {newComm.gross_pay && newComm.commission_rate && (
+                    <div style={{ padding: '10px', backgroundColor: 'rgba(34,197,94,0.1)', borderRadius: '8px', border: '1px solid rgba(34,197,94,0.2)', fontSize: '13px', color: '#22c55e', fontWeight: '700' }}>
+                      Commission: {fmtMoney(parseFloat(newComm.gross_pay) * parseFloat(newComm.commission_rate) / 100)}
+                    </div>
+                  )}
+                  <div style={{ gridColumn: isMobile ? '1' : '1 / -1' }}>
+                    <button onClick={addCommission} style={{ padding: '10px 24px', backgroundColor: '#22c55e', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '800', fontSize: '14px' }}>Save Commission</button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Commission list */}
+            {commLoading
+              ? <div style={{ textAlign: 'center', padding: '30px', color: '#9ca3af' }}>Loading...</div>
+              : commissions.length === 0
+                ? <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af', backgroundColor: '#1e1e35', borderRadius: '14px' }}>No commissions logged yet.</div>
+                : commissions.map(c => (
+                    <div key={c.id} style={{ backgroundColor: '#1e1e35', borderRadius: '12px', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '700', color: 'white', fontSize: '14px' }}>{c.production_name}</div>
+                        <div style={{ fontSize: '12px', color: '#9ca3af' }}>{c.performer_name} · {fmtDate(c.booking_date)} · {c.commission_rate}%</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontWeight: '900', fontSize: '16px', color: c.paid ? '#22c55e' : '#F59E0B' }}>{fmtMoney(c.commission_amount)}</div>
+                        <div style={{ fontSize: '11px', color: c.paid ? '#22c55e' : '#6b7280' }}>{c.paid ? '✓ Paid' : 'Unpaid'}</div>
+                      </div>
+                      {!c.paid && (
+                        <button onClick={() => markCommPaid(c.id)} style={{ padding: '6px 12px', backgroundColor: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', whiteSpace: 'nowrap' }}>Mark Paid</button>
+                      )}
+                    </div>
+                  ))
+            }
+          </div>
+        )}
+
+        {/* ── AVAILABILITY CHECK ───────────────────────────────────────── */}
+        {activeTab === 'Avail' && (
+          <div>
+            <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white', margin: '0 0 20px' }}>Availability Check</h1>
+
+            <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '20px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '15px', fontWeight: '700', color: 'white', margin: '0 0 14px' }}>Send Availability Request</h2>
+              <div style={{ display: 'grid', gap: '12px' }}>
+                <div>
+                  <label style={lbl}>Date Needed *</label>
+                  <input type="date" value={availDate} onChange={e => setAvailDate(e.target.value)} style={inp} />
+                </div>
+                <div>
+                  <label style={lbl}>Message to performers</label>
+                  <textarea value={availMessage} onChange={e => setAvailMessage(e.target.value)} placeholder="Are you available for a background shoot on this date?" rows={2} style={{ ...inp, resize: 'vertical', fontFamily: 'inherit' }} />
+                </div>
+                <div>
+                  <label style={lbl}>Select Performers ({availPerformerIds.length} selected)</label>
+                  <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
+                    <button onClick={() => setAvailPerformerIds(roster.map(r => r.user_id))} style={{ fontSize: '12px', padding: '5px 10px', backgroundColor: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '6px', cursor: 'pointer', fontWeight: '700' }}>Select All</button>
+                    <button onClick={() => setAvailPerformerIds([])} style={{ fontSize: '12px', padding: '5px 10px', backgroundColor: 'rgba(255,255,255,0.05)', color: '#9ca3af', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', cursor: 'pointer', fontWeight: '700' }}>Clear</button>
+                  </div>
+                  <div style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px', padding: '4px', backgroundColor: '#0f0f1a', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    {roster.map(r => (
+                      <label key={r.user_id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', borderRadius: '6px', cursor: 'pointer', backgroundColor: availPerformerIds.includes(r.user_id) ? 'rgba(245,158,11,0.1)' : 'transparent' }}>
+                        <input type="checkbox" checked={availPerformerIds.includes(r.user_id)} onChange={e => setAvailPerformerIds(prev => e.target.checked ? [...prev, r.user_id] : prev.filter(id => id !== r.user_id))} style={{ width: '14px', height: '14px' }} />
+                        <span style={{ fontSize: '13px', color: 'white', flex: 1 }}>{pName(r)}</span>
+                        <span style={{ fontSize: '11px', color: '#F59E0B' }}>{unionBadge(r.performer_profiles?.union_status)}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <button onClick={sendAvailCheck} disabled={availSending || !availDate || availPerformerIds.length === 0} style={{ padding: '11px', backgroundColor: (availDate && availPerformerIds.length > 0) ? '#F59E0B' : '#374151', color: (availDate && availPerformerIds.length > 0) ? '#1a1a2e' : '#6b7280', fontWeight: '800', border: 'none', borderRadius: '8px', cursor: (availDate && availPerformerIds.length > 0) ? 'pointer' : 'not-allowed', fontSize: '14px' }}>
+                  {availSending ? 'Sending...' : `📤 Send Avail Check to ${availPerformerIds.length} performer${availPerformerIds.length !== 1 ? 's' : ''}`}
+                </button>
+              </div>
+            </div>
+
+            {/* Response tracking */}
+            {availCheckId && (
+              <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '20px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#22c55e', margin: 0 }}>✓ Check Sent!</h2>
+                  <button onClick={loadAvailResponses} style={{ fontSize: '13px', color: '#F59E0B', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '700' }}>↻ Refresh Responses</button>
+                </div>
+                {availResponses.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {availResponses.map(r => (
+                      <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', backgroundColor: '#1a1a2e', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '18px' }}>{r.responded ? (r.available ? '✅' : '❌') : '⏳'}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: '600', color: 'white', fontSize: '13px' }}>{r.users?.raw_user_meta_data?.full_name || r.users?.email}</div>
+                          <div style={{ fontSize: '11px', color: r.responded ? (r.available ? '#22c55e' : '#ef4444') : '#9ca3af' }}>
+                            {r.responded ? (r.available ? 'Available' : 'Not available') : 'No response yet'}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── SETTINGS ──────────────────────────────────────────────────── */}
+        {activeTab === 'Settings' && (
+          <div>
+            <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white', margin: '0 0 20px' }}>Agency Settings</h1>
+            <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '20px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '15px', fontWeight: '700', color: 'white', margin: '0 0 14px' }}>Account</h2>
+              <div style={{ fontSize: '13px', color: '#9ca3af', marginBottom: '16px' }}>Logged in as {agentName}</div>
+              <button onClick={signOut} style={{ padding: '10px 20px', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', background: 'transparent', color: '#ef4444', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Sign Out</button>
+            </div>
+            <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '20px', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <h2 style={{ fontSize: '15px', fontWeight: '700', color: 'white', margin: '0 0 6px' }}>Performer Availability Links</h2>
+              <div style={{ fontSize: '13px', color: '#9ca3af' }}>Performers can manage their availability at <span style={{ color: '#F59E0B', fontWeight: '600' }}>/availability</span>. Direct them there to keep their calendar updated.</div>
+            </div>
+          </div>
+        )}
+
+      </div>
+
+      {/* ── PERFORMER DETAIL MODAL ──────────────────────────────────────────── */}
+      {selectedPerformer && (
+        <div onClick={() => setSelectedPerformer(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.75)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div onClick={e => e.stopPropagation()} style={{ backgroundColor: '#1e1e35', borderRadius: '20px', padding: '24px', maxWidth: '420px', width: '100%', maxHeight: '85vh', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ display: 'flex', gap: '14px', marginBottom: '16px' }}>
+              <div style={{ width: '72px', height: '90px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, backgroundColor: '#374151' }}>
+                {selectedPerformer.performer_profiles?.headshot_url
+                  ? <img src={selectedPerformer.performer_profiles.headshot_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px' }}>👤</div>
+                }
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: '800', fontSize: '17px', color: 'white', marginBottom: '3px' }}>{pName(selectedPerformer)}</div>
+                <div style={{ fontSize: '18px' }}>{unionBadge(selectedPerformer.performer_profiles?.union_status)}</div>
+                <div style={{ fontSize: '13px', color: '#F59E0B', fontWeight: '600' }}>{unionTierLabel(selectedPerformer.performer_profiles?.union_status)}</div>
+                {selectedPerformer.performer_profiles?.film_region_code && <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '3px' }}>📍 {getRegionName(selectedPerformer.performer_profiles.film_region_code)}</div>}
+              </div>
+              <button onClick={() => setSelectedPerformer(null)} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#6b7280' }}>×</button>
+            </div>
+
+            {/* Stats */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px', marginBottom: '14px' }}>
+              {[
+                ['Gender', selectedPerformer.performer_profiles?.gender],
+                ['Age', selectedPerformer.performer_profiles?.age ? `${selectedPerformer.performer_profiles.age}` : null],
+                ['Height', selectedPerformer.performer_profiles?.height_cm ? `${selectedPerformer.performer_profiles.height_cm} cm` : null],
+                ['Hair', selectedPerformer.performer_profiles?.hair_color],
+                ['Eyes', selectedPerformer.performer_profiles?.eye_color],
+              ].filter(([, v]) => v).map(([k, v]) => (
+                <div key={String(k)} style={{ backgroundColor: '#1a1a2e', borderRadius: '8px', padding: '8px 10px' }}>
+                  <div style={{ color: '#9ca3af', fontSize: '11px', marginBottom: '2px' }}>{k}</div>
+                  <div style={{ color: 'white', fontWeight: '600' }}>{v}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Tags */}
+            <div style={{ marginBottom: '14px' }}>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#9ca3af', marginBottom: '6px' }}>Tags</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '6px' }}>
+                {(selectedPerformer.tags || []).map(t => (
+                  <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', backgroundColor: 'rgba(59,130,246,0.2)', color: '#60a5fa', borderRadius: '20px', fontSize: '12px' }}>
+                    {t}
+                    <button onClick={() => removeTag(selectedPerformer.user_id, t)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#60a5fa', fontSize: '12px', padding: 0, lineHeight: 1 }}>×</button>
+                  </span>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTag(selectedPerformer.user_id)} placeholder="Add tag..." style={{ flex: 1, padding: '7px 10px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '7px', fontSize: '13px', color: 'white', backgroundColor: '#0f0f1a', outline: 'none' }} />
+                <button onClick={() => addTag(selectedPerformer.user_id)} style={{ padding: '7px 13px', backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '7px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>+</button>
+              </div>
+            </div>
+
+            {/* Private note */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#9ca3af', marginBottom: '6px' }}>Private Note</div>
+              <textarea value={noteText} onChange={e => setNoteText(e.target.value)} rows={3} placeholder="Notes visible only to your agency..." style={{ width: '100%', padding: '10px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '13px', color: 'white', backgroundColor: '#0f0f1a', outline: 'none', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+              <button onClick={saveNote} disabled={noteLoading} style={{ marginTop: '6px', padding: '7px 14px', backgroundColor: noteLoading ? '#374151' : 'rgba(34,197,94,0.2)', color: noteLoading ? '#6b7280' : '#22c55e', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '7px', cursor: noteLoading ? 'not-allowed' : 'pointer', fontWeight: '700', fontSize: '13px' }}>
+                {noteLoading ? 'Saving...' : '💾 Save Note'}
+              </button>
+            </div>
+
+            {/* 7-day avail */}
+            {(selectedPerformer.weekAvailability || []).length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#9ca3af', marginBottom: '8px' }}>This Week</div>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  {selectedPerformer.weekAvailability.slice(0, 7).map(d => (
+                    <div key={d.date} style={{ flex: 1, textAlign: 'center' }}>
+                      <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '3px' }}>{new Date(d.date + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'short' }).slice(0, 2)}</div>
+                      <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: d.status ? (AVAIL_COLOR[d.status] || '#6b7280') : '#374151', margin: '0 auto' }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
-            <button
-              onClick={submitPerformers}
-              disabled={submitIds.length === 0 || submitting}
-              style={{
-                width: '100%', padding: '13px',
-                backgroundColor: submitIds.length === 0 ? '#e5e7eb' : '#1a1a2e',
-                color: submitIds.length === 0 ? '#9ca3af' : 'white',
-                fontWeight: '700', fontSize: '14px',
-                border: 'none', borderRadius: '10px',
-                cursor: submitIds.length === 0 ? 'not-allowed' : 'pointer',
-              }}
-            >
-              {submitting ? 'Submitting...' : `Submit ${submitIds.length > 0 ? submitIds.length + ' ' : ''}Selected Performer${submitIds.length !== 1 ? 's' : ''}`}
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => removeFromRoster(selectedPerformer.user_id)} style={{ flex: 1, padding: '10px', backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>Remove from Roster</button>
+              <button onClick={() => { setSelectedPerformer(null); router.push(`/profile/${selectedPerformer.user_id}`) }} style={{ flex: 2, padding: '10px', backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', fontSize: '13px' }}>View Full Profile →</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── SUBMIT MODAL ────────────────────────────────────────────────────── */}
+      {submittingFor && (
+        <div onClick={() => setSubmittingFor(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.75)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div onClick={e => e.stopPropagation()} style={{ backgroundColor: '#1e1e35', borderRadius: '20px', padding: '24px', maxWidth: '380px', width: '100%', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: '800', color: 'white', margin: '0 0 14px' }}>Submit Performer</h2>
+            <label style={lbl}>Notes for casting director</label>
+            <textarea value={submittingFor.notes} onChange={e => setSubmittingFor(f => f ? { ...f, notes: e.target.value } : null)} rows={3} placeholder="Why this performer is right for the role..." style={{ width: '100%', padding: '10px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '13px', color: 'white', backgroundColor: '#0f0f1a', outline: 'none', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: '14px' }} />
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => setSubmittingFor(null)} style={{ flex: 1, padding: '10px', backgroundColor: '#374151', color: '#9ca3af', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '14px' }}>Cancel</button>
+              <button onClick={submitPerformer} style={{ flex: 2, padding: '10px', backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', fontSize: '14px' }}>Submit</button>
+            </div>
           </div>
         </div>
       )}
@@ -1116,3 +981,8 @@ export default function AgentDashboardPage() {
     </div>
   )
 }
+
+// ─── Shared styles ────────────────────────────────────────────────────────────
+
+const lbl: React.CSSProperties = { display: 'block', fontSize: '12px', fontWeight: '600', color: '#9ca3af', marginBottom: '5px' }
+const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '7px', fontSize: '13px', color: 'white', backgroundColor: '#0f0f1a', outline: 'none', boxSizing: 'border-box' }
