@@ -7,7 +7,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2026-04-22.dahlia' as any,
 })
 
-export async function POST() {
+export async function POST(request: Request) {
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,6 +25,10 @@ export async function POST() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const body = await request.json().catch(() => ({}))
+  const quantity = body.quantity === 5 ? 5 : 1
+  const unitAmountCents = 200 // $2.00 CAD per analysis
+
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -32,13 +36,15 @@ export async function POST() {
       line_items: [{
         price_data: {
           currency: 'cad',
-          unit_amount: 499,
+          unit_amount: unitAmountCents,
           product_data: {
-            name: 'Headshot Analyzer Credits (5 analyses)',
-            description: 'AI-powered headshot critique — 5 analysis credits',
+            name: quantity === 1
+              ? 'Headshot Analyzer — 1 Analysis Credit'
+              : 'Headshot Analyzer — 5 Analysis Credits',
+            description: 'AI-powered casting director headshot critique. Credits never expire.',
           },
         },
-        quantity: 1,
+        quantity,
       }],
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/headshot-analyzer?purchased=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/headshot-analyzer`,
@@ -46,7 +52,7 @@ export async function POST() {
       metadata: {
         user_id: user.id,
         type: 'headshot_credits',
-        credits: '5',
+        credits: quantity.toString(),
       },
     })
 

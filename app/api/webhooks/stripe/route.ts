@@ -87,6 +87,20 @@ export async function POST(request: Request) {
         break;
       }
 
+      // One-time headshot credits payment
+      if (session.mode === 'payment' && session.metadata?.type === 'headshot_credits') {
+        const creditsToAdd = parseInt(session.metadata?.credits || '1', 10);
+        console.log(`🤳 Headshot credits payment — adding ${creditsToAdd} credit(s) to user ${userId}`);
+        const { data: currentUser } = await supabaseAdmin
+          .from('users').select('headshot_credits').eq('id', userId).maybeSingle();
+        const newCredits = (currentUser?.headshot_credits || 0) + creditsToAdd;
+        const { error: creditsError } = await supabaseAdmin
+          .from('users').update({ headshot_credits: newCredits }).eq('id', userId);
+        if (creditsError) console.error('❌ Failed to add headshot credits:', creditsError);
+        else console.log(`✅ Headshot credits updated to ${newCredits} for user ${userId}`);
+        break;
+      }
+
       // Subscription checkout: stripeCustomerId is required
       if (!stripeCustomerId) {
         console.error('❌ No stripeCustomerId on session. Skipping.');
@@ -98,6 +112,16 @@ export async function POST(request: Request) {
         id: userId,
         stripe_customer_id: stripeCustomerId,
       };
+
+      // For subscription sessions, activate immediately — don't rely solely on invoice.paid
+      if (session.mode === 'subscription') {
+        upsertPayload.subscription_status = 'active';
+        upsertPayload.subscription_updated_at = new Date().toISOString();
+        if (session.subscription) {
+          upsertPayload.stripe_subscription_id = session.subscription as string;
+        }
+        console.log(`🔓 Subscription checkout — also setting subscription_status = active for user ${userId}`);
+      }
 
       console.log(`📝 Upserting users WHERE id = '${userId}' with:`, upsertPayload);
       const { data: updatedRows, error: updateError } = await supabaseAdmin
@@ -256,7 +280,35 @@ export async function POST(request: Request) {
       break;
     }
 
-    // ─── STEP 4: Deactivate subscription when it is cancelled ────────────────
+    // ─── STEP 4a: Handle subscription status changes ─────────────────────────
+    case 'customer.subscription.updated': {
+      const subscription = event.data.object as Stripe.Subscription;
+      const stripeCustomerId = subscription.customer as string | null;
+
+      console.log('🔄 customer.subscription.updated received');
+      console.log(`   subscription.id:      ${subscription.id}`);
+      console.log(`   subscription.status:  ${subscription.status}`);
+      console.log(`   subscription.customer: ${stripeCustomerId}`);
+
+      if (!stripeCustomerId) { break; }
+
+      const { data: userData, error: findError } = await supabaseAdmin
+        .from('users').select('id').eq('stripe_customer_id', stripeCustomerId).maybeSingle();
+
+      if (findError) { console.error('❌ Error finding user on subscription.updated:', findError); break; }
+      if (!userData) { console.error(`❌ No user found for stripe_customer_id ${stripeCustomerId}`); break; }
+
+      const newStatus = subscription.status === 'active' ? 'active' : 'inactive';
+      await supabaseAdmin.from('users').update({
+        subscription_status: newStatus,
+        subscription_updated_at: new Date().toISOString(),
+      }).eq('id', userData.id);
+
+      console.log(`✅ subscription_status updated to '${newStatus}' for user ${userData.id}`);
+      break;
+    }
+
+    // ─── STEP 4b: Deactivate subscription when it is cancelled ───────────────
     case 'customer.subscription.deleted': {
       const subscription = event.data.object as Stripe.Subscription;
       const stripeCustomerId = subscription.customer as string | null;

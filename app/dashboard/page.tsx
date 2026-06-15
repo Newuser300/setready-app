@@ -1017,15 +1017,15 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Section 1 Modules — locked for non-subscribers, clickable for subscribers */}
+          {/* Section 1 Modules — completed modules always shown; locked only if not started AND not subscribed */}
           <div className="grid gap-4">
             {section1Modules.map((module) => {
               const isCompleted = progress[module.id]?.completed;
               const score = progress[module.id]?.score;
               const actualScore = getActualScore(score);
 
-              // Non-subscriber: show locked card that scrolls to subscribe banner on click
-              if (!isSubscribed) {
+              // Non-subscriber AND not completed: show locked card
+              if (!isSubscribed && !isCompleted) {
                 return (
                   <div
                     key={module.id}
@@ -1050,7 +1050,7 @@ export default function Dashboard() {
                 );
               }
 
-              // Subscriber: full clickable card
+              // Completed OR subscribed: full clickable card
               return (
                 <Link href={`/module/${module.id}`} key={module.id}>
                   <div className={`

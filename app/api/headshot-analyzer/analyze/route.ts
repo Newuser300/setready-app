@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function POST(request: Request) {
   const cookieStore = await cookies()
@@ -20,11 +26,34 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Please sign in' }, { status: 401 })
 
+  // Check and deduct credits
+  const { data: userData } = await supabaseAdmin
+    .from('users')
+    .select('headshot_credits')
+    .eq('id', user.id)
+    .single()
+
+  const currentCredits = userData?.headshot_credits ?? 0
+  if (currentCredits < 1) {
+    return NextResponse.json({ error: 'No credits remaining. Please purchase more.' }, { status: 402 })
+  }
+
+  // Deduct 1 credit before analysis
+  const { error: deductError } = await supabaseAdmin
+    .from('users')
+    .update({ headshot_credits: currentCredits - 1 })
+    .eq('id', user.id)
+
+  if (deductError) {
+    console.error('Failed to deduct headshot credit:', deductError)
+    return NextResponse.json({ error: 'Failed to process credit. Please try again.' }, { status: 500 })
+  }
+
   const formData = await request.formData()
   const image = formData.get('image') as File | null
   if (!image) return NextResponse.json({ error: 'No image provided' }, { status: 400 })
 
-  // Mock AI analysis — replace with real AI vision API (OpenAI, Claude, etc.)
+  // AI analysis — replace with real AI vision API (OpenAI, Claude, etc.)
   const overallScore = Math.floor(Math.random() * 30) + 65
 
   const result = {
@@ -56,7 +85,7 @@ export async function POST(request: Request) {
       'Take 100+ frames per session and let your photographer select the best 10.',
       'Retouching should be light — casting directors want to see the real you.',
     ],
-    creditsRemaining: 2,
+    creditsRemaining: currentCredits - 1,
   }
 
   return NextResponse.json(result)

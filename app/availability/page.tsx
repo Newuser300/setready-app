@@ -63,10 +63,12 @@ export default function AvailabilityPage() {
   }
 
   const toggleDay = async (dateStr: string) => {
+    const today = new Date().toISOString().slice(0, 10)
+    if (dateStr < today) return
+
     const current = availability[dateStr]
     const next: string | null = !current ? 'available'
       : current === 'available' ? 'unavailable'
-      : current === 'unavailable' ? 'tentative'
       : null
 
     // Optimistic update
@@ -274,7 +276,7 @@ export default function AvailabilityPage() {
           📅 My Availability
         </h1>
         <p style={{ color: '#9ca3af', margin: 0, fontSize: '14px' }}>
-          Tap a day to cycle: Available → Unavailable → Tentative → Clear
+          Tap a day to cycle: Available → Unavailable → Clear
         </p>
         {saving && (
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: 'rgba(245,158,11,0.15)', border: '1px solid #F59E0B', borderRadius: '999px', padding: '4px 12px', fontSize: '12px', color: '#F59E0B', marginTop: '6px' }}>
@@ -326,9 +328,9 @@ export default function AvailabilityPage() {
         {/* Bulk actions — row 1 */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '8px' }}>
           {[
-            { label: '✅ All Available', status: 'available', bg: '#22c55e' },
-            { label: '❌ All Unavailable', status: 'unavailable', bg: '#ef4444' },
-            { label: '🗑 Clear Month', status: null, bg: '#6b7280' }
+            { label: '✅ Select Entire Month', status: 'available', bg: '#22c55e' },
+            { label: '❌ Mark Month Unavailable', status: 'unavailable', bg: '#ef4444' },
+            { label: '🗑 Clear Entire Month', status: null, bg: '#6b7280' }
           ].map(btn => (
             <button
               key={btn.label}

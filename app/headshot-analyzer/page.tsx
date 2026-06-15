@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -12,6 +12,7 @@ type AnalysisResult = {
   background: { score: number; feedback: string };
   professionalism: { score: number; feedback: string };
   topRecommendations: string[];
+  creditsRemaining?: number;
 };
 
 export default function HeadshotAnalyzer() {
@@ -24,18 +25,58 @@ export default function HeadshotAnalyzer() {
   const [error, setError] = useState('');
   const [credits, setCredits] = useState<number | null>(null);
   const [creditsLoaded, setCreditsLoaded] = useState(false);
+  const [purchasing, setPurchasing] = useState<'1' | '5' | null>(null);
+
+  // Load credits on mount
+  useEffect(() => {
+    fetch('/api/headshot-analyzer/credits', { credentials: 'include' })
+      .then(r => r.json())
+      .then(d => {
+        setCredits(d.credits ?? 0);
+        setCreditsLoaded(true);
+      })
+      .catch(() => {
+        setCredits(0);
+        setCreditsLoaded(true);
+      });
+  }, []);
+
+  // Handle purchase redirect return
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('purchased') === 'true') {
+      window.history.replaceState({}, '', '/headshot-analyzer');
+      fetch('/api/headshot-analyzer/credits', { credentials: 'include' })
+        .then(r => r.json())
+        .then(d => setCredits(d.credits ?? 0))
+        .catch(() => {});
+    }
+  }, []);
+
+  async function handlePurchase(quantity: 1 | 5) {
+    setPurchasing(quantity.toString() as '1' | '5');
+    try {
+      const res = await fetch('/api/checkout/headshot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ quantity }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+      else setError(data.error || 'Unable to start checkout.');
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setPurchasing(null);
+    }
+  }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setError('Please select an image file (JPG, PNG, etc.)');
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setError('Image must be under 10MB');
-      return;
-    }
+    if (!file.type.startsWith('image/')) { setError('Please select an image file (JPG, PNG, etc.)'); return; }
+    if (file.size > 10 * 1024 * 1024) { setError('Image must be under 10MB'); return; }
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
     setResult(null);
@@ -46,10 +87,7 @@ export default function HeadshotAnalyzer() {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setError('Please select an image file (JPG, PNG, etc.)');
-      return;
-    }
+    if (!file.type.startsWith('image/')) { setError('Please select an image file (JPG, PNG, etc.)'); return; }
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
     setResult(null);
@@ -111,164 +149,224 @@ export default function HeadshotAnalyzer() {
           <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '20px', padding: 0, lineHeight: 1 }}>←</button>
           <div>
             <h1 style={{ fontWeight: '800', fontSize: '18px', margin: 0 }}>🤳 Headshot Analyzer</h1>
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>AI-powered headshot critique for performers</p>
+            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>AI casting director critique for performers</p>
           </div>
+          {creditsLoaded && credits !== null && credits > 0 && (
+            <div style={{ marginLeft: 'auto', backgroundColor: 'rgba(245,158,11,0.2)', border: '1px solid #F59E0B', borderRadius: '20px', padding: '4px 12px', fontSize: '12px', fontWeight: '700', color: '#F59E0B' }}>
+              {credits} credit{credits !== 1 ? 's' : ''} left
+            </div>
+          )}
         </div>
       </div>
 
       <div style={{ maxWidth: '640px', margin: '0 auto', padding: '20px 16px' }}>
-        {/* Upload Area */}
-        {!result && (
-          <div
-            onDrop={handleDrop}
-            onDragOver={e => e.preventDefault()}
-            onClick={() => fileInputRef.current?.click()}
-            style={{
-              border: '2px dashed #d1d5db',
-              borderRadius: '16px',
-              padding: '40px 20px',
-              textAlign: 'center',
-              cursor: 'pointer',
-              backgroundColor: 'white',
-              marginBottom: '16px',
-              transition: 'border-color 0.2s',
-            }}
-          >
-            {previewUrl ? (
-              <div>
-                <img
-                  src={previewUrl}
-                  alt="Preview"
-                  style={{ maxWidth: '200px', maxHeight: '240px', borderRadius: '12px', objectFit: 'cover', margin: '0 auto 12px', display: 'block', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
-                />
-                <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 4px' }}>{selectedFile?.name}</p>
-                <p style={{ fontSize: '12px', color: '#9ca3af', margin: 0 }}>Click to change photo</p>
-              </div>
-            ) : (
-              <div>
-                <div style={{ fontSize: '48px', marginBottom: '12px' }}>🤳</div>
-                <p style={{ fontWeight: '700', fontSize: '16px', color: '#1a1a2e', margin: '0 0 6px' }}>Upload Your Headshot</p>
-                <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 12px' }}>Drag and drop or click to select</p>
-                <p style={{ fontSize: '11px', color: '#9ca3af', margin: 0 }}>JPG, PNG, WEBP · Max 10MB</p>
-              </div>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              style={{ display: 'none' }}
-            />
+
+        {!creditsLoaded ? (
+          <div style={{ textAlign: 'center', padding: '60px 20px', color: '#9ca3af' }}>
+            <div style={{ fontSize: '32px', marginBottom: '12px' }}>🤳</div>
+            <p>Loading...</p>
           </div>
-        )}
-
-        {error && (
-          <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', color: '#dc2626', fontSize: '14px' }}>
-            {error}
-          </div>
-        )}
-
-        {previewUrl && !result && (
-          <button
-            onClick={analyze}
-            disabled={analyzing}
-            style={{
-              width: '100%',
-              padding: '14px',
-              backgroundColor: analyzing ? '#9ca3af' : '#1a1a2e',
-              color: 'white',
-              fontWeight: '700',
-              fontSize: '16px',
-              border: 'none',
-              borderRadius: '12px',
-              cursor: analyzing ? 'not-allowed' : 'pointer',
-              marginBottom: '16px',
-            }}
-          >
-            {analyzing ? '🔍 Analyzing...' : '🔍 Analyze My Headshot'}
-          </button>
-        )}
-
-        {/* Results */}
-        {result && (
+        ) : credits === 0 && !result ? (
+          /* ── PURCHASE GATE ── */
           <div>
-            {/* Overall Score */}
-            <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', marginBottom: '16px', textAlign: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
-              <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '20px' }}>
-                {previewUrl && (
-                  <img src={previewUrl} alt="Analyzed" style={{ width: '80px', height: '96px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }} />
-                )}
-                <div style={{ flex: 1, textAlign: 'left' }}>
-                  <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 4px' }}>Overall Score</p>
-                  <div style={{ fontSize: '52px', fontWeight: '900', color: getScoreColor(result.overallScore), lineHeight: 1, marginBottom: '4px' }}>{result.overallScore}</div>
-                  <div style={{ fontSize: '14px', fontWeight: '700', color: getScoreColor(result.overallScore) }}>{getScoreLabel(result.overallScore)}</div>
-                </div>
-              </div>
+            {/* What the analyzer does */}
+            <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', marginBottom: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
+              <p style={{ fontWeight: '800', fontSize: '16px', color: '#1a1a2e', margin: '0 0 6px' }}>What the AI Headshot Analyzer Does</p>
+              <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 16px' }}>Upload your headshot photo. Our AI casting director reviews your photo and identifies:</p>
 
-              {/* Category scores */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
-                {categories.map(cat => (
-                  <div key={cat.key} style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '18px', marginBottom: '4px' }}>{cat.icon}</div>
-                    <div style={{ fontSize: '18px', fontWeight: '800', color: getScoreColor(cat.data.score) }}>{cat.data.score}</div>
-                    <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>{cat.label}</div>
+              {[
+                { icon: '🎭', text: 'Your casting type (e.g. Character Actor, Leading Lady, Authority Figure)' },
+                { icon: '📅', text: 'The age range you can play' },
+                { icon: '🎬', text: 'Your top character matches with percentage scores (e.g. Police Officer 94%, Doctor 88%)' },
+                { icon: '💡', text: 'Why each role suits your look' },
+                { icon: '👔', text: 'Wardrobe tips for each character type' },
+                { icon: '🌟', text: 'Your casting strengths' },
+                { icon: '⚠️', text: 'What to avoid in your headshot' },
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '16px', flexShrink: 0 }}>{item.icon}</span>
+                  <span style={{ fontSize: '13px', color: '#374151', lineHeight: '1.5' }}>{item.text}</span>
+                </div>
+              ))}
+
+              <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '16px', marginTop: '8px' }}>
+                <p style={{ fontWeight: '700', fontSize: '14px', color: '#1a1a2e', margin: '0 0 10px' }}>You also receive:</p>
+                {[
+                  { icon: '📝', text: 'A casting director\'s honest written assessment of your headshot' },
+                  { icon: '🔍', text: 'Specific feedback on the photo itself — lighting, expression, framing' },
+                  { icon: '💼', text: 'Background work tips tailored to your appearance' },
+                  { icon: '📸', text: 'Recommendations for your next headshot session' },
+                ].map((item, i) => (
+                  <div key={i} style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'flex-start' }}>
+                    <span style={{ fontSize: '16px', flexShrink: 0 }}>{item.icon}</span>
+                    <span style={{ fontSize: '13px', color: '#374151', lineHeight: '1.5' }}>{item.text}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Category Breakdown */}
-            {categories.map(cat => (
-              <div key={cat.key} style={{ backgroundColor: 'white', borderRadius: '12px', padding: '16px', marginBottom: '10px', borderLeft: `4px solid ${getScoreColor(cat.data.score)}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span style={{ fontWeight: '700', fontSize: '14px', color: '#1a1a2e' }}>{cat.icon} {cat.label}</span>
-                  <span style={{ fontWeight: '800', fontSize: '16px', color: getScoreColor(cat.data.score) }}>{cat.data.score}/100</span>
-                </div>
-                <p style={{ fontSize: '13px', color: '#4b5563', margin: 0, lineHeight: '1.5' }}>{cat.data.feedback}</p>
-              </div>
-            ))}
+            {/* Important note */}
+            <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '14px 16px', marginBottom: '16px' }}>
+              <p style={{ fontSize: '13px', color: '#78350f', margin: 0, lineHeight: '1.6' }}>
+                <strong>⚠️ Important:</strong> This tool analyzes your headshot and provides written character recommendations and casting advice. It does <strong>NOT</strong> generate images of you as a character — the analysis is text-based and powered by professional AI casting expertise.
+              </p>
+            </div>
 
-            {/* Top Recommendations */}
-            {result.topRecommendations?.length > 0 && (
-              <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
-                <p style={{ fontWeight: '700', fontSize: '14px', color: '#92400e', margin: '0 0 10px' }}>💡 Top Recommendations</p>
-                {result.topRecommendations.map((rec, i) => (
-                  <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '8px', fontSize: '13px', color: '#78350f' }}>
-                    <span style={{ flexShrink: 0 }}>{i + 1}.</span>
-                    <span>{rec}</span>
-                  </div>
-                ))}
+            {/* Purchase options */}
+            <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
+              <p style={{ fontWeight: '800', fontSize: '16px', color: '#1a1a2e', margin: '0 0 4px' }}>Purchase Analysis Credits</p>
+              <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 20px' }}>$2.00 CAD per analysis · Credits never expire</p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <button
+                  onClick={() => handlePurchase(1)}
+                  disabled={purchasing !== null}
+                  style={{ width: '100%', padding: '14px', backgroundColor: '#1a1a2e', color: 'white', fontWeight: '700', fontSize: '15px', border: 'none', borderRadius: '12px', cursor: 'pointer', opacity: purchasing !== null ? 0.5 : 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
+                  <span>{purchasing === '1' ? 'Redirecting...' : 'Purchase 1 Analysis'}</span>
+                  <span style={{ backgroundColor: '#F59E0B', color: '#1a1a2e', padding: '3px 10px', borderRadius: '8px', fontSize: '14px', fontWeight: '800' }}>$2.00</span>
+                </button>
+
+                <button
+                  onClick={() => handlePurchase(5)}
+                  disabled={purchasing !== null}
+                  style={{ width: '100%', padding: '14px', backgroundColor: '#1a1a2e', color: 'white', fontWeight: '700', fontSize: '15px', border: 'none', borderRadius: '12px', cursor: 'pointer', opacity: purchasing !== null ? 0.5 : 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {purchasing === '5' ? 'Redirecting...' : 'Purchase 5 Analyses'}
+                    <span style={{ backgroundColor: '#22c55e', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 6px', borderRadius: '4px' }}>BEST VALUE</span>
+                  </span>
+                  <span style={{ backgroundColor: '#F59E0B', color: '#1a1a2e', padding: '3px 10px', borderRadius: '8px', fontSize: '14px', fontWeight: '800' }}>$10.00</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* ── UPLOAD + RESULTS ── */
+          <div>
+            {/* Credits remaining indicator */}
+            {credits !== null && credits > 0 && (
+              <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '10px 14px', marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', color: '#166534' }}>Analysis credits remaining</span>
+                <span style={{ fontWeight: '800', fontSize: '16px', color: '#16a34a' }}>{credits}</span>
               </div>
             )}
 
-            <button
-              onClick={() => { setResult(null); setSelectedFile(null); setPreviewUrl(null); setError(''); }}
-              style={{ width: '100%', padding: '12px', backgroundColor: '#f3f4f6', color: '#374151', fontWeight: '600', fontSize: '14px', border: 'none', borderRadius: '12px', cursor: 'pointer' }}
-            >
-              Analyze Another Photo
-            </button>
-          </div>
-        )}
-
-        {/* Info section */}
-        {!result && !previewUrl && (
-          <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-            <p style={{ fontWeight: '700', fontSize: '14px', color: '#1a1a2e', margin: '0 0 10px' }}>What we analyze:</p>
-            {[
-              { icon: '💡', label: 'Lighting', desc: 'Quality and direction of light on your face' },
-              { icon: '📐', label: 'Composition', desc: 'Framing, crop, and rule-of-thirds alignment' },
-              { icon: '😊', label: 'Expression', desc: 'Approachability, confidence, and authenticity' },
-              { icon: '🖼️', label: 'Background', desc: 'Clean, professional, non-distracting setting' },
-              { icon: '✨', label: 'Professionalism', desc: 'Overall industry-standard casting readiness' },
-            ].map(item => (
-              <div key={item.label} style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'flex-start' }}>
-                <span style={{ fontSize: '18px', flexShrink: 0 }}>{item.icon}</span>
-                <div>
-                  <span style={{ fontWeight: '600', fontSize: '13px', color: '#1a1a2e' }}>{item.label}</span>
-                  <span style={{ fontSize: '13px', color: '#6b7280' }}> — {item.desc}</span>
-                </div>
+            {/* Upload Area */}
+            {!result && (
+              <div
+                onDrop={handleDrop}
+                onDragOver={e => e.preventDefault()}
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  border: '2px dashed #d1d5db',
+                  borderRadius: '16px',
+                  padding: '40px 20px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  backgroundColor: 'white',
+                  marginBottom: '16px',
+                }}
+              >
+                {previewUrl ? (
+                  <div>
+                    <img src={previewUrl} alt="Preview" style={{ maxWidth: '200px', maxHeight: '240px', borderRadius: '12px', objectFit: 'cover', margin: '0 auto 12px', display: 'block', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }} />
+                    <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 4px' }}>{selectedFile?.name}</p>
+                    <p style={{ fontSize: '12px', color: '#9ca3af', margin: 0 }}>Click to change photo</p>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ fontSize: '48px', marginBottom: '12px' }}>🤳</div>
+                    <p style={{ fontWeight: '700', fontSize: '16px', color: '#1a1a2e', margin: '0 0 6px' }}>Upload Your Headshot</p>
+                    <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 12px' }}>Drag and drop or click to select</p>
+                    <p style={{ fontSize: '11px', color: '#9ca3af', margin: 0 }}>JPG, PNG, WEBP · Max 10MB</p>
+                  </div>
+                )}
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
               </div>
-            ))}
+            )}
+
+            {error && (
+              <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', color: '#dc2626', fontSize: '14px' }}>
+                {error}
+              </div>
+            )}
+
+            {previewUrl && !result && (
+              <button
+                onClick={analyze}
+                disabled={analyzing}
+                style={{ width: '100%', padding: '14px', backgroundColor: analyzing ? '#9ca3af' : '#1a1a2e', color: 'white', fontWeight: '700', fontSize: '16px', border: 'none', borderRadius: '12px', cursor: analyzing ? 'not-allowed' : 'pointer', marginBottom: '16px' }}
+              >
+                {analyzing ? '🔍 Analyzing... (uses 1 credit)' : '🔍 Analyze My Headshot — 1 Credit'}
+              </button>
+            )}
+
+            {/* Results */}
+            {result && (
+              <div>
+                <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', marginBottom: '16px', textAlign: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
+                  <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '20px' }}>
+                    {previewUrl && (
+                      <img src={previewUrl} alt="Analyzed" style={{ width: '80px', height: '96px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }} />
+                    )}
+                    <div style={{ flex: 1, textAlign: 'left' }}>
+                      <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 4px' }}>Overall Score</p>
+                      <div style={{ fontSize: '52px', fontWeight: '900', color: getScoreColor(result.overallScore), lineHeight: 1, marginBottom: '4px' }}>{result.overallScore}</div>
+                      <div style={{ fontSize: '14px', fontWeight: '700', color: getScoreColor(result.overallScore) }}>{getScoreLabel(result.overallScore)}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                    {categories.map(cat => (
+                      <div key={cat.key} style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '18px', marginBottom: '4px' }}>{cat.icon}</div>
+                        <div style={{ fontSize: '18px', fontWeight: '800', color: getScoreColor(cat.data.score) }}>{cat.data.score}</div>
+                        <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>{cat.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {categories.map(cat => (
+                  <div key={cat.key} style={{ backgroundColor: 'white', borderRadius: '12px', padding: '16px', marginBottom: '10px', borderLeft: `4px solid ${getScoreColor(cat.data.score)}` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <span style={{ fontWeight: '700', fontSize: '14px', color: '#1a1a2e' }}>{cat.icon} {cat.label}</span>
+                      <span style={{ fontWeight: '800', fontSize: '16px', color: getScoreColor(cat.data.score) }}>{cat.data.score}/100</span>
+                    </div>
+                    <p style={{ fontSize: '13px', color: '#4b5563', margin: 0, lineHeight: '1.5' }}>{cat.data.feedback}</p>
+                  </div>
+                ))}
+
+                {result.topRecommendations?.length > 0 && (
+                  <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
+                    <p style={{ fontWeight: '700', fontSize: '14px', color: '#92400e', margin: '0 0 10px' }}>💡 Top Recommendations</p>
+                    {result.topRecommendations.map((rec, i) => (
+                      <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '8px', fontSize: '13px', color: '#78350f' }}>
+                        <span style={{ flexShrink: 0 }}>{i + 1}.</span>
+                        <span>{rec}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  onClick={() => { setResult(null); setSelectedFile(null); setPreviewUrl(null); setError(''); }}
+                  style={{ width: '100%', padding: '12px', backgroundColor: '#f3f4f6', color: '#374151', fontWeight: '600', fontSize: '14px', border: 'none', borderRadius: '12px', cursor: 'pointer', marginBottom: '10px' }}
+                >
+                  Analyze Another Photo
+                </button>
+
+                {credits === 0 && (
+                  <button
+                    onClick={() => handlePurchase(5)}
+                    disabled={purchasing !== null}
+                    style={{ width: '100%', padding: '12px', backgroundColor: '#1a1a2e', color: 'white', fontWeight: '700', fontSize: '14px', border: 'none', borderRadius: '12px', cursor: 'pointer' }}
+                  >
+                    Purchase 5 More Analyses — $10.00
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 
