@@ -87,6 +87,7 @@ const quickActions = [
   { icon: '🤳', label: 'Headshot AI', action: 'link' as const, href: '/headshot-analyzer' },
   { icon: '🎮', label: 'Games', action: 'link' as const, href: '/games' },
   { icon: '📬', label: 'Messages', action: 'link' as const, href: '/messages' },
+  { icon: '☕', label: 'Support SetReady', action: 'link' as const, href: '/donate' },
 ];
 
 export default function Dashboard() {
@@ -1024,9 +1025,9 @@ export default function Dashboard() {
                 <span style={{ fontSize: '24px', lineHeight: 1 }}>{item.icon}</span>
                 <span style={{
                   fontSize: '10px',
-                  color: '#374151',
+                  color: item.label === 'Support SetReady' ? '#F59E0B' : '#374151',
                   textAlign: 'center',
-                  fontWeight: '500',
+                  fontWeight: item.label === 'Support SetReady' ? '700' : '500',
                   lineHeight: '1.3',
                 }}>
                   {item.label}
