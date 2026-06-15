@@ -104,7 +104,10 @@ export default function ProfilePage() {
   const fileRef = useRef<HTMLInputElement>(null)
   const fileFrontRef = useRef<HTMLInputElement>(null)
   const fileExtraRef = useRef<HTMLInputElement>(null)
-  const fileExtra2Ref = useRef<HTMLInputElement>(null)
+  const filePaid1Ref = useRef<HTMLInputElement>(null)
+  const filePaid2Ref = useRef<HTMLInputElement>(null)
+  const filePaid3Ref = useRef<HTMLInputElement>(null)
+  const filePaid4Ref = useRef<HTMLInputElement>(null)
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -119,7 +122,17 @@ export default function ProfilePage() {
   const [headshotFile, setHeadshotFile] = useState<File | null>(null)
   const [photoFront, setPhotoFront] = useState('')
   const [photoExtra, setPhotoExtra] = useState('')
-  const [photoExtra2, setPhotoExtra2] = useState('')
+  // Paid photo slots (photo_additional_2, photo_full_body_side, headshot_alt, wardrobe_formal)
+  const [photosUnlocked, setPhotosUnlocked] = useState(false)
+  const [photoPaid1, setPhotoPaid1] = useState('') // photo_additional_2
+  const [photoPaid2, setPhotoPaid2] = useState('') // photo_full_body_side
+  const [photoPaid3, setPhotoPaid3] = useState('') // headshot_alt
+  const [photoPaid4, setPhotoPaid4] = useState('') // wardrobe_formal
+  const [photoSlotLabels, setPhotoSlotLabels] = useState<Record<string, string>>({})
+  const [promoCode, setPromoCode] = useState('')
+  const [promoError, setPromoError] = useState('')
+  const [promoLoading, setPromoLoading] = useState(false)
+  const [showPromoInput, setShowPromoInput] = useState(false)
 
   // Basics
   const [isPublic, setIsPublic] = useState(true)
@@ -235,7 +248,12 @@ export default function ProfilePage() {
         setVideoReelUrl(p.video_reel_url || '')
         setPhotoFront(p.photo_full_body_front || '')
         setPhotoExtra(p.photo_additional || '')
-        setPhotoExtra2(p.photo_additional_2 || '')
+        setPhotosUnlocked(p.photos_unlocked ?? false)
+        setPhotoPaid1(p.photo_additional_2 || '')
+        setPhotoPaid2(p.photo_full_body_side || '')
+        setPhotoPaid3(p.headshot_alt || '')
+        setPhotoPaid4(p.wardrobe_formal || '')
+        setPhotoSlotLabels(p.photo_slot_labels || {})
         if (p.height_cm) {
           setHeightCm(p.height_cm.toString())
           const totalIn = Math.round(p.height_cm / 2.54)
@@ -299,7 +317,10 @@ export default function ProfilePage() {
     if (res.ok) setAgencyLinks((await res.json()) || [])
   }
 
-  async function uploadAdditionalPhoto(file: File, type: 'full_body_front' | 'additional' | 'additional_2') {
+  async function uploadAdditionalPhoto(
+    file: File,
+    type: 'full_body_front' | 'additional' | 'additional_2' | 'full_body_side' | 'headshot_alt' | 'wardrobe_formal'
+  ) {
     if (file.size > 25 * 1024 * 1024) { setMessage('Image is too large (max 25 MB before compression).'); return }
     let compressed: File
     try {
@@ -316,7 +337,10 @@ export default function ProfilePage() {
       const d = await res.json()
       if (type === 'full_body_front') setPhotoFront(d.url)
       if (type === 'additional') setPhotoExtra(d.url)
-      if (type === 'additional_2') setPhotoExtra2(d.url)
+      if (type === 'additional_2') setPhotoPaid1(d.url)
+      if (type === 'full_body_side') setPhotoPaid2(d.url)
+      if (type === 'headshot_alt') setPhotoPaid3(d.url)
+      if (type === 'wardrobe_formal') setPhotoPaid4(d.url)
     } else {
       setMessage('❌ Failed to upload photo.')
     }
@@ -469,7 +493,11 @@ export default function ProfilePage() {
         headshot_url: headshotUrl?.startsWith('https://') ? headshotUrl : null,
         photo_full_body_front: photoFront?.startsWith('https://') ? photoFront : null,
         photo_additional: photoExtra?.startsWith('https://') ? photoExtra : null,
-        photo_additional_2: photoExtra2?.startsWith('https://') ? photoExtra2 : null,
+        photo_additional_2: photoPaid1?.startsWith('https://') ? photoPaid1 : null,
+        photo_full_body_side: photoPaid2?.startsWith('https://') ? photoPaid2 : null,
+        headshot_alt: photoPaid3?.startsWith('https://') ? photoPaid3 : null,
+        wardrobe_formal: photoPaid4?.startsWith('https://') ? photoPaid4 : null,
+        photo_slot_labels: photoSlotLabels,
       }
 
       console.log('Saving profile:', profileData)
@@ -1104,33 +1132,172 @@ export default function ProfilePage() {
 
         {/* ── ADDITIONAL PHOTOS ── */}
         <CS title="📷 Additional Photos">
-          <p style={{ fontSize: '12px', color: '#9ca3af', margin: '0 0 14px' }}>Visible to agents and casting directors.</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 14px' }}>Visible to agents and casting directors.</p>
+
+          {/* Free slots — 2 slots */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
             {([
               { label: 'Full Body', url: photoFront, setUrl: setPhotoFront, ref: fileFrontRef, type: 'full_body_front' as const },
               { label: 'Misc', url: photoExtra, setUrl: setPhotoExtra, ref: fileExtraRef, type: 'additional' as const },
-              { label: 'Misc', url: photoExtra2, setUrl: setPhotoExtra2, ref: fileExtra2Ref, type: 'additional_2' as const },
             ]).map((slot, i) => (
               <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden' }}>
                 {slot.url ? (
                   <>
                     <img src={slot.url} alt={slot.label} style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', display: 'block' }} />
                     <div style={{ padding: '6px 10px', backgroundColor: '#f9fafb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '11px', color: '#6b7280' }}>{slot.label}</span>
+                      <span style={{ fontSize: '11px', color: '#374151', fontWeight: '600' }}>{slot.label}</span>
                       <button onClick={() => slot.setUrl('')} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: '16px', lineHeight: 1 }}>×</button>
                     </div>
                   </>
                 ) : (
                   <button onClick={() => slot.ref.current?.click()} style={{ width: '100%', aspectRatio: '3/4', border: 'none', backgroundColor: '#f9fafb', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                     <span style={{ fontSize: '28px' }}>📷</span>
-                    <span style={{ fontSize: '11px', color: '#9ca3af', textAlign: 'center', padding: '0 8px' }}>{slot.label}</span>
+                    <span style={{ fontSize: '11px', color: '#6b7280', textAlign: 'center', padding: '0 8px' }}>{slot.label}</span>
                   </button>
                 )}
-                <input ref={slot.ref} type="file" accept="image/jpeg,image/png,image/heic" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadAdditionalPhoto(f, slot.type) }} />
+                <input ref={slot.ref} type="file" accept="image/jpeg,image/png,image/webp,image/heic" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadAdditionalPhoto(f, slot.type) }} />
               </div>
             ))}
           </div>
-          <p style={{ fontSize: '11px', color: '#9ca3af', margin: '8px 0 0' }}>JPG, PNG, WebP or HEIC. Compressed to WebP automatically.</p>
+
+          {/* Paid slots — 4 slots */}
+          <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '700', color: '#1a1a2e' }}>Extra Photo Slots</span>
+              {!photosUnlocked && (
+                <span style={{ fontSize: '11px', fontWeight: '700', color: '#F59E0B', backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '20px', padding: '2px 8px' }}>UPGRADE</span>
+              )}
+            </div>
+
+            {photosUnlocked ? (
+              /* ── UNLOCKED: 4 uploadable slots with editable names ── */
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '8px' }}>
+                  {([
+                    { key: 'photo_additional_2', defaultLabel: 'Photo 4', url: photoPaid1, setUrl: setPhotoPaid1, ref: filePaid1Ref, type: 'additional_2' as const },
+                    { key: 'photo_full_body_side', defaultLabel: 'Photo 5', url: photoPaid2, setUrl: setPhotoPaid2, ref: filePaid2Ref, type: 'full_body_side' as const },
+                    { key: 'headshot_alt', defaultLabel: 'Photo 6', url: photoPaid3, setUrl: setPhotoPaid3, ref: filePaid3Ref, type: 'headshot_alt' as const },
+                    { key: 'wardrobe_formal', defaultLabel: 'Photo 7', url: photoPaid4, setUrl: setPhotoPaid4, ref: filePaid4Ref, type: 'wardrobe_formal' as const },
+                  ]).map((slot) => {
+                    const customName = photoSlotLabels[slot.key] || ''
+                    const displayLabel = customName || slot.defaultLabel
+                    return (
+                      <div key={slot.key} style={{ border: '1px solid #fde68a', borderRadius: '10px', overflow: 'hidden', backgroundColor: '#fffbeb' }}>
+                        {slot.url ? (
+                          <>
+                            <img src={slot.url} alt={displayLabel} style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', display: 'block' }} />
+                            <div style={{ padding: '6px 10px', backgroundColor: '#fffbeb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: '11px', color: '#92400e', fontWeight: '600' }}>{displayLabel}</span>
+                              <button onClick={() => slot.setUrl('')} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: '16px', lineHeight: 1 }}>×</button>
+                            </div>
+                          </>
+                        ) : (
+                          <button onClick={() => slot.ref.current?.click()} style={{ width: '100%', aspectRatio: '3/4', border: 'none', backgroundColor: '#fffbeb', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '28px' }}>📷</span>
+                            <span style={{ fontSize: '11px', color: '#92400e', textAlign: 'center', padding: '0 8px' }}>{displayLabel}</span>
+                          </button>
+                        )}
+                        <div style={{ padding: '6px 8px', backgroundColor: '#fef3c7', borderTop: '1px solid #fde68a' }}>
+                          <input
+                            type="text"
+                            placeholder={slot.defaultLabel}
+                            value={customName}
+                            maxLength={32}
+                            onChange={e => setPhotoSlotLabels(prev => ({ ...prev, [slot.key]: e.target.value }))}
+                            style={{ width: '100%', fontSize: '11px', border: '1px solid #fde68a', borderRadius: '5px', padding: '4px 6px', backgroundColor: 'white', color: '#1a1a2e', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                          />
+                        </div>
+                        <input ref={slot.ref} type="file" accept="image/jpeg,image/png,image/webp,image/heic" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadAdditionalPhoto(f, slot.type) }} />
+                      </div>
+                    )
+                  })}
+                </div>
+                <p style={{ fontSize: '11px', color: '#6b7280', margin: '0' }}>Name each slot — visible to agents and casting.</p>
+              </>
+            ) : (
+              /* ── LOCKED: 4 greyed locked tiles + upgrade button ── */
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                  {(['Photo 4', 'Photo 5', 'Photo 6', 'Photo 7']).map((label) => (
+                    <div key={label} style={{ border: '1px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden', opacity: 0.5 }}>
+                      <div style={{ width: '100%', aspectRatio: '3/4', backgroundColor: '#f3f4f6', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '28px' }}>🔒</span>
+                        <span style={{ fontSize: '11px', color: '#6b7280', textAlign: 'center', padding: '0 8px' }}>{label}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={async () => {
+                    const res = await fetch('/api/checkout/photo-slots', { method: 'POST', credentials: 'include' })
+                    if (res.ok) {
+                      const { url } = await res.json()
+                      if (url) window.location.href = url
+                    } else {
+                      setMessage('❌ Could not start checkout. Please try again.')
+                    }
+                  }}
+                  style={{ width: '100%', padding: '12px', backgroundColor: '#1a1a2e', color: '#F59E0B', border: '2px solid #F59E0B', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}
+                >
+                  🔓 Unlock 4 more photo slots — $9.98
+                </button>
+                <p style={{ fontSize: '11px', color: '#6b7280', margin: '6px 0 0', textAlign: 'center' }}>One-time purchase. Name each slot. Never expires.</p>
+
+                {/* Promo code bypass */}
+                <div style={{ marginTop: '10px', textAlign: 'center' }}>
+                  {!showPromoInput ? (
+                    <button
+                      onClick={() => { setShowPromoInput(true); setPromoError('') }}
+                      style={{ background: 'none', border: 'none', color: '#F59E0B', fontSize: '12px', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                      Have a promo code?
+                    </button>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <input
+                          type="text"
+                          placeholder="Enter code"
+                          value={promoCode}
+                          onChange={e => { setPromoCode(e.target.value.toUpperCase()); setPromoError('') }}
+                          maxLength={24}
+                          style={{ flex: 1, padding: '8px 10px', border: '1.5px solid #F59E0B', borderRadius: '7px', fontSize: '13px', fontFamily: 'monospace', color: '#1a1a2e', outline: 'none', backgroundColor: 'white' }}
+                        />
+                        <button
+                          disabled={promoLoading || !promoCode.trim()}
+                          onClick={async () => {
+                            setPromoLoading(true)
+                            setPromoError('')
+                            const res = await fetch('/api/photo-promo/redeem', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              credentials: 'include',
+                              body: JSON.stringify({ code: promoCode.trim() }),
+                            })
+                            const data = await res.json()
+                            setPromoLoading(false)
+                            if (res.ok) {
+                              setPhotosUnlocked(true)
+                              setShowPromoInput(false)
+                              setPromoCode('')
+                            } else {
+                              setPromoError(data.error || 'Invalid code')
+                            }
+                          }}
+                          style={{ padding: '8px 14px', backgroundColor: promoLoading ? '#9ca3af' : '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '7px', fontWeight: '700', fontSize: '13px', cursor: promoLoading ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+                        >
+                          {promoLoading ? '…' : 'Apply'}
+                        </button>
+                      </div>
+                      {promoError && <p style={{ fontSize: '12px', color: '#dc2626', margin: 0, textAlign: 'left' }}>{promoError}</p>}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          <p style={{ fontSize: '11px', color: '#6b7280', margin: '12px 0 0' }}>JPG, PNG, WebP or HEIC. Compressed to WebP automatically.</p>
         </CS>
 
         {/* ── SAVE ── */}

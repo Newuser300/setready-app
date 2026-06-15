@@ -39,7 +39,7 @@ export async function GET() {
 
   const [{ data, error }, { data: userData }] = await Promise.all([
     supabaseAdmin.from('performer_profiles').select('*').eq('user_id', user.id).single(),
-    supabaseAdmin.from('users').select('home_city,home_region_code,home_lat,home_lng').eq('id', user.id).single(),
+    supabaseAdmin.from('users').select('home_city,home_region_code,home_lat,home_lng,photos_unlocked').eq('id', user.id).single(),
   ])
 
   if (error && error.code !== 'PGRST116') {
@@ -52,6 +52,7 @@ export async function GET() {
     home_region_code: userData?.home_region_code ?? null,
     home_lat: userData?.home_lat ?? null,
     home_lng: userData?.home_lng ?? null,
+    photos_unlocked: userData?.photos_unlocked ?? false,
   })
 }
 

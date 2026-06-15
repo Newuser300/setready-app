@@ -72,6 +72,20 @@ export async function POST(request: Request) {
         break;
       }
 
+      // One-time photo slots unlock
+      if (session.mode === 'payment' && session.metadata?.type === 'photo_slots') {
+        const { error: updateError } = await supabaseAdmin
+          .from('users')
+          .update({ photos_unlocked: true })
+          .eq('id', userId)
+          .select();
+
+        if (updateError) {
+          console.error('❌ Failed to unlock photo slots:', updateError);
+        }
+        break;
+      }
+
       // One-time headshot credits payment
       if (session.mode === 'payment' && session.metadata?.type === 'headshot_credits') {
         const creditsToAdd = parseInt(session.metadata?.credits || '1', 10);
