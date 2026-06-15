@@ -69,7 +69,7 @@ export default function AdminReferralsPage() {
     if (error || !user) { router.push('/auth/sign-in'); return; }
     const { data: { session } } = await browserClient.auth.getSession()
 
-    setAccessToken(session?.access_token ?? null);
+    setAccessToken(session?.access_token ?? '');
 
     const response = await fetch('/api/admin/referrals', {
       headers: { Authorization: `Bearer ${session?.access_token}` },

@@ -178,7 +178,7 @@ export default function Dashboard() {
       .catch(() => {})
     fetch('/api/profile', { credentials: 'include' })
       .then(r => r.ok ? r.json() : {})
-      .then(d => setDashUnionStatus(d.union_status || 'non-union'))
+      .then((d: { union_status?: string }) => setDashUnionStatus(d.union_status || 'non-union'))
       .catch(() => {})
   }, [])
 
@@ -193,7 +193,7 @@ export default function Dashboard() {
       .catch(() => {})
 
     // Load voucher summary + union notifications
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }: { data: { session: { access_token: string } | null } }) => {
       if (!session?.access_token) return
       const token = session.access_token
 
@@ -445,8 +445,7 @@ export default function Dashboard() {
       .channel('user_progress_changes')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'user_progress' }, 
-        (payload) => {
-          // Refresh progress when changes occur
+        (_payload: unknown) => {
           refreshProgress();
         }
       )
@@ -590,12 +589,12 @@ export default function Dashboard() {
       setShowSection2Popup(true);
       
       // Mark as shown so it doesn't appear again
-      for (const module of progressData) {
+      for (const mod of progressData) {
         await supabase
           .from('user_progress')
           .update({ section2_popup_shown: true })
           .eq('user_id', user.id)
-          .eq('module_id', module.module_id);
+          .eq('module_id', mod.module_id);
       }
     }
   }
@@ -731,9 +730,9 @@ export default function Dashboard() {
       });
       setProgress(progressMap);
 
-      const section1ModulesList = (data || []).filter(m => m.section === 1);
-      const allCompleted = section1ModulesList.length > 0 && 
-        section1ModulesList.every(m => progressMap[m.id]?.completed === true);
+      const section1ModulesList = (data || []).filter((m: Module) => m.section === 1);
+      const allCompleted = section1ModulesList.length > 0 &&
+        section1ModulesList.every((m: Module) => progressMap[m.id]?.completed === true);
       
       if (allCompleted && !section2Visible) {
         setSection2Visible(true);
@@ -1019,7 +1018,7 @@ export default function Dashboard() {
                   </span>
                 ) : 'badge' in item && item.badge ? (
                   <span style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '8px', fontWeight: '800', backgroundColor: '#22c55e', color: 'white', padding: '1px 5px', borderRadius: '4px', lineHeight: '1.6', letterSpacing: '0.02em' }}>
-                    {item.badge}
+                    {String(item.badge)}
                   </span>
                 ) : null}
                 <span style={{ fontSize: '24px', lineHeight: 1 }}>{item.icon}</span>

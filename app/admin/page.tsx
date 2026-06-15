@@ -212,7 +212,7 @@ export default function AdminPage() {
     const { data: { user }, error } = await browserClient.auth.getUser()
     if (error || !user) { router.push('/auth/sign-in'); return; }
     const { data: { session } } = await browserClient.auth.getSession()
-    setAccessToken(session?.access_token ?? null);
+    setAccessToken(session?.access_token ?? '');
 
     const res = await fetch('/api/admin/stats', {
       headers: { Authorization: `Bearer ${session?.access_token}` },

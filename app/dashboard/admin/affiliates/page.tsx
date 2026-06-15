@@ -62,7 +62,7 @@ export default function AdminAffiliatesPage() {
     if (!error && affiliateData) {
       // Get user emails for each affiliate
       const affiliatesWithEmails = await Promise.all(
-        affiliateData.map(async (affiliate) => {
+        affiliateData.map(async (affiliate: Affiliate) => {
           const { data: userData } = await supabase
             .from('users')
             .select('email')

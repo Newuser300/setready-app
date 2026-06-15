@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { supabase } from '@/lib/supabase';
 import { LESSONS } from '@/lib/lessons';
 
@@ -26,7 +26,9 @@ type Progress = {
 };
 
 export default function ModulePage() {
-  const { id } = useParams();
+  const params = useParams();
+  const rawId = params?.id;
+  const id = Array.isArray(rawId) ? rawId[0] : rawId ?? null;
   const router = useRouter();
   const [module, setModule] = useState<Module | null>(null);
   const [progress, setProgress] = useState<Progress | null>(null);
@@ -275,10 +277,10 @@ export default function ModulePage() {
 
   const formatLessonContent = (content: string) => {
     const lines = content.split('\n');
-    const elements: JSX.Element[] = [];
+    const elements: ReactElement[] = [];
     let i = 0;
     let inList = false;
-    let listItems: JSX.Element[] = [];
+    let listItems: ReactElement[] = [];
     let inTable = false;
     let tableHeaders: string[] = [];
     let tableRows: string[][] = [];

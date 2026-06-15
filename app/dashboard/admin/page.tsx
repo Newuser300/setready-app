@@ -89,9 +89,9 @@ export default function AdminDashboard() {
       const monthStart = new Date(today);
       monthStart.setDate(monthStart.getDate() - 30);
 
-      const activeToday = allUsers.filter(u => u.last_sign_in_at && new Date(u.last_sign_in_at) >= todayStart).length;
-      const activeThisWeek = allUsers.filter(u => u.last_sign_in_at && new Date(u.last_sign_in_at) >= weekStart).length;
-      const newThisMonth = allUsers.filter(u => new Date(u.created_at) >= monthStart).length;
+      const activeToday = allUsers.filter((u: User) => u.last_sign_in_at && new Date(u.last_sign_in_at) >= todayStart).length;
+      const activeThisWeek = allUsers.filter((u: User) => u.last_sign_in_at && new Date(u.last_sign_in_at) >= weekStart).length;
+      const newThisMonth = allUsers.filter((u: User) => new Date(u.created_at) >= monthStart).length;
 
       let affiliateCount = 0;
       try {
@@ -115,7 +115,7 @@ export default function AdminDashboard() {
         if (!quizError && quizData) {
           totalRevenue = quizData.length * 15;
           
-          quizData.forEach(quiz => {
+          quizData.forEach((quiz: { score: number | null; completed_at: string | null }) => {
             if (quiz.completed_at) {
               const date = new Date(quiz.completed_at).toISOString().split('T')[0];
               revenueByDate[date] = (revenueByDate[date] || 0) + 15;

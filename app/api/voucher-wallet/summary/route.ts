@@ -34,8 +34,7 @@ export async function GET(req: NextRequest) {
     .eq('is_read', false)
     .limit(1)
 
-  const rules = getUnionRules(province)
-  const rule = rules[0]
+  const rule = getUnionRules(province)
 
   if (!rule) return NextResponse.json({ totalVouchers: 0, qualifyingDays: 0, daysRequired: 15, percentComplete: 0, isQualified: false, unionName: 'ACTRA', hasUnreadMilestone: false })
 
@@ -47,7 +46,7 @@ export async function GET(req: NextRequest) {
     daysRequired: rule.qualifyingDaysRequired,
     percentComplete: calc.percentComplete,
     isQualified: calc.isQualified,
-    unionName: rule.unionName,
+    unionName: rule.unionShortName,
     hasUnreadMilestone: (unreadNotif || []).length > 0,
   })
 }

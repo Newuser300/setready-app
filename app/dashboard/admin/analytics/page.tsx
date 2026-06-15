@@ -6,6 +6,12 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
+interface QuizResult {
+  score: number | null;
+  total_questions: number | null;
+  module_id: string | null;
+}
+
 export default function AdminAnalyticsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -65,12 +71,12 @@ export default function AdminAnalyticsPage() {
       
       if (!quizError && quizResults) {
         totalQuizzes = quizResults.length;
-        quizResults.forEach(result => {
+        quizResults.forEach((result: QuizResult) => {
           totalScore += result.score || 0;
         });
-        
+
         // Count unique modules completed
-        const uniqueModules = new Set(quizResults.map(r => r.module_id));
+        const uniqueModules = new Set(quizResults.map((r: QuizResult) => r.module_id));
         modulesCompleted = uniqueModules.size;
       } else {
         console.log('Quiz results table may not exist yet');

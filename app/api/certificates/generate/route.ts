@@ -29,28 +29,22 @@ const supabaseAdmin = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== CERTIFICATE GENERATION API STARTED ===');
-    
     // 1. Get authentication token from header
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
-    
-    console.log('Auth header present:', !!authHeader);
-    console.log('Token present:', !!token);
-    
+
     let user = null;
-    
+
     // Try token auth first (from frontend)
     if (token) {
       const { data: { user: tokenUser }, error: tokenError } = await supabaseAdmin.auth.getUser(token);
       if (!tokenError && tokenUser) {
         user = tokenUser;
-        console.log('✅ Authenticated via token, user ID:', user.id);
       } else {
         console.error('Token auth error:', tokenError?.message);
       }
     }
-    
+
     if (!user) {
       console.error('❌ No user found - authentication failed');
       return NextResponse.json(
@@ -58,11 +52,10 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
-    
+
     // 2. Parse request body
     const { moduleId, score, certificateType } = await request.json();
-    console.log('Request:', { moduleId, score, certificateType });
-    
+
     // Validate required fields
     if (!score || !certificateType) {
       return NextResponse.json(
@@ -70,17 +63,16 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     // 3. Get user profile
     const { data: profile } = await supabaseAdmin
       .from('users')
       .select('name')
       .eq('id', user.id)
       .maybeSingle();
-    
+
     const recipientName = profile?.name || user.email?.split('@')[0] || 'Student';
-    console.log('Recipient name:', recipientName);
-    
+
     // 4. Determine course name
     let courseName = '';
     if (certificateType === 'module' && moduleId) {
@@ -92,8 +84,7 @@ export async function POST(request: NextRequest) {
     } else {
       courseName = 'SetReady Training Course';
     }
-    console.log('Course name:', courseName);
-    
+
     // 5. Generate certificate hash
     const timestamp = Date.now();
     const randomString = Math.random().toString(36).substring(2, 10);
@@ -107,7 +98,6 @@ export async function POST(request: NextRequest) {
     });
 
     // 6. Save DB record FIRST — cert exists regardless of PDF outcome
-    console.log('Saving certificate record to DB first...');
     const { data: existingCert } = await supabaseAdmin
       .from('certificates')
       .select('id')
@@ -124,7 +114,6 @@ export async function POST(request: NextRequest) {
         .eq('id', existingCert.id);
       if (updateError) console.error('DB update error:', updateError.message);
       else certId = existingCert.id;
-      console.log('✅ Updated existing certificate record');
     } else {
       const { data: inserted, error: insertError } = await supabaseAdmin
         .from('certificates')
@@ -142,13 +131,11 @@ export async function POST(request: NextRequest) {
         .single();
       if (insertError) console.error('DB insert error:', insertError.message);
       else certId = inserted?.id;
-      console.log('✅ Created new certificate record');
     }
 
     // 7. Attempt PDF generation + storage upload (best-effort — cert record already saved)
     let publicUrl: string | null = null;
     try {
-      console.log('Generating PDF...');
       const pdfBuffer = await generateCertificatePDF({
         recipientName: recipientName.toUpperCase(),
         courseName,
@@ -156,36 +143,31 @@ export async function POST(request: NextRequest) {
         issueDate,
         certificateId: certificateHash,
       });
-      console.log('PDF generated, size:', pdfBuffer.length, 'bytes');
 
       const fileName = `${user.id}/${certificateType}_${moduleId || 'completion'}_${timestamp}.pdf`;
-      const { data: uploadData, error: bucketError } = await supabaseAdmin.storage
+      const { error: bucketError } = await supabaseAdmin.storage
         .from('certificates')
         .upload(fileName, pdfBuffer, { contentType: 'application/pdf', cacheControl: '3600', upsert: true });
 
       if (bucketError) {
         console.error('Storage upload error (non-fatal):', bucketError.message);
       } else {
-        console.log('✅ PDF uploaded:', uploadData?.path);
         const { data: { publicUrl: url } } = supabaseAdmin.storage.from('certificates').getPublicUrl(fileName);
         publicUrl = url;
         if (certId && publicUrl) {
           await supabaseAdmin.from('certificates').update({ pdf_url: publicUrl }).eq('id', certId);
-          console.log('✅ PDF URL saved to certificate record');
         }
       }
     } catch (pdfErr) {
       console.error('PDF generation failed (non-fatal — cert record already saved):', pdfErr);
     }
 
-    console.log('=== CERTIFICATE GENERATION COMPLETED ===');
-
     return NextResponse.json({
       success: true,
       pdfUrl: publicUrl,
       message: 'Certificate generated successfully!'
     });
-    
+
   } catch (error) {
     console.error('❌ Certificate generation error:', error);
     return NextResponse.json(

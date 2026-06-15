@@ -81,6 +81,7 @@ export default function ClaimPage({ params }: { params: Promise<{ token: string 
   // ── Load invite ─────────────────────────────────────────────────────────────
 
   useEffect(() => {
+    if (!token) return  // params not resolved yet — wait for next render
     fetch(`/api/claim/${token}`)
       .then(r => r.json())
       .then(data => {
@@ -392,7 +393,7 @@ export default function ClaimPage({ params }: { params: Promise<{ token: string 
 
           {/* Consent notice */}
           <div style={{ fontSize: '12px', color: '#9ca3af', textAlign: 'center', marginBottom: '16px', lineHeight: '1.5' }}>
-            By clicking Confirm, you agree to SetReady's{' '}
+            By clicking Confirm, you agree to SetReady&apos;s{' '}
             <Link href="/terms" style={{ color: '#F59E0B' }}>Terms of Service</Link> and{' '}
             <Link href="/privacy" style={{ color: '#F59E0B' }}>Privacy Policy</Link>.
             Your profile will be visible to the inviting agency.

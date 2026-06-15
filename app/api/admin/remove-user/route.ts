@@ -130,7 +130,5 @@ export async function DELETE(request: Request) {
   if (authErr) log.push(`Warning: auth deletion: ${authErr.message}`);
   else log.push('Deleted auth account');
 
-  console.log(`[remove-user] Admin ${admin.email} deleted user ${user.email} (${userId}):`, log);
-
   return NextResponse.json({ success: true, email: user.email, log });
 }

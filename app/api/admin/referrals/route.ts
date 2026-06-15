@@ -135,8 +135,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to update commissions' }, { status: 500 });
   }
 
-  console.log(`✅ Admin ${admin.email} marked payout ${payoutRequestId} as paid ($${payoutReq.amount})`);
-
   return NextResponse.json({
     success: true,
     message: `Payout of $${payoutReq.amount?.toFixed(2)} marked as paid.`,

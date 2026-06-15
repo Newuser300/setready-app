@@ -6,7 +6,7 @@ import Logo from '@/components/Logo'
 function JoinContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const token = searchParams.get('token') || ''
+  const token = searchParams?.get('token') || ''
 
   const [loading, setLoading] = useState(true)
   const [valid, setValid] = useState(false)

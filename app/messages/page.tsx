@@ -331,7 +331,6 @@ export default function MessagesPage() {
                     borderRadius: '12px',
                     padding: '14px 18px',
                     marginBottom: '8px',
-                    borderLeft: !message.is_read ? '4px solid #F59E0B' : '4px solid transparent',
                     cursor: 'pointer',
                     position: 'relative',
                     border: '1px solid rgba(255,255,255,0.06)',

@@ -9,10 +9,7 @@ async function getUser(req: Request) {
 }
 
 export async function POST(req: Request) {
-  console.log('=== Referral Apply Route Called ===');
-
   const user = await getUser(req);
-  console.log('Auth user:', user?.email ?? 'null');
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let code: string;
@@ -23,7 +20,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  console.log('Code to apply:', code);
   if (!code) return NextResponse.json({ error: 'Missing code' }, { status: 400 });
 
   // Fetch current user profile
@@ -33,12 +29,10 @@ export async function POST(req: Request) {
     .eq('id', user.id)
     .maybeSingle();
 
-  console.log('Current user:', JSON.stringify(currentUser));
   if (userError) console.error('User fetch error:', JSON.stringify(userError));
 
   // Already has a referral applied — treat as success so checkout proceeds
   if (currentUser?.referred_by) {
-    console.log('User already has referral applied');
     return NextResponse.json({ success: true, alreadyApplied: true });
   }
 
@@ -57,7 +51,6 @@ export async function POST(req: Request) {
     .eq('referral_code', code)
     .maybeSingle();
 
-  console.log('Referrer UUID:', referrer?.id ?? 'null');
   if (referrerError) console.error('Referrer lookup error:', JSON.stringify(referrerError));
 
   if (!referrer) {
@@ -93,6 +86,5 @@ export async function POST(req: Request) {
     );
   }
 
-  console.log('Referral applied: user', user.email, '→ referrer', referrer.id);
   return NextResponse.json({ success: true });
 }

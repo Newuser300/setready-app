@@ -43,8 +43,11 @@ function ClaimContent() {
   const searchParams = useSearchParams()
   const token = searchParams?.get('token') ?? ''
 
-  const [loading,   setLoading]   = useState(true)
-  const [apiError,  setApiError]  = useState('')
+  // Initialise synchronously so the "no token" error never requires a
+  // setState-in-effect cycle: if token is absent on first render we already
+  // have the right state without triggering a cascading re-render.
+  const [loading,   setLoading]   = useState(() => !!token)
+  const [apiError,  setApiError]  = useState(() => token ? '' : 'No invite token found in this URL.')
   const [claim,     setClaim]     = useState<ClaimData | null>(null)
 
   const [firstName,        setFirstName]        = useState('')
@@ -73,11 +76,7 @@ function ClaimContent() {
   const [done,            setDone]            = useState(false)
 
   useEffect(() => {
-    if (!token) {
-      setApiError('No invite token found in this URL.')
-      setLoading(false)
-      return
-    }
+    if (!token) return  // no-token error is set by the useState initialiser above
     fetch(`/api/claim?token=${encodeURIComponent(token)}`)
       .then(r => r.json())
       .then(data => {
@@ -366,7 +365,7 @@ function ClaimContent() {
           )}
 
           <div style={{ fontSize: '12px', color: '#9ca3af', textAlign: 'center', marginBottom: '16px', lineHeight: '1.5' }}>
-            By clicking Confirm, you agree to SetReady's{' '}
+            By clicking Confirm, you agree to SetReady&apos;s{' '}
             <Link href="/terms" style={{ color: '#F59E0B' }}>Terms of Service</Link> and{' '}
             <Link href="/privacy" style={{ color: '#F59E0B' }}>Privacy Policy</Link>.
             Your profile will be visible to <strong>{claim?.agency_name}</strong>.

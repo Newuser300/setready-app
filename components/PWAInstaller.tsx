@@ -12,7 +12,7 @@ export default function PWAInstaller() {
 
   useEffect(() => {
     // Only show on allowed pages
-    if (!ALLOWED_PATHS.includes(pathname)) return
+    if (!pathname || !ALLOWED_PATHS.includes(pathname)) return
 
     const dismissed = localStorage.getItem('sr-pwa-dismissed')
     if (dismissed) return

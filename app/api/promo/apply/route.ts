@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid userType' }, { status: 400 })
   }
 
+  if (!entityId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const result = await applyPromoCode(code, entityId, userType)
   if (!result.success) {
     return NextResponse.json({ error: result.error }, { status: 400 })

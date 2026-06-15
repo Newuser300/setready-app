@@ -100,9 +100,7 @@ export async function POST(req: Request) {
   }
 
   // JSON path — full profile data save
-  console.log('Profile save for user:', user.id)
   const body = await req.json()
-  console.log('Fields received:', Object.keys(body))
 
   // Separate home location fields (stored in users table) from performer_profiles fields
   const { home_city, home_region_code, home_lat, home_lng, ...rest } = body
@@ -132,6 +130,5 @@ export async function POST(req: Request) {
   }
   if (userError) console.error('Home location save error:', userError)
 
-  console.log('Profile saved:', data?.id)
   return NextResponse.json({ success: true, profile: data })
 }

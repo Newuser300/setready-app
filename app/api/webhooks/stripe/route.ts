@@ -21,21 +21,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 export async function POST(request: Request) {
-  console.log('🔥 Webhook POST received', {
-    url: request.url,
-    method: request.method,
-    contentType: request.headers.get('content-type'),
-  });
-
   const body = await request.text();
-  console.log(`📦 Raw body length: ${body.length} characters`);
-
   const sig = request.headers.get('stripe-signature');
-  console.log(`🔑 Signature header present: ${sig ? 'Yes' : 'No'}`);
-
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  console.log('🔐 Webhook secret exists:', !!webhookSecret);
-  console.log('🔐 Webhook secret prefix:', webhookSecret?.slice(0, 10));
 
   if (!sig) {
     console.error('❌ No stripe-signature header found');
@@ -50,9 +38,7 @@ export async function POST(request: Request) {
   let event: Stripe.Event;
 
   try {
-    console.log('🔐 Attempting to verify webhook signature...');
     event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
-    console.log(`✅ Webhook verified! Event type: ${event.type}`);
   } catch (err) {
     console.error('❌ Webhook signature verification failed:', err);
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
@@ -64,18 +50,8 @@ export async function POST(request: Request) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
 
-      console.log('📋 checkout.session.completed received');
-      console.log(`   session.id:                ${session.id}`);
-      console.log(`   session.mode:              ${session.mode}`);
-      console.log(`   session.client_reference_id: ${session.client_reference_id}`);
-      console.log(`   session.metadata:          ${JSON.stringify(session.metadata)}`);
-      console.log(`   session.customer:          ${session.customer}`);
-
       const userId = session.client_reference_id ?? session.metadata?.userId ?? null;
       const stripeCustomerId = session.customer as string | null;
-
-      console.log(`👤 Resolved userId: ${userId}`);
-      console.log(`💳 Resolved stripeCustomerId: ${stripeCustomerId}`);
 
       if (!userId) {
         console.error('❌ No userId — client_reference_id and metadata.userId are both missing. Skipping.');
@@ -84,8 +60,7 @@ export async function POST(request: Request) {
 
       // One-time Section 2 payment: session.customer is null, use userId directly
       if (session.mode === 'payment' && session.metadata?.type === 'section2') {
-        console.log(`📝 One-time section2 payment — updating users WHERE id = '${userId}', setting section2_unlocked = true`);
-        const { data: updatedRows, error: updateError } = await supabaseAdmin
+        const { error: updateError } = await supabaseAdmin
           .from('users')
           .update({ section2_unlocked: true })
           .eq('id', userId)
@@ -93,8 +68,6 @@ export async function POST(request: Request) {
 
         if (updateError) {
           console.error('❌ Failed to unlock section2:', updateError);
-        } else {
-          console.log(`✅ section2_unlocked = true set for user ${userId}. Rows affected:`, updatedRows);
         }
         break;
       }
@@ -102,14 +75,12 @@ export async function POST(request: Request) {
       // One-time headshot credits payment
       if (session.mode === 'payment' && session.metadata?.type === 'headshot_credits') {
         const creditsToAdd = parseInt(session.metadata?.credits || '1', 10);
-        console.log(`🤳 Headshot credits payment — adding ${creditsToAdd} credit(s) to user ${userId}`);
         const { data: currentUser } = await supabaseAdmin
           .from('users').select('headshot_credits').eq('id', userId).maybeSingle();
         const newCredits = (currentUser?.headshot_credits || 0) + creditsToAdd;
         const { error: creditsError } = await supabaseAdmin
           .from('users').update({ headshot_credits: newCredits }).eq('id', userId);
         if (creditsError) console.error('❌ Failed to add headshot credits:', creditsError);
-        else console.log(`✅ Headshot credits updated to ${newCredits} for user ${userId}`);
         break;
       }
 
@@ -132,19 +103,15 @@ export async function POST(request: Request) {
         if (session.subscription) {
           upsertPayload.stripe_subscription_id = session.subscription as string;
         }
-        console.log(`🔓 Subscription checkout — also setting subscription_status = active for user ${userId}`);
       }
 
-      console.log(`📝 Upserting users WHERE id = '${userId}' with:`, upsertPayload);
-      const { data: updatedRows, error: updateError } = await supabaseAdmin
+      const { error: updateError } = await supabaseAdmin
         .from('users')
         .upsert(upsertPayload, { onConflict: 'id' })
         .select();
 
       if (updateError) {
         console.error('❌ Failed to upsert user in checkout.session.completed:', updateError);
-      } else {
-        console.log(`✅ User upserted. Rows affected:`, updatedRows);
       }
       break;
     }
@@ -161,25 +128,18 @@ export async function POST(request: Request) {
         null
       ) as string | null;
 
-      console.log('💰 invoice.paid received');
-      console.log(`   invoice.id:              ${invoice.id}`);
-      console.log(`   invoice.customer:        ${stripeCustomerId}`);
-      console.log(`   invoice.subscription:    ${stripeSubscriptionId}`);
-
       if (!stripeCustomerId) {
         console.error('❌ No stripeCustomerId on invoice.paid event. Skipping.');
         break;
       }
 
       if (!stripeSubscriptionId) {
-        console.log('ℹ️  invoice.paid has no subscription id — likely a one-time payment, skipping subscription activation.');
         break;
       }
 
       // FIX B: Retry lookup once after a delay to handle the race where
       // invoice.paid arrives before checkout.session.completed has written
       // stripe_customer_id to public.users.
-      console.log(`🔍 Looking up user WHERE stripe_customer_id = '${stripeCustomerId}'...`);
       let findError: unknown = null;
       let userData: { id: string; referred_by: string | null; subscription_started_at: string | null } | null = null;
 
@@ -195,7 +155,6 @@ export async function POST(request: Request) {
       }
 
       if (!firstAttempt) {
-        console.log('⏳ User not found on first attempt — waiting 3 seconds and retrying...');
         await new Promise(resolve => setTimeout(resolve, 3000));
 
         const { data: secondAttempt, error: secondError } = await supabaseAdmin
@@ -220,11 +179,8 @@ export async function POST(request: Request) {
         break;
       }
 
-      console.log(`👤 Found user: ${userData.id}`);
-
       const subscriptionEndsAt = new Date();
       subscriptionEndsAt.setDate(subscriptionEndsAt.getDate() + 30);
-      console.log(`📅 subscription_ends_at set to: ${subscriptionEndsAt.toISOString()}`);
 
       const updatePayload: Record<string, unknown> = {
         subscription_status: 'active',
@@ -233,11 +189,9 @@ export async function POST(request: Request) {
       };
       if (!userData.subscription_started_at) {
         updatePayload.subscription_started_at = new Date().toISOString();
-        console.log('📅 Setting subscription_started_at (first subscription)');
       }
 
-      console.log(`📝 Updating users WHERE id = '${userData.id}' with:`, updatePayload);
-      const { data: updatedRows, error: updateError } = await supabaseAdmin
+      const { error: updateError } = await supabaseAdmin
         .from('users')
         .update(updatePayload)
         .eq('id', userData.id)
@@ -245,15 +199,10 @@ export async function POST(request: Request) {
 
       if (updateError) {
         console.error('❌ Failed to activate subscription in invoice.paid:', updateError);
-      } else {
-        console.log(`✅ Subscription activated for user ${userData.id}. Rows affected:`, updatedRows);
       }
 
       // ── Commission tracking ──────────────────────────────────────────────────
       if (userData.referred_by) {
-        console.log(`🤝 User referred_by UUID: ${userData.referred_by} — calculating commission...`);
-
-        // referred_by stores the referrer's user UUID directly
         const { data: referrer } = await supabaseAdmin
           .from('users')
           .select('id')
@@ -282,11 +231,7 @@ export async function POST(request: Request) {
 
           if (commissionError) {
             console.error('❌ Failed to insert referral commission:', commissionError);
-          } else {
-            console.log(`✅ Commission $${commissionAmount} (20% of $${invoiceAmount}) queued for referrer ${referrer.id}`);
           }
-        } else {
-          console.log(`ℹ️  Referral code '${userData.referred_by}' not found — no commission recorded`);
         }
       }
       break;
@@ -296,11 +241,6 @@ export async function POST(request: Request) {
     case 'customer.subscription.updated': {
       const subscription = event.data.object as Stripe.Subscription;
       const stripeCustomerId = subscription.customer as string | null;
-
-      console.log('🔄 customer.subscription.updated received');
-      console.log(`   subscription.id:      ${subscription.id}`);
-      console.log(`   subscription.status:  ${subscription.status}`);
-      console.log(`   subscription.customer: ${stripeCustomerId}`);
 
       if (!stripeCustomerId) { break; }
 
@@ -316,7 +256,6 @@ export async function POST(request: Request) {
         subscription_updated_at: new Date().toISOString(),
       }).eq('id', userData.id);
 
-      console.log(`✅ subscription_status updated to '${newStatus}' for user ${userData.id}`);
       break;
     }
 
@@ -325,16 +264,11 @@ export async function POST(request: Request) {
       const subscription = event.data.object as Stripe.Subscription;
       const stripeCustomerId = subscription.customer as string | null;
 
-      console.log('🗑️  customer.subscription.deleted received');
-      console.log(`   subscription.id:      ${subscription.id}`);
-      console.log(`   subscription.customer: ${stripeCustomerId}`);
-
       if (!stripeCustomerId) {
         console.error('❌ No stripeCustomerId on subscription.deleted event. Skipping.');
         break;
       }
 
-      console.log(`🔍 Looking up user WHERE stripe_customer_id = '${stripeCustomerId}'...`);
       const { data: userData, error: findError } = await supabaseAdmin
         .from('users')
         .select('id')
@@ -351,8 +285,7 @@ export async function POST(request: Request) {
         break;
       }
 
-      console.log(`👤 Found user: ${userData.id} — setting subscription_status = 'inactive'`);
-      const { data: updatedRows, error: updateError } = await supabaseAdmin
+      const { error: updateError } = await supabaseAdmin
         .from('users')
         .update({ subscription_status: 'inactive' })
         .eq('id', userData.id)
@@ -360,16 +293,13 @@ export async function POST(request: Request) {
 
       if (updateError) {
         console.error('❌ Failed to deactivate subscription:', updateError);
-      } else {
-        console.log(`✅ Subscription deactivated for user ${userData.id}. Rows affected:`, updatedRows);
       }
       break;
     }
 
     default:
-      console.log(`📋 Unhandled event type: ${event.type} — ignoring`);
+      break;
   }
 
-  console.log('✅ Webhook handler complete — returning 200');
   return NextResponse.json({ received: true });
 }

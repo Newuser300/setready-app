@@ -252,16 +252,10 @@ export default function AgentDashboardPage() {
 
   // ── Load by tab ─────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    if (activeTab === 'Overview') loadStats()
-    if (activeTab === 'Roster') loadRoster()
-    if (activeTab === 'Union') loadRoster()
-    if (activeTab === 'Requests') loadRequests()
-    if (activeTab === 'Submissions') loadSubmissions()
-    if (activeTab === 'Financials') loadCommissions()
-  }, [activeTab])
+  // ── Load functions — all stable via useCallback([]) so the tab effect can
+  // list them as deps without re-triggering on every render. ──────────────────
 
-  async function loadStats() {
+  const loadStats = useCallback(async () => {
     const [rRes, sRes, cRes] = await Promise.all([
       fetch('/api/agent/roster'),
       fetch('/api/agent/submissions'),
@@ -282,7 +276,7 @@ export default function AgentDashboardPage() {
       pendingSubmissions: (s as Submission[]).filter(x => x.status === 'submitted').length,
       monthCommissions: monthComm,
     })
-  }
+  }, [])
 
   const loadRoster = useCallback(async () => {
     setRosterLoading(true)
@@ -302,21 +296,21 @@ export default function AgentDashboardPage() {
     setRoster(withTags)
   }, [])
 
-  async function loadRequests() {
+  const loadRequests = useCallback(async () => {
     setReqLoading(true)
     const res = await fetch('/api/agent/requests')
     setReqLoading(false)
     if (res.ok) setRequests(await res.json())
-  }
+  }, [])
 
-  async function loadSubmissions() {
+  const loadSubmissions = useCallback(async () => {
     setSubLoading(true)
     const res = await fetch('/api/agent/submissions')
     setSubLoading(false)
     if (res.ok) setSubmissions(await res.json())
-  }
+  }, [])
 
-  async function loadCommissions() {
+  const loadCommissions = useCallback(async () => {
     setCommLoading(true)
     const res = await fetch('/api/agent/commissions')
     setCommLoading(false)
@@ -326,7 +320,16 @@ export default function AgentDashboardPage() {
     const month = new Date().getMonth(); const year = new Date().getFullYear()
     setCommMonthTotal(data.filter(c => { const d = new Date(c.booking_date); return d.getMonth() === month && d.getFullYear() === year }).reduce((a, c) => a + c.commission_amount, 0))
     setCommUnpaidTotal(data.filter(c => !c.paid).reduce((a, c) => a + c.commission_amount, 0))
-  }
+  }, [])
+
+  useEffect(() => {
+    if (activeTab === 'Overview') loadStats()
+    if (activeTab === 'Roster') loadRoster()
+    if (activeTab === 'Union') loadRoster()
+    if (activeTab === 'Requests') loadRequests()
+    if (activeTab === 'Submissions') loadSubmissions()
+    if (activeTab === 'Financials') loadCommissions()
+  }, [activeTab, loadStats, loadRoster, loadRequests, loadSubmissions, loadCommissions])
 
   async function addToRoster() {
     if (!addEmail.trim()) return

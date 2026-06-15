@@ -27,7 +27,7 @@ async function getUser() {
     }
   )
   const { data: { user }, error } = await supabase.auth.getUser()
-  console.log('Availability auth:', { userId: user?.id, error: error?.message })
+  if (error) console.error('Availability auth error:', error.message)
   return user
 }
 
@@ -66,8 +66,6 @@ export async function POST(request: Request) {
 
   const body = await request.json()
   const { date, status, notes, bulk, dates } = body
-
-  console.log('POST availability:', { userId: user.id, date, status, bulk, datesCount: dates?.length })
 
   if (bulk && dates?.length) {
     const records = dates.map((d: string) => ({

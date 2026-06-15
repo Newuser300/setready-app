@@ -101,8 +101,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'userId is required in request body' }, { status: 400 });
   }
 
-  console.log(`[backfill-certs] Admin ${admin.email} backfilling certificates for user ${userId}`);
-
   const { data: profile, error: profileErr } = await supabaseAdmin
     .from('users')
     .select('name, email')
