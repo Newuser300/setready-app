@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { Info } from 'lucide-react'
 
 type Message = {
   id: string
@@ -466,11 +467,19 @@ export default function MessagesPage() {
 
                     {/* Commute row */}
                     {bookingDetail.commute && (
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', color: 'rgba(255,255,255,0.75)' }}>
-                        <span style={{ fontSize: '16px', flexShrink: 0 }}>
-                          {bookingDetail.commute.isFallback ? '🕐' : ''}
-                        </span>
-                        <span>{bookingDetail.commute.label}</span>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', color: 'rgba(255,255,255,0.75)' }}>
+                          <span style={{ fontSize: '16px', flexShrink: 0 }}>
+                            {bookingDetail.commute.isFallback ? '🕐' : ''}
+                          </span>
+                          <span>{bookingDetail.commute.label}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', marginTop: '6px', paddingLeft: '2px' }}>
+                          <Info size={11} style={{ color: '#6b7280', flexShrink: 0, marginTop: '2px' }} />
+                          <span style={{ fontSize: '11px', color: '#6b7280', lineHeight: '1.4' }}>
+                            Estimate only — based on typical driving time without live traffic. Always confirm with your GPS app (Google Maps, Waze, Apple Maps) before leaving.
+                          </span>
+                        </div>
                       </div>
                     )}
                   </>
