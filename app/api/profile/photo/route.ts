@@ -57,8 +57,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Unknown photo type: ${type}` }, { status: 400 })
   }
 
-  if (photo.size > 5 * 1024 * 1024) {
-    return NextResponse.json({ error: 'Photo must be under 5 MB' }, { status: 400 })
+  if (photo.size > 1 * 1024 * 1024) {
+    return NextResponse.json({ error: 'Compressed photo must be under 1 MB' }, { status: 400 })
   }
 
   const ext = photo.name.split('.').pop()?.toLowerCase() || 'jpg'

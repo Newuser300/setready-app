@@ -69,6 +69,9 @@ export async function POST(req: Request) {
 
     let headshotUrl: string | undefined
     const headshot = formData.get('headshot') as File | null
+    if (headshot && headshot.size > 1 * 1024 * 1024) {
+      return NextResponse.json({ error: 'Compressed headshot must be under 1 MB' }, { status: 400 })
+    }
     if (headshot && headshot.size > 0) {
       const ext = headshot.name.split('.').pop()?.toLowerCase() || 'jpg'
       const path = `${user.id}/headshot.${ext}`

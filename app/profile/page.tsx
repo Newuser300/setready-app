@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { getRegionFromCity, FILM_REGIONS } from '@/lib/film-regions'
+import { compressImage } from '@/lib/compress-image'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -102,12 +103,8 @@ export default function ProfilePage() {
   const supabase = createClient()
   const fileRef = useRef<HTMLInputElement>(null)
   const fileFrontRef = useRef<HTMLInputElement>(null)
-  const fileSideRef = useRef<HTMLInputElement>(null)
   const fileExtraRef = useRef<HTMLInputElement>(null)
   const fileExtra2Ref = useRef<HTMLInputElement>(null)
-  const fileHeadshotAltRef = useRef<HTMLInputElement>(null)
-  const fileWardrobeFormalRef = useRef<HTMLInputElement>(null)
-  const fileWardrobeCasualRef = useRef<HTMLInputElement>(null)
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -121,12 +118,8 @@ export default function ProfilePage() {
   const [headshotBroken, setHeadshotBroken] = useState(false)
   const [headshotFile, setHeadshotFile] = useState<File | null>(null)
   const [photoFront, setPhotoFront] = useState('')
-  const [photoSide, setPhotoSide] = useState('')
   const [photoExtra, setPhotoExtra] = useState('')
   const [photoExtra2, setPhotoExtra2] = useState('')
-  const [photoHeadshotAlt, setPhotoHeadshotAlt] = useState('')
-  const [photoWardrobeFormal, setPhotoWardrobeFormal] = useState('')
-  const [photoWardrobeCasual, setPhotoWardrobeCasual] = useState('')
 
   // Basics
   const [isPublic, setIsPublic] = useState(true)
@@ -241,12 +234,8 @@ export default function ProfilePage() {
         setHeadshotUrl(p.headshot_url || '')
         setVideoReelUrl(p.video_reel_url || '')
         setPhotoFront(p.photo_full_body_front || '')
-        setPhotoSide(p.photo_full_body_side || '')
         setPhotoExtra(p.photo_additional || '')
         setPhotoExtra2(p.photo_additional_2 || '')
-        setPhotoHeadshotAlt(p.headshot_alt || '')
-        setPhotoWardrobeFormal(p.wardrobe_formal || '')
-        setPhotoWardrobeCasual(p.wardrobe_casual || '')
         if (p.height_cm) {
           setHeightCm(p.height_cm.toString())
           const totalIn = Math.round(p.height_cm / 2.54)
@@ -310,21 +299,24 @@ export default function ProfilePage() {
     if (res.ok) setAgencyLinks((await res.json()) || [])
   }
 
-  async function uploadAdditionalPhoto(file: File, type: 'full_body_front' | 'full_body_side' | 'additional' | 'additional_2' | 'headshot_alt' | 'wardrobe_formal' | 'wardrobe_casual') {
-    if (file.size > 5 * 1024 * 1024) { setMessage('Image must be under 5 MB.'); return }
+  async function uploadAdditionalPhoto(file: File, type: 'full_body_front' | 'additional' | 'additional_2') {
+    if (file.size > 25 * 1024 * 1024) { setMessage('Image is too large (max 25 MB before compression).'); return }
+    let compressed: File
+    try {
+      compressed = await compressImage(file)
+    } catch {
+      setMessage('❌ Could not process image. Try a different file.')
+      return
+    }
     const fd = new FormData()
-    fd.append('photo', file)
+    fd.append('photo', compressed)
     fd.append('type', type)
     const res = await fetch('/api/profile/photo', { method: 'POST', body: fd, credentials: 'include' })
     if (res.ok) {
       const d = await res.json()
       if (type === 'full_body_front') setPhotoFront(d.url)
-      if (type === 'full_body_side') setPhotoSide(d.url)
       if (type === 'additional') setPhotoExtra(d.url)
       if (type === 'additional_2') setPhotoExtra2(d.url)
-      if (type === 'headshot_alt') setPhotoHeadshotAlt(d.url)
-      if (type === 'wardrobe_formal') setPhotoWardrobeFormal(d.url)
-      if (type === 'wardrobe_casual') setPhotoWardrobeCasual(d.url)
     } else {
       setMessage('❌ Failed to upload photo.')
     }
@@ -389,8 +381,16 @@ export default function ProfilePage() {
     try {
       // Upload new headshot file first if one was selected
       if (headshotFile) {
+        let compressedHeadshot: File
+        try {
+          compressedHeadshot = await compressImage(headshotFile)
+        } catch {
+          setSaveError('Could not process headshot image. Try a different file.')
+          setSaving(false)
+          return
+        }
         const hfd = new FormData()
-        hfd.append('headshot', headshotFile)
+        hfd.append('headshot', compressedHeadshot)
         hfd.append('data', JSON.stringify({}))
         const hRes = await fetch('/api/profile', {
           method: 'POST',
@@ -468,12 +468,8 @@ export default function ProfilePage() {
         home_lng: homeLng,
         headshot_url: headshotUrl?.startsWith('https://') ? headshotUrl : null,
         photo_full_body_front: photoFront?.startsWith('https://') ? photoFront : null,
-        photo_full_body_side: photoSide?.startsWith('https://') ? photoSide : null,
         photo_additional: photoExtra?.startsWith('https://') ? photoExtra : null,
         photo_additional_2: photoExtra2?.startsWith('https://') ? photoExtra2 : null,
-        headshot_alt: photoHeadshotAlt?.startsWith('https://') ? photoHeadshotAlt : null,
-        wardrobe_formal: photoWardrobeFormal?.startsWith('https://') ? photoWardrobeFormal : null,
-        wardrobe_casual: photoWardrobeCasual?.startsWith('https://') ? photoWardrobeCasual : null,
       }
 
       console.log('Saving profile:', profileData)
@@ -613,8 +609,8 @@ export default function ProfilePage() {
               <button onClick={() => fileRef.current?.click()} style={{ padding: '8px 16px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px' }}>
                 {(headshotUrl && !headshotBroken) ? 'Change Photo' : 'Upload Photo'}
               </button>
-              <p style={{ fontSize: '11px', color: '#9ca3af', margin: '6px 0 0' }}>JPG or PNG, max 5 MB. Square crop works best.</p>
-              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={e => { const f = e.target.files?.[0]; if (!f) return; if (f.size > 5*1024*1024) { setMessage('Image must be under 5 MB.'); return }; setHeadshotBroken(false); setHeadshotFile(f); setHeadshotUrl(URL.createObjectURL(f)) }} style={{ display: 'none' }} />
+              <p style={{ fontSize: '11px', color: '#9ca3af', margin: '6px 0 0' }}>JPG, PNG or WebP. Compressed automatically. Square crop works best.</p>
+              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic" onChange={e => { const f = e.target.files?.[0]; if (!f) return; if (f.size > 25*1024*1024) { setMessage('Image is too large (max 25 MB).'); return }; setHeadshotBroken(false); setHeadshotFile(f); setHeadshotUrl(URL.createObjectURL(f)) }} style={{ display: 'none' }} />
             </div>
           </div>
         </CS>
@@ -1108,18 +1104,14 @@ export default function ProfilePage() {
 
         {/* ── ADDITIONAL PHOTOS ── */}
         <CS title="📷 Additional Photos">
-          <p style={{ fontSize: '12px', color: '#9ca3af', margin: '0 0 14px' }}>Upload full body shots for wardrobe reference. Visible to agents and casting directors.</p>
+          <p style={{ fontSize: '12px', color: '#9ca3af', margin: '0 0 14px' }}>Visible to agents and casting directors.</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             {([
-              { label: 'Full Body — Front', url: photoFront, setUrl: setPhotoFront, ref: fileFrontRef, type: 'full_body_front' as const },
-              { label: 'Full Body — Side', url: photoSide, setUrl: setPhotoSide, ref: fileSideRef, type: 'full_body_side' as const },
-              { label: 'Additional Photo 1', url: photoExtra, setUrl: setPhotoExtra, ref: fileExtraRef, type: 'additional' as const },
-              { label: 'Additional Photo 2', url: photoExtra2, setUrl: setPhotoExtra2, ref: fileExtra2Ref, type: 'additional_2' as const },
-              { label: 'Alt Headshot', url: photoHeadshotAlt, setUrl: setPhotoHeadshotAlt, ref: fileHeadshotAltRef, type: 'headshot_alt' as const },
-              { label: 'Wardrobe — Formal', url: photoWardrobeFormal, setUrl: setPhotoWardrobeFormal, ref: fileWardrobeFormalRef, type: 'wardrobe_formal' as const },
-              { label: 'Wardrobe — Casual', url: photoWardrobeCasual, setUrl: setPhotoWardrobeCasual, ref: fileWardrobeCasualRef, type: 'wardrobe_casual' as const },
-            ]).map(slot => (
-              <div key={slot.label} style={{ border: '1px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden' }}>
+              { label: 'Full Body', url: photoFront, setUrl: setPhotoFront, ref: fileFrontRef, type: 'full_body_front' as const },
+              { label: 'Misc', url: photoExtra, setUrl: setPhotoExtra, ref: fileExtraRef, type: 'additional' as const },
+              { label: 'Misc', url: photoExtra2, setUrl: setPhotoExtra2, ref: fileExtra2Ref, type: 'additional_2' as const },
+            ]).map((slot, i) => (
+              <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden' }}>
                 {slot.url ? (
                   <>
                     <img src={slot.url} alt={slot.label} style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', display: 'block' }} />
@@ -1138,7 +1130,7 @@ export default function ProfilePage() {
               </div>
             ))}
           </div>
-          <p style={{ fontSize: '11px', color: '#9ca3af', margin: '8px 0 0' }}>JPG, PNG or HEIC. Max 5 MB per photo.</p>
+          <p style={{ fontSize: '11px', color: '#9ca3af', margin: '8px 0 0' }}>JPG, PNG, WebP or HEIC. Compressed to WebP automatically.</p>
         </CS>
 
         {/* ── SAVE ── */}
