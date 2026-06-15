@@ -2,8 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { randomBytes } from 'crypto'
 import { getAgentSession } from '@/lib/casting-auth'
-import { sendEmail } from '@/lib/email'
-import { rosterInviteEmailHtml } from '@/lib/email'
+import { sendEmail, rosterInviteEmailHtml } from '@/lib/email'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,7 +31,7 @@ export async function POST(req: Request) {
   const session = await getAgentSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Resolve agency_id from agent_accounts
+  // Resolve agency details
   const { data: account, error: accountErr } = await supabaseAdmin
     .from('agent_accounts')
     .select('agency_id, agencies(name)')
@@ -51,35 +50,51 @@ export async function POST(req: Request) {
   try {
     const body = await req.json()
     rows = body.rows
-    if (!Array.isArray(rows)) throw new Error('rows must be array')
+    if (!Array.isArray(rows)) throw new Error()
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
+  // ── Pre-load lookup sets (one round-trip each, not N) ─────────────────────
+
+  // All users by email → id
+  const { data: allUsers } = await supabaseAdmin
+    .from('users')
+    .select('id, email')
+
+  const userByEmail = new Map<string, string>(
+    (allUsers || [])
+      .filter((u: { email: string | null }) => u.email)
+      .map((u: { id: string; email: string }) => [u.email.toLowerCase().trim(), u.id])
+  )
+
+  // Existing agency_roster entries for this agency (any status, to block re-import of existing rows)
+  const { data: rosterRows } = await supabaseAdmin
+    .from('agency_roster')
+    .select('user_id')
+    .eq('agency_id', agencyId)
+
+  const alreadyOnRoster = new Set<string>(
+    (rosterRows || []).map((r: { user_id: string }) => r.user_id)
+  )
+
+  // Existing pending performer_claims for this agency (not yet used/expired)
+  const { data: claimRows } = await supabaseAdmin
+    .from('performer_claims')
+    .select('invited_email')
+    .eq('agency_id', agencyId)
+    .eq('is_used', false)
+    .gt('expires_at', new Date().toISOString())
+
+  const alreadyInvited = new Set<string>(
+    (claimRows || []).map((c: { invited_email: string }) => c.invited_email.toLowerCase().trim())
+  )
+
+  // ── Process rows ───────────────────────────────────────────────────────────
+
   let imported = 0
   let invited = 0
   const skippedRows: SkippedRow[] = []
-
-  // Pre-load existing invite emails for this agency (for de-dupe)
-  const { data: existingInvites } = await supabaseAdmin
-    .from('roster_import_invites')
-    .select('email')
-    .eq('agency_id', agencyId)
-
-  const alreadyInvited = new Set<string>(
-    (existingInvites || []).map((r: { email: string }) => r.email.toLowerCase().trim())
-  )
-
-  // Load existing user emails for de-dupe
-  const { data: existingUsers } = await supabaseAdmin
-    .from('users')
-    .select('email')
-
-  const alreadyUsers = new Set<string>(
-    (existingUsers || [])
-      .filter((u: { email: string | null }) => u.email)
-      .map((u: { email: string }) => u.email.toLowerCase().trim())
-  )
 
   for (const row of rows) {
     const email = row.email?.trim()
@@ -89,74 +104,99 @@ export async function POST(req: Request) {
     }
 
     const emailNorm = email.toLowerCase()
+    const existingUserId = userByEmail.get(emailNorm)
 
-    // De-dupe: already an active user
-    if (alreadyUsers.has(emailNorm)) {
-      skippedRows.push({ email, reason: 'Already has a SetReady account' })
-      continue
-    }
+    if (existingUserId) {
+      // ── Performer has a SetReady account — link via agency_roster ──────────
 
-    // De-dupe: already invited by this agency
-    if (alreadyInvited.has(emailNorm)) {
-      skippedRows.push({ email, reason: 'Already invited by this agency' })
-      continue
-    }
+      if (alreadyOnRoster.has(existingUserId)) {
+        skippedRows.push({ email, reason: 'Already linked to this agency\'s roster' })
+        continue
+      }
 
-    // Generate claim token
-    const claimToken = randomBytes(32).toString('hex')
+      const { error: rosterErr } = await supabaseAdmin
+        .from('agency_roster')
+        .insert({
+          agency_id: agencyId,
+          user_id: existingUserId,         // canonical column name confirmed
+          status: 'pending',               // existing status column
+          invite_status: 'invited',        // new column from migration
+          invited_email: email,
+          added_by: session.accountId,
+        })
 
-    // Sanitize numeric fields
-    let heightCm: number | null = null
-    if (row.height_cm?.trim()) {
-      const n = parseFloat(row.height_cm.trim())
-      if (!isNaN(n)) heightCm = n
-    }
+      if (rosterErr) {
+        skippedRows.push({ email, reason: 'Database error: ' + rosterErr.message })
+        continue
+      }
 
-    // Insert into staging table
-    const { error: insertErr } = await supabaseAdmin
-      .from('roster_import_invites')
-      .insert({
-        agency_id: agencyId,
-        agent_account_id: session.accountId,
-        first_name: row.first_name?.trim() || null,
-        last_name: row.last_name?.trim() || null,
-        email,
-        phone: row.phone?.trim() || null,
-        gender: row.gender?.trim() || null,
+      alreadyOnRoster.add(existingUserId)
+      imported++
+      // No claim email for existing users — they see it via in-app notifications.
+      // is_public is never touched here.
+
+    } else {
+      // ── No account yet — create performer_claims row and send invite ───────
+
+      if (alreadyInvited.has(emailNorm)) {
+        skippedRows.push({ email, reason: 'Invite already sent to this email' })
+        continue
+      }
+
+      const token = randomBytes(32).toString('hex')
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+
+      let heightCm: number | null = null
+      if (row.height_cm?.trim()) {
+        const n = parseFloat(row.height_cm.trim())
+        if (!isNaN(n)) heightCm = n
+      }
+
+      // prefilled_data stores everything the agent uploaded — read at claim time
+      // is_public is NOT set here; it defaults to false and is only set when the
+      // performer actively claims and confirms their profile.
+      const prefilledData = {
+        first_name:    row.first_name?.trim()    || null,
+        last_name:     row.last_name?.trim()     || null,
+        phone:         row.phone?.trim()         || null,
+        gender:        row.gender?.trim()        || null,
         date_of_birth: row.date_of_birth?.trim() || null,
-        height_cm: heightCm,
-        hair_color: row.hair_color?.trim() || null,
-        eye_color: row.eye_color?.trim() || null,
-        union_status: row.union_status?.trim() || null,
+        height_cm:     heightCm,
+        hair_color:    row.hair_color?.trim()    || null,
+        eye_color:     row.eye_color?.trim()     || null,
+        union_status:  row.union_status?.trim()  || null,
         special_skills: row.special_skills?.trim() || null,
-        claim_token: claimToken,
-        status: 'invited',
+      }
+
+      const { error: claimErr } = await supabaseAdmin
+        .from('performer_claims')
+        .insert({
+          agency_id:     agencyId,
+          invited_email: emailNorm,
+          token,
+          prefilled_data: prefilledData,
+          invited_by:    session.accountId,
+          expires_at:    expiresAt,
+        })
+
+      if (claimErr) {
+        skippedRows.push({ email, reason: 'Database error: ' + claimErr.message })
+        continue
+      }
+
+      alreadyInvited.add(emailNorm)
+      imported++
+
+      const claimUrl = `${APP_URL}/claim?token=${token}`
+      const firstName = row.first_name?.trim() || 'there'
+
+      const emailResult = await sendEmail({
+        to: email,
+        subject: `${agencyName} invited you to join SetReady`,
+        html: rosterInviteEmailHtml({ firstName, agencyName, claimUrl }),
       })
 
-    if (insertErr) {
-      skippedRows.push({ email, reason: 'Database error: ' + insertErr.message })
-      continue
-    }
-
-    imported++
-    alreadyInvited.add(emailNorm)
-
-    // Send invite email
-    const firstName = row.first_name?.trim() || 'Performer'
-    const claimUrl = `${APP_URL}/performer/claim?token=${claimToken}`
-
-    const emailResult = await sendEmail({
-      to: email,
-      subject: `${agencyName} invited you to join SetReady`,
-      html: rosterInviteEmailHtml({ firstName, agencyName, claimUrl }),
-    })
-
-    if (emailResult.success) {
-      invited++
-      await supabaseAdmin
-        .from('roster_import_invites')
-        .update({ invite_email_sent: true })
-        .eq('claim_token', claimToken)
+      if (emailResult.success) invited++
     }
   }
 

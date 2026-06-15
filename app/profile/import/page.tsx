@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase'
 const SCORED_FIELDS = [
   'first_name', 'last_name', 'phone', 'gender', 'date_of_birth',
   'height_cm', 'hair_color', 'eye_color', 'body_type', 'ethnicity',
-  'union_status', 'skills', 'bio', 'headshot',
+  'union_status', 'skills', 'languages', 'bio', 'headshot',
 ]
 
 const UNION_OPTIONS = [
@@ -88,11 +88,14 @@ export default function ProfileImportPage() {
   const [heightCm, setHeightCm] = useState('')
   const [hairColor, setHairColor] = useState('')
   const [eyeColor, setEyeColor] = useState('')
-  const [bodyType, setBodyType] = useState('')
-  const [ethnicity, setEthnicity] = useState('')
-  const [unionStatus, setUnionStatus] = useState('')
-  const [skills, setSkills] = useState('')
-  const [bio, setBio] = useState('')
+  const [bodyType,         setBodyType]         = useState('')
+  const [ethnicity,        setEthnicity]        = useState('')
+  const [unionStatus,      setUnionStatus]      = useState('')
+  const [skills,           setSkills]           = useState('')
+  const [languages,        setLanguages]        = useState('')
+  const [accents,          setAccents]          = useState('')
+  const [actingExperience, setActingExperience] = useState('')
+  const [bio,              setBio]              = useState('')
 
   // Headshot
   const [headshotFile, setHeadshotFile] = useState<File | null>(null)
@@ -121,7 +124,7 @@ export default function ProfileImportPage() {
 
   useEffect(() => {
     if (!authChecked) return
-    fetch('/api/profile/ai-parse', {
+    fetch('/api/profile/parse', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: '' }),
@@ -137,7 +140,7 @@ export default function ProfileImportPage() {
     ([
       firstName, lastName, phone, gender, dob,
       heightCm, hairColor, eyeColor, bodyType, ethnicity,
-      unionStatus, skills, bio,
+      unionStatus, skills, languages, bio,
       headshotFile ? 'yes' : '',
     ].filter(Boolean).length / SCORED_FIELDS.length) * 100
   )
@@ -149,7 +152,7 @@ export default function ProfileImportPage() {
     setAiLoading(true)
     setAiError('')
     try {
-      const res = await fetch('/api/profile/ai-parse', {
+      const res = await fetch('/api/profile/parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: aiText }),
@@ -161,16 +164,19 @@ export default function ProfileImportPage() {
         return
       }
       const p = data.parsed || {}
-      if (p.gender)        setGender(p.gender)
-      if (p.date_of_birth) setDob(p.date_of_birth)
-      if (p.height_cm)     setHeightCm(String(p.height_cm))
-      if (p.hair_color)    setHairColor(p.hair_color)
-      if (p.eye_color)     setEyeColor(p.eye_color)
-      if (p.body_type)     setBodyType(p.body_type)
-      if (p.ethnicity)     setEthnicity(p.ethnicity)
-      if (p.union_status)  setUnionStatus(p.union_status)
+      if (p.gender)              setGender(p.gender)
+      if (p.date_of_birth)       setDob(p.date_of_birth)
+      if (p.height_cm)           setHeightCm(String(p.height_cm))
+      if (p.hair_color)          setHairColor(p.hair_color)
+      if (p.eye_color)           setEyeColor(p.eye_color)
+      if (p.body_type)           setBodyType(p.body_type)
+      if (p.ethnicity)           setEthnicity(p.ethnicity)
+      if (p.union_status)        setUnionStatus(p.union_status)
       if (p.special_skills?.length) setSkills(p.special_skills.join(', '))
-      if (p.bio)           setBio(p.bio)
+      if (p.languages?.length)   setLanguages(p.languages.join(', '))
+      if (p.accents?.length)     setAccents(p.accents.join(', '))
+      if (p.acting_experience)   setActingExperience(p.acting_experience)
+      if (p.bio)                 setBio(p.bio)
       setAiDraft(true)
     } catch {
       setAiError('Network error — fill in manually below.')
@@ -210,21 +216,25 @@ export default function ProfileImportPage() {
         // Non-blocking — if upload fails we still save the rest
       }
 
+      const toArr = (s: string) =>
+        s.trim() ? s.split(',').map(x => x.trim()).filter(Boolean) : null
+
       const profilePayload: Record<string, unknown> = {
-        phone: phone.trim() || null,
-        gender: gender || null,
-        date_of_birth: dob.trim() || null,
-        height_cm: heightCm ? parseFloat(heightCm) : null,
-        hair_color: hairColor.trim() || null,
-        eye_color: eyeColor.trim() || null,
-        body_type: bodyType.trim() || null,
-        ethnicity: ethnicity.trim() || null,
-        union_status: unionStatus || null,
-        special_skills: skills.trim()
-          ? skills.split(',').map(s => s.trim()).filter(Boolean)
-          : null,
-        bio: bio.trim() || null,
-        is_public: false,
+        phone:             phone.trim()     || null,
+        gender:            gender           || null,
+        date_of_birth:     dob.trim()       || null,
+        height_cm:         heightCm ? parseFloat(heightCm) : null,
+        hair_color:        hairColor.trim() || null,
+        eye_color:         eyeColor.trim()  || null,
+        body_type:         bodyType.trim()  || null,
+        ethnicity:         ethnicity.trim() || null,
+        union_status:      unionStatus      || null,
+        special_skills:    toArr(skills),
+        languages:         toArr(languages),
+        accents:           toArr(accents),
+        acting_experience: actingExperience.trim() || null,
+        bio:               bio.trim()       || null,
+        is_public:         false,
         ...(headshotUrl ? { headshot_url: headshotUrl } : {}),
       }
 
@@ -460,8 +470,24 @@ export default function ProfileImportPage() {
                 style={inp}
                 value={skills}
                 onChange={e => setSkills(e.target.value)}
-                placeholder="Horseback riding, Piano, Spanish, Stunt driving, Stage combat…"
+                placeholder="Horseback riding, Piano, Stunt driving, Stage combat…"
               />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+              <div>
+                <label style={lbl}>Languages <span style={{ color: '#9ca3af', fontWeight: 400, textTransform: 'none' }}>(comma-separated)</span></label>
+                <input style={inp} value={languages} onChange={e => setLanguages(e.target.value)} placeholder="English, French, Spanish…" />
+              </div>
+              <div>
+                <label style={lbl}>Accents <span style={{ color: '#9ca3af', fontWeight: 400, textTransform: 'none' }}>(comma-separated)</span></label>
+                <input style={inp} value={accents} onChange={e => setAccents(e.target.value)} placeholder="British RP, Southern…" />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '12px' }}>
+              <label style={lbl}>Acting Experience <span style={{ color: '#9ca3af', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+              <input style={inp} value={actingExperience} onChange={e => setActingExperience(e.target.value)} placeholder="e.g. 5 years background, beginner, 10+ years film/TV" />
             </div>
 
             <div>

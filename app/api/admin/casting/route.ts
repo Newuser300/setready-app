@@ -137,8 +137,8 @@ export async function GET(req: NextRequest) {
         .lte('date', nextMonthEnd),
       supabaseAdmin
         .from('agency_roster')
-        .select('performer_id, agencies(name)')
-        .eq('status', 'approved'),
+        .select('user_id, agencies(name)')
+        .eq('status', 'active'),
     ])
 
     if (!performers?.length) return NextResponse.json([])
@@ -164,8 +164,8 @@ export async function GET(req: NextRequest) {
 
     const agencyMap: Record<string, string> = {}
     ;(rosterData || []).forEach((r: any) => {
-      if (!agencyMap[r.performer_id]) {
-        agencyMap[r.performer_id] = (r.agencies as any)?.name || ''
+      if (!agencyMap[r.user_id]) {
+        agencyMap[r.user_id] = (r.agencies as any)?.name || ''
       }
     })
 

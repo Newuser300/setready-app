@@ -132,11 +132,11 @@ export async function notifyIndependentPerformers(
   if (setting?.value !== 'true') return
 
   const [{ data: rosterData }, { data: exclusionData }] = await Promise.all([
-    supabaseAdmin.from('agency_roster').select('performer_id').eq('status', 'approved'),
+    supabaseAdmin.from('agency_roster').select('user_id').eq('status', 'active'),
     supabaseAdmin.from('casting_notification_exclusions').select('user_id'),
   ])
 
-  const agencyIds = new Set((rosterData || []).map((r: any) => r.performer_id))
+  const agencyIds = new Set((rosterData || []).map((r: any) => r.user_id))
   const excludedIds = new Set((exclusionData || []).map((e: any) => e.user_id))
 
   const { data: performers } = await supabaseAdmin
