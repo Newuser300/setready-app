@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { sendEmail } from '@/lib/email'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -193,15 +194,39 @@ export async function POST(req: NextRequest) {
 
   if (action === 'approve') {
     if (entityType === 'casting_director') {
+      const { data: cd } = await supabaseAdmin
+        .from('casting_directors')
+        .select('name, email, company')
+        .eq('id', id)
+        .single()
       await supabaseAdmin
         .from('casting_directors')
         .update({ is_verified: true, verified_at: new Date().toISOString() })
         .eq('id', id)
+      if (cd?.email) {
+        await sendEmail({
+          to: cd.email,
+          subject: 'Your SetReady Casting Director Access Has Been Approved',
+          html: `<p>Hi ${cd.name || 'there'},</p><p>Your casting director account for <strong>${cd.company || 'your company'}</strong> has been approved on SetReady Casting.</p><p>You can now log in at <a href="https://setready.site/casting/login">setready.site/casting/login</a> and begin posting casting requests.</p><p>— The SetReady Team</p>`,
+        }).catch(() => {})
+      }
     } else if (entityType === 'agency') {
+      const { data: ag } = await supabaseAdmin
+        .from('agencies')
+        .select('name, email')
+        .eq('id', id)
+        .single()
       await supabaseAdmin
         .from('agencies')
         .update({ is_approved: true, approved_at: new Date().toISOString() })
         .eq('id', id)
+      if (ag?.email) {
+        await sendEmail({
+          to: ag.email,
+          subject: 'Your SetReady Agency Application Has Been Approved',
+          html: `<p>Congratulations!</p><p>Your agency <strong>${ag.name}</strong> has been approved on SetReady Casting.</p><p>You can now log in at <a href="https://setready.site/agent/login">setready.site/agent/login</a> and begin building your roster.</p><p>— The SetReady Team</p>`,
+        }).catch(() => {})
+      }
     }
     return NextResponse.json({ success: true })
   }
@@ -209,9 +234,25 @@ export async function POST(req: NextRequest) {
   if (action === 'reject') {
     const { reason } = body
     if (entityType === 'casting_director') {
+      const { data: cd } = await supabaseAdmin.from('casting_directors').select('name, email').eq('id', id).single()
       await supabaseAdmin.from('casting_directors').delete().eq('id', id)
+      if (cd?.email) {
+        await sendEmail({
+          to: cd.email,
+          subject: 'Update on Your SetReady Casting Director Application',
+          html: `<p>Hi ${cd.name || 'there'},</p><p>After review, we are unable to approve your casting director application at this time.${reason ? ` Reason: ${reason}` : ''}</p><p>If you have questions, please contact us at setready@mail.com.</p><p>— The SetReady Team</p>`,
+        }).catch(() => {})
+      }
     } else if (entityType === 'agency') {
+      const { data: ag } = await supabaseAdmin.from('agencies').select('name, email, contact_name').eq('id', id).single()
       await supabaseAdmin.from('agencies').delete().eq('id', id)
+      if (ag?.email) {
+        await sendEmail({
+          to: ag.email,
+          subject: 'Update on Your SetReady Agency Application',
+          html: `<p>Hi ${ag.contact_name || 'there'},</p><p>After review, we are unable to approve your agency application for <strong>${ag.name}</strong> at this time.${reason ? ` Reason: ${reason}` : ''}</p><p>If you have questions, please contact us at setready@mail.com.</p><p>— The SetReady Team</p>`,
+        }).catch(() => {})
+      }
     }
     return NextResponse.json({ success: true, reason })
   }

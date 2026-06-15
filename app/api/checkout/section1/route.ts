@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { supabase } from '@/lib/supabase';
+import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-04-22.dahlia',
+  apiVersion: '2026-04-22.dahlia' as any,
 });
 
 const supabaseAdmin = createClient(
@@ -15,56 +16,58 @@ const supabaseAdmin = createClient(
 
 export async function POST(request: Request) {
   try {
-    // Get the authorization header
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
-    
-    if (!token) {
-      console.error('No authorization token');
+    // Primary: cookie-based auth (credentials: 'include')
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return cookieStore.getAll(); },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {}
+          },
+        },
+      }
+    );
+
+    let user: any = null;
+
+    const { data: { user: cookieUser } } = await supabase.auth.getUser();
+    if (cookieUser) {
+      user = cookieUser;
+    } else {
+      // Fallback: Bearer token
+      const authHeader = request.headers.get('authorization');
+      const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+      if (token) {
+        const { data: { user: tokenUser } } = await supabaseAdmin.auth.getUser(token);
+        user = tokenUser;
+      }
+    }
+
+    if (!user) {
       return NextResponse.json({ error: 'Please sign in' }, { status: 401 });
     }
-    
-    // Verify the token and get the user
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      console.error('Auth error:', authError);
-      return NextResponse.json({ error: 'Please sign in' }, { status: 401 });
-    }
-    
-    console.log('Checkout Section 1 - User:', user.id);
 
-    const { data: userProfile } = await supabaseAdmin
-      .from('users')
-      .select('referred_by')
-      .eq('id', user.id)
-      .maybeSingle();
-    console.log('Checkout Section 1 - User referred_by:', userProfile?.referred_by || 'none');
-
-    // Get the Price ID from environment variables
     const priceId = process.env.NEXT_PUBLIC_STRIPE_SECTION_1_PRICE_ID;
-    
     if (!priceId) {
-      console.error('Missing Stripe Price ID for Section 1');
       return NextResponse.json({ error: 'Payment configuration error' }, { status: 500 });
     }
-    
-    console.log('Using Price ID:', priceId);
-    
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
+      line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/payment-processing?session_id={CHECKOUT_SESSION_ID}&plan=section1`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?canceled=true`,
-      client_reference_id: user.id,  // This must be set
+      client_reference_id: user.id,
       metadata: {
-        userId: user.id,              // Also set in metadata as backup
+        userId: user.id,
         type: 'section1',
       },
       custom_text: {
@@ -73,13 +76,9 @@ export async function POST(request: Request) {
         },
       },
     });
-    
-    console.log('Checkout session created:', session.id);
-    console.log('Session metadata:', session.metadata);
-    console.log('Client reference ID:', session.client_reference_id);
-    
+
     return NextResponse.json({ url: session.url });
-    
+
   } catch (error) {
     console.error('Checkout error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

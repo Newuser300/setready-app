@@ -74,7 +74,7 @@ const quickActions = [
   { icon: '📋', label: 'Work Log', action: 'link' as const, href: '/work-log' },
   { icon: '📔', label: 'Journal', action: 'link' as const, href: '/journal' },
   { icon: '👥', label: 'Contacts', action: 'link' as const, href: '/contacts' },
-  { icon: '🎭', label: 'Set Etiquette Simulator', action: 'link' as const, href: '/simulator', badge: 'FREE' },
+  { icon: '🎭', label: 'Set Etiquette Simulator', action: 'link' as const, href: '/simulator' },
   { icon: '💰', label: 'Rate Calculator', action: 'link' as const, href: '/rate-calculator' },
   { icon: '⚖️', label: 'Know Your Rights', action: 'external' as const, href: 'https://ubcpactra.ca/agreements/' },
   { icon: '🤝', label: 'My Referrals', action: 'link' as const, href: '/referrals' },
@@ -85,7 +85,7 @@ const quickActions = [
   { icon: '📅', label: 'Availability', action: 'link' as const, href: '/availability' },
   { icon: '🎫', label: 'Voucher Wallet', action: 'link' as const, href: '/voucher-wallet' },
   { icon: '🤳', label: 'Headshot AI', action: 'link' as const, href: '/headshot-analyzer' },
-  { icon: '🎮', label: 'Games', action: 'link' as const, href: '/games', badge: 'FREE' },
+  { icon: '🎮', label: 'Games', action: 'link' as const, href: '/games' },
   { icon: '📬', label: 'Messages', action: 'link' as const, href: '/messages' },
 ];
 
@@ -149,6 +149,7 @@ export default function Dashboard() {
 
   // Message center unread count
   const [unreadMessages, setUnreadMessages] = useState(0)
+  const [subscribeLoading, setSubscribeLoading] = useState(false)
 
   // Casting notifications
   const [showNotifPanel, setShowNotifPanel] = useState(false)
@@ -339,6 +340,27 @@ export default function Dashboard() {
       alert('Error opening billing portal');
     }
     setLoadingPortal(false);
+  }
+
+  async function handleSubscribe() {
+    setSubscribeLoading(true)
+    try {
+      const res = await fetch('/api/checkout/section1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        alert('Unable to start checkout. Please try again.')
+      }
+    } catch {
+      alert('Something went wrong.')
+    } finally {
+      setSubscribeLoading(false)
+    }
   }
 
   // AGENCY CLICK FUNCTIONS
@@ -912,11 +934,11 @@ export default function Dashboard() {
               <p style={{ fontWeight: '700', fontSize: '15px', color: 'white', margin: '0 0 4px' }}>🔓 Unlock Section 1 Modules</p>
               <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.65)', margin: '0 0 12px' }}>Subscribe for $9.99/month to access all training modules.</p>
               <button
-                onClick={() => handleSection1Checkout()}
-                disabled={loadingPayment}
-                style={{ padding: '10px 20px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', fontSize: '14px', border: 'none', borderRadius: '10px', cursor: 'pointer', opacity: loadingPayment ? 0.5 : 1 }}
+                onClick={handleSubscribe}
+                disabled={subscribeLoading}
+                style={{ padding: '10px 20px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', fontSize: '14px', border: 'none', borderRadius: '10px', cursor: 'pointer', opacity: subscribeLoading ? 0.5 : 1 }}
               >
-                {loadingPayment ? 'Processing...' : 'Subscribe Now — $9.99/month'}
+                {subscribeLoading ? 'Processing...' : 'Subscribe Now — $9.99/month'}
               </button>
             </div>
           )}
