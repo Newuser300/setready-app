@@ -28,6 +28,13 @@ function rateLimit(ip: string, path: string): boolean {
 
 export async function middleware(request: NextRequest) {
 
+  // ── Skip all middleware for Stripe webhooks ──────────────────────────────
+  // Stripe POSTs raw bodies — any redirect or header mutation breaks sig verify
+  if (request.nextUrl.pathname.startsWith('/api/webhooks/')) {
+    return NextResponse.next()
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
   // ── Rate limit all /api/ routes ─────────────────────────────────────────
   if (request.nextUrl.pathname.startsWith('/api/')) {
     const ip =
@@ -57,7 +64,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
+          cookiesToSet.forEach(({ name, value }) => {
             request.cookies.set(name, value)
           })
           supabaseResponse = NextResponse.next({

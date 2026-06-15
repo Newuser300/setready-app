@@ -18,7 +18,11 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 export async function POST(request: Request) {
-  console.log('🔥 Webhook POST received - Starting processing');
+  console.log('🔥 Webhook POST received', {
+    url: request.url,
+    method: request.method,
+    contentType: request.headers.get('content-type'),
+  });
 
   const body = await request.text();
   console.log(`📦 Raw body length: ${body.length} characters`);
@@ -26,20 +30,25 @@ export async function POST(request: Request) {
   const sig = request.headers.get('stripe-signature');
   console.log(`🔑 Signature header present: ${sig ? 'Yes' : 'No'}`);
 
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  console.log('🔐 Webhook secret exists:', !!webhookSecret);
+  console.log('🔐 Webhook secret prefix:', webhookSecret?.slice(0, 10));
+
   if (!sig) {
     console.error('❌ No stripe-signature header found');
     return NextResponse.json({ error: 'No signature' }, { status: 400 });
+  }
+
+  if (!webhookSecret) {
+    console.error('❌ STRIPE_WEBHOOK_SECRET env var is not set');
+    return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
   }
 
   let event: Stripe.Event;
 
   try {
     console.log('🔐 Attempting to verify webhook signature...');
-    event = stripe.webhooks.constructEvent(
-      body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
+    event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
     console.log(`✅ Webhook verified! Event type: ${event.type}`);
   } catch (err) {
     console.error('❌ Webhook signature verification failed:', err);
