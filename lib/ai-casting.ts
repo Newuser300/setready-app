@@ -1,4 +1,4 @@
-import { getMatchingRegions, unionBadge, unionTierLabel } from './film-regions'
+import { getMatchingRegions, getRegionFromCity, unionBadge, unionTierLabel } from './film-regions'
 
 // Score a performer against a casting request's requirements
 function scorePerformer(performer: any, request: any): number {
@@ -81,17 +81,19 @@ export async function getSubmissionSuggestions(
 export async function aiPerformerSearch(
   query: string,
   allPerformers: any[],
-  shootRegionCode: string
-): Promise<{ performers: any[]; interpretation: string }> {
+  shootRegionCode: string,
+  today?: string
+): Promise<{ performers: any[]; interpretation: string; availability_date: string | null; resolved_region_code: string | null }> {
+  const todayStr = today || new Date().toISOString().slice(0, 10)
   const apiKey = process.env.ANTHROPIC_API_KEY
+
   if (!apiKey) {
-    // Fallback: basic keyword search
     const q = query.toLowerCase()
     const filtered = allPerformers.filter(p => {
       const name = (p.users?.raw_user_meta_data?.full_name || '').toLowerCase()
       return name.includes(q) || (p.union_status || '').toLowerCase().includes(q)
     })
-    return { performers: filtered, interpretation: `Keyword search for: ${query}` }
+    return { performers: filtered, interpretation: `Keyword search for: ${query}`, availability_date: null, resolved_region_code: null }
   }
 
   try {
@@ -104,10 +106,10 @@ export async function aiPerformerSearch(
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 400,
+        max_tokens: 500,
         messages: [{
           role: 'user',
-          content: `You are a casting director assistant. Extract casting criteria from this natural language query and return ONLY valid JSON with no markdown:
+          content: `You are a casting director assistant. Today's date is ${todayStr}. Extract casting criteria from this natural language query and return ONLY valid JSON with no markdown:
 
 Query: "${query}"
 
@@ -124,6 +126,8 @@ Return this exact JSON structure:
   "height_max_cm": null or number,
   "special_skills": [],
   "union_only": false or true,
+  "availability_date": null or "YYYY-MM-DD" (resolve relative dates like "Tuesday", "next Thursday", "June 20" against today ${todayStr}),
+  "location_text": null or string (any city or place name mentioned, e.g. "Vancouver", "Okanagan"),
   "interpretation": "one sentence describing what was understood"
 }`,
         }],
@@ -133,6 +137,17 @@ Return this exact JSON structure:
     const data = await res.json()
     const text: string = data.content?.[0]?.text || '{}'
     const criteria = JSON.parse(text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
+
+    // Resolve location_text to a region code if no shootRegionCode was passed in
+    let resolvedRegionCode: string | null = null
+    let effectiveRegion = shootRegionCode || ''
+    if (criteria.location_text && !shootRegionCode) {
+      const fromCity = getRegionFromCity(criteria.location_text)
+      if (fromCity) {
+        resolvedRegionCode = fromCity
+        effectiveRegion = fromCity
+      }
+    }
 
     // Filter performers by extracted criteria
     let filtered = allPerformers.filter(p => {
@@ -151,21 +166,28 @@ Return this exact JSON structure:
     })
 
     // Location filter
-    if (shootRegionCode) {
+    if (effectiveRegion) {
       filtered = filtered.filter(p => {
         if (!p.film_region_code) return true
-        return getMatchingRegions(shootRegionCode, p.film_region_code, p.travel_willingness || 'local', p.travel_radius_km || 100)
+        return getMatchingRegions(effectiveRegion, p.film_region_code, p.travel_willingness || 'local', p.travel_radius_km || 100)
       })
     }
 
-    // Always sort by union priority first
+    // Sort by union priority ASC (Full Members first)
     filtered.sort((a, b) => (a.union_priority ?? 4) - (b.union_priority ?? 4))
 
     return {
       performers: filtered,
       interpretation: criteria.interpretation || `Search for: ${query}`,
+      availability_date: criteria.availability_date || null,
+      resolved_region_code: resolvedRegionCode,
     }
   } catch {
-    return { performers: allPerformers.slice(0, 20), interpretation: `Could not parse: "${query}" — showing all performers` }
+    return {
+      performers: allPerformers.slice(0, 20),
+      interpretation: `Could not parse: "${query}" — showing all performers`,
+      availability_date: null,
+      resolved_region_code: null,
+    }
   }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 
 type Message = {
@@ -17,9 +17,31 @@ type Message = {
   is_archived: boolean
   action_url?: string
   action_label?: string
+  related_id?: string
   created_at: string
   reply_count?: number
   is_reply?: boolean
+}
+
+type WeatherResult = {
+  tempMax: number
+  tempMin: number
+  precipProb: number
+  windspeed: number
+  advisory: string
+  icon: string
+  regionName: string
+}
+
+type BookingDetail = {
+  shoot_date: string
+  call_time: string | null
+  location: string | null
+  production_name: string
+  role_type: string
+  weather: WeatherResult | null
+  leaveBy: string | null
+  forecastComingSoon: boolean
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -89,6 +111,10 @@ export default function MessagesPage() {
   const [replySuccess, setReplySuccess] = useState(false)
   const [thread, setThread] = useState<Message[]>([])
 
+  const [bookingDetail, setBookingDetail] = useState<BookingDetail | null>(null)
+  const [bookingLoading, setBookingLoading] = useState(false)
+  const weatherCache = useRef<Map<string, BookingDetail>>(new Map())
+
   async function fetchMessages(tab: string) {
     setLoading(true)
     const params = new URLSearchParams()
@@ -152,13 +178,35 @@ export default function MessagesPage() {
     }
   }
 
+  async function loadBookingDetail(requestId: string) {
+    const cached = weatherCache.current.get(requestId)
+    if (cached) { setBookingDetail(cached); return }
+
+    setBookingLoading(true)
+    setBookingDetail(null)
+    try {
+      const res = await fetch(`/api/performer/booking-weather?requestId=${requestId}`)
+      if (res.ok) {
+        const data: BookingDetail = await res.json()
+        weatherCache.current.set(requestId, data)
+        setBookingDetail(data)
+      }
+    } finally {
+      setBookingLoading(false)
+    }
+  }
+
   function openMessage(message: Message) {
     setSelectedMessage(message)
     setReplyText('')
     setReplySuccess(false)
     setThread([])
+    setBookingDetail(null)
     markAsRead(message)
     loadThread(message.id)
+    if (message.message_type === 'booking_confirmed' && message.related_id) {
+      loadBookingDetail(message.related_id)
+    }
   }
 
   async function handleReply(message: Message) {
@@ -363,6 +411,62 @@ export default function MessagesPage() {
             <div style={{ fontSize: '15px', color: 'rgba(255,255,255,0.85)', lineHeight: '1.7', whiteSpace: 'pre-wrap', marginBottom: '24px' }}>
               {selectedMessage.body}
             </div>
+
+            {/* ── Weather + Commute card (booking_confirmed only) ── */}
+            {selectedMessage.message_type === 'booking_confirmed' && (
+              <div style={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '12px', padding: '14px 16px', marginBottom: '20px' }}>
+                {bookingLoading ? (
+                  <div style={{ fontSize: '13px', color: '#6b7280' }}>Loading shoot details…</div>
+                ) : bookingDetail ? (
+                  <>
+                    {/* Shoot date + location header */}
+                    <div style={{ fontSize: '11px', fontWeight: '700', color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '10px' }}>
+                      Shoot Day Info
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '12px', fontSize: '12px' }}>
+                      <div style={{ color: '#9ca3af' }}>
+                        <span style={{ color: '#6b7280' }}>Date </span>
+                        {new Date(bookingDetail.shoot_date + 'T00:00:00').toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                      </div>
+                      {bookingDetail.location && (
+                        <div style={{ color: '#9ca3af' }}>
+                          <span style={{ color: '#6b7280' }}>Location </span>
+                          {bookingDetail.location}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Weather row */}
+                    {bookingDetail.weather ? (
+                      <div style={{ backgroundColor: 'rgba(245,158,11,0.06)', borderRadius: '8px', padding: '10px 12px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '20px' }}>{bookingDetail.weather.icon}</span>
+                        <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.9)', fontWeight: '600', flex: 1, minWidth: '140px' }}>
+                          {bookingDetail.weather.advisory}
+                        </span>
+                        <span style={{ fontSize: '12px', color: '#9ca3af', whiteSpace: 'nowrap' }}>
+                          High {bookingDetail.weather.tempMax}° / Low {bookingDetail.weather.tempMin}°
+                        </span>
+                        <span style={{ fontSize: '12px', color: '#9ca3af', whiteSpace: 'nowrap' }}>
+                          {bookingDetail.weather.precipProb}% rain
+                        </span>
+                      </div>
+                    ) : bookingDetail.forecastComingSoon ? (
+                      <div style={{ backgroundColor: 'rgba(245,158,11,0.06)', borderRadius: '8px', padding: '10px 12px', marginBottom: '8px', fontSize: '12px', color: '#9ca3af' }}>
+                        📅 Forecast available closer to the shoot date.
+                      </div>
+                    ) : null}
+
+                    {/* Commute row */}
+                    {bookingDetail.leaveBy && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'rgba(255,255,255,0.75)' }}>
+                        <span style={{ fontSize: '16px' }}>🕐</span>
+                        <span>{bookingDetail.leaveBy}</span>
+                      </div>
+                    )}
+                  </>
+                ) : null}
+              </div>
+            )}
 
             {/* Action button */}
             {selectedMessage.action_url && (

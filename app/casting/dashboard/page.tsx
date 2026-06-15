@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import toast, { Toaster } from 'react-hot-toast'
 import Logo from '@/components/Logo'
 import { FILM_REGION_LIST, getRegionName, unionBadge, unionTierLabel } from '@/lib/film-regions'
 
@@ -217,6 +218,12 @@ export default function CastingDashboardPage() {
   const [aiQuery, setAiQuery] = useState('')
   const [aiInterpretation, setAiInterpretation] = useState('')
   const [browseMode, setBrowseMode] = useState<'search'|'browse'>('search')
+  const [nlQuery, setNlQuery] = useState('')
+  const [nlLoading, setNlLoading] = useState(false)
+  const [nlResults, setNlResults] = useState<Performer[] | null>(null)
+  const [nlInterpretation, setNlInterpretation] = useState('')
+  const [nlDate, setNlDate] = useState<string | null>(null)
+  const [nlRegion, setNlRegion] = useState<string | null>(null)
 
   // Requests
   const [requests, setRequests] = useState<CastingRequest[]>([])
@@ -450,6 +457,36 @@ export default function CastingDashboardPage() {
     if (res.ok) setSigninDetail(await res.json())
   }
 
+  async function runNlSearch() {
+    if (!nlQuery.trim()) return
+    setNlLoading(true)
+    setNlResults(null)
+    setNlInterpretation('')
+    setNlDate(null)
+    setNlRegion(null)
+    try {
+      const res = await fetch('/api/casting/ai-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: nlQuery.trim() }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        toast.error(err.error || 'Search failed')
+        return
+      }
+      const data = await res.json()
+      setNlResults(data.performers || [])
+      setNlInterpretation(data.interpretation || '')
+      setNlDate(data.availability_date || null)
+      setNlRegion(data.resolved_region_code || null)
+    } catch {
+      toast.error('Search failed — check your connection')
+    } finally {
+      setNlLoading(false)
+    }
+  }
+
   async function signOut() {
     await fetch('/api/casting/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) })
     router.replace('/casting/login')
@@ -459,6 +496,7 @@ export default function CastingDashboardPage() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f0f1a', display: 'flex', flexDirection: 'column' }}>
+      <Toaster position="top-center" toastOptions={{ style: { background: '#1e1e35', color: 'white', border: '1px solid rgba(245,158,11,0.3)' } }} />
 
       {/* Top bar */}
       <div style={{ backgroundColor: '#1a1a2e', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50, borderBottom: '1px solid rgba(245,158,11,0.15)' }}>
@@ -539,6 +577,80 @@ export default function CastingDashboardPage() {
         {/* ── FIND PERFORMERS ───────────────────────────────────────────── */}
         {activeTab === 'Find' && (
           <div>
+            {/* ── Natural-language search ─────────────────────────────────── */}
+            <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '16px 18px', border: '1px solid rgba(245,158,11,0.25)', marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>
+                ✨ Search in plain English
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  value={nlQuery}
+                  onChange={e => setNlQuery(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && runNlSearch()}
+                  placeholder='e.g. 20 business-casual men, 30-50, available Tuesday in Vancouver'
+                  style={{ flex: 1, padding: '10px 13px', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', fontSize: '13px', color: 'white', backgroundColor: '#0f0f1a', outline: 'none', boxSizing: 'border-box' }}
+                />
+                <button
+                  onClick={runNlSearch}
+                  disabled={nlLoading || !nlQuery.trim()}
+                  style={{ padding: '10px 18px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '800', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', opacity: nlLoading || !nlQuery.trim() ? 0.5 : 1, whiteSpace: 'nowrap' }}
+                >
+                  {nlLoading ? '…' : 'Search'}
+                </button>
+                {nlResults !== null && (
+                  <button
+                    onClick={() => { setNlResults(null); setNlQuery(''); setNlInterpretation(''); setNlDate(null); setNlRegion(null) }}
+                    style={{ padding: '10px 14px', backgroundColor: 'rgba(255,255,255,0.06)', color: '#9ca3af', fontWeight: '600', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', whiteSpace: 'nowrap' }}
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              {/* Interpretation / result summary */}
+              {nlResults !== null && !nlLoading && (
+                <div style={{ marginTop: '10px', padding: '8px 12px', backgroundColor: 'rgba(245,158,11,0.08)', borderRadius: '8px', border: '1px solid rgba(245,158,11,0.2)' }}>
+                  <span style={{ fontSize: '12px', color: '#F59E0B', fontWeight: '600' }}>
+                    Showing: {nlInterpretation}
+                  </span>
+                  {nlDate && (
+                    <span style={{ fontSize: '12px', color: '#9ca3af', marginLeft: '8px' }}>
+                      · Available: {nlDate}
+                    </span>
+                  )}
+                  {nlRegion && (
+                    <span style={{ fontSize: '12px', color: '#9ca3af', marginLeft: '8px' }}>
+                      · Region: {getRegionName(nlRegion)}
+                    </span>
+                  )}
+                  <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '8px' }}>
+                    ({nlResults.length} result{nlResults.length !== 1 ? 's' : ''})
+                  </span>
+                </div>
+              )}
+              {nlLoading && (
+                <div style={{ marginTop: '10px', fontSize: '12px', color: '#9ca3af' }}>Searching with AI…</div>
+              )}
+            </div>
+
+            {/* AI search results — shown instead of manual results when present */}
+            {nlResults !== null && !nlLoading && (
+              <div style={{ marginBottom: '16px' }}>
+                {nlResults.length > 0 ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px' }}>
+                    {nlResults.map(p => <PerformerCard key={p.user_id} p={p} onClick={() => setQuickView(p)} />)}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af', backgroundColor: '#1e1e35', borderRadius: '14px' }}>
+                    No performers matched your search. Try adjusting the description.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Only show manual filters when AI results are not active */}
+            {nlResults === null && (
+              <>
             {/* Mode toggle */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
               {(['search','browse'] as const).map(m => (
@@ -660,6 +772,8 @@ export default function CastingDashboardPage() {
                 </>
               )
             }
+              </>
+            )}
           </div>
         )}
 

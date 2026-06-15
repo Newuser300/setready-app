@@ -1122,7 +1122,7 @@ export default function Dashboard() {
             <div style={{ fontSize: '28px' }}>📚</div>
             <div>
               <div style={{ fontSize: '11px', fontWeight: '700', color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>Section 1</div>
-              <h2 style={{ fontSize: isMobile ? '18px' : '22px', fontWeight: '800', color: 'white', margin: 0 }}>Background Performer Training</h2>
+              <h2 style={{ fontSize: isMobile ? '18px' : '22px', fontWeight: '800', color: '#1a1a2e', margin: 0 }}>Background Performer Training</h2>
               <p style={{ color: '#9ca3af', fontSize: '13px', margin: '2px 0 0' }}>Master the fundamentals of working on a film set</p>
             </div>
           </div>
