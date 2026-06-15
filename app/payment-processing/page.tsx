@@ -61,7 +61,7 @@ function PaymentProcessingContent() {
           clearInterval(progressInterval);
           clearTimeout(fallbackTimeout);
           setStatusMessage('Access granted! Redirecting...');
-          router.push('/dashboard');
+          router.push('/dashboard?subscribed=true');
         }
       } catch {
         // Network hiccup — keep polling
@@ -74,7 +74,7 @@ function PaymentProcessingContent() {
       clearInterval(progressInterval);
       setElapsed(TIMEOUT_MS);
       setStatusMessage("Taking a little longer than expected — redirecting now. Refresh your dashboard if your subscription isn't showing.");
-      setTimeout(() => router.push('/dashboard'), 2000);
+      setTimeout(() => router.push('/dashboard?subscribed=true'), 2000);
     }, TIMEOUT_MS);
 
     return () => {

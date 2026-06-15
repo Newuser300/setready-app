@@ -164,7 +164,10 @@ export default function AdminPage() {
   const [performersLoading, setPerformersLoading] = useState(false);
 
   // Messages tab state
-  const [msgSubTab, setMsgSubTab] = useState<'compose' | 'sent' | 'all' | 'stats'>('compose')
+  const [msgSubTab, setMsgSubTab] = useState<'compose' | 'sent' | 'all' | 'stats' | 'restrictions'>('compose')
+  const [agentsCanMessage, setAgentsCanMessage] = useState<boolean>(true)
+  const [cdCanMessage, setCdCanMessage] = useState<boolean>(true)
+  const [restrictionsLoading, setRestrictionsLoading] = useState(false)
   const [msgRecipientType, setMsgRecipientType] = useState('all_performers')
   const [msgSpecificRecipients, setMsgSpecificRecipients] = useState<any[]>([])
   const [msgSearch, setMsgSearch] = useState('')
@@ -2119,18 +2122,34 @@ export default function AdminPage() {
           {/* Sub-tabs */}
           <div className="flex gap-2 border-b border-gray-200 overflow-x-auto">
             {([
-              { key: 'compose', label: '📝 Compose' },
-              { key: 'sent',    label: '📤 Sent Messages' },
-              { key: 'all',     label: '🗂️ All Platform Messages' },
-              { key: 'stats',   label: '📊 Stats' },
+              { key: 'compose',      label: '📝 Compose' },
+              { key: 'sent',         label: '📤 Sent Messages' },
+              { key: 'all',          label: '🗂️ All Platform Messages' },
+              { key: 'stats',        label: '📊 Stats' },
+              { key: 'restrictions', label: '⚙️ Restrictions' },
             ] as const).map(t => (
               <button
                 key={t.key}
-                onClick={() => {
+                onClick={async () => {
                   setMsgSubTab(t.key)
                   if (t.key === 'sent') loadAdminSentMessages()
                   if (t.key === 'all') loadAllPlatformMessages()
                   if (t.key === 'stats') loadMsgStats()
+                  if (t.key === 'restrictions') {
+                    setRestrictionsLoading(true)
+                    try {
+                      const res = await fetch('/api/admin/settings', {
+                        headers: { Authorization: `Bearer ${accessToken}` },
+                      })
+                      if (res.ok) {
+                        const data = await res.json()
+                        setAgentsCanMessage(data.agents_can_message !== 'false')
+                        setCdCanMessage(data.casting_directors_can_message !== 'false')
+                      }
+                    } finally {
+                      setRestrictionsLoading(false)
+                    }
+                  }
                 }}
                 className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px whitespace-nowrap transition ${msgSubTab === t.key ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
               >
@@ -2480,6 +2499,68 @@ export default function AdminPage() {
               ) : (
                 <button onClick={loadMsgStats} className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700">Load Stats</button>
               )}
+            </div>
+          )}
+
+          {/* ── RESTRICTIONS ── */}
+          {msgSubTab === 'restrictions' && (
+            <div className="space-y-6">
+              <div className="bg-white border border-gray-200 rounded-xl p-6">
+                <h3 className="font-bold text-gray-800 mb-1">Messaging Permissions</h3>
+                <p className="text-sm text-gray-500 mb-6">Control who can initiate new conversations. Restricting a role only prevents composing new messages — they can still reply to messages they receive.</p>
+
+                {restrictionsLoading ? (
+                  <div className="text-center py-6 text-gray-400 text-sm">Loading settings...</div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Agents toggle */}
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                      <div>
+                        <p className="font-semibold text-gray-800 text-sm">🏢 Agents can compose messages</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Allow agents to initiate new conversations with performers and casting directors</p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          const newVal = !agentsCanMessage
+                          setAgentsCanMessage(newVal)
+                          await fetch('/api/admin/settings', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+                            body: JSON.stringify({ key: 'agents_can_message', value: String(newVal) }),
+                          })
+                        }}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${agentsCanMessage ? 'bg-blue-600' : 'bg-gray-300'}`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${agentsCanMessage ? 'translate-x-6' : 'translate-x-1'}`} />
+                      </button>
+                    </div>
+
+                    {/* Casting directors toggle */}
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                      <div>
+                        <p className="font-semibold text-gray-800 text-sm">🎬 Casting directors can compose messages</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Allow casting directors to initiate new conversations with performers and agents</p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          const newVal = !cdCanMessage
+                          setCdCanMessage(newVal)
+                          await fetch('/api/admin/settings', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+                            body: JSON.stringify({ key: 'casting_directors_can_message', value: String(newVal) }),
+                          })
+                        }}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${cdCanMessage ? 'bg-blue-600' : 'bg-gray-300'}`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${cdCanMessage ? 'translate-x-6' : 'translate-x-1'}`} />
+                      </button>
+                    </div>
+
+                    <p className="text-xs text-gray-400 pt-2">Changes take effect immediately. Performers cannot compose messages — this is hardcoded by design.</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

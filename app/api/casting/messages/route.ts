@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAgentSession, supabaseAdmin } from '@/lib/casting-auth'
+import { getCastingSession, supabaseAdmin } from '@/lib/casting-auth'
 import { sendMessage } from '@/lib/messages'
 
 export async function GET(request: NextRequest) {
-  const session = await getAgentSession()
+  const session = await getCastingSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(request.url)
@@ -13,11 +13,10 @@ export async function GET(request: NextRequest) {
   const limit = 30
   const offset = (page - 1) * limit
 
-  // Direct messages to this agent
   let directQuery = supabaseAdmin
     .from('messages')
     .select('*')
-    .eq('recipient_type', 'agent')
+    .eq('recipient_type', 'casting_director')
     .eq('recipient_id', session.accountId)
     .eq('is_deleted', false)
     .order('created_at', { ascending: false })
@@ -25,11 +24,10 @@ export async function GET(request: NextRequest) {
   if (typeFilter) directQuery = directQuery.eq('message_type', typeFilter)
   if (unreadOnly) directQuery = directQuery.eq('is_read', false)
 
-  // Broadcast messages for agents
   let broadcastQuery = supabaseAdmin
     .from('messages')
     .select('*')
-    .in('recipient_type', ['all_agents', 'all_users'])
+    .in('recipient_type', ['all_casting_directors', 'all_users'])
     .eq('is_deleted', false)
     .order('created_at', { ascending: false })
 
@@ -48,10 +46,7 @@ export async function GET(request: NextRequest) {
 
   const allMessages = [
     ...(directMsgs || []),
-    ...(broadcastMsgs || []).map((m: any) => ({
-      ...m,
-      is_read: readReceiptIds.has(m.id),
-    })),
+    ...(broadcastMsgs || []).map((m: any) => ({ ...m, is_read: readReceiptIds.has(m.id) })),
   ]
 
   const seen = new Set<string>()
@@ -71,13 +66,13 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getAgentSession()
+  const session = await getCastingSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: setting } = await supabaseAdmin
     .from('admin_settings')
     .select('value')
-    .eq('key', 'agents_can_message')
+    .eq('key', 'casting_directors_can_message')
     .maybeSingle()
 
   if (setting?.value === 'false') {
@@ -92,7 +87,7 @@ export async function POST(request: NextRequest) {
   }
 
   const message = await sendMessage({
-    senderType: 'agent',
+    senderType: 'casting_director',
     senderId: session.accountId,
     senderName: session.name,
     recipientType: recipientType || 'performer',
@@ -109,41 +104,40 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const session = await getAgentSession()
+  const session = await getCastingSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
+  if (!body.messageId) return NextResponse.json({ error: 'Missing messageId' }, { status: 400 })
 
-  if (body.messageId) {
-    const { data: msg } = await supabaseAdmin
+  const { data: msg } = await supabaseAdmin
+    .from('messages')
+    .select('id, recipient_type, recipient_id')
+    .eq('id', body.messageId)
+    .single()
+
+  if (!msg) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  const isBroadcast = ['all_casting_directors', 'all_users'].includes(msg.recipient_type)
+
+  if (isBroadcast) {
+    await supabaseAdmin.from('message_read_receipts').upsert(
+      { message_id: body.messageId, reader_id: session.accountId, reader_type: 'casting_director' },
+      { onConflict: 'message_id,reader_id' }
+    )
+  } else {
+    await supabaseAdmin
       .from('messages')
-      .select('id, recipient_type, recipient_id')
+      .update({ is_read: true, read_at: new Date().toISOString() })
       .eq('id', body.messageId)
-      .single()
-
-    if (!msg) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-
-    const isBroadcast = ['all_agents', 'all_users'].includes(msg.recipient_type)
-
-    if (isBroadcast) {
-      await supabaseAdmin.from('message_read_receipts').upsert(
-        { message_id: body.messageId, reader_id: session.accountId, reader_type: 'agent' },
-        { onConflict: 'message_id,reader_id' }
-      )
-    } else {
-      await supabaseAdmin
-        .from('messages')
-        .update({ is_read: true, read_at: new Date().toISOString() })
-        .eq('id', body.messageId)
-        .eq('recipient_id', session.accountId)
-    }
+      .eq('recipient_id', session.accountId)
   }
 
   return NextResponse.json({ success: true })
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = await getAgentSession()
+  const session = await getCastingSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
@@ -154,7 +148,7 @@ export async function DELETE(request: NextRequest) {
     .update({ is_deleted: true })
     .eq('id', body.messageId)
     .eq('recipient_id', session.accountId)
-    .eq('recipient_type', 'agent')
+    .eq('recipient_type', 'casting_director')
 
   return NextResponse.json({ success: true })
 }

@@ -164,6 +164,79 @@ export async function broadcastMessage({
   return message
 }
 
+export async function replyToMessage({
+  parentMessageId,
+  senderType,
+  senderId,
+  senderName,
+  body,
+  recipientType,
+  recipientId,
+  recipientEmail,
+  sendEmailNotification = false,
+}: {
+  parentMessageId: string
+  senderType: string
+  senderId: string
+  senderName: string
+  body: string
+  recipientType: string
+  recipientId: string
+  recipientEmail?: string
+  sendEmailNotification?: boolean
+}) {
+  const { data: parent } = await supabaseAdmin
+    .from('messages')
+    .select('*')
+    .eq('id', parentMessageId)
+    .single()
+
+  if (!parent) return null
+
+  const threadId = parent.thread_id || parent.id
+
+  const { data: reply } = await supabaseAdmin
+    .from('messages')
+    .insert({
+      sender_type: senderType,
+      sender_id: senderId,
+      sender_name: senderName,
+      recipient_type: recipientType,
+      recipient_id: recipientId || null,
+      subject: `Re: ${parent.subject}`,
+      body,
+      message_type: parent.message_type,
+      parent_message_id: parentMessageId,
+      thread_id: threadId,
+      is_reply: true,
+      email_to: recipientEmail,
+    })
+    .select()
+    .single()
+
+  await supabaseAdmin
+    .from('messages')
+    .update({ reply_count: (parent.reply_count || 0) + 1 })
+    .eq('id', parentMessageId)
+
+  if (sendEmailNotification && recipientEmail) {
+    await sendEmail({
+      to: recipientEmail,
+      subject: `Re: ${parent.subject}`,
+      html: buildMessageEmailHtml({
+        subject: `Re: ${parent.subject}`,
+        body,
+        senderName,
+        actionUrl: '/messages',
+        actionLabel: 'View Reply',
+        priority: 'normal',
+      }),
+    })
+  }
+
+  return reply
+}
+
 export function buildMessageEmailHtml({
   subject,
   body,

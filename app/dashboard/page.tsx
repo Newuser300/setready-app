@@ -150,6 +150,8 @@ export default function Dashboard() {
   // Message center unread count
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [subscribeLoading, setSubscribeLoading] = useState(false)
+  const [subscribeSuccess, setSubscribeSuccess] = useState(false)
+  const [castingMsgCount, setCastingMsgCount] = useState(0)
 
   // Casting notifications
   const [showNotifPanel, setShowNotifPanel] = useState(false)
@@ -167,6 +169,10 @@ export default function Dashboard() {
     fetch('/api/messages/unread-count')
       .then(r => r.ok ? r.json() : { count: 0 })
       .then(d => setUnreadMessages(d.count || 0))
+      .catch(() => {})
+    fetch('/api/messages/casting-count')
+      .then(r => r.ok ? r.json() : { count: 0 })
+      .then(d => setCastingMsgCount(d.count || 0))
       .catch(() => {})
   }, [])
 
@@ -507,6 +513,51 @@ export default function Dashboard() {
       window.history.replaceState({}, '', '/dashboard');
     }
   }, []);
+
+  // Check for successful return from Stripe — poll until subscription is confirmed active
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('subscribed') !== 'true') return
+
+    window.history.replaceState({}, '', '/dashboard')
+
+    let attempts = 0
+    const maxAttempts = 10
+
+    const pollSubscription = async () => {
+      attempts++
+      console.log('Polling subscription, attempt:', attempts)
+
+      try {
+        const res = await fetch('/api/subscription/verify', { credentials: 'include' })
+        const data = await res.json()
+        console.log('Subscription verify response:', data)
+
+        if (data.isActive) {
+          setIsSubscribed(true)
+          setSubscribeSuccess(true)
+          checkUser()
+          return
+        }
+      } catch (e) {
+        console.error('Subscription verify error:', e)
+      }
+
+      if (attempts < maxAttempts) {
+        setTimeout(pollSubscription, 1000)
+      } else {
+        // Webhook too slow — activate directly via Stripe lookup
+        try {
+          await fetch('/api/subscription/activate', { method: 'POST', credentials: 'include' })
+        } catch {}
+        checkUser()
+        setSubscribeSuccess(true)
+      }
+    }
+
+    // Give the webhook 2 seconds head start before first poll
+    setTimeout(pollSubscription, 2000)
+  }, [])
 
   // SECTION 2 POP-UP CHECK
   async function checkSection2Completion() {
@@ -876,6 +927,48 @@ export default function Dashboard() {
 
         {/* Main Content */}
         <div className="max-w-4xl mx-auto px-4 py-8">
+          {/* SUBSCRIPTION SUCCESS BANNER */}
+          {subscribeSuccess && (
+            <div style={{
+              backgroundColor: '#f0fdf4',
+              border: '2px solid #22c55e',
+              borderRadius: '12px',
+              padding: '16px 20px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+            }}>
+              <span style={{ fontSize: '24px' }}>🎉</span>
+              <div>
+                <div style={{ fontWeight: '700', color: '#166534', fontSize: '16px' }}>
+                  Subscription activated!
+                </div>
+                <div style={{ color: '#16a34a', fontSize: '14px' }}>
+                  All training modules are now unlocked. Welcome to SetReady!
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CASTING MESSAGES ALERT */}
+          {castingMsgCount > 0 && (
+            <div style={{ backgroundColor: '#1e1b4b', border: '2px solid #F59E0B', borderRadius: '12px', padding: '14px 20px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '22px' }}>🎬</span>
+                <div>
+                  <div style={{ fontWeight: '700', color: 'white', fontSize: '15px' }}>
+                    {castingMsgCount} unread casting {castingMsgCount === 1 ? 'message' : 'messages'}
+                  </div>
+                  <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: '13px' }}>You have casting requests or booking updates waiting</div>
+                </div>
+              </div>
+              <Link href="/messages" style={{ backgroundColor: '#F59E0B', color: '#1a1a2e', padding: '8px 16px', borderRadius: '8px', textDecoration: 'none', fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap' }}>
+                View →
+              </Link>
+            </div>
+          )}
+
           {/* QUICK ACTION GRID */}
           <div style={{
             display: 'grid',
