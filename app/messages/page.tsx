@@ -48,6 +48,13 @@ const TYPE_LABELS: Record<string, string> = {
   promo: 'Promo',
 }
 
+const SENDER_COLORS: Record<string, string> = {
+  agent: '#F59E0B',
+  casting_director: '#F59E0B',
+  system: '#22c55e',
+  admin: '#22c55e',
+}
+
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime()
   const mins = Math.floor(diff / 60000)
@@ -63,9 +70,11 @@ function timeAgo(dateStr: string) {
 const FILTER_TABS = [
   { key: '', label: 'All' },
   { key: 'unread', label: 'Unread' },
-  { key: 'casting_request', label: 'Casting' },
-  { key: 'booking_confirmed', label: 'Bookings' },
-  { key: 'system_alert', label: 'System' },
+  { key: 'casting_request', label: '🎬 Casting' },
+  { key: 'booking_confirmed', label: '📋 Bookings' },
+  { key: 'agent', label: '🏢 From Agent' },
+  { key: 'casting_director', label: '🎥 From Casting' },
+  { key: 'system_alert', label: '⚙️ System' },
 ]
 
 export default function MessagesPage() {
@@ -75,7 +84,6 @@ export default function MessagesPage() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null)
 
-  // Reply state
   const [replyText, setReplyText] = useState('')
   const [sendingReply, setSendingReply] = useState(false)
   const [replySuccess, setReplySuccess] = useState(false)
@@ -85,12 +93,19 @@ export default function MessagesPage() {
     setLoading(true)
     const params = new URLSearchParams()
     if (tab === 'unread') params.set('unread', 'true')
-    else if (tab) params.set('type', tab)
+    else if (tab === 'agent' || tab === 'casting_director') {
+      // Fetch all, filter client-side by sender_type
+    } else if (tab) {
+      params.set('type', tab)
+    }
 
     const res = await fetch(`/api/messages?${params}`)
     if (res.ok) {
       const data = await res.json()
-      setMessages(data.messages || [])
+      let msgs: Message[] = data.messages || []
+      if (tab === 'agent') msgs = msgs.filter(m => m.sender_type === 'agent')
+      if (tab === 'casting_director') msgs = msgs.filter(m => m.sender_type === 'casting_director')
+      setMessages(msgs)
       setUnreadCount(data.unread_count || 0)
     }
     setLoading(false)
@@ -143,7 +158,6 @@ export default function MessagesPage() {
     setReplySuccess(false)
     setThread([])
     markAsRead(message)
-    // Load thread if there are replies or if it's part of a thread
     loadThread(message.id)
   }
 
@@ -173,23 +187,23 @@ export default function MessagesPage() {
     }
   }
 
-  // Only show thread messages that aren't the parent itself
   const threadReplies = thread.filter(m => m.id !== selectedMessage?.id)
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
-      {/* Header */}
-      <div style={{ backgroundColor: '#1a1a2e', color: 'white', padding: '0' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#0f0f1a' }}>
+
+      {/* ── Header ── */}
+      <div style={{ backgroundColor: '#1a1a2e', borderBottom: '1px solid rgba(245,158,11,0.2)' }}>
         <div style={{ maxWidth: '768px', margin: '0 auto', padding: '16px 16px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Link href="/dashboard" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: '14px' }}>
+              <Link href="/dashboard" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '14px' }}>
                 ← Back
               </Link>
-              <h1 style={{ fontSize: '20px', fontWeight: '700', margin: 0 }}>
+              <h1 style={{ fontSize: '20px', fontWeight: '700', margin: 0, color: 'white' }}>
                 📬 Messages
                 {unreadCount > 0 && (
-                  <span style={{ marginLeft: '10px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontSize: '12px', fontWeight: '800', padding: '2px 8px', borderRadius: '999px' }}>
+                  <span style={{ marginLeft: '10px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontSize: '11px', fontWeight: '800', padding: '2px 8px', borderRadius: '999px' }}>
                     {unreadCount}
                   </span>
                 )}
@@ -205,21 +219,23 @@ export default function MessagesPage() {
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', paddingBottom: '1px' }}>
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: '2px', overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: '1px' }}>
             {FILTER_TABS.map(tab => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 style={{
-                  padding: '8px 14px',
-                  fontSize: '13px',
+                  padding: '8px 12px',
+                  fontSize: '12px',
                   fontWeight: '600',
                   border: 'none',
                   borderBottom: activeTab === tab.key ? '2px solid #F59E0B' : '2px solid transparent',
                   backgroundColor: 'transparent',
-                  color: activeTab === tab.key ? '#F59E0B' : 'rgba(255,255,255,0.6)',
+                  color: activeTab === tab.key ? '#F59E0B' : 'rgba(255,255,255,0.5)',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
+                  transition: 'color 0.15s',
                 }}
               >
                 {tab.label}
@@ -229,8 +245,8 @@ export default function MessagesPage() {
         </div>
       </div>
 
-      {/* Content */}
-      <div style={{ maxWidth: '768px', margin: '0 auto', padding: '16px' }}>
+      {/* ── Message List ── */}
+      <div style={{ maxWidth: '768px', margin: '0 auto', padding: '12px 12px' }}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '60px 20px', color: '#9ca3af' }}>
             <div style={{ fontSize: '32px', marginBottom: '8px' }}>📬</div>
@@ -238,105 +254,123 @@ export default function MessagesPage() {
           </div>
         ) : messages.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-            <div style={{ fontSize: '56px', marginBottom: '16px', opacity: 0.4 }}>📬</div>
-            <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>No messages yet</h3>
+            <div style={{ fontSize: '56px', marginBottom: '16px', opacity: 0.3 }}>📬</div>
+            <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'white', marginBottom: '8px' }}>No messages yet</h3>
             <p style={{ fontSize: '14px', color: '#9ca3af', maxWidth: '300px', margin: '0 auto', lineHeight: '1.6' }}>
               Casting notifications, booking confirmations and announcements will appear here.
             </p>
           </div>
         ) : (
           <div>
-            {messages.map(message => (
-              <div
-                key={message.id}
-                onClick={() => openMessage(message)}
-                style={{
-                  backgroundColor: 'white',
-                  borderRadius: '12px',
-                  padding: '16px 20px',
-                  marginBottom: '8px',
-                  borderLeft: !message.is_read ? '4px solid #F59E0B' : '4px solid transparent',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                  cursor: 'pointer',
-                  opacity: message.is_read ? 0.85 : 1,
-                  transition: 'box-shadow 0.15s',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)')}
-                onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)')}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '999px', backgroundColor: TYPE_COLORS[message.message_type] || '#6b7280', color: 'white', marginBottom: '6px', display: 'inline-block' }}>
-                      {TYPE_LABELS[message.message_type] || message.message_type}
-                    </span>
-                    {message.priority === 'urgent' && (
-                      <span style={{ marginLeft: '6px', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '999px', backgroundColor: '#dc2626', color: 'white' }}>🚨 URGENT</span>
-                    )}
-                    {message.priority === 'high' && (
-                      <span style={{ marginLeft: '6px', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '999px', backgroundColor: '#f59e0b', color: '#1a1a2e' }}>⚡ IMPORTANT</span>
-                    )}
-                    {(message.reply_count ?? 0) > 0 && (
-                      <span style={{ marginLeft: '6px', fontSize: '11px', color: '#6b7280' }}>💬 {message.reply_count}</span>
-                    )}
-                    <div style={{ fontWeight: !message.is_read ? '700' : '500', color: '#1a1a2e', fontSize: '15px', marginBottom: '4px' }}>
-                      {message.subject}
+            {messages.map(message => {
+              const senderColor = SENDER_COLORS[message.sender_type] || '#9ca3af'
+              const isAgent = message.sender_type === 'agent' || message.sender_type === 'casting_director'
+              return (
+                <div
+                  key={message.id}
+                  onClick={() => openMessage(message)}
+                  style={{
+                    backgroundColor: '#1e1e35',
+                    borderRadius: '12px',
+                    padding: '14px 18px',
+                    marginBottom: '8px',
+                    borderLeft: !message.is_read ? '4px solid #F59E0B' : '4px solid transparent',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    borderLeft: !message.is_read ? '4px solid #F59E0B' : '4px solid rgba(255,255,255,0.04)',
+                    transition: 'background 0.12s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#252540')}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#1e1e35')}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '5px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '999px', backgroundColor: TYPE_COLORS[message.message_type] ? TYPE_COLORS[message.message_type] + '22' : 'rgba(107,114,128,0.2)', color: TYPE_COLORS[message.message_type] || '#9ca3af', border: `1px solid ${TYPE_COLORS[message.message_type] || '#6b7280'}44` }}>
+                          {TYPE_LABELS[message.message_type] || message.message_type}
+                        </span>
+                        {message.priority === 'urgent' && (
+                          <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 7px', borderRadius: '999px', backgroundColor: 'rgba(220,38,38,0.2)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}>🚨 URGENT</span>
+                        )}
+                        {message.priority === 'high' && (
+                          <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 7px', borderRadius: '999px', backgroundColor: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)' }}>⚡ IMPORTANT</span>
+                        )}
+                        {(message.reply_count ?? 0) > 0 && (
+                          <span style={{ fontSize: '11px', color: '#6b7280' }}>💬 {message.reply_count}</span>
+                        )}
+                      </div>
+                      <div style={{ fontWeight: !message.is_read ? '700' : '500', color: 'white', fontSize: '14px', marginBottom: '3px', lineHeight: '1.3' }}>
+                        {message.subject}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#9ca3af', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '5px' }}>
+                        {message.body.slice(0, 100)}{message.body.length > 100 ? '...' : ''}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                        From: <span style={{ color: isAgent ? '#F59E0B' : '#9ca3af', fontWeight: isAgent ? '600' : '400' }}>{message.sender_name}</span>
+                        &nbsp;·&nbsp;{timeAgo(message.created_at)}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '13px', color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '500px' }}>
-                      {message.body.slice(0, 100)}{message.body.length > 100 ? '...' : ''}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '6px' }}>
-                      From: {message.sender_name} · {timeAgo(message.created_at)}
-                    </div>
+                    {!message.is_read && (
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#F59E0B', flexShrink: 0, marginTop: '6px' }} />
+                    )}
                   </div>
-                  {!message.is_read && (
-                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#F59E0B', flexShrink: 0, marginTop: '4px' }} />
-                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
 
-      {/* Message Detail Modal */}
+      {/* ── Message Detail Modal ── */}
       {selectedMessage && (
         <div
           onClick={() => setSelectedMessage(null)}
-          style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 99999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: '0' }}
+          style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.75)', zIndex: 99999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ backgroundColor: 'white', borderRadius: '20px 20px 0 0', width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', padding: '24px' }}
+            style={{ backgroundColor: '#1e1e35', borderRadius: '20px 20px 0 0', width: '100%', maxWidth: '640px', maxHeight: '92vh', overflowY: 'auto', padding: '20px 20px 32px', border: '1px solid rgba(255,255,255,0.1)', borderBottom: 'none' }}
           >
             {/* Handle */}
-            <div style={{ width: '40px', height: '4px', backgroundColor: '#e5e7eb', borderRadius: '2px', margin: '0 auto 20px' }} />
+            <div style={{ width: '40px', height: '4px', backgroundColor: '#3a3a4e', borderRadius: '2px', margin: '0 auto 20px' }} />
 
-            <div style={{ marginBottom: '12px' }}>
-              <span style={{ fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '999px', backgroundColor: TYPE_COLORS[selectedMessage.message_type] || '#6b7280', color: 'white' }}>
+            {/* Type badge */}
+            <div style={{ marginBottom: '10px' }}>
+              <span style={{ fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '999px', backgroundColor: TYPE_COLORS[selectedMessage.message_type] ? TYPE_COLORS[selectedMessage.message_type] + '22' : 'rgba(107,114,128,0.2)', color: TYPE_COLORS[selectedMessage.message_type] || '#9ca3af', border: `1px solid ${TYPE_COLORS[selectedMessage.message_type] || '#6b7280'}44` }}>
                 {TYPE_LABELS[selectedMessage.message_type] || selectedMessage.message_type}
               </span>
             </div>
 
-            <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 8px', lineHeight: '1.3', fontFamily: 'Georgia, serif' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: '800', color: 'white', margin: '0 0 10px', lineHeight: '1.3', fontFamily: 'Georgia, serif' }}>
               {selectedMessage.subject}
             </h2>
 
-            <p style={{ fontSize: '13px', color: '#9ca3af', margin: '0 0 24px' }}>
-              From: <strong style={{ color: '#6b7280' }}>{selectedMessage.sender_name}</strong>
-              &nbsp;·&nbsp;
-              {new Date(selectedMessage.created_at).toLocaleDateString('en-CA', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-            </p>
+            {/* Sender info */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', padding: '10px 14px', backgroundColor: '#2a2a3e', borderRadius: '10px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '14px', color: '#F59E0B', flexShrink: 0 }}>
+                {selectedMessage.sender_name.slice(0, 1).toUpperCase()}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: '600', fontSize: '13px', color: SENDER_COLORS[selectedMessage.sender_type] || 'white' }}>{selectedMessage.sender_name}</div>
+                <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                  {new Date(selectedMessage.created_at).toLocaleDateString('en-CA', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+            </div>
 
-            <div style={{ fontSize: '15px', color: '#374151', lineHeight: '1.7', whiteSpace: 'pre-wrap', marginBottom: '24px' }}>
+            {/* Body */}
+            <div style={{ fontSize: '15px', color: 'rgba(255,255,255,0.85)', lineHeight: '1.7', whiteSpace: 'pre-wrap', marginBottom: '24px' }}>
               {selectedMessage.body}
             </div>
 
+            {/* Action button */}
             {selectedMessage.action_url && (
               <div style={{ marginBottom: '24px' }}>
                 <Link
                   href={selectedMessage.action_url}
                   onClick={() => setSelectedMessage(null)}
-                  style={{ display: 'inline-block', backgroundColor: '#F59E0B', color: '#1a1a2e', padding: '12px 24px', borderRadius: '10px', textDecoration: 'none', fontWeight: '700', fontSize: '15px' }}
+                  style={{ display: 'inline-block', backgroundColor: '#F59E0B', color: '#1a1a2e', padding: '12px 24px', borderRadius: '10px', textDecoration: 'none', fontWeight: '700', fontSize: '14px' }}
                 >
                   {selectedMessage.action_label || 'View Details'} →
                 </Link>
@@ -346,15 +380,15 @@ export default function MessagesPage() {
             {/* Thread replies */}
             {threadReplies.length > 0 && (
               <div style={{ marginBottom: '24px' }}>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>
                   Conversation
                 </div>
                 {threadReplies.map(reply => (
-                  <div key={reply.id} style={{ marginLeft: '24px', borderLeft: '3px solid #F59E0B', paddingLeft: '16px', marginBottom: '12px' }}>
-                    <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '4px' }}>
+                  <div key={reply.id} style={{ marginLeft: '16px', borderLeft: '3px solid #F59E0B', paddingLeft: '14px', marginBottom: '12px' }}>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>
                       {reply.sender_name} · {timeAgo(reply.created_at)}
                     </div>
-                    <div style={{ fontSize: '14px', color: '#374151', lineHeight: '1.6' }}>
+                    <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.6' }}>
                       {reply.body}
                     </div>
                   </div>
@@ -362,13 +396,13 @@ export default function MessagesPage() {
               </div>
             )}
 
-            {/* Reply form — performers can reply but cannot compose new messages */}
-            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '16px', marginTop: '8px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '8px' }}>
+            {/* Reply form */}
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '16px', marginTop: '8px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '700', color: '#9ca3af', display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Reply to {selectedMessage.sender_name}:
               </label>
               {replySuccess && (
-                <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #22c55e', borderRadius: '8px', padding: '10px 14px', marginBottom: '10px', fontSize: '13px', color: '#16a34a', fontWeight: '600' }}>
+                <div style={{ backgroundColor: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '8px', padding: '10px 14px', marginBottom: '10px', fontSize: '13px', color: '#22c55e', fontWeight: '600' }}>
                   ✓ Reply sent successfully!
                 </div>
               )}
@@ -376,20 +410,20 @@ export default function MessagesPage() {
                 value={replyText}
                 onChange={e => setReplyText(e.target.value)}
                 placeholder="Type your reply..."
-                rows={4}
-                style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: '8px', padding: '12px', fontSize: '14px', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                rows={3}
+                style={{ width: '100%', backgroundColor: '#0f0f1a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '12px', fontSize: '14px', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box', color: 'white', outline: 'none' }}
               />
               <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                 <button
                   onClick={() => handleReply(selectedMessage)}
                   disabled={!replyText.trim() || sendingReply}
-                  style={{ backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: '600', cursor: !replyText.trim() || sendingReply ? 'not-allowed' : 'pointer', fontSize: '14px', opacity: !replyText.trim() || sendingReply ? 0.5 : 1 }}
+                  style={{ backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: '700', cursor: !replyText.trim() || sendingReply ? 'not-allowed' : 'pointer', fontSize: '14px', opacity: !replyText.trim() || sendingReply ? 0.5 : 1 }}
                 >
                   {sendingReply ? 'Sending...' : 'Send Reply'}
                 </button>
                 <button
                   onClick={() => setReplyText('')}
-                  style={{ backgroundColor: 'transparent', color: '#6b7280', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '10px 16px', cursor: 'pointer', fontSize: '14px' }}
+                  style={{ backgroundColor: 'transparent', color: '#9ca3af', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px 16px', cursor: 'pointer', fontSize: '14px' }}
                 >
                   Cancel
                 </button>
@@ -397,16 +431,16 @@ export default function MessagesPage() {
             </div>
 
             {/* Footer */}
-            <div style={{ display: 'flex', gap: '10px', paddingTop: '16px', marginTop: '16px', borderTop: '1px solid #f3f4f6' }}>
+            <div style={{ display: 'flex', gap: '10px', paddingTop: '16px', marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
               <button
                 onClick={() => setSelectedMessage(null)}
-                style={{ flex: 1, padding: '10px', backgroundColor: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '10px', fontWeight: '600', cursor: 'pointer', fontSize: '14px' }}
+                style={{ flex: 1, padding: '10px', backgroundColor: '#2a2a3e', color: 'rgba(255,255,255,0.8)', border: 'none', borderRadius: '10px', fontWeight: '600', cursor: 'pointer', fontSize: '14px' }}
               >
                 ← Back to inbox
               </button>
               <button
                 onClick={() => deleteMessage(selectedMessage.id)}
-                style={{ padding: '10px 16px', backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '10px', fontWeight: '600', cursor: 'pointer', fontSize: '14px' }}
+                style={{ padding: '10px 16px', backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', fontWeight: '600', cursor: 'pointer', fontSize: '14px' }}
               >
                 Delete
               </button>

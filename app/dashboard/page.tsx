@@ -1115,19 +1115,20 @@ export default function Dashboard() {
             </div>
           )}
 
-          <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '0 0 24px' }} />
+          <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.06)', margin: '0 0 24px' }} />
 
           {/* Section 1 Header */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="text-3xl">📚</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ fontSize: '28px' }}>📚</div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">Section 1: Background Performer Training</h2>
-              <p className="text-gray-500 text-sm">Master the fundamentals of working on a film set</p>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>Section 1</div>
+              <h2 style={{ fontSize: isMobile ? '18px' : '22px', fontWeight: '800', color: 'white', margin: 0 }}>Background Performer Training</h2>
+              <p style={{ color: '#9ca3af', fontSize: '13px', margin: '2px 0 0' }}>Master the fundamentals of working on a film set</p>
             </div>
           </div>
 
           {/* Section 1 Modules — completed modules always shown; locked only if not started AND not subscribed */}
-          <div className="grid gap-4">
+          <div style={{ display: 'grid', gap: '10px' }}>
             {section1Modules.map((module) => {
               const isCompleted = progress[module.id]?.completed;
               const score = progress[module.id]?.score;
@@ -1139,21 +1140,21 @@ export default function Dashboard() {
                   <div
                     key={module.id}
                     onClick={() => setShowSubscribeModal(true)}
-                    className="relative overflow-hidden rounded-2xl bg-white border border-gray-200 cursor-pointer hover:shadow-md hover:border-yellow-300 transition-all duration-300"
+                    style={{ backgroundColor: '#1e1e35', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)', borderLeft: '4px solid #3a3a4e', cursor: 'pointer', padding: isMobile ? '12px 14px' : '18px 20px', transition: 'border-color 0.15s' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderLeftColor = '#F59E0B' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderLeftColor = '#3a3a4e' }}
                   >
-                    <div style={{ padding: isMobile ? '10px 12px' : '20px' }}>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-4">
-                          <div className="text-4xl opacity-40">{moduleIcons[module.module_number] || '📘'}</div>
-                          <div>
-                            <h3 className="font-bold text-lg text-gray-500">{module.title}</h3>
-                            <p className="text-sm text-gray-400 mt-1">{moduleSubtitles[module.module_number] || 'Subscribe to access this module'}</p>
-                          </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <div style={{ fontSize: '32px', opacity: 0.35 }}>{moduleIcons[module.module_number] || '📘'}</div>
+                        <div>
+                          <div style={{ fontWeight: '700', fontSize: isMobile ? '14px' : '16px', color: '#9ca3af' }}>{module.title}</div>
+                          <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>{moduleSubtitles[module.module_number] || 'Subscribe to access this module'}</div>
                         </div>
-                        <span className="shrink-0 bg-yellow-100 text-yellow-700 text-xs font-semibold px-3 py-1 rounded-full">
-                          🔒 Subscribe to unlock
-                        </span>
                       </div>
+                      <span style={{ flexShrink: 0, backgroundColor: 'rgba(245,158,11,0.1)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)', fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '999px', whiteSpace: 'nowrap' }}>
+                        🔒 Subscribe
+                      </span>
                     </div>
                   </div>
                 );
@@ -1161,41 +1162,33 @@ export default function Dashboard() {
 
               // Completed OR subscribed: full clickable card
               return (
-                <Link href={`/module/${module.id}`} key={module.id}>
-                  <div className={`
-                    relative overflow-hidden rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:shadow-xl
-                    ${isCompleted
-                      ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500'
-                      : 'bg-white hover:shadow-md border border-gray-200'
-                    }
-                  `}>
-                    <div style={{ padding: isMobile ? '10px 12px' : '20px' }}>
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="text-4xl">{moduleIcons[module.module_number] || '📘'}</div>
-                          <div>
-                            <h3 className="font-bold text-gray-800" style={{ fontSize: isMobile ? '15px' : '18px' }}>{module.title}</h3>
-                            <p className="text-sm text-gray-500 mt-1">{moduleSubtitles[module.module_number] || 'Complete this module to advance'}</p>
-                          </div>
-                        </div>
+                <Link href={`/module/${module.id}`} key={module.id} style={{ textDecoration: 'none' }}>
+                  <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)', borderLeft: isCompleted ? '4px solid #22c55e' : '4px solid #F59E0B', padding: isMobile ? '12px 14px' : '18px 20px', transition: 'transform 0.15s, box-shadow 0.15s', cursor: 'pointer' }}
+                    onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'translateY(-1px)'; el.style.boxShadow = '0 4px 16px rgba(0,0,0,0.3)' }}
+                    onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'none'; el.style.boxShadow = 'none' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <div style={{ fontSize: '32px' }}>{moduleIcons[module.module_number] || '📘'}</div>
                         <div>
-                          {isCompleted ? (
-                            <span className="bg-green-100 text-green-700 text-sm font-medium px-3 py-1 rounded-full">
-                              ✓ Completed ({actualScore}/15)
-                            </span>
-                          ) : (
-                            <span className="bg-blue-100 text-blue-700 text-sm font-medium px-3 py-1 rounded-full">
-                              📝 Not started
-                            </span>
+                          <div style={{ fontWeight: '700', fontSize: isMobile ? '14px' : '16px', color: 'white' }}>{module.title}</div>
+                          <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>{moduleSubtitles[module.module_number] || 'Complete this module to advance'}</div>
+                          {isCompleted && (
+                            <div style={{ fontSize: '12px', color: '#22c55e', marginTop: '4px', fontWeight: '600' }}>✓ Passed with {actualScore}/15</div>
                           )}
                         </div>
                       </div>
-                      {isCompleted && (
-                        <div className="mt-3 flex items-center gap-2 text-sm text-green-600">
-                          <span>✓</span>
-                          <span>Passed with {actualScore}/15</span>
-                        </div>
-                      )}
+                      <div style={{ flexShrink: 0 }}>
+                        {isCompleted ? (
+                          <span style={{ backgroundColor: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)', fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '999px', whiteSpace: 'nowrap' }}>
+                            ✓ Done
+                          </span>
+                        ) : (
+                          <span style={{ backgroundColor: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)', fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '999px', whiteSpace: 'nowrap' }}>
+                            📝 Start
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </Link>
@@ -1206,28 +1199,25 @@ export default function Dashboard() {
 
           {/* Secret Section 2 - LOCKED until all Section 1 complete */}
           {section2Visible ? (
-            <div className="mt-12">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl blur-xl opacity-30"></div>
-                <div className="relative bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl p-6 text-center">
-                  <div className="text-5xl mb-3">🎉</div>
-                  <h2 className="text-2xl font-bold text-white">SECRET SECTION UNLOCKED!</h2>
-                  <p className="text-yellow-100 mt-2">You've mastered the basics. Now learn to become a principal actor.</p>
-                </div>
+            <div style={{ marginTop: '32px' }}>
+              {/* Unlock banner */}
+              <div style={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(245,158,11,0.4)', borderRadius: '14px', padding: '20px 24px', textAlign: 'center', marginBottom: '24px', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+                <div style={{ fontSize: '36px', marginBottom: '8px' }}>🎉</div>
+                <div style={{ fontSize: '18px', fontWeight: '800', color: '#F59E0B', marginBottom: '4px' }}>SECRET SECTION UNLOCKED!</div>
+                <div style={{ fontSize: '13px', color: '#9ca3af' }}>You've mastered the basics. Now learn to become a principal actor.</div>
               </div>
 
-              <div className="flex items-center gap-3 mt-8 mb-6">
-                <div className="text-3xl">🎭</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                <div style={{ fontSize: '28px' }}>🎭</div>
                 <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-2xl font-bold text-gray-800">Section 2: From Background to Acting</h2>
-                    <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs font-semibold rounded-full border border-gray-200 uppercase tracking-wide">Optional Upgrade</span>
-                  </div>
-                  <p className="text-gray-500 text-sm">Advanced techniques for the serious performer</p>
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>Section 2 · Optional Upgrade</div>
+                  <div style={{ fontSize: isMobile ? '18px' : '22px', fontWeight: '800', color: 'white' }}>From Background to Acting</div>
+                  <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>Advanced techniques for the serious performer</div>
                 </div>
               </div>
 
-              <div className="grid gap-4">
+              <div style={{ display: 'grid', gap: '10px' }}>
                 {section2Modules.map((module) => {
                   const isCompleted = progress[module.id]?.completed;
 
@@ -1237,19 +1227,20 @@ export default function Dashboard() {
                       <div
                         key={module.id}
                         onClick={() => setShowSection2Modal(true)}
-                        className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl border border-purple-200 cursor-pointer hover:shadow-md hover:border-purple-300 transition-all duration-200"
-                        style={{ padding: isMobile ? '10px 12px' : '20px' }}
+                        style={{ backgroundColor: '#1e1e35', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)', borderLeft: '4px solid #4c3f8a', cursor: 'pointer', padding: isMobile ? '12px 14px' : '18px 20px' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderLeftColor = '#a78bfa' }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderLeftColor = '#4c3f8a' }}
                       >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex items-center gap-4">
-                            <div className="text-4xl opacity-40">{moduleIcons[module.module_number] || '🎯'}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                            <div style={{ fontSize: '32px', opacity: 0.35 }}>{moduleIcons[module.module_number] || '🎯'}</div>
                             <div>
-                              <h3 className="font-bold text-lg text-gray-500">{moduleTitleOverrides[module.module_number] || module.title}</h3>
-                              <p className="text-sm text-gray-400 mt-1">{moduleSubtitles[module.module_number] || 'Advanced acting techniques'}</p>
+                              <div style={{ fontWeight: '700', fontSize: isMobile ? '14px' : '16px', color: '#9ca3af' }}>{moduleTitleOverrides[module.module_number] || module.title}</div>
+                              <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>{moduleSubtitles[module.module_number] || 'Advanced acting techniques'}</div>
                             </div>
                           </div>
-                          <span className="shrink-0 bg-purple-100 text-purple-600 text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap">
-                            🔒 Optional upgrade
+                          <span style={{ flexShrink: 0, backgroundColor: 'rgba(167,139,250,0.1)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)', fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '999px', whiteSpace: 'nowrap' }}>
+                            🔒 Upgrade
                           </span>
                         </div>
                       </div>
@@ -1258,19 +1249,23 @@ export default function Dashboard() {
 
                   // Unlocked: full clickable card
                   return (
-                    <Link href={`/module/${module.id}`} key={module.id}>
-                      <div className={`bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl hover:scale-[1.02] transition-all duration-300 hover:shadow-lg border border-purple-200 ${isCompleted ? 'border-l-4 border-green-500' : ''}`} style={{ padding: isMobile ? '10px 12px' : '20px' }}>
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex items-center gap-4">
-                            <div className="text-4xl">{moduleIcons[module.module_number] || '🎯'}</div>
+                    <Link href={`/module/${module.id}`} key={module.id} style={{ textDecoration: 'none' }}>
+                      <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)', borderLeft: isCompleted ? '4px solid #22c55e' : '4px solid #a78bfa', padding: isMobile ? '12px 14px' : '18px 20px', transition: 'transform 0.15s, box-shadow 0.15s', cursor: 'pointer' }}
+                        onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'translateY(-1px)'; el.style.boxShadow = '0 4px 16px rgba(0,0,0,0.3)' }}
+                        onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'none'; el.style.boxShadow = 'none' }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                            <div style={{ fontSize: '32px' }}>{moduleIcons[module.module_number] || '🎯'}</div>
                             <div>
-                              <h3 className="font-bold text-lg text-gray-800">{moduleTitleOverrides[module.module_number] || module.title}</h3>
-                              <p className="text-sm text-gray-500 mt-1">{moduleSubtitles[module.module_number] || 'Advanced acting techniques'}</p>
+                              <div style={{ fontWeight: '700', fontSize: isMobile ? '14px' : '16px', color: 'white' }}>{moduleTitleOverrides[module.module_number] || module.title}</div>
+                              <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>{moduleSubtitles[module.module_number] || 'Advanced acting techniques'}</div>
+                              {isCompleted && <div style={{ fontSize: '12px', color: '#22c55e', marginTop: '4px', fontWeight: '600' }}>✓ Completed</div>}
                             </div>
                           </div>
                           {isCompleted && (
-                            <span className="bg-green-100 text-green-700 text-sm font-medium px-3 py-1 rounded-full">
-                              ✓ Completed
+                            <span style={{ flexShrink: 0, backgroundColor: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)', fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '999px' }}>
+                              ✓ Done
                             </span>
                           )}
                         </div>
@@ -1281,11 +1276,11 @@ export default function Dashboard() {
               </div>
             </div>
           ) : (
-            <div className="mt-12 text-center">
-              <div className="bg-gray-100 rounded-2xl p-8 border border-dashed border-gray-300">
-                <div className="text-4xl mb-3">🔒</div>
-                <h3 className="font-bold text-gray-600">Secret Section Locked</h3>
-                <p className="text-sm text-gray-400 mt-1">Complete all 5 modules in Section 1 to unlock</p>
+            <div style={{ marginTop: '24px' }}>
+              <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)', borderLeft: '4px solid #3a3a4e', padding: '28px', textAlign: 'center' }}>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔒</div>
+                <div style={{ fontWeight: '700', color: '#9ca3af', fontSize: '15px', marginBottom: '4px' }}>Secret Section Locked</div>
+                <div style={{ fontSize: '12px', color: '#6b7280' }}>Complete all 5 modules in Section 1 to unlock</div>
               </div>
             </div>
           )}
