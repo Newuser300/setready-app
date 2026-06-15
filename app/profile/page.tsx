@@ -118,6 +118,7 @@ export default function ProfilePage() {
 
   // Headshot + photos
   const [headshotUrl, setHeadshotUrl] = useState('')
+  const [headshotBroken, setHeadshotBroken] = useState(false)
   const [headshotFile, setHeadshotFile] = useState<File | null>(null)
   const [photoFront, setPhotoFront] = useState('')
   const [photoSide, setPhotoSide] = useState('')
@@ -465,14 +466,14 @@ export default function ProfilePage() {
         home_region_code: homeRegionCode || null,
         home_lat: homeLat,
         home_lng: homeLng,
-        headshot_url: headshotUrl || null,
-        photo_full_body_front: photoFront || null,
-        photo_full_body_side: photoSide || null,
-        photo_additional: photoExtra || null,
-        photo_additional_2: photoExtra2 || null,
-        headshot_alt: photoHeadshotAlt || null,
-        wardrobe_formal: photoWardrobeFormal || null,
-        wardrobe_casual: photoWardrobeCasual || null,
+        headshot_url: headshotUrl?.startsWith('https://') ? headshotUrl : null,
+        photo_full_body_front: photoFront?.startsWith('https://') ? photoFront : null,
+        photo_full_body_side: photoSide?.startsWith('https://') ? photoSide : null,
+        photo_additional: photoExtra?.startsWith('https://') ? photoExtra : null,
+        photo_additional_2: photoExtra2?.startsWith('https://') ? photoExtra2 : null,
+        headshot_alt: photoHeadshotAlt?.startsWith('https://') ? photoHeadshotAlt : null,
+        wardrobe_formal: photoWardrobeFormal?.startsWith('https://') ? photoWardrobeFormal : null,
+        wardrobe_casual: photoWardrobeCasual?.startsWith('https://') ? photoWardrobeCasual : null,
       }
 
       console.log('Saving profile:', profileData)
@@ -604,16 +605,16 @@ export default function ProfilePage() {
         <CS title="📸 Headshot">
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{ width: '100px', height: '100px', borderRadius: '50%', overflow: 'hidden', border: '3px solid #e5e7eb', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              {headshotUrl
-                ? <img src={headshotUrl} alt="Headshot" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              {(headshotUrl && !headshotBroken)
+                ? <img src={headshotUrl} alt="Headshot" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={() => setHeadshotBroken(true)} />
                 : <span style={{ fontSize: '36px' }}>👤</span>}
             </div>
             <div>
               <button onClick={() => fileRef.current?.click()} style={{ padding: '8px 16px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px' }}>
-                {headshotUrl ? 'Change Photo' : 'Upload Photo'}
+                {(headshotUrl && !headshotBroken) ? 'Change Photo' : 'Upload Photo'}
               </button>
               <p style={{ fontSize: '11px', color: '#9ca3af', margin: '6px 0 0' }}>JPG or PNG, max 5 MB. Square crop works best.</p>
-              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={e => { const f = e.target.files?.[0]; if (!f) return; if (f.size > 5*1024*1024) { setMessage('Image must be under 5 MB.'); return }; setHeadshotFile(f); setHeadshotUrl(URL.createObjectURL(f)) }} style={{ display: 'none' }} />
+              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={e => { const f = e.target.files?.[0]; if (!f) return; if (f.size > 5*1024*1024) { setMessage('Image must be under 5 MB.'); return }; setHeadshotBroken(false); setHeadshotFile(f); setHeadshotUrl(URL.createObjectURL(f)) }} style={{ display: 'none' }} />
             </div>
           </div>
         </CS>
