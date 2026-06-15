@@ -101,6 +101,7 @@ export default function AvailabilityPage() {
 
   // Auth guard
   useEffect(() => {
+    localStorage.setItem('sr-availability-touched', '1')
     ;(async () => {
       const { createBrowserClient } = await import('@supabase/ssr')
       const bc = createBrowserClient(

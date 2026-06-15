@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Copyright from '@/components/Copyright';
 import { PROVINCES, PROVINCE_LIST } from '@/lib/provinces';
@@ -24,6 +24,8 @@ export default function RateCalculator() {
   const [useCustom, setUseCustom]     = useState(false);
   const [customRate, setCustomRate]   = useState('');
   const [province, setProvince]       = useState('BC');
+
+  useEffect(() => { localStorage.setItem('sr-rate-calc-visited', '1') }, [])
 
   const provinceInfo = PROVINCES[province] || PROVINCES['BC'];
 
