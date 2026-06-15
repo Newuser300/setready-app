@@ -11,6 +11,16 @@ export default function PWAInstaller() {
   const pathname = usePathname()
 
   useEffect(() => {
+    // In development, unregister any lingering service worker and clear caches,
+    // then bail — Turbopack's changing filenames break cached responses.
+    if (process.env.NODE_ENV !== 'production') {
+      navigator.serviceWorker?.getRegistrations?.().then(
+        rs => rs.forEach(r => r.unregister()))
+      if (window.caches) caches.keys().then(
+        ks => ks.forEach(k => caches.delete(k)))
+      return
+    }
+
     // Only show on allowed pages
     if (!pathname || !ALLOWED_PATHS.includes(pathname)) return
 
