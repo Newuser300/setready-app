@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import Logo from '@/components/Logo'
 import { FILM_REGION_LIST, getRegionName, unionBadge, unionTierLabel } from '@/lib/film-regions'
 
@@ -152,7 +153,7 @@ function RosterCard({ r, onSelect }: { r: RosterPerformer; onSelect: () => void 
       onMouseLeave={e => (e.currentTarget.style.transform = 'none')}>
       <div style={{ aspectRatio: '3/4', backgroundColor: '#0f0f1a', position: 'relative', overflow: 'hidden' }}>
         {r.performer_profiles?.headshot_url
-          ? <img src={r.performer_profiles.headshot_url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ? <Image src={r.performer_profiles.headshot_url} alt={name} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 200px" style={{ objectFit: 'cover' }} />
           : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px' }}>👤</div>
         }
         <div style={{ position: 'absolute', top: '6px', left: '6px', fontSize: '16px' }}>{badge}</div>
@@ -624,9 +625,9 @@ export default function AgentDashboardPage() {
                               {roster.slice(0, 8).map(r => (
                                 <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '8px 10px', backgroundColor: '#1a1a2e', borderRadius: '8px' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#374151', overflow: 'hidden', flexShrink: 0 }}>
+                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#374151', overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
                                       {r.performer_profiles?.headshot_url
-                                        ? <img src={r.performer_profiles.headshot_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ? <Image src={r.performer_profiles.headshot_url} alt="" fill sizes="28px" style={{ objectFit: 'cover' }} />
                                         : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>👤</div>
                                       }
                                     </div>
@@ -670,9 +671,9 @@ export default function AgentDashboardPage() {
                         const days = sub.casting_requests ? daysUntil(sub.casting_requests.shoot_date) : 0
                         return (
                           <div key={sub.id} style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#374151', overflow: 'hidden', flexShrink: 0 }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#374151', overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
                               {sub.performer_profiles?.headshot_url
-                                ? <img src={sub.performer_profiles.headshot_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ? <Image src={sub.performer_profiles.headshot_url} alt="" fill sizes="40px" style={{ objectFit: 'cover' }} />
                                 : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>👤</div>
                               }
                             </div>
@@ -889,9 +890,9 @@ export default function AgentDashboardPage() {
         <div onClick={() => setSelectedPerformer(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.75)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div onClick={e => e.stopPropagation()} style={{ backgroundColor: '#1e1e35', borderRadius: '20px', padding: '24px', maxWidth: '420px', width: '100%', maxHeight: '85vh', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.08)' }}>
             <div style={{ display: 'flex', gap: '14px', marginBottom: '16px' }}>
-              <div style={{ width: '72px', height: '90px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, backgroundColor: '#374151' }}>
+              <div style={{ width: '72px', height: '90px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, backgroundColor: '#374151', position: 'relative' }}>
                 {selectedPerformer.performer_profiles?.headshot_url
-                  ? <img src={selectedPerformer.performer_profiles.headshot_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ? <Image src={selectedPerformer.performer_profiles.headshot_url} alt="" fill sizes="72px" style={{ objectFit: 'cover' }} />
                   : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px' }}>👤</div>
                 }
               </div>

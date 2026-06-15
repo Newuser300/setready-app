@@ -2,7 +2,13 @@
 const nextConfig = {
   output: 'standalone',
   images: {
-    unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'yvrbydctibybhwnbjztu.supabase.co',
+        pathname: '/storage/v1/object/**',
+      },
+    ],
   },
   typescript: {
     ignoreBuildErrors: false,

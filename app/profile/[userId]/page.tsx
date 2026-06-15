@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 
 type Profile = {
@@ -163,12 +164,15 @@ export default function PublicProfilePage() {
         {/* Hero card */}
         <div style={{ backgroundColor: 'white', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', marginBottom: '20px' }}>
           {/* Headshot */}
-          <div style={{ position: 'relative', backgroundColor: '#e5e7eb' }}>
+          <div style={{ position: 'relative', backgroundColor: '#e5e7eb', height: profile.headshot_url ? '420px' : undefined }}>
             {profile.headshot_url ? (
-              <img
+              <Image
                 src={profile.headshot_url}
                 alt={displayName}
-                style={{ width: '100%', maxHeight: '420px', objectFit: 'cover', display: 'block' }}
+                fill
+                sizes="(max-width: 680px) 100vw, 680px"
+                style={{ objectFit: 'cover' }}
+                priority
               />
             ) : (
               <div style={{ height: '280px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '72px' }}>

@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import toast, { Toaster } from 'react-hot-toast'
 import Logo from '@/components/Logo'
 import { FILM_REGION_LIST, getRegionName, unionBadge, unionTierLabel } from '@/lib/film-regions'
@@ -129,7 +130,7 @@ function PerformerCard({ p, onClick }: { p: Performer; onClick: () => void }) {
       onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}>
       <div style={{ aspectRatio: '3/4', backgroundColor: '#0f0f1a', position: 'relative', overflow: 'hidden' }}>
         {p.headshot_url
-          ? <img src={p.headshot_url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ? <Image src={p.headshot_url} alt={name} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 200px" style={{ objectFit: 'cover' }} />
           : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px' }}>👤</div>
         }
         <div style={{ position: 'absolute', top: '6px', left: '6px', fontSize: '16px' }}>{badge}</div>
@@ -161,7 +162,9 @@ function KanbanCard({ sub, onMove }: { sub: Submission; onMove: (id: string, sta
       style={{ backgroundColor: dragging ? '#0f0f1a' : '#1a1a2e', borderRadius: '10px', padding: '10px 12px', cursor: 'grab', border: '1px solid rgba(255,255,255,0.06)', opacity: dragging ? 0.5 : 1, marginBottom: '6px' }}>
       <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
         {sub.performer_profiles?.headshot_url
-          ? <img src={sub.performer_profiles.headshot_url} alt={name} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+          ? <div style={{ width: '32px', height: '32px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, position: 'relative', backgroundColor: '#374151' }}>
+              <Image src={sub.performer_profiles.headshot_url} alt={name} fill sizes="32px" style={{ objectFit: 'cover' }} />
+            </div>
           : <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#374151', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>👤</div>
         }
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -1160,9 +1163,9 @@ export default function CastingDashboardPage() {
         <div onClick={() => setQuickView(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.75)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div onClick={e => e.stopPropagation()} style={{ backgroundColor: '#1e1e35', borderRadius: '20px', padding: '24px', maxWidth: '400px', width: '100%', maxHeight: '85vh', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.08)' }}>
             <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-              <div style={{ width: '80px', height: '100px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, backgroundColor: '#374151' }}>
+              <div style={{ width: '80px', height: '100px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, backgroundColor: '#374151', position: 'relative' }}>
                 {quickView.headshot_url
-                  ? <img src={quickView.headshot_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ? <Image src={quickView.headshot_url} alt="" fill sizes="80px" style={{ objectFit: 'cover' }} />
                   : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px' }}>👤</div>
                 }
               </div>
