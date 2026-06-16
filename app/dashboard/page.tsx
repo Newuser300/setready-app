@@ -184,9 +184,23 @@ export default function Dashboard() {
       .catch(() => {})
     fetch('/api/profile', { credentials: 'include' })
       .then(r => r.ok ? r.json() : {})
-      .then((d: { union_status?: string; gender?: string; date_of_birth?: string; headshot_url?: string; home_city?: string; has_residency_docs?: boolean }) => {
+      .then((d: {
+        union_status?: string; gender?: string; date_of_birth?: string; headshot_url?: string;
+        home_city?: string; has_residency_docs?: boolean;
+        section1_completed?: boolean; subscription_status?: string;
+        promo_training_expires_at?: string; section2_unlocked?: boolean;
+        referral_code?: string; referred_by?: string; subscription_started_at?: string;
+      }) => {
         setDashUnionStatus(d.union_status || 'non-union')
         setDashProfile({ gender: d.gender, date_of_birth: d.date_of_birth, headshot_url: d.headshot_url, home_city: d.home_city, has_residency_docs: d.has_residency_docs })
+        setSection2Visible(d.section1_completed ?? false)
+        const hasPromo = d.promo_training_expires_at
+          ? new Date(d.promo_training_expires_at) > new Date()
+          : false
+        setIsSubscribed(d.subscription_status === 'active' || hasPromo)
+        setSection2Unlocked(d.section2_unlocked ?? false)
+        setUserHasReferral(!!d.referred_by)
+        setSubscriptionStartedAt(d.subscription_started_at ?? null)
       })
       .catch(() => {})
   }, [])
@@ -421,33 +435,10 @@ export default function Dashboard() {
     setLoadingCertificates(false);
   }
 
-  // Fetch subscription status directly from Supabase to avoid API 401 issues
-  const fetchSubscriptionStatus = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        setIsSubscribed(false);
-        return;
-      }
-      const { data } = await supabase
-        .from('users')
-        .select('subscription_status, promo_training_expires_at')
-        .eq('id', session.user.id)
-        .maybeSingle();
-      const hasPromo = data?.promo_training_expires_at
-        ? new Date(data.promo_training_expires_at) > new Date()
-        : false;
-      setIsSubscribed(data?.subscription_status === 'active' || hasPromo);
-    } catch (error) {
-      console.error('Failed to fetch subscription status:', error);
-    }
-  };
-
   useEffect(() => {
     checkUser();
     loadModules();
     loadCertificates();
-    fetchSubscriptionStatus();
     
     // Subscribe to realtime updates for user_progress
     const subscription = supabase
@@ -633,45 +624,17 @@ export default function Dashboard() {
   }
 
   async function checkUser() {
-    // Prevent concurrent calls
-    if (isCheckingUser) {
-      console.log('Already checking user, skipping...');
-      return;
-    }
-    
+    if (isCheckingUser) { console.log('Already checking user, skipping...'); return; }
     isCheckingUser = true;
-    
     try {
-      const { createBrowserClient } = await import('@supabase/ssr')
-      const browserClient = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
-      const { data: { user }, error: userError } = await browserClient.auth.getUser()
-      if (userError || !user) {
-        console.error('Auth error:', userError)
-        router.push('/auth/sign-in')
-        return
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.user) {
+        router.push('/auth/sign-in');
+        return;
       }
-      setUser(user)
-
-      const { data } = await browserClient
-        .from('users')
-        .select('section1_completed, subscription_status, promo_training_expires_at, section2_unlocked, referral_code, referred_by, subscription_started_at')
-        .eq('id', user.id)
-        .single();
-
-      if (data) {
-        setSection2Visible(data.section1_completed || false);
-        const hasPromo = data.promo_training_expires_at
-          ? new Date(data.promo_training_expires_at) > new Date()
-          : false;
-        setIsSubscribed(data.subscription_status === 'active' || hasPromo);
-        setSection2Unlocked(data.section2_unlocked || false);
-        setUserHasReferral(!!data.referred_by);
-        setSubscriptionStartedAt(data.subscription_started_at || null);
-        console.log('User subscription status:', data.subscription_status);
-      }
+      setUser(session.user);
+      // Gate fields (section1_completed, subscription_status, etc.) are set by the
+      // /api/profile fetch below, which uses service-role and bypasses RLS entirely.
     } catch (error) {
       console.error('Check user error:', error);
     } finally {

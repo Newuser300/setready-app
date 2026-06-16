@@ -39,7 +39,7 @@ export async function GET() {
 
   const [{ data, error }, { data: userData }, { count: residencyCount }] = await Promise.all([
     supabaseAdmin.from('performer_profiles').select('*').eq('user_id', user.id).single(),
-    supabaseAdmin.from('users').select('home_city,home_region_code,home_lat,home_lng,photos_unlocked').eq('id', user.id).single(),
+    supabaseAdmin.from('users').select('home_city,home_region_code,home_lat,home_lng,photos_unlocked,section1_completed,subscription_status,promo_training_expires_at,section2_unlocked,referral_code,referred_by,subscription_started_at').eq('id', user.id).single(),
     supabaseAdmin.from('residency_documents').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
   ])
 
@@ -55,6 +55,13 @@ export async function GET() {
     home_lng: userData?.home_lng ?? null,
     photos_unlocked: userData?.photos_unlocked ?? false,
     has_residency_docs: (residencyCount ?? 0) > 0,
+    section1_completed: userData?.section1_completed ?? false,
+    subscription_status: userData?.subscription_status ?? null,
+    promo_training_expires_at: userData?.promo_training_expires_at ?? null,
+    section2_unlocked: userData?.section2_unlocked ?? false,
+    referral_code: userData?.referral_code ?? null,
+    referred_by: userData?.referred_by ?? null,
+    subscription_started_at: userData?.subscription_started_at ?? null,
   })
 }
 
