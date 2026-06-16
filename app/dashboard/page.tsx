@@ -156,7 +156,6 @@ export default function Dashboard() {
   const [dashUnionStatus, setDashUnionStatus] = useState('non-union')
   const [dashProfile, setDashProfile] = useState<{ gender?: string; date_of_birth?: string; headshot_url?: string; home_city?: string; has_residency_docs?: boolean }>({})
   const [checklistDismissed, setChecklistDismissed] = useState(false)
-  const [availTouched, setAvailTouched] = useState(false)
   const [gamesVisited, setGamesVisited] = useState(false)
   const [simulatorVisited, setSimulatorVisited] = useState(false)
   const [headshotVisited, setHeadshotVisited] = useState(false)
@@ -490,7 +489,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     setChecklistDismissed(!!localStorage.getItem('sr-checklist-dismissed'))
-    setAvailTouched(!!localStorage.getItem('sr-availability-touched'))
     setGamesVisited(!!localStorage.getItem('sr-games-visited'))
     setSimulatorVisited(!!localStorage.getItem('sr-simulator-visited'))
     setHeadshotVisited(!!localStorage.getItem('sr-headshot-visited'))
@@ -821,8 +819,6 @@ export default function Dashboard() {
   const essentialItems = [
     { done: !!(dashProfile.gender && dashProfile.date_of_birth), label: 'Complete your profile', benefit: 'Casting sees a full profile first.', href: '/profile' },
     { done: !!(dashProfile.headshot_url?.startsWith('https://')), label: 'Upload a headshot', benefit: 'No headshot, no callback.', href: '/profile' },
-    { done: availTouched, label: 'Set your availability', benefit: 'Only available performers get booked.', href: '/availability' },
-    { done: !!(dashProfile.home_city), label: 'Add your home location', benefit: 'Accurate leave-by times for set.', href: '/profile' },
     { done: Object.keys(progress).length > 0, label: 'Explore training', benefit: 'Background to acting — level up.', href: section1Modules[0] ? `/module/${section1Modules[0].id}` : '/dashboard' },
   ]
   const exploreItems = [
@@ -832,7 +828,7 @@ export default function Dashboard() {
     { done: !!(dashProfile.has_residency_docs), label: 'Upload Residency Doc', benefit: 'Prove your work eligibility.', href: '/residency' },
   ]
   const checklistDoneCount = [...essentialItems, ...exploreItems].filter(i => i.done).length
-  const showChecklist = !checklistDismissed && checklistDoneCount < 9
+  const showChecklist = !checklistDismissed && checklistDoneCount < 7
 
   return (
     <>
@@ -1023,7 +1019,7 @@ export default function Dashboard() {
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '10px' }}>
                 <div>
                   <div style={{ fontWeight: '800', fontSize: '15px', color: '#1a1a2e' }}>Set yourself up for more bookings</div>
-                  <div style={{ fontSize: '12px', color: '#d97706', fontWeight: '700', marginTop: '2px' }}>{checklistDoneCount} of 9 complete</div>
+                  <div style={{ fontSize: '12px', color: '#d97706', fontWeight: '700', marginTop: '2px' }}>{checklistDoneCount} of 7 complete</div>
                 </div>
                 <button
                   onClick={() => { setChecklistDismissed(true); localStorage.setItem('sr-checklist-dismissed', '1') }}
@@ -1032,7 +1028,7 @@ export default function Dashboard() {
                 >×</button>
               </div>
               <div style={{ height: '5px', backgroundColor: '#f3f4f6', borderRadius: '3px', marginBottom: '16px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${(checklistDoneCount / 9) * 100}%`, backgroundColor: '#F59E0B', borderRadius: '3px', transition: 'width 0.4s ease' }} />
+                <div style={{ height: '100%', width: `${(checklistDoneCount / 7) * 100}%`, backgroundColor: '#F59E0B', borderRadius: '3px', transition: 'width 0.4s ease' }} />
               </div>
 
               {/* Essentials */}
