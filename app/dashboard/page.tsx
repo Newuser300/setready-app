@@ -463,6 +463,19 @@ export default function Dashboard() {
     };
   }, []);
 
+  // Admin check runs in parallel — not part of the checkUser() critical path
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.access_token) return
+      fetch('/api/admin/check', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+        .then(r => r.ok ? r.json() : { isAdmin: false })
+        .then(d => setIsAdmin(d.isAdmin === true))
+        .catch(() => setIsAdmin(false))
+    })
+  }, [])
+
   useEffect(() => {
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
@@ -633,22 +646,7 @@ export default function Dashboard() {
         router.push('/auth/sign-in')
         return
       }
-      const { data: { session } } = await browserClient.auth.getSession()
       setUser(user)
-
-      try {
-        const adminCheckRes = await fetch('/api/admin/check', {
-          headers: { Authorization: `Bearer ${session?.access_token}` },
-        });
-        if (adminCheckRes.ok) {
-          const adminData = await adminCheckRes.json();
-          setIsAdmin(adminData.isAdmin === true);
-        } else {
-          setIsAdmin(false);
-        }
-      } catch {
-        setIsAdmin(false);
-      }
 
       const { data } = await supabase
         .from('users')
