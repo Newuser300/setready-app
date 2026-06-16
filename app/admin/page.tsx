@@ -69,7 +69,44 @@ type AdminRecord = {
   added_at: string;
 };
 
-type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools' | 'admins' | 'casting' | 'promos' | 'messages';
+type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools' | 'admins' | 'casting' | 'promos' | 'messages' | 'tester_codes' | 'etransfer' | 'photo_promo';
+
+interface TesterCode {
+  id: string;
+  code: string;
+  created_by: string | null;
+  used_by: string | null;
+  created_at: string;
+  expires_at: string | null;
+  is_active: boolean;
+  max_uses: number | null;
+  uses_count: number | null;
+}
+
+interface ETransferRequest {
+  id: string;
+  email: string;
+  status: string;
+  created_at: string;
+  processed_at: string | null;
+}
+
+interface PhotoPromoCode {
+  id: string;
+  code: string;
+  is_used: boolean;
+  used_by: string | null;
+  used_at: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function randomCode(): string {
+  let code = '';
+  for (let i = 0; i < 8; i++) code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+  return code;
+}
 
 export default function AdminPage() {
   const router = useRouter();
@@ -199,6 +236,21 @@ export default function AdminPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [promoUses, setPromoUses] = useState<any[]>([]);
   const [promoUsesLoading, setPromoUsesLoading] = useState(false);
+
+  // Tester codes
+  const [testerCodes, setTesterCodes] = useState<TesterCode[]>([]);
+  const [testerCodesLoading, setTesterCodesLoading] = useState(false);
+  const [generatingTesterCode, setGeneratingTesterCode] = useState(false);
+
+  // E-transfer requests
+  const [etransferRequests, setEtransferRequests] = useState<ETransferRequest[]>([]);
+  const [etransferLoading, setEtransferLoading] = useState(false);
+
+  // Photo promo codes
+  const [photoCodes, setPhotoCodes] = useState<PhotoPromoCode[]>([]);
+  const [photoCodesLoading, setPhotoCodesLoading] = useState(false);
+  const [generatingPhotoCode, setGeneratingPhotoCode] = useState(false);
+  const [customPhotoCode, setCustomPhotoCode] = useState('');
 
   useEffect(() => { loadData(); }, []);
 
@@ -631,6 +683,91 @@ export default function AdminPage() {
     setPromoUsesLoading(false);
   }
 
+  // ── Tester codes helpers ──────────────────────────────────────────────────
+
+  async function fetchTesterCodes() {
+    setTesterCodesLoading(true);
+    const { data } = await supabase.from('tester_codes').select('*').order('created_at', { ascending: false });
+    if (data) setTesterCodes(data);
+    setTesterCodesLoading(false);
+  }
+
+  async function generateTesterCode() {
+    setGeneratingTesterCode(true);
+    const code = randomCode();
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from('tester_codes').insert({
+      code, created_by: user?.id || null, is_active: true, max_uses: 1, uses_count: 0,
+    });
+    if (!error) {
+      toast.success('Code generated: ' + code);
+      fetchTesterCodes();
+    } else {
+      toast.error('Error: ' + error.message);
+    }
+    setGeneratingTesterCode(false);
+  }
+
+  async function deleteTesterCode(id: string) {
+    if (!confirm('Delete this code?')) return;
+    await supabase.from('tester_codes').delete().eq('id', id);
+    fetchTesterCodes();
+  }
+
+  function copyToClipboard(code: string) {
+    navigator.clipboard.writeText(code);
+    toast.success('Copied to clipboard');
+  }
+
+  // ── E-transfer helpers ─────────────────────────────────────────────────────
+
+  async function fetchEtransferRequests() {
+    setEtransferLoading(true);
+    const { data } = await supabase.from('etransfer_requests').select('*').order('created_at', { ascending: false });
+    if (data) setEtransferRequests(data);
+    setEtransferLoading(false);
+  }
+
+  async function markEtransferProcessed(id: string) {
+    await supabase.from('etransfer_requests')
+      .update({ status: 'processed', processed_at: new Date().toISOString() })
+      .eq('id', id);
+    fetchEtransferRequests();
+  }
+
+  // ── Photo promo helpers ────────────────────────────────────────────────────
+
+  async function fetchPhotoCodes() {
+    setPhotoCodesLoading(true);
+    const { data } = await supabase.from('photo_promo_codes').select('*').order('created_at', { ascending: false });
+    if (data) setPhotoCodes(data);
+    setPhotoCodesLoading(false);
+  }
+
+  async function generatePhotoPromoCode(codeValue?: string) {
+    setGeneratingPhotoCode(true);
+    const code = (codeValue ?? randomCode()).toUpperCase().trim();
+    if (!code) { setGeneratingPhotoCode(false); return; }
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from('photo_promo_codes').insert({
+      code, is_used: false, created_by: user?.email || user?.id || null,
+    });
+    if (!error) {
+      toast.success('Photo promo code created: ' + code);
+      setCustomPhotoCode('');
+      fetchPhotoCodes();
+    } else {
+      toast.error('Error: ' + error.message);
+    }
+    setGeneratingPhotoCode(false);
+  }
+
+  async function deletePhotoPromoCode(id: string) {
+    if (!confirm('Delete this photo promo code?')) return;
+    await supabase.from('photo_promo_codes').delete().eq('id', id);
+    fetchPhotoCodes();
+  }
+
   // ── Messages helpers ───────────────────────────────────────────────────────
 
   async function loadAdminSentMessages() {
@@ -806,8 +943,11 @@ export default function AdminPage() {
     { key: 'tools',        label: 'Tools',         icon: '🔧' },
     { key: 'admins',       label: 'Admins',        icon: '🔐' },
     { key: 'casting',      label: 'Casting',       icon: '🎬' },
-    { key: 'promos',       label: 'Promo Codes',   icon: '🎟️' },
+    { key: 'promos',       label: 'Access Codes',  icon: '🎟️' },
     { key: 'messages',     label: 'Messages',      icon: '📬' },
+    { key: 'tester_codes', label: 'Tester Codes',  icon: '🔑' },
+    { key: 'etransfer',    label: 'E-Transfer',     icon: '💸' },
+    { key: 'photo_promo',  label: 'Photo Promos',   icon: '📸' },
   ];
 
   return (
@@ -852,6 +992,15 @@ export default function AdminPage() {
                 }
                 if (item.key === 'messages') {
                   loadAdminSentMessages();
+                }
+                if (item.key === 'tester_codes') {
+                  fetchTesterCodes();
+                }
+                if (item.key === 'etransfer') {
+                  fetchEtransferRequests();
+                }
+                if (item.key === 'photo_promo') {
+                  fetchPhotoCodes();
                 }
               }}
               className={`px-4 py-3 text-sm font-medium transition border-b-2 whitespace-nowrap ${
@@ -1525,7 +1674,7 @@ export default function AdminPage() {
         ══════════════════════════════════════ */}
         {activeSection === 'promos' && (
           <div className="space-y-6">
-            <h2 className="text-xl font-bold text-gray-800">🎟️ Promo Codes</h2>
+            <h2 className="text-xl font-bold text-gray-800">🎟️ Access Codes</h2>
 
             {/* Create Code Form */}
             <div className="bg-white border border-gray-200 rounded-xl p-5">
@@ -1716,6 +1865,235 @@ export default function AdminPage() {
                     ))}
                   </tbody>
                 </table>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════
+            TESTER CODES
+        ══════════════════════════════════════ */}
+        {activeSection === 'tester_codes' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold text-gray-800">🔑 Tester Codes</h2>
+
+            <div className="bg-white border border-gray-200 rounded-xl p-5">
+              <h3 className="text-sm font-bold text-gray-700 mb-3">Generate New Access Code</h3>
+              <button
+                onClick={generateTesterCode}
+                disabled={generatingTesterCode}
+                className="px-5 py-2 bg-teal-600 text-white text-sm font-bold rounded-lg hover:bg-teal-700 disabled:opacity-50"
+              >
+                {generatingTesterCode ? 'Generating...' : '+ Generate New Code'}
+              </button>
+              <p className="text-xs text-gray-500 mt-2">Codes never expire. Each code can be used once. Redeemed at /redeem.</p>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-gray-700">All Access Codes</h3>
+                <button onClick={fetchTesterCodes} className="text-xs text-blue-600 font-semibold hover:underline">
+                  {testerCodesLoading ? 'Loading...' : 'Refresh'}
+                </button>
+              </div>
+              {testerCodes.length === 0 ? (
+                <div className="p-8 text-center text-gray-400 text-sm">No codes yet.</div>
+              ) : (
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Code</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Created</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Used By</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {testerCodes.map(c => {
+                      const isUsed = (c.uses_count || 0) >= (c.max_uses || 1);
+                      return (
+                        <tr key={c.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 font-mono font-bold text-gray-800 tracking-wider">{c.code}</td>
+                          <td className="px-4 py-3">
+                            {!c.is_active
+                              ? <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-500">Inactive</span>
+                              : isUsed
+                                ? <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-50 text-red-600">Used</span>
+                                : <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-green-50 text-green-700">Available</span>
+                            }
+                          </td>
+                          <td className="px-4 py-3 text-gray-500 text-xs">{new Date(c.created_at).toLocaleDateString('en-CA')}</td>
+                          <td className="px-4 py-3 text-gray-500 text-xs">{c.used_by ? c.used_by.substring(0, 8) + '...' : '—'}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex gap-2">
+                              <button onClick={() => copyToClipboard(c.code)} className="text-xs px-2 py-1 border border-gray-200 rounded hover:bg-gray-50 font-medium">Copy</button>
+                              <button onClick={() => deleteTesterCode(c.id)} className="text-xs px-2 py-1 border border-red-200 text-red-600 rounded hover:bg-red-50 font-medium">Delete</button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+              {testerCodes.length > 0 && (
+                <div className="px-5 py-3 border-t border-gray-100 text-xs text-gray-500">
+                  Total: {testerCodes.length} · Available: {testerCodes.filter(c => c.is_active && (c.uses_count || 0) < (c.max_uses || 1)).length} · Used: {testerCodes.filter(c => !c.is_active || (c.uses_count || 0) >= (c.max_uses || 1)).length}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════
+            E-TRANSFER REQUESTS
+        ══════════════════════════════════════ */}
+        {activeSection === 'etransfer' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold text-gray-800">💸 E-Transfer Requests</h2>
+
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-gray-700">All Requests</h3>
+                <button onClick={fetchEtransferRequests} className="text-xs text-blue-600 font-semibold hover:underline">
+                  {etransferLoading ? 'Loading...' : 'Refresh'}
+                </button>
+              </div>
+              {etransferRequests.length === 0 ? (
+                <div className="p-8 text-center text-gray-400 text-sm">No e-transfer requests yet.</div>
+              ) : (
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Email</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Requested</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Processed</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {etransferRequests.map(r => (
+                      <tr key={r.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-gray-800 font-medium">{r.email}</td>
+                        <td className="px-4 py-3">
+                          {r.status === 'pending'
+                            ? <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-yellow-50 text-yellow-700">Pending</span>
+                            : <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-green-50 text-green-700">Processed</span>
+                          }
+                        </td>
+                        <td className="px-4 py-3 text-gray-500 text-xs">{new Date(r.created_at).toLocaleString()}</td>
+                        <td className="px-4 py-3 text-gray-500 text-xs">{r.processed_at ? new Date(r.processed_at).toLocaleString() : '—'}</td>
+                        <td className="px-4 py-3">
+                          {r.status === 'pending' && (
+                            <button
+                              onClick={() => markEtransferProcessed(r.id)}
+                              className="text-xs px-3 py-1 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium"
+                            >
+                              Mark Processed
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════
+            PHOTO PROMO CODES
+        ══════════════════════════════════════ */}
+        {activeSection === 'photo_promo' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold text-gray-800">📸 Photo Promo Codes</h2>
+
+            <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+              <h3 className="text-sm font-bold text-gray-700">Create Photo Promo Code</h3>
+
+              <div className="flex gap-3 flex-wrap items-center">
+                <button
+                  onClick={() => generatePhotoPromoCode()}
+                  disabled={generatingPhotoCode}
+                  className="px-5 py-2 bg-teal-600 text-white text-sm font-bold rounded-lg hover:bg-teal-700 disabled:opacity-50"
+                >
+                  {generatingPhotoCode ? 'Creating...' : '+ Generate Random Code'}
+                </button>
+              </div>
+
+              <div className="flex gap-2 items-center flex-wrap">
+                <input
+                  type="text"
+                  placeholder="Or enter a custom code (e.g. PHOTOTEST)"
+                  value={customPhotoCode}
+                  onChange={e => setCustomPhotoCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                  maxLength={24}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono w-64 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+                <button
+                  onClick={() => generatePhotoPromoCode(customPhotoCode)}
+                  disabled={generatingPhotoCode || !customPhotoCode.trim()}
+                  className="px-4 py-2 bg-teal-700 text-white text-sm font-bold rounded-lg hover:bg-teal-800 disabled:opacity-50"
+                >
+                  Add Custom Code
+                </button>
+              </div>
+
+              <p className="text-xs text-gray-500">Codes never expire. Each code unlocks 4 extra photo slots for one user.</p>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-gray-700">All Photo Promo Codes</h3>
+                <button onClick={fetchPhotoCodes} className="text-xs text-blue-600 font-semibold hover:underline">
+                  {photoCodesLoading ? 'Loading...' : 'Refresh'}
+                </button>
+              </div>
+              {photoCodes.length === 0 ? (
+                <div className="p-8 text-center text-gray-400 text-sm">No photo promo codes yet. Generate one above.</div>
+              ) : (
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Code</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Created</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Used By</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Used At</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {photoCodes.map(pc => (
+                      <tr key={pc.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 font-mono font-bold text-gray-800 tracking-wider">{pc.code}</td>
+                        <td className="px-4 py-3">
+                          {pc.is_used
+                            ? <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-50 text-red-600">Used</span>
+                            : <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-green-50 text-green-700">Available</span>
+                          }
+                        </td>
+                        <td className="px-4 py-3 text-gray-500 text-xs">{new Date(pc.created_at).toLocaleDateString('en-CA')}</td>
+                        <td className="px-4 py-3 text-gray-500 text-xs">{pc.used_by ? pc.used_by.substring(0, 8) + '...' : '—'}</td>
+                        <td className="px-4 py-3 text-gray-500 text-xs">{pc.used_at ? new Date(pc.used_at).toLocaleString() : '—'}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-2">
+                            <button onClick={() => copyToClipboard(pc.code)} className="text-xs px-2 py-1 border border-gray-200 rounded hover:bg-gray-50 font-medium">Copy</button>
+                            <button onClick={() => deletePhotoPromoCode(pc.id)} className="text-xs px-2 py-1 border border-red-200 text-red-600 rounded hover:bg-red-50 font-medium">Delete</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              {photoCodes.length > 0 && (
+                <div className="px-5 py-3 border-t border-gray-100 text-xs text-gray-500">
+                  Total: {photoCodes.length} · Available: {photoCodes.filter(c => !c.is_used).length} · Used: {photoCodes.filter(c => c.is_used).length}
+                </div>
               )}
             </div>
           </div>

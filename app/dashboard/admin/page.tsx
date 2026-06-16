@@ -605,8 +605,7 @@ export default function AdminDashboard() {
             </div>
           </Link>
 
-          {/* NEW: Codes Card */}
-          <Link href="/dashboard/admin/codes" className="group bg-white rounded-xl p-5 shadow-md hover:shadow-xl transition-all duration-300 border border-slate-100 hover:border-indigo-200">
+          <Link href="/admin" className="group bg-white rounded-xl p-5 shadow-md hover:shadow-xl transition-all duration-300 border border-slate-100 hover:border-indigo-200">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -616,7 +615,7 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <h3 className="font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">Access Codes</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Generate & manage e-transfer codes</p>
+                <p className="text-xs text-slate-500 mt-0.5">Generate & manage codes → /admin</p>
               </div>
             </div>
           </Link>
