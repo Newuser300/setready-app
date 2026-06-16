@@ -11,7 +11,8 @@
     "mobile:copy": "npx cap copy",
     "mobile:sync": "npx cap sync",
     "mobile:ios": "next build && npx cap copy && npx cap open ios",
-    "mobile:android": "next build && npx cap copy && npx cap open android"
+    "mobile:android": "next build && npx cap copy && npx cap open android",
+    "prepare": "husky"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.1",
@@ -65,6 +66,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
+    "husky": "^9.1.7",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.2",
     "typescript": "^5"
