@@ -739,8 +739,10 @@ export default function AdminPage() {
 
   async function fetchPhotoCodes() {
     setPhotoCodesLoading(true);
-    const { data } = await supabase.from('photo_promo_codes').select('*').order('created_at', { ascending: false });
-    if (data) setPhotoCodes(data);
+    const res = await fetch('/api/admin/photo-promo-codes', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (res.ok) setPhotoCodes(await res.json());
     setPhotoCodesLoading(false);
   }
 
@@ -748,23 +750,29 @@ export default function AdminPage() {
     setGeneratingPhotoCode(true);
     const code = (codeValue ?? randomCode()).toUpperCase().trim();
     if (!code) { setGeneratingPhotoCode(false); return; }
-    const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase.from('photo_promo_codes').insert({
-      code, is_used: false, created_by: user?.email || user?.id || null,
+    const res = await fetch('/api/admin/photo-promo-codes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ code }),
     });
-    if (!error) {
+    if (res.ok) {
       toast.success('Photo promo code created: ' + code);
       setCustomPhotoCode('');
       fetchPhotoCodes();
     } else {
-      toast.error('Error: ' + error.message);
+      const d = await res.json();
+      toast.error(d.error || 'Failed to create code');
     }
     setGeneratingPhotoCode(false);
   }
 
   async function deletePhotoPromoCode(id: string) {
     if (!confirm('Delete this photo promo code?')) return;
-    await supabase.from('photo_promo_codes').delete().eq('id', id);
+    await fetch('/api/admin/photo-promo-codes', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ id }),
+    });
     fetchPhotoCodes();
   }
 
