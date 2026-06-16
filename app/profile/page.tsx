@@ -425,7 +425,7 @@ export default function ProfilePage() {
         gender,
         date_of_birth: dob || null,
         is_public: isPublic,
-        union_status: unionStatus,
+        union_status: unionStatus || null,
         member_number: memberNumber || null,
         agency_id: agencyId || null,
         video_reel_url: videoReelUrl || null,
