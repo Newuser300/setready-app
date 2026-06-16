@@ -817,9 +817,8 @@ export default function Dashboard() {
   };
 
   const essentialItems = [
-    { done: !!(dashProfile.gender && dashProfile.date_of_birth), label: 'Complete your profile', benefit: 'Casting sees a full profile first.', href: '/profile' },
-    { done: !!(dashProfile.headshot_url?.startsWith('https://')), label: 'Upload a headshot', benefit: 'No headshot, no callback.', href: '/profile' },
-    { done: Object.keys(progress).length > 0, label: 'Explore training', benefit: 'Background to acting — level up.', href: section1Modules[0] ? `/module/${section1Modules[0].id}` : '/dashboard' },
+    { done: !!(dashProfile.gender && dashProfile.date_of_birth && dashProfile.headshot_url?.startsWith('https://')), label: 'Complete your profile', benefit: 'Add your details and a headshot.', href: '/profile' },
+    { done: Object.keys(progress).length > 0, label: 'Explore training', benefit: 'Background to acting — level up.', href: '#section-1-training' },
   ]
   const exploreItems = [
     { done: gamesVisited, label: 'Checkout Games', benefit: 'Learn the lingo, have fun.', href: '/games' },
@@ -828,7 +827,7 @@ export default function Dashboard() {
     { done: !!(dashProfile.has_residency_docs), label: 'Upload Residency Doc', benefit: 'Prove your work eligibility.', href: '/residency' },
   ]
   const checklistDoneCount = [...essentialItems, ...exploreItems].filter(i => i.done).length
-  const showChecklist = !checklistDismissed && checklistDoneCount < 7
+  const showChecklist = !checklistDismissed && checklistDoneCount < 6
 
   return (
     <>
@@ -1019,7 +1018,7 @@ export default function Dashboard() {
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '10px' }}>
                 <div>
                   <div style={{ fontWeight: '800', fontSize: '15px', color: '#1a1a2e' }}>Explore what SetReady offers!</div>
-                  <div style={{ fontSize: '12px', color: '#d97706', fontWeight: '700', marginTop: '2px' }}>{checklistDoneCount} of 7 complete</div>
+                  <div style={{ fontSize: '12px', color: '#d97706', fontWeight: '700', marginTop: '2px' }}>{checklistDoneCount} of 6 complete</div>
                 </div>
                 <button
                   onClick={() => { setChecklistDismissed(true); localStorage.setItem('sr-checklist-dismissed', '1') }}
@@ -1028,7 +1027,7 @@ export default function Dashboard() {
                 >×</button>
               </div>
               <div style={{ height: '5px', backgroundColor: '#f3f4f6', borderRadius: '3px', marginBottom: '16px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${(checklistDoneCount / 7) * 100}%`, backgroundColor: '#F59E0B', borderRadius: '3px', transition: 'width 0.4s ease' }} />
+                <div style={{ height: '100%', width: `${(checklistDoneCount / 6) * 100}%`, backgroundColor: '#F59E0B', borderRadius: '3px', transition: 'width 0.4s ease' }} />
               </div>
 
               {/* Essentials */}
@@ -1219,7 +1218,7 @@ export default function Dashboard() {
           <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.06)', margin: '0 0 24px' }} />
 
           {/* Section 1 Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+          <div id="section-1-training" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
             <div style={{ fontSize: '28px' }}>📚</div>
             <div>
               <div style={{ fontSize: '11px', fontWeight: '700', color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>Section 1</div>
