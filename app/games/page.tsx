@@ -1,9 +1,12 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import Copyright from '@/components/Copyright';
 
 export default function GamesPage() {
+  useEffect(() => { localStorage.setItem('sr-games-visited', '1') }, [])
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', fontFamily: '-apple-system, Arial, sans-serif' }}>
 

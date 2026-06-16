@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Copyright from '@/components/Copyright';
 
@@ -118,6 +118,8 @@ const SCENARIOS = [
 ];
 
 export default function SimulatorPage() {
+  useEffect(() => { localStorage.setItem('sr-simulator-visited', '1') }, [])
+
   const [currentQ, setCurrentQ] = useState(0);
   const [picks, setPicks]       = useState<(number | null)[]>(new Array(10).fill(null));
   const [revealed, setRevealed] = useState(false);

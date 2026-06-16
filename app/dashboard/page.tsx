@@ -154,10 +154,13 @@ export default function Dashboard() {
   const [subscribeSuccess, setSubscribeSuccess] = useState(false)
   const [castingMsgCount, setCastingMsgCount] = useState(0)
   const [dashUnionStatus, setDashUnionStatus] = useState('non-union')
-  const [dashProfile, setDashProfile] = useState<{ gender?: string; date_of_birth?: string; headshot_url?: string; home_city?: string }>({})
+  const [dashProfile, setDashProfile] = useState<{ gender?: string; date_of_birth?: string; headshot_url?: string; home_city?: string; has_residency_docs?: boolean }>({})
   const [checklistDismissed, setChecklistDismissed] = useState(false)
   const [availTouched, setAvailTouched] = useState(false)
-  const [ratecalcVisited, setRatecalcVisited] = useState(false)
+  const [gamesVisited, setGamesVisited] = useState(false)
+  const [simulatorVisited, setSimulatorVisited] = useState(false)
+  const [headshotVisited, setHeadshotVisited] = useState(false)
+  const [exploreExpanded, setExploreExpanded] = useState(false)
 
   // Casting notifications
   const [showNotifPanel, setShowNotifPanel] = useState(false)
@@ -182,9 +185,9 @@ export default function Dashboard() {
       .catch(() => {})
     fetch('/api/profile', { credentials: 'include' })
       .then(r => r.ok ? r.json() : {})
-      .then((d: { union_status?: string; gender?: string; date_of_birth?: string; headshot_url?: string; home_city?: string }) => {
+      .then((d: { union_status?: string; gender?: string; date_of_birth?: string; headshot_url?: string; home_city?: string; has_residency_docs?: boolean }) => {
         setDashUnionStatus(d.union_status || 'non-union')
-        setDashProfile({ gender: d.gender, date_of_birth: d.date_of_birth, headshot_url: d.headshot_url, home_city: d.home_city })
+        setDashProfile({ gender: d.gender, date_of_birth: d.date_of_birth, headshot_url: d.headshot_url, home_city: d.home_city, has_residency_docs: d.has_residency_docs })
       })
       .catch(() => {})
   }, [])
@@ -488,7 +491,9 @@ export default function Dashboard() {
   useEffect(() => {
     setChecklistDismissed(!!localStorage.getItem('sr-checklist-dismissed'))
     setAvailTouched(!!localStorage.getItem('sr-availability-touched'))
-    setRatecalcVisited(!!localStorage.getItem('sr-rate-calc-visited'))
+    setGamesVisited(!!localStorage.getItem('sr-games-visited'))
+    setSimulatorVisited(!!localStorage.getItem('sr-simulator-visited'))
+    setHeadshotVisited(!!localStorage.getItem('sr-headshot-visited'))
   }, [])
 
   // Capture Android install prompt + control install hero banner
@@ -813,16 +818,21 @@ export default function Dashboard() {
     return name.includes(':') ? name.split(':')[1].trim() : name;
   };
 
-  const checklistItems = [
+  const essentialItems = [
     { done: !!(dashProfile.gender && dashProfile.date_of_birth), label: 'Complete your profile', benefit: 'Casting sees a full profile first.', href: '/profile' },
     { done: !!(dashProfile.headshot_url?.startsWith('https://')), label: 'Upload a headshot', benefit: 'No headshot, no callback.', href: '/profile' },
     { done: availTouched, label: 'Set your availability', benefit: 'Only available performers get booked.', href: '/availability' },
     { done: !!(dashProfile.home_city), label: 'Add your home location', benefit: 'Accurate leave-by times for set.', href: '/profile' },
-    { done: ratecalcVisited, label: 'Try the rate calculator', benefit: "Know what you're owed, bumps included.", href: '/rate-calculator' },
     { done: Object.keys(progress).length > 0, label: 'Explore training', benefit: 'Background to acting — level up.', href: section1Modules[0] ? `/module/${section1Modules[0].id}` : '/dashboard' },
   ]
-  const checklistDoneCount = checklistItems.filter(i => i.done).length
-  const showChecklist = !checklistDismissed && checklistDoneCount < 6
+  const exploreItems = [
+    { done: gamesVisited, label: 'Checkout Games', benefit: 'Learn the lingo, have fun.', href: '/games' },
+    { done: simulatorVisited, label: 'Set Etiquette Simulator', benefit: 'Know how to act on set.', href: '/simulator' },
+    { done: headshotVisited, label: 'Try Headshot AI', benefit: 'Get your headshot rated.', href: '/headshot-analyzer' },
+    { done: !!(dashProfile.has_residency_docs), label: 'Upload Residency Doc', benefit: 'Prove your work eligibility.', href: '/residency' },
+  ]
+  const checklistDoneCount = [...essentialItems, ...exploreItems].filter(i => i.done).length
+  const showChecklist = !checklistDismissed && checklistDoneCount < 9
 
   return (
     <>
@@ -1013,7 +1023,7 @@ export default function Dashboard() {
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '10px' }}>
                 <div>
                   <div style={{ fontWeight: '800', fontSize: '15px', color: '#1a1a2e' }}>Set yourself up for more bookings</div>
-                  <div style={{ fontSize: '12px', color: '#d97706', fontWeight: '700', marginTop: '2px' }}>{checklistDoneCount} of 6 complete</div>
+                  <div style={{ fontSize: '12px', color: '#d97706', fontWeight: '700', marginTop: '2px' }}>{checklistDoneCount} of 9 complete</div>
                 </div>
                 <button
                   onClick={() => { setChecklistDismissed(true); localStorage.setItem('sr-checklist-dismissed', '1') }}
@@ -1022,10 +1032,13 @@ export default function Dashboard() {
                 >×</button>
               </div>
               <div style={{ height: '5px', backgroundColor: '#f3f4f6', borderRadius: '3px', marginBottom: '16px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${(checklistDoneCount / 6) * 100}%`, backgroundColor: '#F59E0B', borderRadius: '3px', transition: 'width 0.4s ease' }} />
+                <div style={{ height: '100%', width: `${(checklistDoneCount / 9) * 100}%`, backgroundColor: '#F59E0B', borderRadius: '3px', transition: 'width 0.4s ease' }} />
               </div>
+
+              {/* Essentials */}
+              <div style={{ fontSize: '11px', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>Essentials</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {checklistItems.map((item, i) => (
+                {essentialItems.map((item, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={{ width: '24px', height: '24px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: item.done ? '#dcfce7' : '#f9fafb', border: `2px solid ${item.done ? '#22c55e' : '#d1d5db'}` }}>
                       {item.done && <span style={{ color: '#16a34a', fontSize: '13px', fontWeight: '900', lineHeight: 1 }}>✓</span>}
@@ -1042,6 +1055,38 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
+
+              {/* Explore more — collapsible */}
+              <button
+                onClick={() => setExploreExpanded(e => !e)}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', padding: '14px 0 0', width: '100%', textAlign: 'left' }}
+              >
+                <span style={{ fontSize: '11px', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Explore more</span>
+                <span style={{ fontSize: '9px', color: '#9ca3af' }}>{exploreExpanded ? '▲' : '▼'}</span>
+                <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#d97706', fontWeight: '600' }}>
+                  {exploreItems.filter(i => i.done).length}/{exploreItems.length}
+                </span>
+              </button>
+              {exploreExpanded && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
+                  {exploreItems.map((item, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ width: '24px', height: '24px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: item.done ? '#dcfce7' : '#f9fafb', border: `2px solid ${item.done ? '#22c55e' : '#d1d5db'}` }}>
+                        {item.done && <span style={{ color: '#16a34a', fontSize: '13px', fontWeight: '900', lineHeight: 1 }}>✓</span>}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ fontSize: '13px', fontWeight: '600', color: item.done ? '#9ca3af' : '#1a1a2e', textDecoration: item.done ? 'line-through' : 'none' }}>{item.label}</span>
+                        {!item.done && <div style={{ fontSize: '11px', color: '#374151', marginTop: '1px' }}>{item.benefit}</div>}
+                      </div>
+                      {!item.done && (
+                        <Link href={item.href} style={{ flexShrink: 0, fontSize: '12px', fontWeight: '700', color: '#1a1a2e', backgroundColor: '#F59E0B', padding: '5px 14px', borderRadius: '6px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                          Go →
+                        </Link>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

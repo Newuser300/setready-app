@@ -27,6 +27,8 @@ export default function HeadshotAnalyzer() {
   const [creditsLoaded, setCreditsLoaded] = useState(false);
   const [purchasing, setPurchasing] = useState<'1' | '5' | null>(null);
 
+  useEffect(() => { localStorage.setItem('sr-headshot-visited', '1') }, [])
+
   // Load credits on mount
   useEffect(() => {
     fetch('/api/headshot-analyzer/credits', { credentials: 'include' })
