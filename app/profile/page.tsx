@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { getRegionFromCity, FILM_REGIONS } from '@/lib/film-regions'
 import { compressImage } from '@/lib/compress-image'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -212,12 +211,6 @@ export default function ProfilePage() {
   const [instagram, setInstagram] = useState('')
   const [imdbUrl, setImdbUrl] = useState('')
 
-  // Home location (for commute estimates)
-  const [homeCity, setHomeCity] = useState('')
-  const [homeRegionCode, setHomeRegionCode] = useState('')
-  const [homeLat, setHomeLat] = useState<number | null>(null)
-  const [homeLng, setHomeLng] = useState<number | null>(null)
-
   // ── Auth + load ─────────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -303,10 +296,7 @@ export default function ProfilePage() {
         setPreferredContact(p.preferred_contact || 'email')
         setInstagram(p.instagram || '')
         setImdbUrl(p.imdb_url || '')
-        setHomeCity(p.home_city || '')
-        setHomeRegionCode(p.home_region_code || '')
-        setHomeLat(p.home_lat ?? null)
-        setHomeLng(p.home_lng ?? null)
+
       }
     }
     setLoading(false)
@@ -486,10 +476,7 @@ export default function ProfilePage() {
         preferred_contact: preferredContact,
         instagram: instagram || null,
         imdb_url: imdbUrl || null,
-        home_city: homeCity || null,
-        home_region_code: homeRegionCode || null,
-        home_lat: homeLat,
-        home_lng: homeLng,
+
         headshot_url: headshotUrl?.startsWith('https://') ? headshotUrl : null,
         photo_full_body_front: photoFront?.startsWith('https://') ? photoFront : null,
         photo_additional: photoExtra?.startsWith('https://') ? photoExtra : null,
@@ -1090,43 +1077,6 @@ export default function ProfilePage() {
           <div>
             <FL>IMDb URL (optional)</FL>
             <input type="url" value={imdbUrl} onChange={e => setImdbUrl(e.target.value)} placeholder="https://www.imdb.com/name/nm..." style={inp} />
-          </div>
-          <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #f0f0f0' }}>
-            <FL>Home City <span style={{ fontWeight: 400, color: '#9ca3af' }}>(for commute estimates)</span></FL>
-            <input
-              type="text"
-              value={homeCity}
-              onChange={e => setHomeCity(e.target.value)}
-              onBlur={() => {
-                const trimmed = homeCity.trim()
-                if (!trimmed) { setHomeRegionCode(''); setHomeLat(null); setHomeLng(null); return }
-                const code = getRegionFromCity(trimmed)
-                if (code && FILM_REGIONS[code]) {
-                  setHomeRegionCode(code)
-                  setHomeLat(FILM_REGIONS[code].latitudeCenter)
-                  setHomeLng(FILM_REGIONS[code].longitudeCenter)
-                } else {
-                  setHomeRegionCode('')
-                  setHomeLat(null)
-                  setHomeLng(null)
-                }
-              }}
-              placeholder="e.g. Vancouver, Burnaby, Surrey..."
-              style={inp}
-            />
-            {homeRegionCode && FILM_REGIONS[homeRegionCode] && (
-              <p style={{ fontSize: '12px', color: '#22c55e', margin: '4px 0 0' }}>
-                Detected region: {FILM_REGIONS[homeRegionCode].name}
-              </p>
-            )}
-            {homeCity.trim() && !homeRegionCode && (
-              <p style={{ fontSize: '12px', color: '#F59E0B', margin: '4px 0 0' }}>
-                City not recognized — commute estimates unavailable
-              </p>
-            )}
-            <p style={{ fontSize: '11px', color: '#9ca3af', margin: '4px 0 0' }}>
-              Used to estimate your leave-by time for confirmed bookings.
-            </p>
           </div>
         </CS>
 
