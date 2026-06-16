@@ -687,30 +687,38 @@ export default function AdminPage() {
 
   async function fetchTesterCodes() {
     setTesterCodesLoading(true);
-    const { data } = await supabase.from('tester_codes').select('*').order('created_at', { ascending: false });
-    if (data) setTesterCodes(data);
+    const res = await fetch('/api/admin/tester-codes', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (res.ok) setTesterCodes(await res.json());
     setTesterCodesLoading(false);
   }
 
   async function generateTesterCode() {
     setGeneratingTesterCode(true);
     const code = randomCode();
-    const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase.from('tester_codes').insert({
-      code, created_by: user?.id || null, is_active: true, max_uses: 1, uses_count: 0,
+    const res = await fetch('/api/admin/tester-codes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ code }),
     });
-    if (!error) {
+    if (res.ok) {
       toast.success('Code generated: ' + code);
       fetchTesterCodes();
     } else {
-      toast.error('Error: ' + error.message);
+      const d = await res.json();
+      toast.error(d.error || 'Failed to generate code');
     }
     setGeneratingTesterCode(false);
   }
 
   async function deleteTesterCode(id: string) {
     if (!confirm('Delete this code?')) return;
-    await supabase.from('tester_codes').delete().eq('id', id);
+    await fetch('/api/admin/tester-codes', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ id }),
+    });
     fetchTesterCodes();
   }
 
@@ -723,15 +731,19 @@ export default function AdminPage() {
 
   async function fetchEtransferRequests() {
     setEtransferLoading(true);
-    const { data } = await supabase.from('etransfer_requests').select('*').order('created_at', { ascending: false });
-    if (data) setEtransferRequests(data);
+    const res = await fetch('/api/admin/etransfer', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (res.ok) setEtransferRequests(await res.json());
     setEtransferLoading(false);
   }
 
   async function markEtransferProcessed(id: string) {
-    await supabase.from('etransfer_requests')
-      .update({ status: 'processed', processed_at: new Date().toISOString() })
-      .eq('id', id);
+    await fetch('/api/admin/etransfer', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ id }),
+    });
     fetchEtransferRequests();
   }
 
