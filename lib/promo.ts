@@ -71,39 +71,44 @@ export async function applyPromoCode(
   const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString()
 
   if (promo.type === 'training' || (promo.type === 'press' && userType === 'performer')) {
-    await supabaseAdmin.from('users').update({
+    const { error } = await supabaseAdmin.from('users').update({
       promo_training_expires_at: expiresAt,
       promo_code_used: code.toUpperCase(),
     }).eq('id', entityId)
+    if (error) return { success: false, error: error.message }
   }
 
   if (promo.type === 'agent_pro' || (promo.type === 'press' && userType === 'agent')) {
-    await supabaseAdmin.from('agencies').update({
+    const { error } = await supabaseAdmin.from('agencies').update({
       is_pro: true,
       pro_expires_at: expiresAt,
       pro_promo_code: code.toUpperCase(),
     }).eq('id', entityId)
+    if (error) return { success: false, error: error.message }
   }
 
   if (promo.type === 'casting_pro' || (promo.type === 'press' && userType === 'casting_director')) {
-    await supabaseAdmin.from('casting_directors').update({
+    const { error } = await supabaseAdmin.from('casting_directors').update({
       is_pro: true,
       pro_expires_at: expiresAt,
       pro_promo_code: code.toUpperCase(),
     }).eq('id', entityId)
+    if (error) return { success: false, error: error.message }
   }
 
-  await supabaseAdmin.from('promo_code_uses').insert({
+  const { error: insertError } = await supabaseAdmin.from('promo_code_uses').insert({
     code_id: promo.id,
     user_id: entityId,
     user_type: userType,
     expires_at: expiresAt,
   })
+  if (insertError) return { success: false, error: insertError.message }
 
-  await supabaseAdmin
+  const { error: countError } = await supabaseAdmin
     .from('promo_codes')
     .update({ uses_count: promo.uses_count + 1 })
     .eq('id', promo.id)
+  if (countError) return { success: false, error: countError.message }
 
   return { success: true }
 }
