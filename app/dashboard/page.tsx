@@ -657,13 +657,16 @@ export default function Dashboard() {
 
       const { data } = await supabase
         .from('users')
-        .select('section1_completed, subscription_status, section2_unlocked, referral_code, referred_by, subscription_started_at')
+        .select('section1_completed, subscription_status, promo_training_expires_at, section2_unlocked, referral_code, referred_by, subscription_started_at')
         .eq('id', user.id)
         .single();
 
       if (data) {
         setSection2Visible(data.section1_completed || false);
-        setIsSubscribed(data.subscription_status === 'active');
+        const hasPromo = data.promo_training_expires_at
+          ? new Date(data.promo_training_expires_at) > new Date()
+          : false;
+        setIsSubscribed(data.subscription_status === 'active' || hasPromo);
         setSection2Unlocked(data.section2_unlocked || false);
         setUserHasReferral(!!data.referred_by);
         setSubscriptionStartedAt(data.subscription_started_at || null);
