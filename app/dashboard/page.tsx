@@ -1018,7 +1018,7 @@ export default function Dashboard() {
             <div style={{ backgroundColor: 'white', borderRadius: '14px', border: '1px solid #e5e7eb', padding: '18px 20px', marginBottom: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '10px' }}>
                 <div>
-                  <div style={{ fontWeight: '800', fontSize: '15px', color: '#1a1a2e' }}>Set yourself up for more bookings</div>
+                  <div style={{ fontWeight: '800', fontSize: '15px', color: '#1a1a2e' }}>Explore what SetReady offers!</div>
                   <div style={{ fontSize: '12px', color: '#d97706', fontWeight: '700', marginTop: '2px' }}>{checklistDoneCount} of 7 complete</div>
                 </div>
                 <button
