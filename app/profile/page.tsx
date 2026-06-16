@@ -1200,7 +1200,7 @@ export default function ProfilePage() {
                       onClick={() => { setShowPromoInput(true); setPromoError('') }}
                       style={{ background: 'none', border: 'none', color: '#F59E0B', fontSize: '12px', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
                     >
-                      Have a promo code?
+                      Have a photo promo code?
                     </button>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
