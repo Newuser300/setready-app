@@ -69,7 +69,7 @@ type AdminRecord = {
   added_at: string;
 };
 
-type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools' | 'admins' | 'casting' | 'promos' | 'messages' | 'tester_codes' | 'photo_promo';
+type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools' | 'casting' | 'promos' | 'messages' | 'tester_codes' | 'photo_promo';
 
 interface TesterCode {
   id: string;
@@ -931,7 +931,6 @@ export default function AdminPage() {
     { key: 'referrals',    label: 'Referrals',     icon: '💰' },
     { key: 'certificates', label: 'Certificates',  icon: '🏆' },
     { key: 'tools',        label: 'Tools',         icon: '🔧' },
-    { key: 'admins',       label: 'Admins',        icon: '🔐' },
     { key: 'casting',      label: 'Casting',       icon: '🎬' },
     { key: 'promos',       label: 'Access Codes',  icon: '🎟️' },
     { key: 'messages',     label: 'Messages',      icon: '📬' },
@@ -965,7 +964,7 @@ export default function AdminPage() {
               key={item.key}
               onClick={() => {
                 setActiveSection(item.key);
-                if (item.key === 'admins' && envAdmins.length === 0 && dbAdmins.length === 0) {
+                if (item.key === 'tools' && envAdmins.length === 0 && dbAdmins.length === 0) {
                   loadAdmins();
                 }
                 if (item.key === 'certificates') {
@@ -1425,17 +1424,6 @@ export default function AdminPage() {
                 </button>
               </div>
 
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                <div className="text-3xl mb-3">🎁</div>
-                <h3 className="font-bold text-gray-800 mb-1">Assign Referral Code</h3>
-                <p className="text-sm text-gray-500 mb-4">Manually apply a referral code to a user who missed it at signup.</p>
-                <Link
-                  href="/admin/referrals"
-                  className="block w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition text-center"
-                >
-                  Go to Referrals Panel →
-                </Link>
-              </div>
 
               <div className="bg-white rounded-xl border border-red-200 shadow-sm p-6">
                 <div className="text-3xl mb-3">🗑️</div>
@@ -1495,162 +1483,160 @@ export default function AdminPage() {
                 ))}
               </div>
             </div>
-          </div>
-        )}
 
-        {/* ══════════════════════════════════════
-            ADMINS
-        ══════════════════════════════════════ */}
-        {activeSection === 'admins' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-gray-800">Admin Management</h2>
-                <p className="text-sm text-gray-500">Manage who has access to this admin panel.</p>
-              </div>
-              <button
-                onClick={loadAdmins}
-                disabled={adminsLoading}
-                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition disabled:opacity-50"
-              >
-                {adminsLoading ? '...' : '↻ Refresh'}
-              </button>
-            </div>
+            <hr className="border-gray-200" />
 
-            {adminMgmtMessage && (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">{adminMgmtMessage}</div>
-            )}
-            {adminMgmtError && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{adminMgmtError}</div>
-            )}
-
-            {/* Primary (env) admins */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="px-5 py-4 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
-                <span className="text-lg">🔒</span>
+            {/* Admin Management sub-section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-gray-800 text-sm">Primary Admins</h3>
-                  <p className="text-xs text-gray-500">Configured via ADMIN_EMAILS environment variable. Cannot be removed here.</p>
+                  <h3 className="text-lg font-bold text-gray-800">🔐 Admin Management</h3>
+                  <p className="text-sm text-gray-500">Manage who has access to this admin panel.</p>
                 </div>
+                <button
+                  onClick={loadAdmins}
+                  disabled={adminsLoading}
+                  className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition disabled:opacity-50"
+                >
+                  {adminsLoading ? '...' : '↻ Refresh'}
+                </button>
               </div>
-              {adminsLoading ? (
-                <div className="px-5 py-6 text-center text-gray-400 text-sm">Loading...</div>
-              ) : envAdmins.length === 0 ? (
-                <div className="px-5 py-6 text-center text-gray-400 text-sm">No primary admins found.</div>
-              ) : (
-                <ul className="divide-y divide-gray-100">
-                  {envAdmins.map(email => (
-                    <li key={email} className="px-5 py-3 flex items-center justify-between">
-                      <span className="text-sm text-gray-800 font-medium">{email}</span>
-                      <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold">Primary Admin</span>
-                    </li>
-                  ))}
-                </ul>
+
+              {adminMgmtMessage && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">{adminMgmtMessage}</div>
               )}
-            </div>
-
-            {/* Dynamic (db) admins */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="px-5 py-4 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
-                <span className="text-lg">🔐</span>
-                <div>
-                  <h3 className="font-bold text-gray-800 text-sm">Additional Admins</h3>
-                  <p className="text-xs text-gray-500">Stored in the admin_emails table. Can be added or removed below.</p>
-                </div>
-              </div>
-              {adminsLoading ? (
-                <div className="px-5 py-6 text-center text-gray-400 text-sm">Loading...</div>
-              ) : dbAdmins.length === 0 ? (
-                <div className="px-5 py-6 text-center text-gray-400 text-sm">No additional admins yet.</div>
-              ) : (
-                <ul className="divide-y divide-gray-100">
-                  {dbAdmins.map(record => (
-                    <li key={record.id} className="px-5 py-3 flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm text-gray-800 font-medium">{record.email}</p>
-                        <p className="text-xs text-gray-400">
-                          Added by {record.added_by} · {new Date(record.added_at).toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {confirmRemoveId === record.id ? (
-                          <>
-                            <span className="text-xs text-red-600 font-semibold">Remove this admin?</span>
-                            <button
-                              onClick={() => removeAdmin(record.id)}
-                              disabled={removingAdminId === record.id}
-                              className="px-3 py-1 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition disabled:opacity-50"
-                            >
-                              {removingAdminId === record.id ? '...' : 'Yes, Remove'}
-                            </button>
-                            <button
-                              onClick={() => setConfirmRemoveId(null)}
-                              className="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition"
-                            >
-                              Cancel
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => { setConfirmRemoveId(record.id); setAdminMgmtMessage(''); setAdminMgmtError(''); }}
-                            className="px-3 py-1 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-semibold hover:bg-red-100 transition"
-                          >
-                            Remove
-                          </button>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+              {adminMgmtError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{adminMgmtError}</div>
               )}
-            </div>
 
-            {/* Add new admin */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-              <h3 className="font-bold text-gray-800 mb-1 text-sm">Add New Admin</h3>
-              <p className="text-xs text-gray-500 mb-4">Grant admin access to another email address. They must already have a SetReady account.</p>
-
-              {!confirmNewAdmin ? (
-                <div className="flex gap-2">
-                  <input
-                    type="email"
-                    value={newAdminEmail}
-                    onChange={e => setNewAdminEmail(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && newAdminEmail.trim()) setConfirmNewAdmin(true); }}
-                    placeholder="admin@example.com"
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                  <button
-                    onClick={() => { if (newAdminEmail.trim()) setConfirmNewAdmin(true); }}
-                    disabled={!newAdminEmail.trim()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50"
-                  >
-                    Add Admin
-                  </button>
-                </div>
-              ) : (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
-                  <p className="text-sm text-amber-900 font-semibold">
-                    Grant admin access to <span className="font-bold">{newAdminEmail}</span>?
-                  </p>
-                  <p className="text-xs text-amber-700">This will give them full access to this admin panel.</p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={addAdmin}
-                      disabled={addingAdmin}
-                      className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 transition disabled:opacity-50"
-                    >
-                      {addingAdmin ? 'Adding...' : 'Confirm — Add Admin'}
-                    </button>
-                    <button
-                      onClick={() => { setConfirmNewAdmin(false); setAdminMgmtError(''); }}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
-                    >
-                      Cancel
-                    </button>
+              {/* Primary (env) admins */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-5 py-4 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
+                  <span className="text-lg">🔒</span>
+                  <div>
+                    <h4 className="font-bold text-gray-800 text-sm">Primary Admins</h4>
+                    <p className="text-xs text-gray-500">Configured via ADMIN_EMAILS environment variable. Cannot be removed here.</p>
                   </div>
                 </div>
-              )}
+                {adminsLoading ? (
+                  <div className="px-5 py-6 text-center text-gray-400 text-sm">Loading...</div>
+                ) : envAdmins.length === 0 ? (
+                  <div className="px-5 py-6 text-center text-gray-400 text-sm">No primary admins found.</div>
+                ) : (
+                  <ul className="divide-y divide-gray-100">
+                    {envAdmins.map(email => (
+                      <li key={email} className="px-5 py-3 flex items-center justify-between">
+                        <span className="text-sm text-gray-800 font-medium">{email}</span>
+                        <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold">Primary Admin</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Dynamic (db) admins */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-5 py-4 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
+                  <span className="text-lg">🔐</span>
+                  <div>
+                    <h4 className="font-bold text-gray-800 text-sm">Additional Admins</h4>
+                    <p className="text-xs text-gray-500">Stored in the admin_emails table. Can be added or removed below.</p>
+                  </div>
+                </div>
+                {adminsLoading ? (
+                  <div className="px-5 py-6 text-center text-gray-400 text-sm">Loading...</div>
+                ) : dbAdmins.length === 0 ? (
+                  <div className="px-5 py-6 text-center text-gray-400 text-sm">No additional admins yet.</div>
+                ) : (
+                  <ul className="divide-y divide-gray-100">
+                    {dbAdmins.map(record => (
+                      <li key={record.id} className="px-5 py-3 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm text-gray-800 font-medium">{record.email}</p>
+                          <p className="text-xs text-gray-400">
+                            Added by {record.added_by} · {new Date(record.added_at).toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {confirmRemoveId === record.id ? (
+                            <>
+                              <span className="text-xs text-red-600 font-semibold">Remove this admin?</span>
+                              <button
+                                onClick={() => removeAdmin(record.id)}
+                                disabled={removingAdminId === record.id}
+                                className="px-3 py-1 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition disabled:opacity-50"
+                              >
+                                {removingAdminId === record.id ? '...' : 'Yes, Remove'}
+                              </button>
+                              <button
+                                onClick={() => setConfirmRemoveId(null)}
+                                className="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => { setConfirmRemoveId(record.id); setAdminMgmtMessage(''); setAdminMgmtError(''); }}
+                              className="px-3 py-1 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-semibold hover:bg-red-100 transition"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Add new admin */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+                <h4 className="font-bold text-gray-800 mb-1 text-sm">Add New Admin</h4>
+                <p className="text-xs text-gray-500 mb-4">Grant admin access to another email address. They must already have a SetReady account.</p>
+
+                {!confirmNewAdmin ? (
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={newAdminEmail}
+                      onChange={e => setNewAdminEmail(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && newAdminEmail.trim()) setConfirmNewAdmin(true); }}
+                      placeholder="admin@example.com"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                    <button
+                      onClick={() => { if (newAdminEmail.trim()) setConfirmNewAdmin(true); }}
+                      disabled={!newAdminEmail.trim()}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+                    >
+                      Add Admin
+                    </button>
+                  </div>
+                ) : (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
+                    <p className="text-sm text-amber-900 font-semibold">
+                      Grant admin access to <span className="font-bold">{newAdminEmail}</span>?
+                    </p>
+                    <p className="text-xs text-amber-700">This will give them full access to this admin panel.</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={addAdmin}
+                        disabled={addingAdmin}
+                        className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 transition disabled:opacity-50"
+                      >
+                        {addingAdmin ? 'Adding...' : 'Confirm — Add Admin'}
+                      </button>
+                      <button
+                        onClick={() => { setConfirmNewAdmin(false); setAdminMgmtError(''); }}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
