@@ -69,7 +69,7 @@ type AdminRecord = {
   added_at: string;
 };
 
-type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools' | 'admins' | 'casting' | 'promos' | 'messages' | 'tester_codes' | 'etransfer' | 'photo_promo';
+type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools' | 'admins' | 'casting' | 'promos' | 'messages' | 'tester_codes' | 'photo_promo';
 
 interface TesterCode {
   id: string;
@@ -83,13 +83,6 @@ interface TesterCode {
   uses_count: number | null;
 }
 
-interface ETransferRequest {
-  id: string;
-  email: string;
-  status: string;
-  created_at: string;
-  processed_at: string | null;
-}
 
 interface PhotoPromoCode {
   id: string;
@@ -242,9 +235,6 @@ export default function AdminPage() {
   const [testerCodesLoading, setTesterCodesLoading] = useState(false);
   const [generatingTesterCode, setGeneratingTesterCode] = useState(false);
 
-  // E-transfer requests
-  const [etransferRequests, setEtransferRequests] = useState<ETransferRequest[]>([]);
-  const [etransferLoading, setEtransferLoading] = useState(false);
 
   // Photo promo codes
   const [photoCodes, setPhotoCodes] = useState<PhotoPromoCode[]>([]);
@@ -727,26 +717,6 @@ export default function AdminPage() {
     toast.success('Copied to clipboard');
   }
 
-  // ── E-transfer helpers ─────────────────────────────────────────────────────
-
-  async function fetchEtransferRequests() {
-    setEtransferLoading(true);
-    const res = await fetch('/api/admin/etransfer', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (res.ok) setEtransferRequests(await res.json());
-    setEtransferLoading(false);
-  }
-
-  async function markEtransferProcessed(id: string) {
-    await fetch('/api/admin/etransfer', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-      body: JSON.stringify({ id }),
-    });
-    fetchEtransferRequests();
-  }
-
   // ── Photo promo helpers ────────────────────────────────────────────────────
 
   async function fetchPhotoCodes() {
@@ -966,7 +936,6 @@ export default function AdminPage() {
     { key: 'promos',       label: 'Access Codes',  icon: '🎟️' },
     { key: 'messages',     label: 'Messages',      icon: '📬' },
     { key: 'tester_codes', label: 'Tester Codes',  icon: '🔑' },
-    { key: 'etransfer',    label: 'E-Transfer',     icon: '💸' },
     { key: 'photo_promo',  label: 'Photo Promos',   icon: '📸' },
   ];
 
@@ -1015,9 +984,6 @@ export default function AdminPage() {
                 }
                 if (item.key === 'tester_codes') {
                   fetchTesterCodes();
-                }
-                if (item.key === 'etransfer') {
-                  fetchEtransferRequests();
                 }
                 if (item.key === 'photo_promo') {
                   fetchPhotoCodes();
@@ -1961,64 +1927,6 @@ export default function AdminPage() {
                 <div className="px-5 py-3 border-t border-gray-100 text-xs text-gray-500">
                   Total: {testerCodes.length} · Available: {testerCodes.filter(c => c.is_active && (c.uses_count || 0) < (c.max_uses || 1)).length} · Used: {testerCodes.filter(c => !c.is_active || (c.uses_count || 0) >= (c.max_uses || 1)).length}
                 </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ══════════════════════════════════════
-            E-TRANSFER REQUESTS
-        ══════════════════════════════════════ */}
-        {activeSection === 'etransfer' && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-bold text-gray-800">💸 E-Transfer Requests</h2>
-
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-              <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-gray-700">All Requests</h3>
-                <button onClick={fetchEtransferRequests} className="text-xs text-blue-600 font-semibold hover:underline">
-                  {etransferLoading ? 'Loading...' : 'Refresh'}
-                </button>
-              </div>
-              {etransferRequests.length === 0 ? (
-                <div className="p-8 text-center text-gray-400 text-sm">No e-transfer requests yet.</div>
-              ) : (
-                <table className="min-w-full text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Email</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Status</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Requested</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Processed</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {etransferRequests.map(r => (
-                      <tr key={r.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-gray-800 font-medium">{r.email}</td>
-                        <td className="px-4 py-3">
-                          {r.status === 'pending'
-                            ? <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-yellow-50 text-yellow-700">Pending</span>
-                            : <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-green-50 text-green-700">Processed</span>
-                          }
-                        </td>
-                        <td className="px-4 py-3 text-gray-500 text-xs">{new Date(r.created_at).toLocaleString()}</td>
-                        <td className="px-4 py-3 text-gray-500 text-xs">{r.processed_at ? new Date(r.processed_at).toLocaleString() : '—'}</td>
-                        <td className="px-4 py-3">
-                          {r.status === 'pending' && (
-                            <button
-                              onClick={() => markEtransferProcessed(r.id)}
-                              className="text-xs px-3 py-1 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium"
-                            >
-                              Mark Processed
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
               )}
             </div>
           </div>
