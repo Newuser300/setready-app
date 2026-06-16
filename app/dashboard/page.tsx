@@ -467,15 +467,19 @@ export default function Dashboard() {
 
   // Admin check runs in parallel — not part of the checkUser() critical path
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    ;(async () => {
+      const { data: { session } } = await supabase.auth.getSession()
       if (!session?.access_token) return
-      fetch('/api/admin/check', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      })
-        .then(r => r.ok ? r.json() : { isAdmin: false })
-        .then(d => setIsAdmin(d.isAdmin === true))
-        .catch(() => setIsAdmin(false))
-    })
+      try {
+        const r = await fetch('/api/admin/check', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+        const d = r.ok ? await r.json() : { isAdmin: false }
+        setIsAdmin(d.isAdmin === true)
+      } catch {
+        setIsAdmin(false)
+      }
+    })()
   }, [])
 
   useEffect(() => {
