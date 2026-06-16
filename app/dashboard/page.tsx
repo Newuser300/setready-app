@@ -655,7 +655,7 @@ export default function Dashboard() {
       }
       setUser(user)
 
-      const { data } = await supabase
+      const { data } = await browserClient
         .from('users')
         .select('section1_completed, subscription_status, promo_training_expires_at, section2_unlocked, referral_code, referred_by, subscription_started_at')
         .eq('id', user.id)
