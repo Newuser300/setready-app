@@ -71,28 +71,31 @@ export async function applyPromoCode(
   const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString()
 
   if (promo.type === 'training' || (promo.type === 'press' && userType === 'performer')) {
-    const { error } = await supabaseAdmin.from('users').update({
+    const { error } = await supabaseAdmin.from('users').upsert({
+      id: entityId,
       promo_training_expires_at: expiresAt,
       promo_code_used: code.toUpperCase(),
-    }).eq('id', entityId)
+    }, { onConflict: 'id' })
     if (error) return { success: false, error: error.message }
   }
 
   if (promo.type === 'agent_pro' || (promo.type === 'press' && userType === 'agent')) {
-    const { error } = await supabaseAdmin.from('agencies').update({
+    const { error } = await supabaseAdmin.from('agencies').upsert({
+      id: entityId,
       is_pro: true,
       pro_expires_at: expiresAt,
       pro_promo_code: code.toUpperCase(),
-    }).eq('id', entityId)
+    }, { onConflict: 'id' })
     if (error) return { success: false, error: error.message }
   }
 
   if (promo.type === 'casting_pro' || (promo.type === 'press' && userType === 'casting_director')) {
-    const { error } = await supabaseAdmin.from('casting_directors').update({
+    const { error } = await supabaseAdmin.from('casting_directors').upsert({
+      id: entityId,
       is_pro: true,
       pro_expires_at: expiresAt,
       pro_promo_code: code.toUpperCase(),
-    }).eq('id', entityId)
+    }, { onConflict: 'id' })
     if (error) return { success: false, error: error.message }
   }
 
