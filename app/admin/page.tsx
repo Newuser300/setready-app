@@ -94,12 +94,26 @@ interface PhotoPromoCode {
   created_at: string;
 }
 
+interface FinanceEntry {
+  id: string;
+  entry_type: 'revenue' | 'expense';
+  category: string;
+  amount: number;
+  description: string | null;
+  entry_date: string;
+  created_by: string | null;
+  created_at: string;
+}
+
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 function randomCode(): string {
   let code = '';
   for (let i = 0; i < 8; i++) code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
   return code;
 }
+
+const EXPENSE_CATS = ['operational', 'maintenance', 'subscriptions', 'employees', 'misc'] as const;
+const REVENUE_CATS = ['subscriptions', 'photo_slots', 'courses', 'other'] as const;
 
 export default function AdminPage() {
   const router = useRouter();
@@ -241,6 +255,20 @@ export default function AdminPage() {
   const [photoCodesLoading, setPhotoCodesLoading] = useState(false);
   const [generatingPhotoCode, setGeneratingPhotoCode] = useState(false);
   const [customPhotoCode, setCustomPhotoCode] = useState('');
+
+  // Finance entries
+  const [financeEntries, setFinanceEntries] = useState<FinanceEntry[]>([]);
+  const [financeLoading, setFinanceLoading] = useState(false);
+  const [financeSubmitting, setFinanceSubmitting] = useState(false);
+  const [financeForm, setFinanceForm] = useState<{
+    entry_type: 'revenue' | 'expense'; category: string; amount: string; description: string; entry_date: string;
+  }>({ entry_type: 'revenue', category: '', amount: '', description: '', entry_date: new Date().toISOString().slice(0, 10) });
+  const [editingFinanceId, setEditingFinanceId] = useState<string | null>(null);
+  const [editFinanceForm, setEditFinanceForm] = useState<{
+    entry_type: 'revenue' | 'expense'; category: string; amount: string; description: string; entry_date: string;
+  }>({ entry_type: 'revenue', category: '', amount: '', description: '', entry_date: '' });
+  const [financeYear, setFinanceYear] = useState('');
+  const [financeMonth, setFinanceMonth] = useState('');
 
   useEffect(() => { loadData(); }, []);
 
@@ -758,6 +786,77 @@ export default function AdminPage() {
     fetchPhotoCodes();
   }
 
+  // ── Finance helpers ────────────────────────────────────────────────────────
+
+  async function fetchFinanceEntries() {
+    setFinanceLoading(true);
+    const res = await fetch('/api/admin/finance', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (res.ok) setFinanceEntries(await res.json());
+    setFinanceLoading(false);
+  }
+
+  async function addFinanceEntry() {
+    if (!financeForm.category || !financeForm.amount || !financeForm.entry_date) return;
+    setFinanceSubmitting(true);
+    const res = await fetch('/api/admin/finance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({
+        entry_type: financeForm.entry_type,
+        category: financeForm.category,
+        amount: parseFloat(financeForm.amount),
+        description: financeForm.description.trim() || null,
+        entry_date: financeForm.entry_date,
+      }),
+    });
+    if (res.ok) {
+      toast.success('Entry added');
+      setFinanceForm(f => ({ ...f, category: '', amount: '', description: '' }));
+      fetchFinanceEntries();
+    } else {
+      const d = await res.json();
+      toast.error(d.error || 'Failed to add entry');
+    }
+    setFinanceSubmitting(false);
+  }
+
+  async function updateFinanceEntry(id: string) {
+    setFinanceSubmitting(true);
+    const res = await fetch('/api/admin/finance', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({
+        id,
+        entry_type: editFinanceForm.entry_type,
+        category: editFinanceForm.category,
+        amount: parseFloat(editFinanceForm.amount),
+        description: editFinanceForm.description.trim() || null,
+        entry_date: editFinanceForm.entry_date,
+      }),
+    });
+    if (res.ok) {
+      toast.success('Entry updated');
+      setEditingFinanceId(null);
+      fetchFinanceEntries();
+    } else {
+      const d = await res.json();
+      toast.error(d.error || 'Failed to update entry');
+    }
+    setFinanceSubmitting(false);
+  }
+
+  async function deleteFinanceEntry(id: string) {
+    if (!confirm('Delete this entry?')) return;
+    await fetch('/api/admin/finance', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ id }),
+    });
+    setFinanceEntries(prev => prev.filter(e => e.id !== id));
+  }
+
   // ── Messages helpers ───────────────────────────────────────────────────────
 
   async function loadAdminSentMessages() {
@@ -925,17 +1024,31 @@ export default function AdminPage() {
     [1, 2, 3, 4, 5].every(n => u.certs.some(c => c.module_id === n))
   ).length;
 
+  // Finance computed values
+  const financeFiltered = financeEntries.filter(e => {
+    if (financeYear && e.entry_date.slice(0, 4) !== financeYear) return false;
+    if (financeMonth && e.entry_date.slice(5, 7) !== financeMonth) return false;
+    return true;
+  });
+  const financeTotalRevenue = financeFiltered.filter(e => e.entry_type === 'revenue').reduce((s, e) => s + Number(e.amount), 0);
+  const financeTotalExpenses = financeFiltered.filter(e => e.entry_type === 'expense').reduce((s, e) => s + Number(e.amount), 0);
+  const financeNet = financeTotalRevenue - financeTotalExpenses;
+  const financeExpenseByCat = (EXPENSE_CATS as readonly string[])
+    .map(cat => ({ cat, total: financeFiltered.filter(e => e.entry_type === 'expense' && e.category === cat).reduce((s, e) => s + Number(e.amount), 0) }))
+    .filter(x => x.total > 0);
+  const financeAvailYears = [...new Set([new Date().getFullYear().toString(), ...financeEntries.map(e => e.entry_date.slice(0, 4))])].sort((a, b) => b.localeCompare(a));
+
   const navItems: { key: NavSection; label: string; icon: string }[] = [
-    { key: 'overview',     label: 'Overview',     icon: '📊' },
-    { key: 'users',        label: 'Users',         icon: '👥' },
-    { key: 'referrals',    label: 'Referrals',     icon: '💰' },
-    { key: 'certificates', label: 'Certificates',  icon: '🏆' },
+    { key: 'overview',     label: 'Overview',      icon: '📊' },
     { key: 'tools',        label: 'Tools',         icon: '🔧' },
+    { key: 'users',        label: 'Users',         icon: '👥' },
     { key: 'casting',      label: 'Casting',       icon: '🎬' },
+    { key: 'certificates', label: 'Certificates',  icon: '🏆' },
     { key: 'promos',       label: 'Access Codes',  icon: '🎟️' },
-    { key: 'messages',     label: 'Messages',      icon: '📬' },
     { key: 'tester_codes', label: 'Tester Codes',  icon: '🔑' },
-    { key: 'photo_promo',  label: 'Photo Promos',   icon: '📸' },
+    { key: 'photo_promo',  label: 'Photo Promos',  icon: '📸' },
+    { key: 'referrals',    label: 'Referrals',     icon: '💰' },
+    { key: 'messages',     label: 'Messages',      icon: '📬' },
   ];
 
   return (
@@ -964,8 +1077,9 @@ export default function AdminPage() {
               key={item.key}
               onClick={() => {
                 setActiveSection(item.key);
-                if (item.key === 'tools' && envAdmins.length === 0 && dbAdmins.length === 0) {
-                  loadAdmins();
+                if (item.key === 'tools') {
+                  if (envAdmins.length === 0 && dbAdmins.length === 0) loadAdmins();
+                  if (financeEntries.length === 0) fetchFinanceEntries();
                 }
                 if (item.key === 'certificates') {
                   loadCertificates();
@@ -1481,6 +1595,276 @@ export default function AdminPage() {
                     {link.icon} {link.label} ↗
                   </a>
                 ))}
+              </div>
+            </div>
+
+            <hr className="border-gray-200" />
+
+            {/* Revenue & Expenses sub-section */}
+            <div className="space-y-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">💵 Revenue & Expenses</h3>
+                  <p className="text-sm text-gray-500">Track income and operating costs.</p>
+                </div>
+                <button
+                  onClick={fetchFinanceEntries}
+                  disabled={financeLoading}
+                  className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition disabled:opacity-50"
+                >
+                  {financeLoading ? '...' : '↻ Refresh'}
+                </button>
+              </div>
+
+              {/* Date filter */}
+              <div className="flex flex-wrap gap-2 items-center">
+                <select
+                  value={financeYear}
+                  onChange={e => setFinanceYear(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white"
+                >
+                  <option value="">All Years</option>
+                  {financeAvailYears.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+                <select
+                  value={financeMonth}
+                  onChange={e => setFinanceMonth(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white"
+                >
+                  <option value="">All Months</option>
+                  {(['01','02','03','04','05','06','07','08','09','10','11','12'] as const).map((m, i) => (
+                    <option key={m} value={m}>{new Date(2000, i).toLocaleString('default', { month: 'long' })}</option>
+                  ))}
+                </select>
+                {(financeYear || financeMonth) && (
+                  <button
+                    onClick={() => { setFinanceYear(''); setFinanceMonth(''); }}
+                    className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                  >
+                    Clear filter
+                  </button>
+                )}
+                <span className="text-xs text-gray-400">{financeFiltered.length} entries</span>
+              </div>
+
+              {/* Summary cards */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                  <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-1">Revenue</p>
+                  <p className="text-2xl font-bold text-green-800">${financeTotalRevenue.toFixed(2)}</p>
+                </div>
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                  <p className="text-xs font-semibold text-red-700 uppercase tracking-wide mb-1">Expenses</p>
+                  <p className="text-2xl font-bold text-red-800">${financeTotalExpenses.toFixed(2)}</p>
+                </div>
+                <div className={`${financeNet >= 0 ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200'} border rounded-xl p-4`}>
+                  <p className={`text-xs font-semibold ${financeNet >= 0 ? 'text-blue-700' : 'text-orange-700'} uppercase tracking-wide mb-1`}>
+                    Net {financeNet >= 0 ? 'Profit' : 'Loss'}
+                  </p>
+                  <p className={`text-2xl font-bold ${financeNet >= 0 ? 'text-blue-800' : 'text-orange-800'}`}>
+                    {financeNet >= 0 ? '+' : ''}${Math.abs(financeNet).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Expense breakdown by category */}
+              {financeExpenseByCat.length > 0 && (
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+                  <h4 className="font-bold text-gray-800 mb-3 text-sm">Expenses by Category</h4>
+                  <div className="space-y-2">
+                    {financeExpenseByCat.map(({ cat, total }) => (
+                      <div key={cat} className="flex items-center justify-between py-1 gap-4">
+                        <span className="text-sm text-gray-700 capitalize w-28 shrink-0">{cat}</span>
+                        <div className="flex-1 bg-gray-100 rounded-full h-1.5">
+                          <div
+                            className="bg-red-400 rounded-full h-1.5"
+                            style={{ width: `${Math.min(100, (total / financeTotalExpenses) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-semibold text-red-700 w-20 text-right shrink-0">${total.toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Add entry form */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+                <h4 className="font-bold text-gray-800 mb-3 text-sm">Add Entry</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Type</label>
+                    <select
+                      value={financeForm.entry_type}
+                      onChange={e => setFinanceForm(f => ({ ...f, entry_type: e.target.value as 'revenue' | 'expense', category: '' }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                    >
+                      <option value="revenue">Revenue</option>
+                      <option value="expense">Expense</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Category</label>
+                    <select
+                      value={financeForm.category}
+                      onChange={e => setFinanceForm(f => ({ ...f, category: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                    >
+                      <option value="">Select category</option>
+                      {(financeForm.entry_type === 'expense' ? EXPENSE_CATS : REVENUE_CATS).map(c => (
+                        <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Amount ($)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={financeForm.amount}
+                      onChange={e => setFinanceForm(f => ({ ...f, amount: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Date</label>
+                    <input
+                      type="date"
+                      value={financeForm.entry_date}
+                      onChange={e => setFinanceForm(f => ({ ...f, entry_date: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Description (optional)</label>
+                    <input
+                      type="text"
+                      value={financeForm.description}
+                      onChange={e => setFinanceForm(f => ({ ...f, description: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                      placeholder="e.g. Stripe payout, monthly Vercel bill"
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={addFinanceEntry}
+                  disabled={financeSubmitting || !financeForm.category || !financeForm.amount || !financeForm.entry_date}
+                  className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+                >
+                  {financeSubmitting ? 'Adding...' : 'Add Entry'}
+                </button>
+              </div>
+
+              {/* Entries list */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-5 py-4 bg-gray-50 border-b border-gray-200">
+                  <h4 className="font-bold text-gray-800 text-sm">Entries ({financeFiltered.length})</h4>
+                </div>
+                {financeLoading ? (
+                  <div className="px-5 py-8 text-center text-gray-400 text-sm">Loading...</div>
+                ) : financeFiltered.length === 0 ? (
+                  <div className="px-5 py-8 text-center text-gray-400 text-sm">No entries yet.</div>
+                ) : (
+                  <ul className="divide-y divide-gray-100">
+                    {financeFiltered.map(entry => (
+                      <li key={entry.id} className="px-5 py-3">
+                        {editingFinanceId === entry.id ? (
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-2 gap-2">
+                              <select
+                                value={editFinanceForm.entry_type}
+                                onChange={e => setEditFinanceForm(f => ({ ...f, entry_type: e.target.value as 'revenue' | 'expense', category: '' }))}
+                                className="px-2 py-1.5 border border-gray-200 rounded text-sm"
+                              >
+                                <option value="revenue">Revenue</option>
+                                <option value="expense">Expense</option>
+                              </select>
+                              <select
+                                value={editFinanceForm.category}
+                                onChange={e => setEditFinanceForm(f => ({ ...f, category: e.target.value }))}
+                                className="px-2 py-1.5 border border-gray-200 rounded text-sm"
+                              >
+                                <option value="">Category</option>
+                                {(editFinanceForm.entry_type === 'expense' ? EXPENSE_CATS : REVENUE_CATS).map(c => (
+                                  <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>
+                                ))}
+                              </select>
+                              <input
+                                type="number"
+                                value={editFinanceForm.amount}
+                                onChange={e => setEditFinanceForm(f => ({ ...f, amount: e.target.value }))}
+                                className="px-2 py-1.5 border border-gray-200 rounded text-sm"
+                                placeholder="Amount"
+                              />
+                              <input
+                                type="date"
+                                value={editFinanceForm.entry_date}
+                                onChange={e => setEditFinanceForm(f => ({ ...f, entry_date: e.target.value }))}
+                                className="px-2 py-1.5 border border-gray-200 rounded text-sm"
+                              />
+                              <input
+                                type="text"
+                                value={editFinanceForm.description}
+                                onChange={e => setEditFinanceForm(f => ({ ...f, description: e.target.value }))}
+                                className="col-span-2 px-2 py-1.5 border border-gray-200 rounded text-sm"
+                                placeholder="Description"
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => updateFinanceEntry(entry.id)}
+                                disabled={financeSubmitting}
+                                className="px-3 py-1 bg-blue-600 text-white rounded text-xs font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+                              >
+                                {financeSubmitting ? '...' : 'Save'}
+                              </button>
+                              <button
+                                onClick={() => setEditingFinanceId(null)}
+                                className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${entry.entry_type === 'revenue' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                  {entry.entry_type}
+                                </span>
+                                <span className="text-xs text-gray-500 capitalize">{entry.category.replace(/_/g, ' ')}</span>
+                                <span className="text-xs text-gray-400">{entry.entry_date}</span>
+                              </div>
+                              {entry.description && (
+                                <p className="text-sm text-gray-700 mt-0.5 truncate">{entry.description}</p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className={`text-sm font-bold ${entry.entry_type === 'revenue' ? 'text-green-700' : 'text-red-700'}`}>
+                                {entry.entry_type === 'revenue' ? '+' : '-'}${Number(entry.amount).toFixed(2)}
+                              </span>
+                              <button
+                                onClick={() => { setEditingFinanceId(entry.id); setEditFinanceForm({ entry_type: entry.entry_type, category: entry.category, amount: String(entry.amount), description: entry.description || '', entry_date: entry.entry_date }); }}
+                                className="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => deleteFinanceEntry(entry.id)}
+                                className="px-2 py-1 text-xs text-red-500 hover:bg-red-50 rounded transition"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
 
