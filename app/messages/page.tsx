@@ -94,7 +94,6 @@ const FILTER_TABS = [
   { key: 'casting_request', label: '🎬 Casting' },
   { key: 'booking_confirmed', label: '📋 Bookings' },
   { key: 'agent', label: '🏢 From Agent' },
-  { key: 'casting_director', label: '🎥 From Casting' },
   { key: 'system_alert', label: '⚙️ System' },
 ]
 
@@ -118,7 +117,7 @@ export default function MessagesPage() {
     setLoading(true)
     const params = new URLSearchParams()
     if (tab === 'unread') params.set('unread', 'true')
-    else if (tab === 'agent' || tab === 'casting_director') {
+    else if (tab === 'agent' || tab === 'casting_director' || tab === 'casting_request') {
       // Fetch all, filter client-side by sender_type
     } else if (tab) {
       params.set('type', tab)
@@ -129,7 +128,7 @@ export default function MessagesPage() {
       const data = await res.json()
       let msgs: Message[] = data.messages || []
       if (tab === 'agent') msgs = msgs.filter(m => m.sender_type === 'agent')
-      if (tab === 'casting_director') msgs = msgs.filter(m => m.sender_type === 'casting_director')
+      if (tab === 'casting_request') msgs = msgs.filter(m => m.type === 'casting_request' || m.sender_type === 'casting_director')
       setMessages(msgs)
       setUnreadCount(data.unread_count || 0)
     }

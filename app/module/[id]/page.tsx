@@ -127,12 +127,12 @@ export default function ModulePage() {
         // GET PAYMENT STATUS
         const { data: userData } = await supabase
           .from('users')
-          .select('subscription_status, section2_unlocked')
+          .select('subscription_status, section2_unlocked, promo_training_expires_at')
           .eq('id', user.id)
           .single();
         
         if (userData) {
-          setIsSubscribed(userData.subscription_status === 'active');
+          setIsSubscribed(userData.subscription_status === 'active' || (!!userData.promo_training_expires_at && new Date(userData.promo_training_expires_at) > new Date()));
           setSection2Unlocked(userData.section2_unlocked || false);
         }
       }
