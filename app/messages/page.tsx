@@ -128,7 +128,7 @@ export default function MessagesPage() {
       const data = await res.json()
       let msgs: Message[] = data.messages || []
       if (tab === 'agent') msgs = msgs.filter(m => m.sender_type === 'agent')
-      if (tab === 'casting_request') msgs = msgs.filter(m => m.type === 'casting_request' || m.sender_type === 'casting_director')
+      if (tab === 'casting_request') msgs = msgs.filter(m => m.message_type === 'casting_request' || m.sender_type === 'casting_director')
       setMessages(msgs)
       setUnreadCount(data.unread_count || 0)
     }
