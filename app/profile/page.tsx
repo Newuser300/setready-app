@@ -237,6 +237,7 @@ export default function ProfilePage() {
         setUnionStatus(p.union_status || '')
         setMemberNumber(p.member_number || '')
         setAgencyId(p.agency_id || '')
+        setHeadshotBroken(false)
         setHeadshotUrl(p.headshot_url || '')
         setVideoReelUrl(p.video_reel_url || '')
         setPhotoFront(p.photo_full_body_front || '')
@@ -414,6 +415,7 @@ export default function ProfilePage() {
         if (hRes.ok) {
           const hData = await hRes.json()
           if (hData.headshot_url) {
+            setHeadshotBroken(false)
             setHeadshotUrl(hData.headshot_url)
             setHeadshotFile(null)
           }

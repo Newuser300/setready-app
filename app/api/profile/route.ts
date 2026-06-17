@@ -127,6 +127,13 @@ export async function POST(req: Request) {
     Object.entries(rest).filter(([_, v]) => v !== undefined)
   )
 
+  // Never overwrite an existing headshot with a non-URL value (e.g. a blob: preview or null).
+  // The headshot is saved separately via the multipart upload path above, so if this JSON
+  // save does not carry a real https URL, we leave the stored headshot_url untouched.
+  if (!(typeof cleanBody.headshot_url === 'string' && cleanBody.headshot_url.startsWith('https://'))) {
+    delete cleanBody.headshot_url
+  }
+
   const [{ data, error }, { error: userError }] = await Promise.all([
     supabaseAdmin
       .from('performer_profiles')
