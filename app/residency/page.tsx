@@ -76,6 +76,8 @@ export default function ResidencyPage() {
   const [selectedEmailDocs, setSelectedEmailDocs] = useState<Set<string>>(new Set());
   const [emailMessage, setEmailMessage] = useState('');
   const [emailLoading, setEmailLoading] = useState(false);
+  // Fallback: full email text shown on-screen if no mail app opens
+  const [emailFallbackText, setEmailFallbackText] = useState('');
 
   useEffect(() => { loadPage(); }, []);
 
@@ -254,6 +256,7 @@ export default function ResidencyPage() {
     if (selectedEmailDocs.size === 0) { toast.error('Please select at least one document.'); return; }
 
     setEmailLoading(true);
+    setEmailFallbackText('');
     try {
       const selected = docs.filter(d => selectedEmailDocs.has(d.id));
 
@@ -270,7 +273,8 @@ export default function ResidencyPage() {
         })
       );
 
-      const subject = encodeURIComponent(`Proof of Residency — ${emailUserName}`);
+      const subjectText = `Proof of Residency — ${emailUserName}`;
+      const subject = encodeURIComponent(subjectText);
 
       let body = emailMessage + '\n\n';
       body += '——\nPROOF OF RESIDENCY DOCUMENTS:\n\n';
@@ -280,15 +284,55 @@ export default function ResidencyPage() {
           : doc.document_type;
         body += `Document ${i + 1} — ${label}:\n${signedUrl}\n\n`;
       });
-      body += 'Note: These links expire in 1 hour for security.';
+      body += 'Note: These links expire in 72 hours for security.';
 
+      // Build a plain-text version of the whole email for the on-screen fallback
+      // and for copy-to-clipboard, in case no mail app opens.
+      const fullPlainEmail =
+        `To: ${productionEmail.trim()}\n` +
+        `Subject: ${subjectText}\n\n` +
+        body;
+      setEmailFallbackText(fullPlainEmail);
+
+      // Try to copy the full email to the clipboard so the user always has it,
+      // regardless of whether a mail app launches.
+      let copied = false;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(fullPlainEmail);
+          copied = true;
+        }
+      } catch {
+        copied = false;
+      }
+
+      // Attempt to open the device's default mail app.
       const mailtoUrl = `mailto:${encodeURIComponent(productionEmail.trim())}?subject=${subject}&body=${encodeURIComponent(body)}`;
       window.location.href = mailtoUrl;
-      toast.success('Email app opened — review and send!');
+
+      if (copied) {
+        toast.success('If your email app did not open, the full message was copied — paste it into your email.');
+      } else {
+        toast('If your email app did not open, copy the message shown below and paste it into your email.', { icon: 'ℹ️' });
+      }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to prepare email.');
     } finally {
       setEmailLoading(false);
+    }
+  }
+
+  async function copyFallbackEmail() {
+    if (!emailFallbackText) return;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(emailFallbackText);
+        toast.success('Email copied to clipboard.');
+      } else {
+        toast.error('Could not copy automatically — select the text and copy it manually.');
+      }
+    } catch {
+      toast.error('Could not copy automatically — select the text and copy it manually.');
     }
   }
 
@@ -738,7 +782,11 @@ export default function ResidencyPage() {
                   <p className="text-sm font-semibold text-blue-900 mb-1">How this works</p>
                   <p className="text-sm text-blue-800 leading-relaxed">
                     This will open your email app with the documents linked. The production can click
-                    each link to view your documents. <strong>Links expire after 1 hour</strong> for security.
+                    each link to view your documents. <strong>Links expire after 72 hours</strong> for security.
+                  </p>
+                  <p className="text-sm text-blue-800 leading-relaxed mt-2">
+                    If your email app does not open automatically, use the <strong>Copy Email</strong> button
+                    that appears after you tap the button below, then paste it into your email program.
                   </p>
                 </div>
 
@@ -758,6 +806,30 @@ export default function ResidencyPage() {
                     '📧 Open Email with Documents'
                   )}
                 </button>
+
+                {/* Fallback: shown after an attempt so the user can copy/paste manually */}
+                {emailFallbackText && (
+                  <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-gray-700">
+                        Email app didn&apos;t open? Copy the message and paste it into your email:
+                      </p>
+                      <button
+                        onClick={copyFallbackEmail}
+                        className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition whitespace-nowrap"
+                      >
+                        📋 Copy Email
+                      </button>
+                    </div>
+                    <textarea
+                      readOnly
+                      value={emailFallbackText}
+                      rows={10}
+                      onFocus={e => e.currentTarget.select()}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-xs font-mono resize-none bg-gray-50"
+                    />
+                  </div>
+                )}
               </>
             )}
           </div>

@@ -25,7 +25,7 @@ export async function POST(request: Request) {
 
   const { data, error } = await supabaseAdmin.storage
     .from('residency_docs')
-    .createSignedUrl(fileUrl, 3600);
+    .createSignedUrl(fileUrl, 259200);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ signedUrl: data.signedUrl });
