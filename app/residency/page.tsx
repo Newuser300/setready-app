@@ -81,15 +81,16 @@ export default function ResidencyPage() {
 
   useEffect(() => { loadPage(); }, []);
 
+  // Always fetch a current token from the shared supabase client.
+  async function getToken(): Promise<string> {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token ?? accessToken;
+  }
+
   async function loadPage() {
-    const { createBrowserClient } = await import('@supabase/ssr')
-    const browserClient = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-    const { data: { user }, error } = await browserClient.auth.getUser()
+    const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) { router.push('/auth/sign-in'); return; }
-    const { data: { session } } = await browserClient.auth.getSession()
+    const { data: { session } } = await supabase.auth.getSession();
     setAccessToken(session?.access_token ?? '');
     setUserId(user.id);
 
@@ -154,6 +155,15 @@ export default function ResidencyPage() {
     }
     setUploading(true);
     try {
+      // Fetch a fresh token from the shared client right before saving.
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token ?? accessToken;
+      if (!token) {
+        toast.error('Your session expired. Please sign in again.');
+        router.push('/auth/sign-in');
+        return;
+      }
+
       const sanitized = selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const filePath = `${userId}/${Date.now()}_${sanitized}`;
 
@@ -171,7 +181,7 @@ export default function ResidencyPage() {
 
       const res = await fetch('/api/residency', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           document_type: docType,
           document_label: docLabel.trim() || null,
@@ -193,7 +203,7 @@ export default function ResidencyPage() {
       setDocLabel('');
       setDocNotes('');
       clearFile();
-      await loadDocs(accessToken);
+      await loadDocs(token);
     } finally {
       setUploading(false);
     }
@@ -202,9 +212,10 @@ export default function ResidencyPage() {
   async function handleView(doc: ResidencyDoc) {
     const toastId = toast.loading('Generating secure link...');
     try {
+      const token = await getToken();
       const res = await fetch('/api/residency/signed-url', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ fileUrl: doc.file_url }),
       });
       const data = await res.json();
@@ -220,16 +231,17 @@ export default function ResidencyPage() {
   async function handleDelete(id: string) {
     setDeletingId(id);
     try {
+      const token = await getToken();
       const res = await fetch(`/api/residency?id=${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || 'Delete failed.'); return; }
       toast.success('Document deleted.');
       setConfirmDeleteId(null);
       setSelectedEmailDocs(prev => { const n = new Set(prev); n.delete(id); return n; });
-      await loadDocs(accessToken);
+      await loadDocs(token);
     } finally {
       setDeletingId(null);
     }
@@ -258,13 +270,14 @@ export default function ResidencyPage() {
     setEmailLoading(true);
     setEmailFallbackText('');
     try {
+      const token = await getToken();
       const selected = docs.filter(d => selectedEmailDocs.has(d.id));
 
       const urlResults = await Promise.all(
         selected.map(async doc => {
           const res = await fetch('/api/residency/signed-url', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ fileUrl: doc.file_url }),
           });
           const data = await res.json();
@@ -286,16 +299,12 @@ export default function ResidencyPage() {
       });
       body += 'Note: These links expire in 72 hours for security.';
 
-      // Build a plain-text version of the whole email for the on-screen fallback
-      // and for copy-to-clipboard, in case no mail app opens.
       const fullPlainEmail =
         `To: ${productionEmail.trim()}\n` +
         `Subject: ${subjectText}\n\n` +
         body;
       setEmailFallbackText(fullPlainEmail);
 
-      // Try to copy the full email to the clipboard so the user always has it,
-      // regardless of whether a mail app launches.
       let copied = false;
       try {
         if (navigator.clipboard && window.isSecureContext) {
@@ -306,7 +315,6 @@ export default function ResidencyPage() {
         copied = false;
       }
 
-      // Attempt to open the device's default mail app.
       const mailtoUrl = `mailto:${encodeURIComponent(productionEmail.trim())}?subject=${subject}&body=${encodeURIComponent(body)}`;
       window.location.href = mailtoUrl;
 

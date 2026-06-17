@@ -548,6 +548,9 @@ export default function AvailabilityPage() {
               <p style={{ color: '#9ca3af', margin: 0, fontSize: '13px', lineHeight: '1.4' }}>
                 Keep your calendar updated so agents and casting directors can find you
               </p>
+              <p style={{ color: '#22c55e', margin: '6px 0 0', fontSize: '12px', fontWeight: '600', lineHeight: '1.4' }}>
+                ✓ Dates save automatically when you select them — no save button needed
+              </p>
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0, paddingTop: '24px' }}>
               {saving && (
