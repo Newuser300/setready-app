@@ -33,9 +33,10 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json();
+  const cleaned = Object.fromEntries(Object.entries(body).map(([k, v]) => [k, v === '' ? null : v]));
   const { data, error } = await admin
     .from('film_contacts')
-    .insert([{ ...body, user_id: user.id }])
+    .insert([{ ...cleaned, user_id: user.id }])
     .select()
     .single();
 
@@ -47,7 +48,8 @@ export async function PUT(req: Request) {
   const user = await getUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { id, ...rest } = await req.json();
+  const { id, ...raw } = await req.json();
+  const rest = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, v === '' ? null : v]));
   const { data, error } = await admin
     .from('film_contacts')
     .update(rest)

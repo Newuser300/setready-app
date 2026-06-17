@@ -34,15 +34,15 @@ type Certificate = {
 
 // Module icons
 const moduleIcons: Record<number, string> = {
-  1: '??',
-  2: '??',
-  3: '??',
-  4: '???',
-  5: '??',
-  6: '??',
-  7: '??',
-  8: '??',
-  9: '??',
+  1: '🎬',
+  2: '🎭',
+  3: '⚖️',
+  4: '🛡️',
+  5: '💰',
+  6: '📖',
+  7: '🎤',
+  8: '🎪',
+  9: '🏆',
 };
 
 // Module subtitle descriptions
@@ -58,7 +58,7 @@ const moduleSubtitles: Record<number, string> = {
   9: 'Advanced technique for working actors',
 };
 
-// Short display names � overrides the DB title for Section 2 modules
+// Short display names — overrides the DB title for Section 2 modules
 const moduleTitleOverrides: Record<number, string> = {
   6: 'Foundation',
   7: 'Audition Technique',
@@ -67,26 +67,26 @@ const moduleTitleOverrides: Record<number, string> = {
 };
 
 const quickActions = [
-  { icon: '??', label: 'My Profile', action: 'link' as const, href: '/profile' },
-  { icon: '??', label: 'Film Set Terms', action: 'link' as const, href: '/glossary' },
-  { icon: '??', label: 'What to Wear', action: 'link' as const, href: '/clothing' },
-  { icon: '??', label: 'Residency Docs', action: 'link' as const, href: '/residency' },
-  { icon: '??', label: 'Work Log', action: 'link' as const, href: '/work-log' },
-  { icon: '??', label: 'Contacts', action: 'link' as const, href: '/contacts' },
-  { icon: '??', label: 'Set Etiquette Simulator', action: 'link' as const, href: '/simulator' },
-  { icon: '??', label: 'Rate Calculator', action: 'link' as const, href: '/rate-calculator' },
-  { icon: '??', label: 'Know Your Rights', action: 'external' as const, href: 'https://ubcpactra.ca/agreements/' },
-  { icon: '??', label: 'My Referrals', action: 'link' as const, href: '/referrals' },
-  { icon: '??', label: 'Productions in BC', action: 'external' as const, href: 'https://ubcpactra.ca/production-list/' },
-  { icon: '??', label: 'Find Agencies', action: 'link' as const, href: '/agencies' },
-  { icon: '??', label: 'Agency Click', action: 'modal' as const, modal: 'agencyClick' },
-  { icon: '??', label: 'SetReady Casting', action: 'link' as const, href: '/casting-portal' },
-  { icon: '??', label: 'Availability', action: 'link' as const, href: '/availability' },
-  { icon: '??', label: 'Voucher Wallet', action: 'link' as const, href: '/voucher-wallet' },
-  { icon: '??', label: 'Headshot AI', action: 'link' as const, href: '/headshot-analyzer' },
-  { icon: '??', label: 'Games', action: 'link' as const, href: '/games' },
-  { icon: '??', label: 'Messages', action: 'link' as const, href: '/messages' },
-  { icon: '?', label: 'Support SetReady', action: 'link' as const, href: '/donate' },
+  { icon: '👤', label: 'My Profile', action: 'link' as const, href: '/profile' },
+  { icon: '📖', label: 'Film Set Terms', action: 'link' as const, href: '/glossary' },
+  { icon: '👔', label: 'What to Wear', action: 'link' as const, href: '/clothing' },
+  { icon: '📋', label: 'Residency Docs', action: 'link' as const, href: '/residency' },
+  { icon: '📋', label: 'Work Log', action: 'link' as const, href: '/work-log' },
+  { icon: '👥', label: 'Contacts', action: 'link' as const, href: '/contacts' },
+  { icon: '🎭', label: 'Set Etiquette Simulator', action: 'link' as const, href: '/simulator' },
+  { icon: '💰', label: 'Rate Calculator', action: 'link' as const, href: '/rate-calculator' },
+  { icon: '⚖️', label: 'Know Your Rights', action: 'external' as const, href: 'https://ubcpactra.ca/agreements/' },
+  { icon: '🤝', label: 'My Referrals', action: 'link' as const, href: '/referrals' },
+  { icon: '🎬', label: 'Productions in BC', action: 'external' as const, href: 'https://ubcpactra.ca/production-list/' },
+  { icon: '🍁', label: 'Find Agencies', action: 'link' as const, href: '/agencies' },
+  { icon: '🎭', label: 'Agency Click', action: 'modal' as const, modal: 'agencyClick' },
+  { icon: '🎬', label: 'SetReady Casting', action: 'link' as const, href: '/casting-portal' },
+  { icon: '📅', label: 'Availability', action: 'link' as const, href: '/availability' },
+  { icon: '🎫', label: 'Voucher Wallet', action: 'link' as const, href: '/voucher-wallet' },
+  { icon: '🤳', label: 'Headshot AI', action: 'link' as const, href: '/headshot-analyzer' },
+  { icon: '🎮', label: 'Games', action: 'link' as const, href: '/games' },
+  { icon: '📬', label: 'Messages', action: 'link' as const, href: '/messages' },
+  { icon: '☕', label: 'Support SetReady', action: 'link' as const, href: '/donate' },
 ];
 
 export default function Dashboard() {
@@ -239,7 +239,6 @@ export default function Dashboard() {
   let isRefreshingProgress = false;
 
   // STRIPE PAYMENT FUNCTIONS
-  // Inner functions that actually call Stripe � called after referral check is done
   async function runSection1Checkout() {
     setLoadingPayment(true);
     try {
@@ -280,7 +279,6 @@ export default function Dashboard() {
     setLoadingPayment(false);
   }
 
-  // Public handlers � show referral modal first if user has no referred_by
   async function handleSection1Checkout() {
     if (!userHasReferral) {
       setCheckoutTarget('section1');
@@ -303,7 +301,6 @@ export default function Dashboard() {
     await runSection2Checkout();
   }
 
-  // Modal actions
   async function applyCodeAndSubscribe() {
     if (!preCheckoutCode.trim()) {
       setPreCheckoutError('Please enter a code or click "Skip and Subscribe".');
@@ -340,20 +337,18 @@ export default function Dashboard() {
     else runSection2Checkout();
   }
 
-  // CUSTOMER PORTAL FUNCTION - Updated with authorization header
   async function handleManageBilling() {
     setLoadingPortal(true);
     try {
-      // Get the current session to obtain the access token
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
-      
+
       if (!accessToken) {
         alert('Please sign in again');
         setLoadingPortal(false);
         return;
       }
-      
+
       const response = await fetch('/api/stripe/create-portal-session', {
         method: 'POST',
         headers: {
@@ -361,9 +356,9 @@ export default function Dashboard() {
           'Content-Type': 'application/json',
         },
       });
-      
+
       const result = await response.json();
-      
+
       if (result.url) {
         window.location.href = result.url;
       } else {
@@ -397,7 +392,6 @@ export default function Dashboard() {
     }
   }
 
-  // AGENCY CLICK FUNCTIONS
   function openAgencyClickModal() {
     const stored = localStorage.getItem('agencyclick_credentials');
     setAgencyClickView(stored ? 'with-saved' : 'confirm');
@@ -418,7 +412,6 @@ export default function Dashboard() {
     setAgencyClickView('confirm');
   }
 
-  // CERTIFICATES FUNCTION
   async function loadCertificates() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
@@ -438,12 +431,11 @@ export default function Dashboard() {
     checkUser();
     loadModules();
     loadCertificates();
-    
-    // Subscribe to realtime updates for user_progress
+
     const subscription = supabase
       .channel('user_progress_changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'user_progress' }, 
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'user_progress' },
         (_payload: unknown) => {
           refreshProgress();
         }
@@ -455,7 +447,6 @@ export default function Dashboard() {
     };
   }, []);
 
-  // Admin check runs in parallel � not part of the checkUser() critical path
   useEffect(() => {
     ;(async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -488,7 +479,6 @@ export default function Dashboard() {
     setHeadshotVisited(!!localStorage.getItem('sr-headshot-visited'))
   }, [])
 
-  // Capture Android install prompt + control install hero banner
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
     const bannerDismissed = localStorage.getItem('sr-install-dismissed')
@@ -514,8 +504,6 @@ export default function Dashboard() {
     return () => window.removeEventListener('resize', handler);
   }, []);
 
-  // Get current user ID to pass to child pages (like certificates)
-  // Using getSession() instead of getUser() for better reliability
   useEffect(() => {
     async function getCurrentUserId() {
       const { data: { session } } = await supabase.auth.getSession();
@@ -529,20 +517,15 @@ export default function Dashboard() {
     getCurrentUserId();
   }, []);
 
-  // NEW: Check for refresh parameter when returning from quiz
   useEffect(() => {
-    // Check if we just came back from a quiz
     const urlParams = new URLSearchParams(window.location.search);
     const refresh = urlParams.get('refresh');
     if (refresh) {
-      // Refresh the progress data
       refreshProgress();
-      // Remove the query param from URL without refreshing the page
       window.history.replaceState({}, '', '/dashboard');
     }
   }, []);
 
-  // Check for successful return from Stripe � poll until subscription is confirmed active
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     if (urlParams.get('subscribed') !== 'true') return
@@ -574,7 +557,6 @@ export default function Dashboard() {
       if (attempts < maxAttempts) {
         setTimeout(pollSubscription, 1000)
       } else {
-        // Webhook too slow � activate directly via Stripe lookup
         try {
           await fetch('/api/subscription/activate', { method: 'POST', credentials: 'include' })
         } catch {}
@@ -583,17 +565,14 @@ export default function Dashboard() {
       }
     }
 
-    // Give the webhook 2 seconds head start before first poll
     setTimeout(pollSubscription, 2000)
   }, [])
 
-  // SECTION 2 POP-UP CHECK
   async function checkSection2Completion() {
     if (!user) return;
-    
-    // Section 2 modules are 6, 7, 8, 9
+
     const section2ModuleIds = [6, 7, 8, 9];
-    
+
     const { data: { session: s2session } } = await supabase.auth.getSession();
     if (!s2session?.access_token) return;
 
@@ -603,15 +582,13 @@ export default function Dashboard() {
     const progressData: Array<{ module_id: number; completed: boolean; section2_popup_shown: boolean }> | null = s2Res.ok ? await s2Res.json() : null;
 
     if (!progressData || progressData.length === 0) return;
-    
-    // Check if all Section 2 modules are completed
+
     const allCompleted = progressData.filter(p => p.completed === true).length === 4;
     const alreadyShown = progressData.some(p => p.section2_popup_shown === true);
-    
+
     if (allCompleted && !alreadyShown) {
       setShowSection2Popup(true);
-      
-      // Mark as shown so it doesn't appear again
+
       for (const mod of progressData) {
         await supabase
           .from('user_progress')
@@ -632,8 +609,6 @@ export default function Dashboard() {
         return;
       }
       setUser(session.user);
-      // Gate fields (section1_completed, subscription_status, etc.) are set by the
-      // /api/profile fetch below, which uses service-role and bypasses RLS entirely.
     } catch (error) {
       console.error('Check user error:', error);
     } finally {
@@ -642,14 +617,13 @@ export default function Dashboard() {
   }
 
   async function refreshProgress() {
-    // Prevent concurrent calls
     if (isRefreshingProgress) {
       console.log('Already refreshing progress, skipping...');
       return;
     }
-    
+
     isRefreshingProgress = true;
-    
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
@@ -665,11 +639,10 @@ export default function Dashboard() {
       });
       setProgress(progressMap);
 
-      // Check if section 1 is now complete
       const section1ModulesList = modules.filter(m => m.section === 1);
-      const allCompleted = section1ModulesList.length > 0 && 
+      const allCompleted = section1ModulesList.length > 0 &&
         section1ModulesList.every(m => progressMap[m.id]?.completed === true);
-      
+
       if (allCompleted && !section2Visible && !isUpdating) {
         setIsUpdating(true);
         setSection2Visible(true);
@@ -679,10 +652,8 @@ export default function Dashboard() {
           .eq('id', session.user.id);
         setIsUpdating(false);
       }
-      
-      // SECTION 2 POP-UP: Check after refreshing progress
+
       if (session.user) {
-        // Temporarily set user for checkSection2Completion
         setUser(session.user);
         await checkSection2Completion();
       }
@@ -699,7 +670,7 @@ export default function Dashboard() {
       .select('*')
       .order('order_index');
     setModules(data || []);
-    
+
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       const progRes = await fetch('/api/user-progress', {
@@ -716,7 +687,7 @@ export default function Dashboard() {
       const section1ModulesList = (data || []).filter((m: Module) => m.section === 1);
       const allCompleted = section1ModulesList.length > 0 &&
         section1ModulesList.every((m: Module) => progressMap[m.id]?.completed === true);
-      
+
       if (allCompleted && !section2Visible) {
         setSection2Visible(true);
         await supabase
@@ -724,8 +695,7 @@ export default function Dashboard() {
           .update({ section1_completed: true })
           .eq('id', session.user.id);
       }
-      
-      // SECTION 2 POP-UP: Check after loading modules
+
       setUser(session.user);
       await checkSection2Completion();
     }
@@ -742,7 +712,6 @@ export default function Dashboard() {
     }
   }
 
-  // Helper function to convert percentage score to actual correct answers
   const getActualScore = (percentageScore: number | undefined): number => {
     if (!percentageScore) return 0;
     return Math.round(percentageScore * 15 / 100);
@@ -751,7 +720,7 @@ export default function Dashboard() {
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
-        <div className="text-4xl mb-4 animate-pulse">??</div>
+        <div className="text-4xl mb-4 animate-pulse">🎬</div>
         <p className="text-gray-500">Loading your dashboard...</p>
       </div>
     </div>
@@ -787,7 +756,7 @@ export default function Dashboard() {
 
   const essentialItems = [
     { done: !!(dashProfile.gender && dashProfile.date_of_birth && dashProfile.headshot_url?.startsWith('https://')), label: 'Complete your profile', benefit: 'Add your details and a headshot.', href: '/profile' },
-    { done: Object.keys(progress).length > 0, label: 'Explore training', benefit: 'Background to acting � level up.', href: '#section-1-training' },
+    { done: Object.keys(progress).length > 0, label: 'Explore training', benefit: 'Background to acting — level up.', href: '#section-1-training' },
   ]
   const exploreItems = [
     { done: gamesVisited, label: 'Checkout Games', benefit: 'Learn the lingo, have fun.', href: '/games' },
@@ -813,11 +782,10 @@ export default function Dashboard() {
               <div className="flex items-center gap-4">
                 {isAdmin && (
                   <Link href="/admin" className="text-white/60 hover:text-white transition text-xs flex items-center gap-1 border border-white/20 px-2 py-1 rounded-lg">
-                    <span>??</span>
+                    <span>🔑</span>
                     <span>Admin</span>
                   </Link>
                 )}
-                {/* Union milestone notifications */}
                 <button
                   onClick={async () => {
                     setShowUnionNotifPanel(true)
@@ -832,7 +800,7 @@ export default function Dashboard() {
                   style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'rgba(255,255,255,0.8)' }}
                   title="Union milestone notifications"
                 >
-                  <span style={{ fontSize: '20px' }}>??</span>
+                  <span style={{ fontSize: '20px' }}>🎫</span>
                   {unionUnread > 0 && (
                     <span style={{ position: 'absolute', top: 0, right: 0, backgroundColor: '#F59E0B', color: '#1a1a2e', borderRadius: '50%', width: '16px', height: '16px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', lineHeight: 1 }}>
                       {unionUnread > 9 ? '9+' : unionUnread}
@@ -844,7 +812,7 @@ export default function Dashboard() {
                   style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'rgba(255,255,255,0.8)' }}
                   title="Casting notifications"
                 >
-                  <span style={{ fontSize: '20px' }}>??</span>
+                  <span style={{ fontSize: '20px' }}>🔔</span>
                   {notifUnread > 0 && (
                     <span style={{ position: 'absolute', top: 0, right: 0, backgroundColor: '#ef4444', color: 'white', borderRadius: '50%', width: '16px', height: '16px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', lineHeight: 1 }}>
                       {notifUnread > 9 ? '9+' : notifUnread}
@@ -852,13 +820,13 @@ export default function Dashboard() {
                   )}
                 </button>
                 <Link href="/settings" className="text-white/80 hover:text-white transition text-sm flex items-center gap-1">
-                  <span className="text-xl">??</span>
+                  <span className="text-xl">⚙️</span>
                   <span className="hidden sm:inline">Settings</span>
                 </Link>
-                <div className="hidden md:block text-6xl">??</div>
+                <div className="hidden md:block text-6xl">🎭</div>
               </div>
             </div>
-            
+
             {/* Progress Card */}
             <div className="bg-white/10 rounded-2xl backdrop-blur-sm" style={{ marginTop: isMobile ? '12px' : '20px', padding: isMobile ? '12px' : '16px' }}>
               <div className="flex justify-between items-center mb-2">
@@ -871,32 +839,32 @@ export default function Dashboard() {
                 />
               </div>
               <p className="text-sm text-blue-100 mt-2">
-                {completedCount === section1Modules.length 
-                  ? '?? Amazing! You\'ve unlocked the secret section!' 
+                {completedCount === section1Modules.length
+                  ? '🎉 Amazing! You\'ve unlocked the secret section!'
                   : `${section1Modules.length - completedCount} more modules to unlock the secret section`}
               </p>
             </div>
 
-            {/* Voucher Wallet Progress Card � hidden for union members */}
+            {/* Voucher Wallet Progress Card — hidden for union members */}
             {!isUnionMember && voucherSummary && voucherSummary.totalVouchers > 0 && (
               <div style={{ marginTop: '12px', backgroundColor: 'white', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid #F59E0B', display: 'flex', alignItems: 'center', gap: '14px' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: '700', fontSize: '13px', color: '#1a1a2e', marginBottom: '6px' }}>?? Union Progress</div>
+                  <div style={{ fontWeight: '700', fontSize: '13px', color: '#1a1a2e', marginBottom: '6px' }}>🎫 Union Progress</div>
                   <div style={{ height: '6px', backgroundColor: '#f3f4f6', borderRadius: '3px', overflow: 'hidden', marginBottom: '6px' }}>
                     <div style={{ height: '100%', width: `${voucherSummary.percentComplete}%`, backgroundColor: '#F59E0B', borderRadius: '3px', transition: 'width 0.5s ease' }} />
                   </div>
                   <div style={{ fontSize: '12px', color: '#6b7280' }}>
                     {voucherSummary.qualifyingDays} of {voucherSummary.daysRequired} qualifying days
-                    {voucherSummary.isQualified && <span style={{ color: '#16a34a', fontWeight: '700', marginLeft: '6px' }}>?? You qualify!</span>}
+                    {voucherSummary.isQualified && <span style={{ color: '#16a34a', fontWeight: '700', marginLeft: '6px' }}>🎉 You qualify!</span>}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   <div style={{ fontSize: '22px', fontWeight: '900', color: '#F59E0B', lineHeight: 1 }}>{voucherSummary.percentComplete}%</div>
                   <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>{voucherSummary.unionName}</div>
                   {voucherSummary.isQualified ? (
-                    <Link href="/voucher-wallet" style={{ display: 'inline-block', marginTop: '4px', fontSize: '11px', color: '#16a34a', fontWeight: '700', textDecoration: 'none' }}>Apply Now ?</Link>
+                    <Link href="/voucher-wallet" style={{ display: 'inline-block', marginTop: '4px', fontSize: '11px', color: '#16a34a', fontWeight: '700', textDecoration: 'none' }}>Apply Now →</Link>
                   ) : (
-                    <Link href="/voucher-wallet" style={{ display: 'inline-block', marginTop: '4px', fontSize: '11px', color: '#6b7280', textDecoration: 'none' }}>View ?</Link>
+                    <Link href="/voucher-wallet" style={{ display: 'inline-block', marginTop: '4px', fontSize: '11px', color: '#6b7280', textDecoration: 'none' }}>View →</Link>
                   )}
                 </div>
               </div>
@@ -916,7 +884,7 @@ export default function Dashboard() {
                 backgroundColor: 'rgba(255,255,255,0.06)',
               }}>
                 <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', lineHeight: '1.4', flex: 1 }}>
-                  ?? Add SetReady to your home screen for quick access on set
+                  📲 Add SetReady to your home screen for quick access on set
                 </span>
                 <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                   <button
@@ -929,7 +897,7 @@ export default function Dashboard() {
                     onClick={() => { setShowInstallBanner(false); localStorage.setItem('sr-install-dismissed', 'true'); }}
                     style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '16px', padding: '0 4px', lineHeight: 1 }}
                   >
-                    ?
+                    ✕
                   </button>
                 </div>
               </div>
@@ -951,7 +919,7 @@ export default function Dashboard() {
               alignItems: 'center',
               gap: '12px',
             }}>
-              <span style={{ fontSize: '24px' }}>??</span>
+              <span style={{ fontSize: '24px' }}>🎉</span>
               <div>
                 <div style={{ fontWeight: '700', color: '#166534', fontSize: '16px' }}>
                   Subscription activated!
@@ -967,7 +935,7 @@ export default function Dashboard() {
           {castingMsgCount > 0 && (
             <div style={{ backgroundColor: '#1e1b4b', border: '2px solid #F59E0B', borderRadius: '12px', padding: '14px 20px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '22px' }}>??</span>
+                <span style={{ fontSize: '22px' }}>🎬</span>
                 <div>
                   <div style={{ fontWeight: '700', color: 'white', fontSize: '15px' }}>
                     {castingMsgCount} unread casting {castingMsgCount === 1 ? 'message' : 'messages'}
@@ -976,7 +944,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <Link href="/messages" style={{ backgroundColor: '#F59E0B', color: '#1a1a2e', padding: '8px 16px', borderRadius: '8px', textDecoration: 'none', fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap' }}>
-                View ?
+                View →
               </Link>
             </div>
           )}
@@ -993,19 +961,18 @@ export default function Dashboard() {
                   onClick={() => { setChecklistDismissed(true); localStorage.setItem('sr-checklist-dismissed', '1') }}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: '20px', lineHeight: 1, padding: '0 0 0 12px', flexShrink: 0 }}
                   aria-label="Dismiss checklist"
-                >�</button>
+                >×</button>
               </div>
               <div style={{ height: '5px', backgroundColor: '#f3f4f6', borderRadius: '3px', marginBottom: '16px', overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${(checklistDoneCount / 6) * 100}%`, backgroundColor: '#F59E0B', borderRadius: '3px', transition: 'width 0.4s ease' }} />
               </div>
 
-              {/* Essentials */}
               <div style={{ fontSize: '11px', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>Essentials</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {essentialItems.map((item, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={{ width: '24px', height: '24px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: item.done ? '#dcfce7' : '#f9fafb', border: `2px solid ${item.done ? '#22c55e' : '#d1d5db'}` }}>
-                      {item.done && <span style={{ color: '#16a34a', fontSize: '13px', fontWeight: '900', lineHeight: 1 }}>?</span>}
+                      {item.done && <span style={{ color: '#16a34a', fontSize: '13px', fontWeight: '900', lineHeight: 1 }}>✓</span>}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <span style={{ fontSize: '13px', fontWeight: '600', color: item.done ? '#9ca3af' : '#1a1a2e', textDecoration: item.done ? 'line-through' : 'none' }}>{item.label}</span>
@@ -1013,20 +980,19 @@ export default function Dashboard() {
                     </div>
                     {!item.done && (
                       <Link href={item.href} style={{ flexShrink: 0, fontSize: '12px', fontWeight: '700', color: '#1a1a2e', backgroundColor: '#F59E0B', padding: '5px 14px', borderRadius: '6px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                        Go ?
+                        Go →
                       </Link>
                     )}
                   </div>
                 ))}
               </div>
 
-              {/* Explore more � collapsible */}
               <button
                 onClick={() => setExploreExpanded(e => !e)}
                 style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', padding: '14px 0 0', width: '100%', textAlign: 'left' }}
               >
                 <span style={{ fontSize: '11px', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Explore more</span>
-                <span style={{ fontSize: '9px', color: '#9ca3af' }}>{exploreExpanded ? '?' : '?'}</span>
+                <span style={{ fontSize: '9px', color: '#9ca3af' }}>{exploreExpanded ? '▲' : '▼'}</span>
                 <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#d97706', fontWeight: '600' }}>
                   {exploreItems.filter(i => i.done).length}/{exploreItems.length}
                 </span>
@@ -1036,7 +1002,7 @@ export default function Dashboard() {
                   {exploreItems.map((item, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{ width: '24px', height: '24px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: item.done ? '#dcfce7' : '#f9fafb', border: `2px solid ${item.done ? '#22c55e' : '#d1d5db'}` }}>
-                        {item.done && <span style={{ color: '#16a34a', fontSize: '13px', fontWeight: '900', lineHeight: 1 }}>?</span>}
+                        {item.done && <span style={{ color: '#16a34a', fontSize: '13px', fontWeight: '900', lineHeight: 1 }}>✓</span>}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <span style={{ fontSize: '13px', fontWeight: '600', color: item.done ? '#9ca3af' : '#1a1a2e', textDecoration: item.done ? 'line-through' : 'none' }}>{item.label}</span>
@@ -1044,7 +1010,7 @@ export default function Dashboard() {
                       </div>
                       {!item.done && (
                         <Link href={item.href} style={{ flexShrink: 0, fontSize: '12px', fontWeight: '700', color: '#1a1a2e', backgroundColor: '#F59E0B', padding: '5px 14px', borderRadius: '6px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                          Go ?
+                          Go →
                         </Link>
                       )}
                     </div>
@@ -1104,19 +1070,17 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* iOS tip replaced by hero install banner above */}
-
           {/* PAYMENT STATUS CARDS */}
           {!isSubscribed && (
             <div id="subscribe-banner" style={{ backgroundColor: '#1a1a2e', borderRadius: '16px', padding: '16px', marginBottom: '10px' }}>
-              <p style={{ fontWeight: '700', fontSize: '15px', color: 'white', margin: '0 0 4px' }}>?? Unlock Section 1 Modules</p>
+              <p style={{ fontWeight: '700', fontSize: '15px', color: 'white', margin: '0 0 4px' }}>🔓 Unlock Section 1 Modules</p>
               <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.65)', margin: '0 0 12px' }}>Subscribe for $9.99/month to access all training modules.</p>
               <button
                 onClick={handleSubscribe}
                 disabled={subscribeLoading}
                 style={{ padding: '10px 20px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', fontSize: '14px', border: 'none', borderRadius: '10px', cursor: 'pointer', opacity: subscribeLoading ? 0.5 : 1 }}
               >
-                {subscribeLoading ? 'Processing...' : 'Subscribe Now � $9.99/month'}
+                {subscribeLoading ? 'Processing...' : 'Subscribe Now — $9.99/month'}
               </button>
             </div>
           )}
@@ -1161,7 +1125,7 @@ export default function Dashboard() {
               </div>
               {promoMsg && (
                 <p style={{ fontSize: '12px', marginTop: '6px', color: promoMsg.ok ? '#16a34a' : '#dc2626' }}>
-                  {promoMsg.ok ? '? ' : '? '}{promoMsg.text}
+                  {promoMsg.ok ? '✓ ' : '✗ '}{promoMsg.text}
                 </p>
               )}
             </div>
@@ -1170,7 +1134,7 @@ export default function Dashboard() {
           {section2Visible && !section2Unlocked && isSubscribed && (
             <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6">
               <div className="flex items-center gap-2 mb-1">
-                <p className="font-semibold text-purple-800">?? Unlock Section 2</p>
+                <p className="font-semibold text-purple-800">🎓 Unlock Section 2</p>
                 <span className="px-2 py-0.5 bg-purple-100 text-purple-500 text-xs font-semibold rounded-full border border-purple-200 uppercase tracking-wide">Optional</span>
               </div>
               <p className="text-sm text-purple-700 mb-3">You've completed Section 1! Unlock advanced acting modules for a one-time fee of $19.99.</p>
@@ -1188,7 +1152,7 @@ export default function Dashboard() {
 
           {/* Section 1 Header */}
           <div id="section-1-training" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-            <div style={{ fontSize: '28px' }}>??</div>
+            <div style={{ fontSize: '28px' }}>📚</div>
             <div>
               <div style={{ fontSize: '11px', fontWeight: '700', color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>Section 1</div>
               <h2 style={{ fontSize: isMobile ? '18px' : '22px', fontWeight: '800', color: '#1a1a2e', margin: 0 }}>Background Performer Training</h2>
@@ -1196,14 +1160,13 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Section 1 Modules � completed modules always shown; locked only if not started AND not subscribed */}
+          {/* Section 1 Modules */}
           <div style={{ display: 'grid', gap: '10px' }}>
             {section1Modules.map((module) => {
               const isCompleted = progress[module.id]?.completed;
               const score = progress[module.id]?.score;
               const actualScore = getActualScore(score);
 
-              // Non-subscriber AND not completed: show locked card
               if (!isSubscribed && !isCompleted) {
                 return (
                   <div
@@ -1215,21 +1178,20 @@ export default function Dashboard() {
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                        <div style={{ fontSize: '32px', opacity: 0.35 }}>{moduleIcons[module.module_number] || '??'}</div>
+                        <div style={{ fontSize: '32px', opacity: 0.35 }}>{moduleIcons[module.module_number] || '📘'}</div>
                         <div>
                           <div style={{ fontWeight: '700', fontSize: isMobile ? '14px' : '16px', color: '#9ca3af' }}>{module.title}</div>
                           <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>{moduleSubtitles[module.module_number] || 'Subscribe to access this module'}</div>
                         </div>
                       </div>
                       <span style={{ flexShrink: 0, backgroundColor: 'rgba(245,158,11,0.1)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)', fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '999px', whiteSpace: 'nowrap' }}>
-                        ?? Subscribe
+                        🔒 Subscribe
                       </span>
                     </div>
                   </div>
                 );
               }
 
-              // Completed OR subscribed: full clickable card
               return (
                 <Link href={`/module/${module.id}`} key={module.id} style={{ textDecoration: 'none' }}>
                   <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)', borderLeft: isCompleted ? '4px solid #22c55e' : '4px solid #F59E0B', padding: isMobile ? '12px 14px' : '18px 20px', transition: 'transform 0.15s, box-shadow 0.15s', cursor: 'pointer' }}
@@ -1238,23 +1200,23 @@ export default function Dashboard() {
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                        <div style={{ fontSize: '32px' }}>{moduleIcons[module.module_number] || '??'}</div>
+                        <div style={{ fontSize: '32px' }}>{moduleIcons[module.module_number] || '📘'}</div>
                         <div>
                           <div style={{ fontWeight: '700', fontSize: isMobile ? '14px' : '16px', color: 'white' }}>{module.title}</div>
                           <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>{moduleSubtitles[module.module_number] || 'Complete this module to advance'}</div>
                           {isCompleted && (
-                            <div style={{ fontSize: '12px', color: '#22c55e', marginTop: '4px', fontWeight: '600' }}>? Passed with {actualScore}/15</div>
+                            <div style={{ fontSize: '12px', color: '#22c55e', marginTop: '4px', fontWeight: '600' }}>✓ Passed with {actualScore}/15</div>
                           )}
                         </div>
                       </div>
                       <div style={{ flexShrink: 0 }}>
                         {isCompleted ? (
                           <span style={{ backgroundColor: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)', fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '999px', whiteSpace: 'nowrap' }}>
-                            ? Done
+                            ✓ Done
                           </span>
                         ) : (
                           <span style={{ backgroundColor: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)', fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '999px', whiteSpace: 'nowrap' }}>
-                            ?? Start
+                            📝 Start
                           </span>
                         )}
                       </div>
@@ -1265,22 +1227,20 @@ export default function Dashboard() {
             })}
           </div>
 
-
-          {/* Secret Section 2 - LOCKED until all Section 1 complete */}
+          {/* Secret Section 2 */}
           {section2Visible ? (
             <div style={{ marginTop: '32px' }}>
-              {/* Unlock banner */}
               <div style={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(245,158,11,0.4)', borderRadius: '14px', padding: '20px 24px', textAlign: 'center', marginBottom: '24px', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
-                <div style={{ fontSize: '36px', marginBottom: '8px' }}>??</div>
+                <div style={{ fontSize: '36px', marginBottom: '8px' }}>🎉</div>
                 <div style={{ fontSize: '18px', fontWeight: '800', color: '#F59E0B', marginBottom: '4px' }}>SECRET SECTION UNLOCKED!</div>
                 <div style={{ fontSize: '13px', color: '#9ca3af' }}>You've mastered the basics. Now learn to become a principal actor.</div>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                <div style={{ fontSize: '28px' }}>??</div>
+                <div style={{ fontSize: '28px' }}>🎭</div>
                 <div>
-                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>Section 2 � Optional Upgrade</div>
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>Section 2 · Optional Upgrade</div>
                   <div style={{ fontSize: isMobile ? '18px' : '22px', fontWeight: '800', color: '#1a1a2e' }}>From Background to Acting</div>
                   <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>Advanced techniques for the serious performer</div>
                 </div>
@@ -1290,7 +1250,6 @@ export default function Dashboard() {
                 {section2Modules.map((module) => {
                   const isCompleted = progress[module.id]?.completed;
 
-                  // Locked: user has not purchased Section 2
                   if (!section2Unlocked) {
                     return (
                       <div
@@ -1302,21 +1261,20 @@ export default function Dashboard() {
                       >
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                            <div style={{ fontSize: '32px', opacity: 0.35 }}>{moduleIcons[module.module_number] || '??'}</div>
+                            <div style={{ fontSize: '32px', opacity: 0.35 }}>{moduleIcons[module.module_number] || '🎯'}</div>
                             <div>
                               <div style={{ fontWeight: '700', fontSize: isMobile ? '14px' : '16px', color: '#9ca3af' }}>{moduleTitleOverrides[module.module_number] || module.title}</div>
                               <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>{moduleSubtitles[module.module_number] || 'Advanced acting techniques'}</div>
                             </div>
                           </div>
                           <span style={{ flexShrink: 0, backgroundColor: 'rgba(167,139,250,0.1)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)', fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '999px', whiteSpace: 'nowrap' }}>
-                            ?? Upgrade
+                            🔒 Upgrade
                           </span>
                         </div>
                       </div>
                     );
                   }
 
-                  // Unlocked: full clickable card
                   return (
                     <Link href={`/module/${module.id}`} key={module.id} style={{ textDecoration: 'none' }}>
                       <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)', borderLeft: isCompleted ? '4px solid #22c55e' : '4px solid #a78bfa', padding: isMobile ? '12px 14px' : '18px 20px', transition: 'transform 0.15s, box-shadow 0.15s', cursor: 'pointer' }}
@@ -1325,16 +1283,16 @@ export default function Dashboard() {
                       >
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                            <div style={{ fontSize: '32px' }}>{moduleIcons[module.module_number] || '??'}</div>
+                            <div style={{ fontSize: '32px' }}>{moduleIcons[module.module_number] || '🎯'}</div>
                             <div>
                               <div style={{ fontWeight: '700', fontSize: isMobile ? '14px' : '16px', color: 'white' }}>{moduleTitleOverrides[module.module_number] || module.title}</div>
                               <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>{moduleSubtitles[module.module_number] || 'Advanced acting techniques'}</div>
-                              {isCompleted && <div style={{ fontSize: '12px', color: '#22c55e', marginTop: '4px', fontWeight: '600' }}>? Completed</div>}
+                              {isCompleted && <div style={{ fontSize: '12px', color: '#22c55e', marginTop: '4px', fontWeight: '600' }}>✓ Completed</div>}
                             </div>
                           </div>
                           {isCompleted && (
                             <span style={{ flexShrink: 0, backgroundColor: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)', fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '999px' }}>
-                              ? Done
+                              ✓ Done
                             </span>
                           )}
                         </div>
@@ -1347,7 +1305,7 @@ export default function Dashboard() {
           ) : (
             <div style={{ marginTop: '24px' }}>
               <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)', borderLeft: '4px solid #3a3a4e', padding: '28px', textAlign: 'center' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>??</div>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔒</div>
                 <div style={{ fontWeight: '700', color: '#9ca3af', fontSize: '15px', marginBottom: '4px' }}>Secret Section Locked</div>
                 <div style={{ fontSize: '12px', color: '#6b7280' }}>Complete all 5 modules in Section 1 to unlock</div>
               </div>
@@ -1359,7 +1317,7 @@ export default function Dashboard() {
           {/* MY CERTIFICATES */}
           <div style={{ marginBottom: '28px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <div style={{ fontSize: '28px' }}>??</div>
+              <div style={{ fontSize: '28px' }}>🏆</div>
               <div>
                 <div style={{ fontSize: '18px', fontWeight: '800', color: '#1a1a2e' }}>My Certificates</div>
                 <div style={{ fontSize: '12px', color: '#9ca3af' }}>Earned completion certificates</div>
@@ -1369,7 +1327,7 @@ export default function Dashboard() {
               <div style={{ textAlign: 'center', padding: '32px', color: '#9ca3af' }}>Loading...</div>
             ) : certificates.length === 0 ? (
               <div style={{ backgroundColor: '#1a1a2e', borderRadius: '16px', padding: '32px', textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                <div style={{ fontSize: '36px', marginBottom: '8px' }}>??</div>
+                <div style={{ fontSize: '36px', marginBottom: '8px' }}>🏅</div>
                 <div style={{ color: '#9ca3af', fontSize: '14px' }}>Complete modules to earn certificates</div>
               </div>
             ) : (
@@ -1378,7 +1336,7 @@ export default function Dashboard() {
                   <div key={cert.id} style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '16px', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
                       <div style={{ fontWeight: '700', color: 'white', fontSize: '13px', lineHeight: '1.4' }}>{shortName(cert.module_name ?? cert.section_name)}</div>
-                      <span style={{ fontSize: '22px', flexShrink: 0 }}>??</span>
+                      <span style={{ fontSize: '22px', flexShrink: 0 }}>🏆</span>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <span style={{ padding: '2px 8px', backgroundColor: 'rgba(34,197,94,0.15)', color: '#22c55e', borderRadius: '20px', fontSize: '11px', fontWeight: '700' }}>{cert.score}%</span>
@@ -1386,7 +1344,7 @@ export default function Dashboard() {
                     </div>
                     {cert.pdf_url && (
                       <a href={cert.pdf_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#F59E0B', fontWeight: '600', textDecoration: 'none' }}>
-                        ?? Download PDF
+                        ⬇️ Download PDF
                       </a>
                     )}
                   </div>
@@ -1406,11 +1364,11 @@ export default function Dashboard() {
               <div style={{ textAlign: 'center', marginBottom: '20px' }}>
                 {canCancel ? (
                   <button onClick={handleManageBilling} disabled={loadingPortal} style={{ fontSize: '13px', color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
-                    {loadingPortal ? 'Loading...' : 'Manage Billing ?'}
+                    {loadingPortal ? 'Loading...' : 'Manage Billing →'}
                   </button>
                 ) : (
                   <div style={{ display: 'inline-block', backgroundColor: '#1a1a2e', borderRadius: '10px', padding: '10px 16px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '600' }}>?? 30-Day Commitment Active</div>
+                    <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '600' }}>🔒 30-Day Commitment Active</div>
                     <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>Billing available {cancelUnlockDate ? `on ${cancelUnlockDate}` : 'after 30 days'}</div>
                   </div>
                 )}
@@ -1422,7 +1380,7 @@ export default function Dashboard() {
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px', display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
             <Link href="/privacy" style={{ fontSize: '12px', color: '#6b7280', textDecoration: 'none' }}>Privacy Policy</Link>
             <Link href="/terms" style={{ fontSize: '12px', color: '#6b7280', textDecoration: 'none' }}>Terms of Service</Link>
-            <Link href="/donate" style={{ fontSize: '12px', color: '#F59E0B', fontWeight: '600', textDecoration: 'none' }}>? Support SetReady</Link>
+            <Link href="/donate" style={{ fontSize: '12px', color: '#F59E0B', fontWeight: '600', textDecoration: 'none' }}>☕ Support SetReady</Link>
             <button onClick={async () => { await supabase.auth.signOut(); router.push('/auth/sign-in'); }} style={{ fontSize: '12px', color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer' }}>
               Sign Out
             </button>
@@ -1436,13 +1394,13 @@ export default function Dashboard() {
         <div onClick={() => setShowNotifPanel(false)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 99998, display: 'flex', justifyContent: 'flex-end' }}>
           <div onClick={e => e.stopPropagation()} style={{ width: '340px', maxWidth: '90vw', backgroundColor: 'white', height: '100%', boxShadow: '-4px 0 20px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontWeight: '700', fontSize: '16px', margin: 0, color: '#1a1a2e' }}>?? Casting Updates</h3>
-              <button onClick={() => setShowNotifPanel(false)} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#9ca3af', lineHeight: 1 }}>�</button>
+              <h3 style={{ fontWeight: '700', fontSize: '16px', margin: 0, color: '#1a1a2e' }}>🔔 Casting Updates</h3>
+              <button onClick={() => setShowNotifPanel(false)} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#9ca3af', lineHeight: 1 }}>×</button>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
               {castingNotifs.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 20px', color: '#9ca3af' }}>
-                  <div style={{ fontSize: '36px', marginBottom: '8px' }}>??</div>
+                  <div style={{ fontSize: '36px', marginBottom: '8px' }}>🎬</div>
                   <p style={{ fontSize: '14px', margin: 0 }}>No casting notifications yet.</p>
                   <p style={{ fontSize: '12px', marginTop: '6px' }}>You'll be notified when an agent submits you or your status changes.</p>
                 </div>
@@ -1468,13 +1426,13 @@ export default function Dashboard() {
         <div onClick={() => setShowUnionNotifPanel(false)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 99998, display: 'flex', justifyContent: 'flex-end' }}>
           <div onClick={e => e.stopPropagation()} style={{ width: '340px', maxWidth: '90vw', backgroundColor: 'white', height: '100%', boxShadow: '-4px 0 20px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontWeight: '700', fontSize: '16px', margin: 0, color: '#1a1a2e' }}>?? Union Milestones</h3>
-              <button onClick={() => setShowUnionNotifPanel(false)} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#9ca3af', lineHeight: 1 }}>�</button>
+              <h3 style={{ fontWeight: '700', fontSize: '16px', margin: 0, color: '#1a1a2e' }}>🎫 Union Milestones</h3>
+              <button onClick={() => setShowUnionNotifPanel(false)} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#9ca3af', lineHeight: 1 }}>×</button>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
               {unionNotifs.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 20px', color: '#9ca3af' }}>
-                  <div style={{ fontSize: '36px', marginBottom: '8px' }}>??</div>
+                  <div style={{ fontSize: '36px', marginBottom: '8px' }}>🎫</div>
                   <p style={{ fontSize: '14px', margin: 0 }}>No milestones yet.</p>
                   <p style={{ fontSize: '12px', marginTop: '6px' }}>Add vouchers to your wallet to start tracking union progress.</p>
                 </div>
@@ -1490,7 +1448,7 @@ export default function Dashboard() {
                     <span style={{ fontSize: '11px', color: '#9ca3af' }}>
                       {new Date(n.created_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
                     </span>
-                    <span style={{ fontSize: '11px', color: '#F59E0B', fontWeight: '700' }}>View Wallet ?</span>
+                    <span style={{ fontSize: '11px', color: '#F59E0B', fontWeight: '700' }}>View Wallet →</span>
                   </div>
                 </div>
               ))}
@@ -1509,15 +1467,15 @@ export default function Dashboard() {
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '16px' }}>
           <div style={{ backgroundColor: 'white', borderRadius: '16px', maxWidth: '420px', width: '90%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-800">?? Agency Click</h2>
-              <button onClick={() => setShowAgencyClickModal(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">?</button>
+              <h2 className="text-xl font-bold text-gray-800">🎭 Agency Click</h2>
+              <button onClick={() => setShowAgencyClickModal(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
             </div>
 
             {agencyClickView === 'confirm' && (
               <div>
                 <p className="text-gray-600 mb-4 text-sm">Would you like to save your Agency Click credentials on this device for quick access?</p>
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-5 text-xs text-amber-800">
-                  ?? <strong>Device-only storage:</strong> Credentials are stored locally on this device only and never sent to our servers. Do not use this on shared devices.
+                  ⚠️ <strong>Device-only storage:</strong> Credentials are stored locally on this device only and never sent to our servers. Do not use this on shared devices.
                 </div>
                 <div className="flex flex-col gap-3">
                   <button
@@ -1540,7 +1498,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-gray-600 mb-4 text-sm">Enter your Agency Click credentials to save them on this device.</p>
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-xs text-amber-800">
-                  ?? <strong>Device-only:</strong> Stored in your browser's localStorage only � never sent to our servers. Clear with "Clear Credentials" when done.
+                  ⚠️ <strong>Device-only:</strong> Stored in your browser's localStorage only — never sent to our servers. Clear with "Clear Credentials" when done.
                 </div>
                 <div className="space-y-3 mb-5">
                   <input
@@ -1580,7 +1538,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-gray-600 mb-4 text-sm">You have saved Agency Click credentials on this device.</p>
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-5 text-xs text-amber-800">
-                  ?? <strong>Device-only storage:</strong> These credentials exist only in your browser's localStorage and are never sent to our servers.
+                  ⚠️ <strong>Device-only storage:</strong> These credentials exist only in your browser's localStorage and are never sent to our servers.
                 </div>
                 <div className="flex flex-col gap-3">
                   <button
@@ -1612,50 +1570,35 @@ export default function Dashboard() {
       {showSection2Popup && (
         <div style={{
           position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
+          top: 0, left: 0, right: 0, bottom: 0,
           backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 99999,
-          padding: '16px'
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 99999, padding: '16px'
         }}>
           <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            maxWidth: '400px',
-            width: '90%',
-            padding: '24px',
-            textAlign: 'center',
-            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+            backgroundColor: 'white', borderRadius: '16px',
+            maxWidth: '400px', width: '90%', padding: '24px',
+            textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
           }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>??</div>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎉</div>
             <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>CONGRATULATIONS!</h2>
             <p style={{ color: '#4b5563', marginBottom: '16px' }}>You've completed all Section 2 training modules!</p>
             <div style={{ backgroundColor: '#f3e8ff', borderRadius: '8px', padding: '16px', marginBottom: '16px', textAlign: 'left' }}>
               <p style={{ fontWeight: '600', color: '#6b21a5', marginBottom: '8px' }}>You've mastered:</p>
               <ul style={{ listStyle: 'none', padding: 0 }}>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontSize: '14px' }}>? Foundation</li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontSize: '14px' }}>? Audition Technique</li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontSize: '14px' }}>? Scene Study</li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>? Advanced Technique</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontSize: '14px' }}>✓ Foundation</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontSize: '14px' }}>✓ Audition Technique</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontSize: '14px' }}>✓ Scene Study</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>✓ Advanced Technique</li>
               </ul>
             </div>
             <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '16px' }}>You're now ready to apply these professional acting techniques.</p>
             <button
               onClick={() => setShowSection2Popup(false)}
               style={{
-                width: '100%',
-                backgroundColor: '#7c3aed',
-                color: 'white',
-                padding: '8px 16px',
-                borderRadius: '12px',
-                fontWeight: '600',
-                border: 'none',
-                cursor: 'pointer'
+                width: '100%', backgroundColor: '#7c3aed', color: 'white',
+                padding: '8px 16px', borderRadius: '12px', fontWeight: '600',
+                border: 'none', cursor: 'pointer'
               }}
             >
               Continue to Dashboard
@@ -1667,25 +1610,17 @@ export default function Dashboard() {
       {/* SUBSCRIBE TO ACCESS MODULES MODAL */}
       {showSubscribeModal && (
         <div style={{
-          position: 'fixed',
-          inset: 0,
+          position: 'fixed', inset: 0,
           backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 99999,
-          padding: '16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 99999, padding: '16px',
         }}>
           <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            padding: '32px',
-            maxWidth: '400px',
-            width: '90%',
-            textAlign: 'center',
+            backgroundColor: 'white', borderRadius: '16px', padding: '32px',
+            maxWidth: '400px', width: '90%', textAlign: 'center',
             boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
           }}>
-            <div style={{ fontSize: '48px' }}>??</div>
+            <div style={{ fontSize: '48px' }}>🔒</div>
             <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginTop: '16px', color: '#111827' }}>
               Subscribe to Access Modules
             </h2>
@@ -1696,33 +1631,22 @@ export default function Dashboard() {
               onClick={() => { setShowSubscribeModal(false); handleSection1Checkout(); }}
               disabled={loadingPayment}
               style={{
-                width: '100%',
-                marginTop: '24px',
-                padding: '14px',
-                backgroundColor: '#1a1a2e',
-                color: 'white',
-                border: 'none',
-                borderRadius: '10px',
-                fontSize: '16px',
-                fontWeight: 'bold',
+                width: '100%', marginTop: '24px', padding: '14px',
+                backgroundColor: '#1a1a2e', color: 'white', border: 'none',
+                borderRadius: '10px', fontSize: '16px', fontWeight: 'bold',
                 cursor: loadingPayment ? 'not-allowed' : 'pointer',
                 opacity: loadingPayment ? 0.6 : 1,
               }}
             >
-              {loadingPayment ? 'Processing�' : 'Subscribe Now � $9.99/month'}
+              {loadingPayment ? 'Processing…' : 'Subscribe Now — $9.99/month'}
             </button>
             <button
               onClick={() => setShowSubscribeModal(false)}
               style={{
-                width: '100%',
-                marginTop: '12px',
-                padding: '12px',
-                backgroundColor: 'transparent',
-                color: '#9ca3af',
-                border: '1px solid #e5e7eb',
-                borderRadius: '10px',
-                fontSize: '14px',
-                cursor: 'pointer',
+                width: '100%', marginTop: '12px', padding: '12px',
+                backgroundColor: 'transparent', color: '#9ca3af',
+                border: '1px solid #e5e7eb', borderRadius: '10px',
+                fontSize: '14px', cursor: 'pointer',
               }}
             >
               Maybe Later
@@ -1734,62 +1658,43 @@ export default function Dashboard() {
       {/* SECTION 2 UPGRADE MODAL */}
       {showSection2Modal && (
         <div style={{
-          position: 'fixed',
-          inset: 0,
+          position: 'fixed', inset: 0,
           backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 99999,
-          padding: '16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 99999, padding: '16px',
         }}>
           <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            padding: '32px',
-            maxWidth: '400px',
-            width: '90%',
-            textAlign: 'center',
+            backgroundColor: 'white', borderRadius: '16px', padding: '32px',
+            maxWidth: '400px', width: '90%', textAlign: 'center',
             boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
           }}>
-            <div style={{ fontSize: '48px' }}>??</div>
+            <div style={{ fontSize: '48px' }}>🔒</div>
             <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginTop: '16px', color: '#111827' }}>
-              Section 2 � Optional Upgrade
+              Section 2 — Optional Upgrade
             </h2>
             <p style={{ color: '#6b7280', marginTop: '8px', lineHeight: '1.6', fontSize: '14px' }}>
-              Advanced Acting Techniques is an optional upgrade for performers who want to pursue acting beyond background work. One-time purchase � unlocks all 4 advanced modules permanently.
+              Advanced Acting Techniques is an optional upgrade for performers who want to pursue acting beyond background work. One-time purchase — unlocks all 4 advanced modules permanently.
             </p>
             <button
               onClick={() => { setShowSection2Modal(false); handleSection2Checkout(); }}
               disabled={loadingPayment}
               style={{
-                width: '100%',
-                marginTop: '24px',
-                padding: '14px',
-                backgroundColor: '#7c3aed',
-                color: 'white',
-                border: 'none',
-                borderRadius: '10px',
-                fontSize: '16px',
-                fontWeight: 'bold',
+                width: '100%', marginTop: '24px', padding: '14px',
+                backgroundColor: '#7c3aed', color: 'white', border: 'none',
+                borderRadius: '10px', fontSize: '16px', fontWeight: 'bold',
                 cursor: loadingPayment ? 'not-allowed' : 'pointer',
                 opacity: loadingPayment ? 0.6 : 1,
               }}
             >
-              {loadingPayment ? 'Processing�' : 'Unlock Section 2 � $19.99'}
+              {loadingPayment ? 'Processing…' : 'Unlock Section 2 — $19.99'}
             </button>
             <button
               onClick={() => setShowSection2Modal(false)}
               style={{
-                width: '100%',
-                marginTop: '12px',
-                padding: '12px',
-                backgroundColor: 'transparent',
-                color: '#9ca3af',
-                border: '1px solid #e5e7eb',
-                borderRadius: '10px',
-                fontSize: '14px',
-                cursor: 'pointer',
+                width: '100%', marginTop: '12px', padding: '12px',
+                backgroundColor: 'transparent', color: '#9ca3af',
+                border: '1px solid #e5e7eb', borderRadius: '10px',
+                fontSize: '14px', cursor: 'pointer',
               }}
             >
               Maybe Later
@@ -1814,22 +1719,20 @@ export default function Dashboard() {
               onClick={e => e.stopPropagation()}
               style={{ backgroundColor: 'white', borderRadius: '20px 20px 0 0', width: '100%', maxWidth: '480px', maxHeight: '85vh', overflowY: 'auto', padding: '24px 24px 40px', boxShadow: '0 -8px 40px rgba(0,0,0,0.2)' }}
             >
-              {/* Handle bar */}
               <div style={{ width: '40px', height: '4px', backgroundColor: '#e5e7eb', borderRadius: '2px', margin: '0 auto 20px' }} />
 
-              {/* SR badge */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
                 <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '16px', color: '#F59E0B', fontFamily: 'Arial, sans-serif', flexShrink: 0 }}>SR</div>
                 <div>
                   <div style={{ fontWeight: '800', fontSize: '17px', color: '#1a1a2e' }}>SetReady</div>
                   <div style={{ fontSize: '12px', color: '#9ca3af' }}>Background Performer Platform</div>
                 </div>
-                <button onClick={() => setShowInstallModal(false)} style={{ marginLeft: 'auto', background: 'none', border: 'none', fontSize: '22px', color: '#9ca3af', cursor: 'pointer', lineHeight: 1 }}>�</button>
+                <button onClick={() => setShowInstallModal(false)} style={{ marginLeft: 'auto', background: 'none', border: 'none', fontSize: '22px', color: '#9ca3af', cursor: 'pointer', lineHeight: 1 }}>×</button>
               </div>
 
               {isStandalone && (
                 <div style={{ textAlign: 'center', padding: '32px 0' }}>
-                  <div style={{ fontSize: '52px', marginBottom: '12px' }}>?</div>
+                  <div style={{ fontSize: '52px', marginBottom: '12px' }}>✅</div>
                   <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 8px' }}>SetReady is already installed!</h2>
                   <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>You are using the installed app.</p>
                 </div>
@@ -1840,9 +1743,9 @@ export default function Dashboard() {
                   <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 6px' }}>Add SetReady to Your Home Screen</h2>
                   <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 24px' }}>Follow these steps in Safari:</p>
                   {[
-                    { icon: '??', step: 'Tap the Share button', sub: 'At the bottom of your Safari browser' },
-                    { icon: '+', step: 'Tap "Add to Home Screen"', sub: 'Scroll down in the share menu to find it' },
-                    { icon: '?', step: 'Tap Add', sub: 'SetReady appears on your home screen instantly' },
+                    { icon: '⬆️', step: 'Tap the Share button', sub: 'At the bottom of your Safari browser' },
+                    { icon: '＋', step: 'Tap "Add to Home Screen"', sub: 'Scroll down in the share menu to find it' },
+                    { icon: '✓', step: 'Tap Add', sub: 'SetReady appears on your home screen instantly' },
                   ].map((s, i) => (
                     <div key={i} style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', marginBottom: '20px' }}>
                       <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>{s.icon}</div>
@@ -1853,7 +1756,7 @@ export default function Dashboard() {
                     </div>
                   ))}
                   <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '12px 14px', fontSize: '13px', color: '#92400e' }}>
-                    ?? Must be using <strong>Safari</strong>. Chrome on iPhone does not support home screen installation.
+                    ⚠️ Must be using <strong>Safari</strong>. Chrome on iPhone does not support home screen installation.
                   </div>
                 </div>
               )}
@@ -1872,7 +1775,7 @@ export default function Dashboard() {
                         }}
                         style={{ width: '100%', padding: '16px', backgroundColor: '#1a1a2e', color: 'white', fontWeight: '700', fontSize: '16px', border: 'none', borderRadius: '12px', cursor: 'pointer' }}
                       >
-                        ?? Install Now
+                        📲 Install Now
                       </button>
                       <p style={{ fontSize: '13px', color: '#9ca3af', marginTop: '10px' }}>Tap to add SetReady to your home screen</p>
                     </div>
@@ -1880,9 +1783,9 @@ export default function Dashboard() {
                     <div>
                       <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 20px' }}>Open Chrome and follow these steps:</p>
                       {[
-                        { icon: '?', step: 'Open Chrome menu', sub: 'Tap the three-dot menu in the top right' },
-                        { icon: '+', step: 'Tap "Add to Home Screen"', sub: 'Scroll down in the menu to find it' },
-                        { icon: '?', step: 'Tap Install', sub: 'SetReady appears on your home screen' },
+                        { icon: '⋮', step: 'Open Chrome menu', sub: 'Tap the three-dot menu in the top right' },
+                        { icon: '＋', step: 'Tap "Add to Home Screen"', sub: 'Scroll down in the menu to find it' },
+                        { icon: '✓', step: 'Tap Install', sub: 'SetReady appears on your home screen' },
                       ].map((s, i) => (
                         <div key={i} style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', marginBottom: '20px' }}>
                           <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '700', flexShrink: 0 }}>{s.icon}</div>
@@ -1901,10 +1804,10 @@ export default function Dashboard() {
                 <div>
                   <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 12px' }}>Install SetReady on Your Computer</h2>
                   <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 20px', lineHeight: '1.5' }}>
-                    Look for the install icon <strong>(?)</strong> in your browser address bar, or use your browser menu and select <strong>"Install SetReady"</strong>.
+                    Look for the install icon <strong>(⊕)</strong> in your browser address bar, or use your browser menu and select <strong>"Install SetReady"</strong>.
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
-                    {['? Chrome', '? Edge', '? Brave'].map(b => (
+                    {['✓ Chrome', '✓ Edge', '✓ Brave'].map(b => (
                       <div key={b} style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>{b}</div>
                     ))}
                     <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '4px' }}>Not supported in Firefox or Safari on desktop.</div>
@@ -1914,7 +1817,7 @@ export default function Dashboard() {
 
               {!isStandalone && (
                 <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #f3f4f6', fontSize: '13px', color: '#9ca3af', textAlign: 'center', lineHeight: '1.5' }}>
-                  Once installed, SetReady opens like a native app � no browser needed.
+                  Once installed, SetReady opens like a native app — no browser needed.
                 </div>
               )}
             </div>
@@ -1926,7 +1829,7 @@ export default function Dashboard() {
       {showCheckoutModal && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '16px' }}>
           <div style={{ backgroundColor: 'white', borderRadius: '16px', maxWidth: '440px', width: '100%', padding: '28px', boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '8px', color: '#1f2937' }}>?? Before you subscribe�</h2>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '8px', color: '#1f2937' }}>🎁 Before you subscribe…</h2>
             <p style={{ color: '#6b7280', fontSize: '0.9rem', marginBottom: '20px' }}>Do you have a referral code from a friend? You can enter it here or skip to subscribe now.</p>
             <div style={{ marginBottom: '16px' }}>
               <input
@@ -1946,7 +1849,7 @@ export default function Dashboard() {
                 disabled={preCheckoutValidating || !preCheckoutCode.trim()}
                 style={{ width: '100%', padding: '11px', backgroundColor: preCheckoutValidating || !preCheckoutCode.trim() ? '#9ca3af' : '#7c3aed', color: 'white', borderRadius: '10px', fontWeight: 600, border: 'none', cursor: preCheckoutValidating || !preCheckoutCode.trim() ? 'not-allowed' : 'pointer', fontSize: '0.95rem' }}
               >
-                {preCheckoutValidating ? 'Validating�' : 'Apply Code and Subscribe'}
+                {preCheckoutValidating ? 'Validating…' : 'Apply Code and Subscribe'}
               </button>
               <button
                 onClick={skipAndSubscribe}
