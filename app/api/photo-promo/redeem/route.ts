@@ -38,40 +38,58 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'No code provided' }, { status: 400 })
   }
 
-  // Fetch the code using service role (bypasses RLS — users have no SELECT access)
-  const { data: promoCode, error: fetchError } = await supabaseAdmin
+  // Fetch code (service role bypasses RLS)
+  const { data: pc, error: fetchError } = await supabaseAdmin
     .from('photo_promo_codes')
-    .select('id, is_used, used_by')
+    .select('id, is_used, use_count, max_uses, used_by, used_at')
     .eq('code', code)
     .maybeSingle()
 
   if (fetchError) {
-    console.error('❌ photo-promo redeem fetch error:', fetchError)
+    console.error('❌ photo-promo fetch error:', fetchError)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 
-  if (!promoCode) {
+  if (!pc) {
     return NextResponse.json({ error: 'Invalid code' }, { status: 400 })
   }
 
-  if (promoCode.is_used) {
+  const useCount = pc.use_count ?? 0
+  const maxUses = pc.max_uses ?? 1
+
+  // Legacy codes (created before use_count/max_uses columns) rely on is_used flag
+  if (pc.use_count === null && pc.is_used) {
     return NextResponse.json({ error: 'This code has already been used' }, { status: 400 })
   }
+  if (useCount >= maxUses) {
+    return NextResponse.json({ error: 'This code has reached its usage limit' }, { status: 400 })
+  }
 
-  // Mark code used and unlock slots in a single logical transaction
-  const now = new Date().toISOString()
-
-  const { error: markError } = await supabaseAdmin
+  // Atomic increment: only updates if use_count is still below max (race-safe)
+  const { data: updated, error: updateError } = await supabaseAdmin
     .from('photo_promo_codes')
-    .update({ is_used: true, used_by: user.id, used_at: now })
-    .eq('id', promoCode.id)
-    .eq('is_used', false) // atomic guard: no-op if another request already flipped it
+    .update({
+      use_count: useCount + 1,
+      is_used: useCount + 1 >= maxUses,
+      used_by: pc.used_by ?? user.id,
+      used_at: pc.used_at ?? new Date().toISOString(),
+    })
+    .eq('id', pc.id)
+    .lt('use_count', maxUses)
+    .select('id')
+    .maybeSingle()
 
-  if (markError) {
-    console.error('❌ photo-promo mark-used error:', markError)
+  if (updateError) {
+    console.error('❌ photo-promo update error:', updateError)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 
+  if (!updated) {
+    // Another concurrent request claimed the last slot
+    return NextResponse.json({ error: 'This code has reached its usage limit' }, { status: 400 })
+  }
+
+  // Slot claimed — unlock photos for this user
   const { error: unlockError } = await supabaseAdmin
     .from('users')
     .update({ photos_unlocked: true })

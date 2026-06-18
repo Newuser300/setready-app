@@ -92,6 +92,8 @@ interface PhotoPromoCode {
   used_at: string | null;
   created_by: string | null;
   created_at: string;
+  max_uses: number | null;
+  use_count: number | null;
 }
 
 interface FinanceEntry {
@@ -255,6 +257,7 @@ export default function AdminPage() {
   const [photoCodesLoading, setPhotoCodesLoading] = useState(false);
   const [generatingPhotoCode, setGeneratingPhotoCode] = useState(false);
   const [customPhotoCode, setCustomPhotoCode] = useState('');
+const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
 
   // Finance entries
   const [financeEntries, setFinanceEntries] = useState<FinanceEntry[]>([]);
@@ -763,7 +766,7 @@ export default function AdminPage() {
     const res = await fetch('/api/admin/photo-promo-codes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ code, max_uses: parseInt(photoCodeMaxUses, 10) || 1 }),
     });
     if (res.ok) {
       toast.success('Photo promo code created: ' + code);
@@ -2302,16 +2305,28 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ══════════════════════════════════════
+              {/* ══════════════════════════════════════
             PHOTO PROMO CODES
         ══════════════════════════════════════ */}
         {activeSection === 'photo_promo' && (
           <div className="space-y-6">
             <h2 className="text-xl font-bold text-gray-800">📸 Photo Promo Codes</h2>
-
+ 
             <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
               <h3 className="text-sm font-bold text-gray-700">Create Photo Promo Code</h3>
-
+ 
+              <div className="flex gap-2 items-center flex-wrap">
+                <label className="text-xs font-semibold text-gray-600">Max uses (how many people can redeem this code):</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={photoCodeMaxUses}
+                  onChange={e => setPhotoCodeMaxUses(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-24 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+                <span className="text-xs text-gray-400">(1 = single use, like before)</span>
+              </div>
+ 
               <div className="flex gap-3 flex-wrap items-center">
                 <button
                   onClick={() => generatePhotoPromoCode()}
@@ -2321,7 +2336,7 @@ export default function AdminPage() {
                   {generatingPhotoCode ? 'Creating...' : '+ Generate Random Code'}
                 </button>
               </div>
-
+ 
               <div className="flex gap-2 items-center flex-wrap">
                 <input
                   type="text"
@@ -2339,10 +2354,10 @@ export default function AdminPage() {
                   Add Custom Code
                 </button>
               </div>
-
-              <p className="text-xs text-gray-500">Codes never expire. Each code unlocks 4 extra photo slots for one user.</p>
+ 
+              <p className="text-xs text-gray-500">Codes never expire. Each code unlocks 4 extra photo slots, and can be redeemed by the number of different people set above (each person once).</p>
             </div>
-
+ 
             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
               <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
                 <h3 className="text-sm font-bold text-gray-700">All Photo Promo Codes</h3>
@@ -2358,39 +2373,46 @@ export default function AdminPage() {
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Code</th>
                       <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Uses</th>
                       <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Created</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Used By</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Used At</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">First Used By</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">First Used At</th>
                       <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {photoCodes.map(pc => (
-                      <tr key={pc.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 font-mono font-bold text-gray-800 tracking-wider">{pc.code}</td>
-                        <td className="px-4 py-3">
-                          {pc.is_used
-                            ? <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-50 text-red-600">Used</span>
-                            : <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-green-50 text-green-700">Available</span>
-                          }
-                        </td>
-                        <td className="px-4 py-3 text-gray-500 text-xs">{new Date(pc.created_at).toLocaleDateString('en-CA')}</td>
-                        <td className="px-4 py-3 text-gray-500 text-xs">{pc.used_by ? pc.used_by.substring(0, 8) + '...' : '—'}</td>
-                        <td className="px-4 py-3 text-gray-500 text-xs">{pc.used_at ? new Date(pc.used_at).toLocaleString() : '—'}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-2">
-                            <button onClick={() => copyToClipboard(pc.code)} className="text-xs px-2 py-1 border border-gray-200 rounded hover:bg-gray-50 font-medium">Copy</button>
-                            <button onClick={() => deletePhotoPromoCode(pc.id)} className="text-xs px-2 py-1 border border-red-200 text-red-600 rounded hover:bg-red-50 font-medium">Delete</button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {photoCodes.map(pc => {
+                      const used = pc.use_count ?? 0;
+                      const cap = pc.max_uses ?? 1;
+                      const isFull = used >= cap || pc.is_used;
+                      return (
+                        <tr key={pc.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 font-mono font-bold text-gray-800 tracking-wider">{pc.code}</td>
+                          <td className="px-4 py-3">
+                            {isFull
+                              ? <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-50 text-red-600">Full</span>
+                              : <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-green-50 text-green-700">Available</span>
+                            }
+                          </td>
+                          <td className="px-4 py-3 text-gray-700 font-semibold text-xs">{used} / {cap}</td>
+                          <td className="px-4 py-3 text-gray-500 text-xs">{new Date(pc.created_at).toLocaleDateString('en-CA')}</td>
+                          <td className="px-4 py-3 text-gray-500 text-xs">{pc.used_by ? pc.used_by.substring(0, 8) + '...' : '—'}</td>
+                          <td className="px-4 py-3 text-gray-500 text-xs">{pc.used_at ? new Date(pc.used_at).toLocaleString() : '—'}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex gap-2">
+                              <button onClick={() => copyToClipboard(pc.code)} className="text-xs px-2 py-1 border border-gray-200 rounded hover:bg-gray-50 font-medium">Copy</button>
+                              <button onClick={() => deletePhotoPromoCode(pc.id)} className="text-xs px-2 py-1 border border-red-200 text-red-600 rounded hover:bg-red-50 font-medium">Delete</button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}
               {photoCodes.length > 0 && (
                 <div className="px-5 py-3 border-t border-gray-100 text-xs text-gray-500">
-                  Total: {photoCodes.length} · Available: {photoCodes.filter(c => !c.is_used).length} · Used: {photoCodes.filter(c => c.is_used).length}
+                  Total: {photoCodes.length} · Available: {photoCodes.filter(c => (c.use_count ?? 0) < (c.max_uses ?? 1)).length} · Full: {photoCodes.filter(c => (c.use_count ?? 0) >= (c.max_uses ?? 1)).length}
                 </div>
               )}
             </div>

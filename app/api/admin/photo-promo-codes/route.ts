@@ -22,9 +22,14 @@ export async function POST(req: NextRequest) {
   const code: string = (body.code ?? '').toString().trim().toUpperCase()
   if (!code) return NextResponse.json({ error: 'code is required' }, { status: 400 })
 
+  // max_uses: how many distinct users may redeem this code.
+  // Defaults to 1 (single-use) if not provided or invalid.
+  const parsedMax = parseInt(body.max_uses, 10)
+  const maxUses = Number.isFinite(parsedMax) && parsedMax >= 1 ? parsedMax : 1
+
   const { data, error } = await supabaseAdmin
     .from('photo_promo_codes')
-    .insert({ code, is_used: false, created_by: admin.email })
+    .insert({ code, is_used: false, use_count: 0, max_uses: maxUses, created_by: admin.email })
     .select()
     .single()
 
