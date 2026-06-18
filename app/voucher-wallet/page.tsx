@@ -2,9 +2,10 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
 import { isUBCPProvince, calculateQualifyingDays, type UnionMembershipPath } from '@/lib/union-rules'
 import { createClient } from '@/utils/supabase/client'
+
+const supabase = createClient()
 
 type Voucher = {
   id: string

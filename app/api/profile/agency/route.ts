@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/utils/supabase/admin';
 
 async function getUser(req: NextRequest) {
@@ -15,12 +14,6 @@ async function getUser(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const user = await getUser(req);
   if (!user) {
-    // Try cookie-based auth
-    const supabaseCookie = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    // Fall back to service role lookup via profile API pattern
     return NextResponse.json([]);
   }
 

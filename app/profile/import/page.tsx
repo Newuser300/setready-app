@@ -3,7 +3,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { AlertTriangle } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
+const supabase = createClient()
 
 // ── Field definitions for progress tracking ──────────────────────────────────
 

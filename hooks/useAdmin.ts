@@ -1,6 +1,7 @@
 // hooks/useAdmin.ts
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
+const supabase = createClient()
 
 interface AdminState {
   isAdmin: boolean;

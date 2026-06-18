@@ -1,8 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
+
+const supabase = createClient()
 
 export function useAuth() {
   const router = useRouter()
@@ -11,10 +12,7 @@ export function useAuth() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const browserClient = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const browserClient = createClient()
 
     browserClient.auth.getUser().then(({ data: { user: currentUser }, error }) => {
       if (error || !currentUser) { router.push('/auth/sign-in'); return }

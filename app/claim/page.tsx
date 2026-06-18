@@ -2,7 +2,8 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
+const supabase = createClient()
 
 interface ClaimData {
   invited_email: string

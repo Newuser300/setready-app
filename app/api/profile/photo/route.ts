@@ -1,5 +1,4 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createClient } from '@/utils/supabase/server'
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/utils/supabase/admin'
 
@@ -14,23 +13,7 @@ const TYPE_TO_COLUMN: Record<string, string> = {
 }
 
 async function getUser() {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {}
-        },
-      },
-    }
-  )
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   return user
 }

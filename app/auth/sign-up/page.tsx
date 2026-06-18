@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
 import Copyright from '@/components/Copyright';
 import { createClient } from '@/utils/supabase/client'
+
+const supabase = createClient()
 
 export default function SignUp() {
   const router = useRouter();

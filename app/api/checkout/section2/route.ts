@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/server';
 import { supabaseAdmin } from '@/utils/supabase/admin';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -19,6 +19,7 @@ export async function POST(request: Request) {
     }
     
     // Verify the token and get the user
+    const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError || !user) {

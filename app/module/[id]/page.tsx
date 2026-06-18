@@ -2,7 +2,8 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactElement } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
+const supabase = createClient()
 import { LESSONS } from '@/lib/lessons';
 
 const MODULE_TITLE_OVERRIDES: Record<number, string> = {

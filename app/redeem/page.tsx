@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
+const supabase = createClient()
 
 export default function RedeemPage() {
   const [code, setCode] = useState('');

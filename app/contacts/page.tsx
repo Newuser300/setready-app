@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import Copyright from '@/components/Copyright';
 import { createClient } from '@/utils/supabase/client'
+
+const supabase = createClient()
 
 type Contact = {
   id: string;

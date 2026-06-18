@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
-import { supabase } from '@/lib/supabase';
 import { createClient } from '@/utils/supabase/client'
+
+const supabase = createClient()
 
 type Stats = {
   totalUsers: number;
