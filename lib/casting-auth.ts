@@ -7,10 +7,22 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.CASTING_JWT_SECRET ||
-  'setready-casting-secret-2026-change-in-prod'
-)
+// No hardcoded fallback. We refuse to sign or verify casting sessions without a
+// real secret, so a misconfigured deploy fails loudly instead of silently using
+// a guessable key. Validated and cached on first use.
+let cachedSecret: Uint8Array | null = null
+function getJwtSecret(): Uint8Array {
+  if (cachedSecret) return cachedSecret
+  const secret = process.env.CASTING_JWT_SECRET
+  if (!secret || secret.length < 32) {
+    throw new Error(
+      'CASTING_JWT_SECRET is missing or too short (need 32+ chars). ' +
+      'Refusing to sign or verify casting sessions without a strong secret.'
+    )
+  }
+  cachedSecret = new TextEncoder().encode(secret)
+  return cachedSecret
+}
 
 export async function createSession(
   accountId: string,
@@ -23,7 +35,7 @@ export async function createSession(
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setExpirationTime('7d')
-    .sign(JWT_SECRET)
+    .sign(getJwtSecret())
 
   await supabaseAdmin.from('casting_sessions').insert({
     account_type: accountType,
@@ -45,8 +57,11 @@ export async function verifySession(
   email: string
   name: string
 } | null> {
+  // Resolve the secret OUTSIDE the try so a misconfiguration throws loudly
+  // rather than being swallowed and reported as just an invalid token.
+  const secret = getJwtSecret()
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET)
+    const { payload } = await jwtVerify(token, secret)
     return payload as any
   } catch {
     return null
