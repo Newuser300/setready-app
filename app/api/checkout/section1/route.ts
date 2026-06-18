@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Please sign in' }, { status: 401 });
     }
 
-    const priceId = process.env.NEXT_PUBLIC_STRIPE_SECTION_1_PRICE_ID;
+    const priceId = process.env.STRIPE_SECTION_1_PRICE_ID;
     if (!priceId) {
       return NextResponse.json({ error: 'Payment configuration error' }, { status: 500 });
     }

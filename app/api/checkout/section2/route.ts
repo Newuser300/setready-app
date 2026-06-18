@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     console.log('Checkout Section 2 - User referred_by:', userProfile?.referred_by || 'none');
 
     // Get the Price ID from environment variables
-    const priceId = process.env.NEXT_PUBLIC_STRIPE_SECTION_2_PRICE_ID;
+    const priceId = process.env.STRIPE_SECTION_2_PRICE_ID;
     
     if (!priceId) {
       console.error('Missing Stripe Price ID for Section 2');
