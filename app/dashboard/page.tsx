@@ -95,6 +95,7 @@ export default function Dashboard() {
   const [modules, setModules] = useState<Module[]>([]);
   const [progress, setProgress] = useState<Record<string, Progress>>({});
   const [user, setUser] = useState<any>(null);
+  const [displayName, setDisplayName] = useState('');
   const [section2Visible, setSection2Visible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -204,6 +205,19 @@ export default function Dashboard() {
       })
       .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const { data } = await supabase
+        .from('users')
+        .select('name')
+        .eq('id', session.user.id)
+        .single();
+      setDisplayName(data?.name || '');
+    })();
+  }, []);
 
   // Load casting notifications on mount
   useEffect(() => {
@@ -777,7 +791,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="font-bold tracking-tight" style={{ fontSize: isMobile ? '20px' : '28px' }}>
-                  Welcome back, <span className="text-yellow-300">{user?.email?.split('@')[0]}</span>
+                  Welcome back, <span className="text-yellow-300">{displayName || user?.email?.split('@')[0]}</span>
                 </h1>
               </div>
               <div className="flex items-center gap-4">
