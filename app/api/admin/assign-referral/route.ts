@@ -52,7 +52,7 @@ export async function POST(req: Request) {
 
   const { error: updateError } = await supabaseAdmin
     .from('users')
-    .update({ referred_by: normalizedCode })
+    .update({ referred_by: referrer.id })
     .eq('id', authUser.id);
 
   if (updateError) {
