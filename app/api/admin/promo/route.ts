@@ -1,25 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
-async function isAdmin(req: NextRequest): Promise<boolean> {
-  const auth = req.headers.get('authorization')
-  if (!auth?.startsWith('Bearer ')) return false
-  const token = auth.slice(7)
-  const { data: { user } } = await supabaseAdmin.auth.getUser(token)
-  if (!user) return false
-  const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim())
-  if (adminEmails.includes(user.email || '')) return true
-  const { data } = await supabaseAdmin.from('admin_users').select('id').eq('email', user.email).maybeSingle()
-  return !!data
-}
+import { verifyAdminRequest, supabaseAdmin } from '@/utils/isAdmin'
 
 export async function GET(req: NextRequest) {
-  if (!await isAdmin(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await verifyAdminRequest(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const type = searchParams.get('type') || 'codes'
@@ -48,7 +31,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!await isAdmin(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await verifyAdminRequest(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const auth = req.headers.get('authorization')!
   const { data: { user } } = await supabaseAdmin.auth.getUser(auth.slice(7))
@@ -83,7 +66,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  if (!await isAdmin(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await verifyAdminRequest(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id, is_active } = await req.json()
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
@@ -93,7 +76,7 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  if (!await isAdmin(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await verifyAdminRequest(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await req.json()
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })

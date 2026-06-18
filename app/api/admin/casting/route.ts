@@ -1,26 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { sendEmail } from '@/lib/email'
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
-async function isAdmin(req: NextRequest): Promise<boolean> {
-  const auth = req.headers.get('authorization')
-  if (!auth?.startsWith('Bearer ')) return false
-  const token = auth.slice(7)
-  const { data: { user } } = await supabaseAdmin.auth.getUser(token)
-  if (!user) return false
-  const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim())
-  if (adminEmails.includes(user.email || '')) return true
-  const { data } = await supabaseAdmin.from('admin_users').select('id').eq('email', user.email).maybeSingle()
-  return !!data
-}
+import { verifyAdminRequest, supabaseAdmin } from '@/utils/isAdmin'
 
 export async function GET(req: NextRequest) {
-  if (!await isAdmin(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await verifyAdminRequest(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const type = searchParams.get('type') || 'pending'
@@ -187,7 +170,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!await isAdmin(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await verifyAdminRequest(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
   const { action, id, entityType } = body

@@ -1,27 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
-async function isAdmin(req: NextRequest): Promise<{ ok: boolean; email?: string }> {
-  const auth = req.headers.get('authorization')
-  if (!auth?.startsWith('Bearer ')) return { ok: false }
-  const token = auth.slice(7)
-  const { data: { user } } = await supabaseAdmin.auth.getUser(token)
-  if (!user) return { ok: false }
-  const adminEmails = (process.env.ADMIN_EMAILS || 'mikebhangu@gmail.com').split(',').map(e => e.trim())
-  if (adminEmails.includes(user.email || '')) return { ok: true, email: user.email }
-  const { data } = await supabaseAdmin.from('admin_users').select('id').eq('email', user.email).maybeSingle()
-  return { ok: !!data, email: user.email }
-}
+import { verifyAdminRequest, supabaseAdmin } from '@/utils/isAdmin'
 
 // GET — list exclusions OR search users
 export async function GET(req: NextRequest) {
-  const admin = await isAdmin(req)
-  if (!admin.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const admin = await verifyAdminRequest(req)
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const search = searchParams.get('search')
@@ -65,8 +48,8 @@ export async function GET(req: NextRequest) {
 
 // POST — add exclusion
 export async function POST(req: NextRequest) {
-  const admin = await isAdmin(req)
-  if (!admin.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const admin = await verifyAdminRequest(req)
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { userId, reason } = await req.json()
   if (!userId) return NextResponse.json({ error: 'userId required' }, { status: 400 })
@@ -81,8 +64,8 @@ export async function POST(req: NextRequest) {
 
 // DELETE — remove exclusion
 export async function DELETE(req: NextRequest) {
-  const admin = await isAdmin(req)
-  if (!admin.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const admin = await verifyAdminRequest(req)
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const userId = searchParams.get('userId')
