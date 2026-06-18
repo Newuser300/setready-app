@@ -13,8 +13,14 @@ export async function POST(req: Request) {
 
   const today = new Date().toISOString().slice(0, 10)
 
-  // Fetch all public performer profiles
-  const { data: profiles, error } = await supabaseAdmin
+  // Fetch public performer profiles.
+  // NOTE (audit #11): this loads up to PROFILE_CAP profiles into memory and sends them all to
+  // the AI for matching. Fine at current scale, but it does NOT scale. Before the public
+  // performer count approaches this cap, matching should move into the DB query (parse the
+  // query into structured filters, fetch only candidates). The order + count below make the
+  // cap deterministic and log a warning when we're outgrowing this approach.
+  const PROFILE_CAP = 500
+  const { data: profiles, error, count } = await supabaseAdmin
     .from('performer_profiles')
     .select(`
       user_id,
@@ -43,11 +49,16 @@ export async function POST(req: Request) {
         id,
         name
       )
-    `)
+    `, { count: 'exact' })
     .eq('is_public', true)
-    .limit(500)
+    .order('user_id', { ascending: true })
+    .limit(PROFILE_CAP)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  if ((count ?? 0) > PROFILE_CAP) {
+    console.warn(`[ai-search] ${count} public profiles exceed the ${PROFILE_CAP} in-memory cap — search is dropping performers. Time to move filtering into the query (audit #11).`)
+  }
 
   // Compute age from date_of_birth
   const now = new Date()
