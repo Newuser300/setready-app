@@ -251,27 +251,37 @@ export async function POST(request: Request) {
           .maybeSingle();
 
         if (referrer) {
-          const invoiceAmount = ((invoice as any).amount_paid ?? 0) / 100;
-          const commissionAmount = parseFloat((invoiceAmount * 0.20).toFixed(2));
-
-          const commissionPayableAfter = new Date();
-          commissionPayableAfter.setDate(commissionPayableAfter.getDate() + 30);
-
-          const { error: commissionError } = await supabaseAdmin
+          // Guard against duplicates: invoice.paid fires on every renewal, so without
+          // this check the referrer would be paid 20% again each billing cycle. Pay one
+          // commission per referred user, on their first payment only.
+          const { count: existingCommissions } = await supabaseAdmin
             .from('referral_commissions')
-            .insert({
-              referrer_id: referrer.id,
-              referred_user_id: userData.id,
-              sale_amount: invoiceAmount,
-              commission_amount: commissionAmount,
-              commission_rate: 20.00,
-              status: 'pending_30_days',
-              payment_method: 'etransfer',
-              commission_payable_after: commissionPayableAfter.toISOString(),
-            });
+            .select('*', { count: 'exact', head: true })
+            .eq('referred_user_id', userData.id);
 
-          if (commissionError) {
-            console.error('❌ Failed to insert referral commission:', commissionError);
+          if (existingCommissions === 0) {
+            const invoiceAmount = ((invoice as any).amount_paid ?? 0) / 100;
+            const commissionAmount = parseFloat((invoiceAmount * 0.20).toFixed(2));
+
+            const commissionPayableAfter = new Date();
+            commissionPayableAfter.setDate(commissionPayableAfter.getDate() + 30);
+
+            const { error: commissionError } = await supabaseAdmin
+              .from('referral_commissions')
+              .insert({
+                referrer_id: referrer.id,
+                referred_user_id: userData.id,
+                sale_amount: invoiceAmount,
+                commission_amount: commissionAmount,
+                commission_rate: 20.00,
+                status: 'pending_30_days',
+                payment_method: 'etransfer',
+                commission_payable_after: commissionPayableAfter.toISOString(),
+              });
+
+            if (commissionError) {
+              console.error('❌ Failed to insert referral commission:', commissionError);
+            }
           }
         }
       }
