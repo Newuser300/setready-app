@@ -7,7 +7,7 @@ export const supabaseAdmin = createClient(
 );
 
 export function getEnvAdminEmails(): string[] {
-  return (process.env.ADMIN_EMAILS || 'mikebhangu@gmail.com')
+  return (process.env.ADMIN_EMAILS || '')
     .split(',')
     .map(e => e.trim().toLowerCase())
     .filter(Boolean);
