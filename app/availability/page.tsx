@@ -499,6 +499,21 @@ export default function AvailabilityPage() {
     setTimeout(() => setCopySuccess(false), 2000)
   }
 
+  const resetIcalLink = async () => {
+    const ok = window.confirm(
+      'Reset your calendar link?\n\nYour current link will stop working immediately. Anyone you shared it with — and any calendar app where you added it — will lose access until you add the new link.'
+    )
+    if (!ok) return
+    const res = await fetch('/api/availability/ical-token', { method: 'POST', credentials: 'include' })
+    if (res.ok) {
+      const d = await res.json()
+      setIcalToken(d.token)
+      showToast('🔑 Calendar link reset — your old link no longer works. Copy and re-add the new one.')
+    } else {
+      showToast('❌ Could not reset the link. Please try again.')
+    }
+  }
+
   const importGcal = async () => {
     if (!gcalUrl.trim()) return
     setImportingGcal(true)
@@ -767,6 +782,19 @@ export default function AvailabilityPage() {
                     {copySuccess ? '✓ Copied!' : 'Copy Link'}
                   </button>
                 </div>
+                {icalToken && (
+                  <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                    <p style={{ color: '#6b7280', fontSize: '11px', margin: 0, lineHeight: '1.4', flex: 1, minWidth: '180px' }}>
+                      Shared your link with the wrong person, or want to cut off access? Reset it — your old link stops working immediately.
+                    </p>
+                    <button
+                      onClick={resetIcalLink}
+                      style={{ padding: '6px 12px', backgroundColor: 'transparent', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
+                    >
+                      Reset Link
+                    </button>
+                  </div>
+                )}
               </div>
               <div>
                 <p style={{ color: 'white', fontWeight: '600', fontSize: '13px', margin: '0 0 6px' }}>📥 Import from Google Calendar</p>

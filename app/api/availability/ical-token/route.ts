@@ -31,3 +31,18 @@ export async function GET() {
 
   return NextResponse.json({ token })
 }
+
+export async function POST() {
+  const user = await getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const token = randomBytes(32).toString('hex')
+  const { error } = await supabaseAdmin
+    .from('users')
+    .update({ ical_token: token })
+    .eq('id', user.id)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  return NextResponse.json({ token })
+}
