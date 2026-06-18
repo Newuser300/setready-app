@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateCertificatePDF } from '@/lib/certificate-generator';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/utils/supabase/admin';
 
 // Module names for certificates
 const MODULE_NAMES: Record<number, string> = {
@@ -14,18 +14,6 @@ const MODULE_NAMES: Record<number, string> = {
   8: 'Scene Study',
   9: 'Advanced Technique',
 };
-
-// Admin client for all operations (uses service role key - bypasses RLS)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-);
 
 export async function POST(request: NextRequest) {
   try {

@@ -1,11 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { supabaseAdmin } from '@/utils/supabase/admin'
 
 // (#3) No hardcoded fallback. Refuse to sign or verify without a real secret,
 // so a misconfigured deploy fails loudly instead of using a guessable key.

@@ -1,10 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/utils/supabase/admin'
 import { createEvents } from 'ics'
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)

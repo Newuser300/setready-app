@@ -1,15 +1,10 @@
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/utils/supabase/admin'
 import {
   sendEmail,
   castingRequestEmailHtml,
   submissionConfirmedEmailHtml,
   agentConfirmationEmailHtml,
 } from '@/lib/email'
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 async function writeMessages(records: any[]) {
   if (!records.length) return

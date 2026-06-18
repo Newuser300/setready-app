@@ -1,13 +1,8 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { randomBytes } from 'crypto'
 import { getAgentSession } from '@/lib/casting-auth'
 import { sendEmail, rosterInviteEmailHtml } from '@/lib/email'
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { supabaseAdmin } from '@/utils/supabase/admin'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://setready.ca'
 

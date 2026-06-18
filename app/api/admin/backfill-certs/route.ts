@@ -1,11 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { verifyAdminRequest } from '@/utils/isAdmin'
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { supabaseAdmin } from '@/utils/supabase/admin'
 
 export async function POST(req: Request) {
   const admin = await verifyAdminRequest(req)

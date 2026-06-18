@@ -1,18 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/utils/supabase/admin'
 import sharp from 'sharp'
 
 // sharp + Buffer + file uploads require the Node.js runtime (not Edge).
 export const runtime = 'nodejs'
 // Phase 2 produces more output, so give the model call room.
 export const maxDuration = 60
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 // Swap to 'claude-haiku-4-5-20251001' for lower cost, or an Opus model for best quality.
 const ANALYSIS_MODEL = 'claude-sonnet-4-6'

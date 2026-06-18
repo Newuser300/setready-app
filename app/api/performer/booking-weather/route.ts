@@ -1,14 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { createClient } from '@supabase/supabase-js'
 import { fetchBookingWeather } from '@/lib/booking-weather'
 import { resolveLocationToRegion } from '@/lib/film-regions'
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { supabaseAdmin } from '@/utils/supabase/admin'
 
 async function getUser() {
   const cookieStore = await cookies()

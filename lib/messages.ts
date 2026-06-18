@@ -1,10 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/utils/supabase/admin'
 import { sendEmail } from '@/lib/email'
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 export async function sendMessage({
   senderType,
