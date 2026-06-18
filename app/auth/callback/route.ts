@@ -13,6 +13,25 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error && data.user) {
+      // Apply referral: resolve the code carried in signup metadata to the referrer's UUID,
+      // then store it on the new user (only if not already set, and never self-referral).
+      const refCode = (data.user.user_metadata?.referral_code as string | null) ?? null
+      if (refCode && refCode.trim()) {
+        const normalizedCode = refCode.trim().toUpperCase()
+        const { data: referrer } = await supabaseAdmin
+          .from('users')
+          .select('id')
+          .eq('referral_code', normalizedCode)
+          .maybeSingle()
+        if (referrer?.id && referrer.id !== data.user.id) {
+          await supabaseAdmin
+            .from('users')
+            .update({ referred_by: referrer.id })
+            .eq('id', data.user.id)
+            .is('referred_by', null)
+        }
+      }
+
       // Send welcome message on first email confirmation
       // Check if this user has ever received a welcome message
       const { count } = await supabaseAdmin

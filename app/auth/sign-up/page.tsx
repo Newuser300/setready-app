@@ -103,7 +103,7 @@ export default function SignUp() {
       email,
       password,
       options: {
-        data: { name, province, city, age_verified: true },
+        data: { name, province, city, age_verified: true, referral_code: referralCode || null },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
