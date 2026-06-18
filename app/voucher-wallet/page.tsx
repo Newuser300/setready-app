@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { isUBCPProvince, calculateQualifyingDays, type UnionMembershipPath } from '@/lib/union-rules'
+import { createClient } from '@/utils/supabase/client'
 
 type Voucher = {
   id: string
@@ -148,11 +149,7 @@ export default function VoucherWallet() {
   })
 
   async function getToken() {
-    const { createBrowserClient } = await import('@supabase/ssr')
-    const browserClient = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const browserClient = createClient()
     const { data: { user }, error } = await browserClient.auth.getUser()
     if (error || !user) return null
     const { data: { session } } = await browserClient.auth.getSession()

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client'
 
 type Stats = {
   totalUsers: number;
@@ -277,11 +278,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
 
   async function loadData() {
     setLoading(true);
-    const { createBrowserClient } = await import('@supabase/ssr')
-    const browserClient = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const browserClient = createClient()
     const { data: { user }, error } = await browserClient.auth.getUser()
     if (error || !user) { router.push('/auth/sign-in'); return; }
     const { data: { session } } = await browserClient.auth.getSession()

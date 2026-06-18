@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import Copyright from '@/components/Copyright';
+import { createClient } from '@/utils/supabase/client'
 
 type Contact = {
   id: string;
@@ -59,11 +60,7 @@ export default function ContactsPage() {
 
   useEffect(() => {
     (async () => {
-      const { createBrowserClient } = await import('@supabase/ssr')
-      const browserClient = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
+      const browserClient = createClient()
       const { data: { user }, error } = await browserClient.auth.getUser()
       if (error || !user) { router.push('/auth/sign-in'); return }
       const { data: { session } } = await browserClient.auth.getSession()

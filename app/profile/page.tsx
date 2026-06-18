@@ -215,9 +215,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     ;(async () => {
-      const { createBrowserClient } = await import('@supabase/ssr')
-      const bc = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
-      const { data: { user }, error } = await bc.auth.getUser()
+      const { data: { user }, error } = await supabase.auth.getUser()
       if (error || !user) { router.push('/auth/sign-in'); return }
       setUserEmail(user.email || '')
       loadProfile()

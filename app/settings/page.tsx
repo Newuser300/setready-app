@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client'
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -46,11 +47,7 @@ export default function SettingsPage() {
   }, []);
 
   async function loadUserAndProfile() {
-    const { createBrowserClient } = await import('@supabase/ssr')
-    const bc = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const bc = createClient()
     const { data: { user }, error } = await bc.auth.getUser()
     if (error || !user) {
       router.push('/auth/sign-in');

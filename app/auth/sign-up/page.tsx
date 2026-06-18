@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import Copyright from '@/components/Copyright';
+import { createClient } from '@/utils/supabase/client'
 
 export default function SignUp() {
   const router = useRouter();
@@ -167,11 +168,7 @@ export default function SignUp() {
           });
         }
 
-        const { createBrowserClient } = await import('@supabase/ssr');
-        const browserClient = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
+        const browserClient = createClient();
         await browserClient.auth.setSession({
           access_token: data.session!.access_token,
           refresh_token: data.session!.refresh_token,
