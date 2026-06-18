@@ -4,13 +4,25 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+type CategoryScore = { score: number; feedback: string };
+type CharacterMatch = { role: string; matchPercent: number; why: string; wardrobe: string };
+
 type AnalysisResult = {
+  // Casting profile (Phase 2)
+  castingType: { label: string; description: string };
+  playableAgeRange: string;
+  assessment: string;
+  characterMatches: CharacterMatch[];
+  castingStrengths: string[];
+  thingsToAvoid: string[];
+  backgroundWorkTips: string[];
+  // Photo critique (Phase 1)
   overallScore: number;
-  lighting: { score: number; feedback: string };
-  composition: { score: number; feedback: string };
-  expression: { score: number; feedback: string };
-  background: { score: number; feedback: string };
-  professionalism: { score: number; feedback: string };
+  lighting: CategoryScore;
+  composition: CategoryScore;
+  expression: CategoryScore;
+  background: CategoryScore;
+  professionalism: CategoryScore;
   topRecommendations: string[];
   creditsRemaining?: number;
 };
@@ -151,7 +163,7 @@ export default function HeadshotAnalyzer() {
           <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '20px', padding: 0, lineHeight: 1 }}>←</button>
           <div>
             <h1 style={{ fontWeight: '800', fontSize: '18px', margin: 0 }}>🤳 Headshot Analyzer</h1>
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>AI casting director critique for performers</p>
+            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>AI headshot critique for performers</p>
           </div>
           {creditsLoaded && credits !== null && credits > 0 && (
             <div style={{ marginLeft: 'auto', backgroundColor: 'rgba(245,158,11,0.2)', border: '1px solid #F59E0B', borderRadius: '20px', padding: '4px 12px', fontSize: '12px', fontWeight: '700', color: '#F59E0B' }}>
@@ -174,7 +186,7 @@ export default function HeadshotAnalyzer() {
             {/* What the analyzer does */}
             <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', marginBottom: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
               <p style={{ fontWeight: '800', fontSize: '16px', color: '#1a1a2e', margin: '0 0 6px' }}>What the AI Headshot Analyzer Does</p>
-              <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 16px' }}>Upload your headshot photo. Our AI casting director reviews your photo and identifies:</p>
+              <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 16px' }}>Upload your headshot photo. Our AI reviews your photo and identifies:</p>
 
               {[
                 { icon: '🎭', text: 'Your casting type (e.g. Character Actor, Leading Lady, Authority Figure)' },
@@ -194,7 +206,7 @@ export default function HeadshotAnalyzer() {
               <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '16px', marginTop: '8px' }}>
                 <p style={{ fontWeight: '700', fontSize: '14px', color: '#1a1a2e', margin: '0 0 10px' }}>You also receive:</p>
                 {[
-                  { icon: '📝', text: 'A casting director\'s honest written assessment of your headshot' },
+                  { icon: '📝', text: 'An honest, AI-generated written assessment of your headshot' },
                   { icon: '🔍', text: 'Specific feedback on the photo itself — lighting, expression, framing' },
                   { icon: '💼', text: 'Background work tips tailored to your appearance' },
                   { icon: '📸', text: 'Recommendations for your next headshot session' },
@@ -210,7 +222,7 @@ export default function HeadshotAnalyzer() {
             {/* Important note */}
             <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '14px 16px', marginBottom: '16px' }}>
               <p style={{ fontSize: '13px', color: '#78350f', margin: 0, lineHeight: '1.6' }}>
-                <strong>⚠️ Important:</strong> This tool analyzes your headshot and provides written character recommendations and casting advice. It does <strong>NOT</strong> generate images of you as a character — the analysis is text-based and powered by professional AI casting expertise.
+                <strong>⚠️ Important:</strong> This tool analyzes your headshot and provides written character recommendations and casting advice. It does <strong>NOT</strong> generate images of you as a character — the analysis is text-based, AI-generated, and meant as guidance — not professional casting representation or a guarantee of work.
               </p>
             </div>
 
@@ -307,6 +319,22 @@ export default function HeadshotAnalyzer() {
             {/* Results */}
             {result && (
               <div>
+                {/* ── Casting Profile (headline) ── */}
+                <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', marginBottom: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
+                  <p style={{ fontSize: '11px', color: '#9ca3af', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: '800' }}>Your Casting Type</p>
+                  <p style={{ fontSize: '24px', fontWeight: '900', color: '#1a1a2e', margin: '0 0 8px', lineHeight: 1.2 }}>{result.castingType?.label}</p>
+                  {result.castingType?.description && (
+                    <p style={{ fontSize: '14px', color: '#4b5563', lineHeight: '1.6', margin: '0 0 14px' }}>{result.castingType.description}</p>
+                  )}
+                  {result.playableAgeRange && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: '20px', padding: '6px 14px' }}>
+                      <span style={{ fontSize: '13px' }}>📅</span>
+                      <span style={{ fontSize: '13px', fontWeight: '700', color: '#3730a3' }}>Plays age {result.playableAgeRange}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Overall Score + photo-quality summary ── */}
                 <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', marginBottom: '16px', textAlign: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
                   <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '20px' }}>
                     {previewUrl && (
@@ -329,6 +357,67 @@ export default function HeadshotAnalyzer() {
                   </div>
                 </div>
 
+                {/* ── Casting Director's Assessment ── */}
+                {result.assessment && (
+                  <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '20px', marginBottom: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
+                    <p style={{ fontWeight: '800', fontSize: '15px', color: '#1a1a2e', margin: '0 0 8px' }}>📝 AI Casting Assessment</p>
+                    <p style={{ fontSize: '14px', color: '#374151', lineHeight: '1.7', margin: 0 }}>{result.assessment}</p>
+                  </div>
+                )}
+
+                {/* ── Top Character Matches ── */}
+                {result.characterMatches?.length > 0 && (
+                  <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '20px', marginBottom: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
+                    <p style={{ fontWeight: '800', fontSize: '15px', color: '#1a1a2e', margin: '0 0 4px' }}>🎬 Top Character Matches</p>
+                    <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 16px' }}>Roles you're likely to read well for in background and featured work</p>
+                    {result.characterMatches.map((m, i) => {
+                      const last = i === result.characterMatches.length - 1;
+                      return (
+                        <div key={i} style={{ marginBottom: last ? 0 : '18px', paddingBottom: last ? 0 : '18px', borderBottom: last ? 'none' : '1px solid #f3f4f6' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                            <span style={{ fontWeight: '700', fontSize: '15px', color: '#1a1a2e' }}>{m.role}</span>
+                            <span style={{ fontWeight: '800', fontSize: '15px', color: getScoreColor(m.matchPercent) }}>{m.matchPercent}%</span>
+                          </div>
+                          <div style={{ height: '8px', backgroundColor: '#f3f4f6', borderRadius: '4px', overflow: 'hidden', marginBottom: '10px' }}>
+                            <div style={{ height: '100%', width: `${m.matchPercent}%`, backgroundColor: getScoreColor(m.matchPercent), borderRadius: '4px' }} />
+                          </div>
+                          {m.why && <p style={{ fontSize: '13px', color: '#4b5563', lineHeight: '1.5', margin: '0 0 6px' }}>{m.why}</p>}
+                          {m.wardrobe && (
+                            <p style={{ fontSize: '12px', color: '#6b7280', lineHeight: '1.5', margin: 0 }}>
+                              <strong style={{ color: '#374151' }}>👔 Wardrobe:</strong> {m.wardrobe}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* ── Casting Strengths ── */}
+                {result.castingStrengths?.length > 0 && (
+                  <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '16px', marginBottom: '12px' }}>
+                    <p style={{ fontWeight: '700', fontSize: '14px', color: '#166534', margin: '0 0 10px' }}>🌟 Your Casting Strengths</p>
+                    {result.castingStrengths.map((s, i) => (
+                      <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '8px', fontSize: '13px', color: '#15803d' }}>
+                        <span style={{ flexShrink: 0 }}>✓</span><span>{s}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* ── What to Avoid ── */}
+                {result.thingsToAvoid?.length > 0 && (
+                  <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '16px', marginBottom: '12px' }}>
+                    <p style={{ fontWeight: '700', fontSize: '14px', color: '#92400e', margin: '0 0 10px' }}>⚠️ What to Avoid</p>
+                    {result.thingsToAvoid.map((s, i) => (
+                      <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '8px', fontSize: '13px', color: '#78350f' }}>
+                        <span style={{ flexShrink: 0 }}>•</span><span>{s}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* ── Detailed photo critique ── */}
                 {categories.map(cat => (
                   <div key={cat.key} style={{ backgroundColor: 'white', borderRadius: '12px', padding: '16px', marginBottom: '10px', borderLeft: `4px solid ${getScoreColor(cat.data.score)}` }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
@@ -339,6 +428,19 @@ export default function HeadshotAnalyzer() {
                   </div>
                 ))}
 
+                {/* ── Background Work Tips ── */}
+                {result.backgroundWorkTips?.length > 0 && (
+                  <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '16px', marginBottom: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
+                    <p style={{ fontWeight: '700', fontSize: '14px', color: '#1a1a2e', margin: '0 0 10px' }}>💼 Background Work Tips</p>
+                    {result.backgroundWorkTips.map((s, i) => (
+                      <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '8px', fontSize: '13px', color: '#4b5563' }}>
+                        <span style={{ flexShrink: 0 }}>→</span><span>{s}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* ── Top Recommendations ── */}
                 {result.topRecommendations?.length > 0 && (
                   <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
                     <p style={{ fontWeight: '700', fontSize: '14px', color: '#92400e', margin: '0 0 10px' }}>💡 Top Recommendations</p>
