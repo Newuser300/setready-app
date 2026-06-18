@@ -9,6 +9,30 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2026-04-22.dahlia',
 });
 
+/**
+ * Resolve a subscription's current period end as an ISO string.
+ *
+ * As of Stripe's Basil release (and the pinned 2026-04-22.dahlia version),
+ * current_period_end was removed from the top-level Subscription object and
+ * lives on each subscription item: items.data[0].current_period_end (a Unix
+ * timestamp in seconds). The old top-level field returns undefined rather than
+ * throwing, so we read the item first and fall back to the top-level field only
+ * for safety against older shapes. Returns null if neither is present.
+ */
+function periodEndISO(subscription: Stripe.Subscription): string | null {
+  const item = subscription.items?.data?.[0] as
+    | (Stripe.SubscriptionItem & { current_period_end?: number })
+    | undefined;
+
+  const unixSeconds =
+    item?.current_period_end ??
+    (subscription as unknown as { current_period_end?: number }).current_period_end ??
+    null;
+
+  if (!unixSeconds) return null;
+  return new Date(unixSeconds * 1000).toISOString();
+}
+
 export async function POST(request: Request) {
   const body = await request.text();
   const sig = request.headers.get('stripe-signature');
@@ -182,14 +206,28 @@ export async function POST(request: Request) {
         break;
       }
 
-      const subscriptionEndsAt = new Date();
-      subscriptionEndsAt.setDate(subscriptionEndsAt.getDate() + 30);
+      // Source the access-through date from Stripe's real billing period, not the
+      // wall clock. Retrieve the subscription and read the item-level period end.
+      // If the lookup fails, leave subscription_ends_at untouched rather than
+      // writing a fabricated now+30d date.
+      let subscriptionEndsAtISO: string | null = null;
+      try {
+        const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+        subscriptionEndsAtISO = periodEndISO(subscription);
+        if (!subscriptionEndsAtISO) {
+          console.error(`⚠️ Could not resolve current_period_end for subscription ${stripeSubscriptionId}; leaving subscription_ends_at unchanged.`);
+        }
+      } catch (err) {
+        console.error('❌ Failed to retrieve subscription to resolve period end:', err);
+      }
 
       const updatePayload: Record<string, unknown> = {
         subscription_status: 'active',
         stripe_subscription_id: stripeSubscriptionId,
-        subscription_ends_at: subscriptionEndsAt.toISOString(),
       };
+      if (subscriptionEndsAtISO) {
+        updatePayload.subscription_ends_at = subscriptionEndsAtISO;
+      }
       if (!userData.subscription_started_at) {
         updatePayload.subscription_started_at = new Date().toISOString();
       }
@@ -254,10 +292,21 @@ export async function POST(request: Request) {
       if (!userData) { console.error(`❌ No user found for stripe_customer_id ${stripeCustomerId}`); break; }
 
       const newStatus = subscription.status === 'active' ? 'active' : 'inactive';
-      await supabaseAdmin.from('users').update({
+
+      const updatePayload: Record<string, unknown> = {
         subscription_status: newStatus,
         subscription_updated_at: new Date().toISOString(),
-      }).eq('id', userData.id);
+      };
+
+      // Refresh the access-through date from Stripe on every update (renewals,
+      // plan changes, etc.) so it never goes stale. Only write it if we can
+      // resolve a real period end.
+      const endsAtISO = periodEndISO(subscription);
+      if (endsAtISO) {
+        updatePayload.subscription_ends_at = endsAtISO;
+      }
+
+      await supabaseAdmin.from('users').update(updatePayload).eq('id', userData.id);
 
       break;
     }
@@ -288,9 +337,17 @@ export async function POST(request: Request) {
         break;
       }
 
+      // Stripe fires subscription.deleted at the actual end of the subscription
+      // (immediately for cancel-now, or at period end for cancel-at-period-end),
+      // so access ends now. Clear the stale future date so a cancelled user can't
+      // read as still active.
       const { error: updateError } = await supabaseAdmin
         .from('users')
-        .update({ subscription_status: 'inactive' })
+        .update({
+          subscription_status: 'inactive',
+          subscription_ends_at: new Date().toISOString(),
+          subscription_updated_at: new Date().toISOString(),
+        })
         .eq('id', userData.id)
         .select();
 
