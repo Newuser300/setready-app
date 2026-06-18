@@ -135,6 +135,7 @@ export default function ProfilePage() {
 
   // Basics
   const [isPublic, setIsPublic] = useState(true)
+  const [name, setName] = useState('')
   const [gender, setGender] = useState('')
   const [dob, setDob] = useState('')
   const [bio, setBio] = useState('')
@@ -228,6 +229,7 @@ export default function ProfilePage() {
     if (res.ok) {
       const p = await res.json()
       if (p) {
+        setName(p.name || '')
         setBio(p.bio || '')
         setGender(p.gender || '')
         setDob(p.date_of_birth || '')
@@ -421,6 +423,7 @@ export default function ProfilePage() {
       }
 
       const profileData = {
+        name,
         bio,
         gender,
         date_of_birth: dob || null,
@@ -644,6 +647,10 @@ export default function ProfilePage() {
 
         {/* ── SECTION 1: BASICS ── */}
         <CS title="👤 Basics">
+          <div style={{ marginBottom: '12px' }}>
+            <FL>Full Name</FL>
+            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Your full name" style={inp} />
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             <div>
               <FL>Gender</FL>

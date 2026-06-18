@@ -15,7 +15,7 @@ export async function GET() {
 
   const [{ data, error }, { data: userData, error: userError }, { count: residencyCount }] = await Promise.all([
     supabaseAdmin.from('performer_profiles').select('*').eq('user_id', user.id).single(),
-    supabaseAdmin.from('users').select('home_city,home_region_code,home_lat,home_lng,photos_unlocked,section1_completed,subscription_status,promo_training_expires_at,section2_unlocked,referral_code,referred_by,subscription_started_at').eq('id', user.id).single(),
+    supabaseAdmin.from('users').select('name,home_city,home_region_code,home_lat,home_lng,photos_unlocked,section1_completed,subscription_status,promo_training_expires_at,section2_unlocked,referral_code,referred_by,subscription_started_at').eq('id', user.id).single(),
     supabaseAdmin.from('residency_documents').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
   ])
 
@@ -30,6 +30,7 @@ export async function GET() {
 
   return NextResponse.json({
     ...(data || {}),
+    name: userData?.name ?? null,
     home_city: userData?.home_city ?? null,
     home_region_code: userData?.home_region_code ?? null,
     home_lat: userData?.home_lat ?? null,
@@ -97,7 +98,7 @@ export async function POST(req: Request) {
   const body = await req.json()
 
   // Separate home location fields (stored in users table) from performer_profiles fields
-  const { home_city, home_region_code, home_lat, home_lng, ...rest } = body
+  const { home_city, home_region_code, home_lat, home_lng, name, ...rest } = body
 
   const cleanBody = Object.fromEntries(
     Object.entries(rest).filter(([_, v]) => v !== undefined)
@@ -108,6 +109,16 @@ export async function POST(req: Request) {
   // save does not carry a real https URL, we leave the stored headshot_url untouched.
   if (!(typeof cleanBody.headshot_url === 'string' && cleanBody.headshot_url.startsWith('https://'))) {
     delete cleanBody.headshot_url
+  }
+
+  const usersUpdate: Record<string, unknown> = {
+    home_city: home_city ?? null,
+    home_region_code: home_region_code ?? null,
+    home_lat: home_lat ?? null,
+    home_lng: home_lng ?? null,
+  }
+  if (typeof name === 'string' && name.trim()) {
+    usersUpdate.name = name.trim()
   }
 
   const [{ data, error }, { error: userError }] = await Promise.all([
@@ -121,7 +132,7 @@ export async function POST(req: Request) {
       .single(),
     supabaseAdmin
       .from('users')
-      .update({ home_city: home_city ?? null, home_region_code: home_region_code ?? null, home_lat: home_lat ?? null, home_lng: home_lng ?? null })
+      .update(usersUpdate)
       .eq('id', user.id),
   ])
 
