@@ -7,9 +7,8 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// No hardcoded fallback. We refuse to sign or verify casting sessions without a
-// real secret, so a misconfigured deploy fails loudly instead of silently using
-// a guessable key. Validated and cached on first use.
+// (#3) No hardcoded fallback. Refuse to sign or verify without a real secret,
+// so a misconfigured deploy fails loudly instead of using a guessable key.
 let cachedSecret: Uint8Array | null = null
 function getJwtSecret(): Uint8Array {
   if (cachedSecret) return cachedSecret
@@ -30,10 +29,12 @@ export async function createSession(
   email: string,
   name: string
 ) {
-  const token = await new SignJWT({
-    accountId, accountType, email, name
-  })
+  // (#14) A unique jti + issued-at makes every token distinct, so each login is
+  // its own row in casting_sessions and can be revoked independently.
+  const token = await new SignJWT({ accountId, accountType, email, name })
     .setProtectedHeader({ alg: 'HS256' })
+    .setJti(crypto.randomUUID())
+    .setIssuedAt()
     .setExpirationTime('7d')
     .sign(getJwtSecret())
 
@@ -41,9 +42,7 @@ export async function createSession(
     account_type: accountType,
     account_id: accountId,
     token,
-    expires_at: new Date(
-      Date.now() + 7 * 24 * 60 * 60 * 1000
-    ).toISOString()
+    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
   })
 
   return token
@@ -57,15 +56,30 @@ export async function verifySession(
   email: string
   name: string
 } | null> {
-  // Resolve the secret OUTSIDE the try so a misconfiguration throws loudly
-  // rather than being swallowed and reported as just an invalid token.
   const secret = getJwtSecret()
+
+  // 1) Cryptographic check: valid signature, not expired, not forged.
+  let payload
   try {
-    const { payload } = await jwtVerify(token, secret)
-    return payload as any
+    const result = await jwtVerify(token, secret)
+    payload = result.payload
   } catch {
     return null
   }
+
+  // 2) (#14) Source-of-truth check: the token must still have a live row in
+  // casting_sessions. deleteSession (logout) removes that row, so this makes
+  // logout revoke the token immediately instead of leaving it valid for 7 days.
+  const { data, error } = await supabaseAdmin
+    .from('casting_sessions')
+    .select('account_id')
+    .eq('token', token)
+    .gt('expires_at', new Date().toISOString())
+    .maybeSingle()
+
+  if (error || !data) return null
+
+  return payload as any
 }
 
 export async function getAgentSession() {
