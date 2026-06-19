@@ -94,7 +94,7 @@ export default function SignUp() {
     setError('');
 
     if (!ageConfirmed) {
-      setError('You must confirm that you are 13 years or older to create an account.');
+      setError('You must confirm that you are 18 years of age or older and a resident of Canada to create an account.');
       setLoading(false);
       return;
     }
@@ -523,14 +523,14 @@ export default function SignUp() {
                 style={{ marginTop: '2px', width: '15px', height: '15px', accentColor: '#F59E0B', flexShrink: 0, cursor: 'pointer' }}
               />
               <span style={{ fontSize: '13px', color: '#374151', lineHeight: 1.5 }}>
-                I confirm I am <strong>13 years of age or older</strong> and agree to the{' '}
+                I confirm I am <strong>18 years of age or older</strong> and a resident of Canada and agree to the{' '}
                 <Link href="/terms" style={{ color: '#F59E0B', textDecoration: 'none', fontWeight: 600 }}>Terms of Service</Link>
                 {' '}and{' '}
                 <Link href="/privacy" style={{ color: '#F59E0B', textDecoration: 'none', fontWeight: 600 }}>Privacy Policy</Link>.
               </span>
             </label>
             <p style={{ fontSize: '11px', color: '#9ca3af', margin: '6px 0 0 25px', lineHeight: 1.4 }}>
-              SetReady is for users 13 and older. If you are under 13, please do not create an account.
+              SetReady is for adults 18 and older who reside in Canada. If you are under 18 or outside Canada, please do not create an account.
             </p>
           </div>
 
