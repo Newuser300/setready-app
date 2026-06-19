@@ -278,14 +278,17 @@ export default function AvailabilityPage() {
   )
 
   const stats = useMemo(() => {
-    const entries = allDatesThisMonth.map(d => availability[d]).filter(Boolean)
-    return {
-      available: entries.filter(s => s === 'available' || s === 'morning' || s === 'afternoon').length,
-      unavailable: entries.filter(s => s === 'unavailable').length,
-      booked: entries.filter(s => s === 'booked').length,
-      notSet: daysInCurrentMonth - entries.length,
+    let available = 0, unavailable = 0, booked = 0, notSet = 0
+    for (const d of allDatesThisMonth) {
+      const isConfirmed = bookingsByDate[d]?.status === 'confirmed'
+      const s = availability[d]
+      if (isConfirmed || s === 'booked') booked++
+      else if (s === 'available' || s === 'morning' || s === 'afternoon') available++
+      else if (s === 'unavailable') unavailable++
+      else notSet++
     }
-  }, [availability, allDatesThisMonth, daysInCurrentMonth])
+    return { available, unavailable, booked, notSet }
+  }, [availability, bookingsByDate, allDatesThisMonth])
 
   // ── Save helpers ──────────────────────────────────────────────────────────
 
@@ -731,9 +734,16 @@ export default function AvailabilityPage() {
 
         {/* ── Legend ── */}
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', padding: '10px 14px', backgroundColor: '#1e1e35', borderRadius: '10px', marginBottom: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-          {[['🟢', 'Available'], ['🔴', 'Unavailable'], ['🔵', 'Booked'], ['⏳', 'Pending'], ['🎬', 'Confirmed'], ['🌅', 'Morning'], ['🌙', 'Afternoon'], ['⬜', 'Not Set']].map(([icon, label]) => (
-            <span key={label} style={{ fontSize: '12px', color: '#9ca3af', whiteSpace: 'nowrap' }}>{icon} {label}</span>
-          ))}
+          <span style={{ fontSize: '12px', color: '#9ca3af', whiteSpace: 'nowrap' }}>🟢 Available</span>
+          <span style={{ fontSize: '12px', color: '#9ca3af', whiteSpace: 'nowrap' }}>🔴 Unavailable</span>
+          <span style={{ fontSize: '12px', color: '#9ca3af', whiteSpace: 'nowrap' }}>🔵 Booked</span>
+          <span style={{ fontSize: '12px', color: '#9ca3af', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+            <span style={{ width: '11px', height: '11px', borderRadius: '50%', backgroundColor: '#a855f7', display: 'inline-block', flexShrink: 0 }} />
+            Pending
+          </span>
+          <span style={{ fontSize: '12px', color: '#9ca3af', whiteSpace: 'nowrap' }}>🌅 Morning</span>
+          <span style={{ fontSize: '12px', color: '#9ca3af', whiteSpace: 'nowrap' }}>🌙 Afternoon</span>
+          <span style={{ fontSize: '12px', color: '#9ca3af', whiteSpace: 'nowrap' }}>⬜ Not Set</span>
         </div>
 
         {/* ── Month Navigation ── */}
@@ -904,18 +914,18 @@ export default function AvailabilityPage() {
                   <div style={{ color: 'white', fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>
                     {isPending ? '⏳ Tentative hold' : '🎬 Confirmed booking'}{b.production ? ` — ${b.production}` : ''}
                   </div>
-                  <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', marginBottom: b.note ? '6px' : '12px' }}>
+                  <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', marginBottom: b.note ? '6px' : '10px' }}>
                     {isPending ? 'Held by ' : 'Booked by '}{who}
                   </div>
-                  {b.note && (<div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontStyle: 'italic', marginBottom: '12px' }}>&ldquo;{b.note}&rdquo;</div>)}
-                  {isPending ? (
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button onClick={() => respondToBooking(b.id, 'confirm')} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: '#22c55e', color: '#0b3d1a', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>Accept</button>
-                      <button onClick={() => respondToBooking(b.id, 'decline')} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', backgroundColor: 'transparent', color: 'rgba(255,255,255,0.85)', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>Decline</button>
-                    </div>
-                  ) : (
-                    <button onClick={() => respondToBooking(b.id, 'cancel')} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(244,63,94,0.5)', backgroundColor: 'transparent', color: '#f43f5e', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>Cancel booking</button>
+                  {b.note && (<div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontStyle: 'italic', marginBottom: '10px' }}>&ldquo;{b.note}&rdquo;</div>)}
+                  {isPending && (
+                    <button onClick={() => respondToBooking(b.id, 'confirm')} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: '#22c55e', color: '#0b3d1a', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>Accept</button>
                   )}
+                  <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginTop: '8px', lineHeight: 1.4 }}>
+                    {isPending
+                      ? 'Only your agent or the casting director can cancel this hold.'
+                      : 'Only your agent or the casting director can change or cancel this booking.'}
+                  </div>
                 </div>
               )
             })()}
