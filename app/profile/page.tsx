@@ -490,8 +490,6 @@ export default function ProfilePage() {
         photo_slot_labels: photoSlotLabels,
       }
 
-      console.log('Saving profile:', profileData)
-
       const res = await fetch('/api/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -500,7 +498,6 @@ export default function ProfilePage() {
       })
 
       const data = await res.json()
-      console.log('Save response:', res.status, data)
 
       if (!res.ok) {
         setSaveError(data.error || 'Failed to save')

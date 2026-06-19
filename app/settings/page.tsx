@@ -58,7 +58,7 @@ export default function SettingsPage() {
 
     const { data: profileData } = await supabase
       .from('users')
-      .select('name, province, subscription_id, subscription_status, referred_by, referral_code')
+      .select('name, province, referred_by, referral_code')
       .eq('id', user.id)
       .single();
 
