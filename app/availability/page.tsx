@@ -26,6 +26,43 @@ const STATUS_ICON: Record<string, string> = {
   morning: '🌅',
   afternoon: '🌙',
 }
+const BOOKING_BG: Record<string, string> = {
+  pending: 'rgba(168,85,247,0.30)',
+  confirmed: 'rgba(59,130,246,0.30)',
+}
+const BOOKING_BORDER: Record<string, string> = {
+  pending: '#a855f7',
+  confirmed: '#3b82f6',
+}
+const BOOKING_ICON: Record<string, string> = {
+  pending: '⏳',
+  confirmed: '🎬',
+}
+type Booking = {
+  id: string
+  performer_id: string
+  created_by_name: string | null
+  created_by_type: string
+  start_date: string
+  end_date: string
+  status: string
+  production: string | null
+  note: string | null
+}
+function expandDates(start: string, end: string): string[] {
+  const out: string[] = []
+  const [sy, sm, sd] = start.split('-').map(Number)
+  const [ey, em, ed] = end.split('-').map(Number)
+  const cur = new Date(sy, sm - 1, sd)
+  const last = new Date(ey, em - 1, ed)
+  while (cur <= last) {
+    const mm = String(cur.getMonth() + 1).padStart(2, '0')
+    const dd = String(cur.getDate()).padStart(2, '0')
+    out.push(`${cur.getFullYear()}-${mm}-${dd}`)
+    cur.setDate(cur.getDate() + 1)
+  }
+  return out
+}
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -68,6 +105,20 @@ export default function AvailabilityPage() {
   const [popupNote, setPopupNote] = useState('')
   const [popupStatus, setPopupStatus] = useState('')
   const [savingPopup, setSavingPopup] = useState(false)
+
+  // Bookings (holds placed by agents / casting directors)
+  const [bookings, setBookings] = useState<Booking[]>([])
+  const bookingsByDate = useMemo(() => {
+    const map: Record<string, Booking> = {}
+    for (const b of bookings) {
+      if (b.status !== 'pending' && b.status !== 'confirmed') continue
+      for (const d of expandDates(b.start_date, b.end_date)) {
+        const existing = map[d]
+        if (!existing || (existing.status === 'pending' && b.status === 'confirmed')) map[d] = b
+      }
+    }
+    return map
+  }, [bookings])
 
   // Active Booking Mode
   const [activeBookingMode, setActiveBookingMode] = useState(false)
@@ -113,6 +164,7 @@ export default function AvailabilityPage() {
       setUserId(user.id)
       setAuthReady(true)
       loadUserData()
+      fetchBookings(user.id)
     })()
   }, [])
 
@@ -148,6 +200,41 @@ export default function AvailabilityPage() {
     setAvailability(sm)
     setNotes(nm)
     setLoading(false)
+  }
+
+  const fetchBookings = async (uid: string) => {
+    try {
+      const { createBrowserClient } = await import('@supabase/ssr')
+      const bc = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      const todayStr = new Date().toISOString().slice(0, 10)
+      const { data, error } = await bc
+        .from('bookings')
+        .select('*')
+        .eq('performer_id', uid)
+        .in('status', ['pending', 'confirmed'])
+        .gte('end_date', todayStr)
+      if (!error && data) setBookings(data as Booking[])
+    } catch { /* non-fatal */ }
+  }
+
+  const respondToBooking = async (bookingId: string, action: 'confirm' | 'decline' | 'cancel') => {
+    const res = await fetch(`/api/bookings/${bookingId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ action }),
+    })
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}))
+      showToast(e.error || 'Could not update the booking')
+    } else {
+      showToast(action === 'confirm' ? '✅ Booking confirmed' : action === 'decline' ? 'Hold declined' : 'Booking cancelled')
+      setSelectedDay(null)
+      if (userId) fetchBookings(userId)
+    }
   }
 
   const fetchNextMonthCount = async () => {
@@ -644,7 +731,7 @@ export default function AvailabilityPage() {
 
         {/* ── Legend ── */}
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', padding: '10px 14px', backgroundColor: '#1e1e35', borderRadius: '10px', marginBottom: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-          {[['🟢', 'Available'], ['🔴', 'Unavailable'], ['🔵', 'Booked'], ['🌅', 'Morning'], ['🌙', 'Afternoon'], ['⬜', 'Not Set']].map(([icon, label]) => (
+          {[['🟢', 'Available'], ['🔴', 'Unavailable'], ['🔵', 'Booked'], ['⏳', 'Pending'], ['🎬', 'Confirmed'], ['🌅', 'Morning'], ['🌙', 'Afternoon'], ['⬜', 'Not Set']].map(([icon, label]) => (
             <span key={label} style={{ fontSize: '12px', color: '#9ca3af', whiteSpace: 'nowrap' }}>{icon} {label}</span>
           ))}
         </div>
@@ -684,6 +771,7 @@ export default function AvailabilityPage() {
               {days.map((dateStr, i) => {
                 if (!dateStr) return <div key={`e-${i}`} />
                 const status = availability[dateStr]
+                const booking = bookingsByDate[dateStr]
                 const isToday = dateStr === today
                 const isPast = dateStr < today
                 const hasNote = !!notes[dateStr]
@@ -694,10 +782,12 @@ export default function AvailabilityPage() {
 
                 const bgColor = isPast ? '#18182a'
                   : isHighlighted ? (dragStatusRef.current ? STATUS_BG[dragStatusRef.current] || 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.05)')
+                  : booking ? BOOKING_BG[booking.status]
                   : status ? STATUS_BG[status] || '#2a2a3e' : '#2a2a3e'
 
                 const borderColor = isToday ? '#F59E0B'
                   : isHighlighted ? (dragStatusRef.current ? STATUS_BORDER[dragStatusRef.current] || '#F59E0B' : '#F59E0B')
+                  : booking ? BOOKING_BORDER[booking.status]
                   : status ? STATUS_BORDER[status] || 'transparent' : 'transparent'
 
                 return (
@@ -711,7 +801,7 @@ export default function AvailabilityPage() {
                     style={{
                       aspectRatio: '1',
                       borderRadius: '7px',
-                      border: `2px solid ${borderColor}`,
+                      border: `2px ${booking?.status === 'pending' ? 'dashed' : 'solid'} ${borderColor}`,
                       backgroundColor: bgColor,
                       cursor: isPast ? 'default' : 'pointer',
                       opacity: isPast ? 0.38 : 1,
@@ -727,9 +817,9 @@ export default function AvailabilityPage() {
                     <span style={{ fontSize: '11px', fontWeight: isToday ? '900' : '500', color: isWeekend && !isPast ? '#F59E0B' : 'rgba(255,255,255,0.9)', lineHeight: 1 }}>
                       {dayNum}
                     </span>
-                    {status && !isPast && (
+                    {(booking || status) && !isPast && (
                       <span style={{ fontSize: '9px', lineHeight: 1, marginTop: '1px' }}>
-                        {STATUS_ICON[status] || ''}
+                        {booking ? BOOKING_ICON[booking.status] : STATUS_ICON[status] || ''}
                       </span>
                     )}
                     {hasNote && !isPast && (
@@ -804,6 +894,31 @@ export default function AvailabilityPage() {
             <div style={{ color: availability[selectedDay] ? STATUS_BORDER[availability[selectedDay]] || 'white' : '#6b7280', fontWeight: '700', fontSize: '15px', marginBottom: '16px' }}>
               {availability[selectedDay] ? `Currently: ${availability[selectedDay]}` : 'Currently: Not set'}
             </div>
+
+            {bookingsByDate[selectedDay] && (() => {
+              const b = bookingsByDate[selectedDay]
+              const who = b.created_by_name || (b.created_by_type === 'agent' ? 'your agent' : 'a casting director')
+              const isPending = b.status === 'pending'
+              return (
+                <div style={{ marginBottom: '16px', padding: '14px', borderRadius: '12px', border: `1px solid ${BOOKING_BORDER[b.status]}`, backgroundColor: BOOKING_BG[b.status] }}>
+                  <div style={{ color: 'white', fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>
+                    {isPending ? '⏳ Tentative hold' : '🎬 Confirmed booking'}{b.production ? ` — ${b.production}` : ''}
+                  </div>
+                  <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', marginBottom: b.note ? '6px' : '12px' }}>
+                    {isPending ? 'Held by ' : 'Booked by '}{who}
+                  </div>
+                  {b.note && (<div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontStyle: 'italic', marginBottom: '12px' }}>&ldquo;{b.note}&rdquo;</div>)}
+                  {isPending ? (
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={() => respondToBooking(b.id, 'confirm')} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: '#22c55e', color: '#0b3d1a', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>Accept</button>
+                      <button onClick={() => respondToBooking(b.id, 'decline')} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', backgroundColor: 'transparent', color: 'rgba(255,255,255,0.85)', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>Decline</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => respondToBooking(b.id, 'cancel')} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(244,63,94,0.5)', backgroundColor: 'transparent', color: '#f43f5e', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>Cancel booking</button>
+                  )}
+                </div>
+              )
+            })()}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px' }}>
               {[
