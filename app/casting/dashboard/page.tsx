@@ -72,6 +72,19 @@ interface SigninSessionData {
   casting_requests: { production_name: string } | null
 }
 
+interface Booking {
+  id: string
+  performer_id: string
+  created_by_id: string
+  created_by_type: string
+  created_by_name: string
+  start_date: string
+  end_date: string
+  status: string
+  production: string | null
+  note: string | null
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TABS = ['Overview','Find','Requests','Kanban','Union','Sign-In','Analytics','Settings'] as const
@@ -264,6 +277,16 @@ export default function CastingDashboardPage() {
   const [createdQR, setCreatedQR] = useState<{ token: string; url: string } | null>(null)
   const [signinDetail, setSigninDetail] = useState<any | null>(null)
 
+  // Holds (performer quick-view modal)
+  const [holds, setHolds] = useState<Booking[]>([])
+  const [holdsLoading, setHoldsLoading] = useState(false)
+  const [holdStart, setHoldStart] = useState('')
+  const [holdEnd, setHoldEnd] = useState('')
+  const [holdProduction, setHoldProduction] = useState('')
+  const [holdNote, setHoldNote] = useState('')
+  const [holdSubmitting, setHoldSubmitting] = useState(false)
+  const [holdMsg, setHoldMsg] = useState('')
+
   // ── Auth ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -290,6 +313,23 @@ export default function CastingDashboardPage() {
     if (activeTab === 'Sign-In') loadSigninSessions()
     if (activeTab === 'Find') loadPerformers()
   }, [activeTab, reqTab, unionTierFilter])
+
+  useEffect(() => {
+    if (!quickView) {
+      setHolds([])
+      setHoldMsg('')
+      setHoldStart('')
+      setHoldEnd('')
+      setHoldProduction('')
+      setHoldNote('')
+      return
+    }
+    setHoldsLoading(true)
+    fetch(`/api/bookings?performerId=${quickView.user_id}`)
+      .then(r => r.ok ? r.json() : [])
+      .then((data: Booking[]) => setHolds(data))
+      .finally(() => setHoldsLoading(false))
+  }, [quickView])
 
   async function loadStats() {
     const res = await fetch('/api/casting/requests?status=open')
@@ -487,6 +527,48 @@ export default function CastingDashboardPage() {
       toast.error('Search failed — check your connection')
     } finally {
       setNlLoading(false)
+    }
+  }
+
+  async function placeHold() {
+    if (!quickView || !holdStart || !holdEnd) return
+    setHoldSubmitting(true)
+    setHoldMsg('')
+    const res = await fetch('/api/bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        performerId: quickView.user_id,
+        startDate: holdStart,
+        endDate: holdEnd,
+        production: holdProduction || null,
+        note: holdNote || null,
+      }),
+    })
+    setHoldSubmitting(false)
+    if (res.ok) {
+      setHoldMsg('Hold placed!')
+      setHoldStart('')
+      setHoldEnd('')
+      setHoldProduction('')
+      setHoldNote('')
+      const refresh = await fetch(`/api/bookings?performerId=${quickView.user_id}`)
+      if (refresh.ok) setHolds(await refresh.json())
+    } else {
+      const e = await res.json().catch(() => ({}))
+      setHoldMsg(e.error || 'Failed to place hold')
+    }
+  }
+
+  async function cancelHold(id: string) {
+    const res = await fetch(`/api/bookings/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'cancel' }),
+    })
+    if (res.ok && quickView) {
+      const refresh = await fetch(`/api/bookings?performerId=${quickView.user_id}`)
+      if (refresh.ok) setHolds(await refresh.json())
     }
   }
 
@@ -1203,6 +1285,50 @@ export default function CastingDashboardPage() {
                 </div>
               </div>
             ) : null}
+            {/* Place a Hold */}
+            <div style={{ backgroundColor: '#1a1a2e', borderRadius: '12px', padding: '14px', marginBottom: '12px', border: '1px solid rgba(139,92,246,0.25)' }}>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: '#8b5cf6', marginBottom: '10px' }}>Place a Hold</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', color: '#9ca3af', marginBottom: '3px' }}>Start Date</label>
+                  <input type="date" value={holdStart} onChange={e => setHoldStart(e.target.value)} style={{ width: '100%', padding: '7px 9px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '7px', fontSize: '12px', color: 'white', backgroundColor: '#0f0f1a', outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', color: '#9ca3af', marginBottom: '3px' }}>End Date</label>
+                  <input type="date" value={holdEnd} onChange={e => setHoldEnd(e.target.value)} style={{ width: '100%', padding: '7px 9px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '7px', fontSize: '12px', color: 'white', backgroundColor: '#0f0f1a', outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+              </div>
+              <input value={holdProduction} onChange={e => setHoldProduction(e.target.value)} placeholder="Production name (optional)" style={{ width: '100%', padding: '7px 9px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '7px', fontSize: '12px', color: 'white', backgroundColor: '#0f0f1a', outline: 'none', boxSizing: 'border-box', marginBottom: '6px' }} />
+              <input value={holdNote} onChange={e => setHoldNote(e.target.value)} placeholder="Note (optional)" style={{ width: '100%', padding: '7px 9px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '7px', fontSize: '12px', color: 'white', backgroundColor: '#0f0f1a', outline: 'none', boxSizing: 'border-box', marginBottom: '8px' }} />
+              <button onClick={placeHold} disabled={holdSubmitting || !holdStart || !holdEnd} style={{ width: '100%', padding: '8px', backgroundColor: holdSubmitting || !holdStart || !holdEnd ? '#374151' : '#8b5cf6', color: 'white', border: 'none', borderRadius: '7px', fontWeight: '700', fontSize: '13px', cursor: holdSubmitting || !holdStart || !holdEnd ? 'not-allowed' : 'pointer' }}>
+                {holdSubmitting ? 'Placing…' : 'Place Hold'}
+              </button>
+              {holdMsg && <div style={{ fontSize: '12px', marginTop: '6px', color: holdMsg.includes('!') ? '#22c55e' : '#ef4444' }}>{holdMsg}</div>}
+            </div>
+
+            {/* Existing holds list */}
+            {holdsLoading ? (
+              <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '12px' }}>Loading holds…</div>
+            ) : holds.length > 0 && (
+              <div style={{ marginBottom: '12px' }}>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#9ca3af', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Holds & Bookings</div>
+                {holds.map(h => (
+                  <div key={h.id} style={{ backgroundColor: '#1a1a2e', borderRadius: '8px', padding: '8px 10px', marginBottom: '6px', border: `1px solid ${h.status === 'confirmed' ? 'rgba(59,130,246,0.3)' : 'rgba(139,92,246,0.3)'}` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                      <div>
+                        <div style={{ fontSize: '12px', fontWeight: '700', color: h.status === 'confirmed' ? '#3b82f6' : '#8b5cf6' }}>{h.status === 'confirmed' ? '● Confirmed' : '○ Pending'}</div>
+                        <div style={{ fontSize: '11px', color: '#9ca3af' }}>{h.start_date === h.end_date ? h.start_date : `${h.start_date} – ${h.end_date}`}</div>
+                        {h.production && <div style={{ fontSize: '11px', color: '#e5e7eb' }}>{h.production}</div>}
+                      </div>
+                      {h.status !== 'cancelled' && (
+                        <button onClick={() => cancelHold(h.id)} style={{ fontSize: '10px', padding: '3px 8px', backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', flexShrink: 0 }}>Cancel</button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <button onClick={() => { setQuickView(null); router.push(`/profile/${quickView.user_id}`) }} style={{ width: '100%', padding: '11px', backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '14px', cursor: 'pointer' }}>
               View Full Profile →
             </button>

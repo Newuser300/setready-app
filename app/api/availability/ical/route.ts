@@ -27,14 +27,51 @@ export async function GET(req: Request) {
   const sixMonths = new Date(now)
   sixMonths.setMonth(sixMonths.getMonth() + 6)
 
+  const nowStr = now.toISOString().slice(0, 10)
+  const sixStr = sixMonths.toISOString().slice(0, 10)
+
   const { data: avail } = await supabaseAdmin
     .from('performer_availability')
     .select('*')
     .eq('user_id', userId)
     .in('status', ['available', 'morning', 'afternoon'])
-    .gte('date', now.toISOString().slice(0, 10))
-    .lte('date', sixMonths.toISOString().slice(0, 10))
+    .gte('date', nowStr)
+    .lte('date', sixStr)
     .order('date')
+
+  // Confirmed bookings block out dates as BUSY. Fetch any overlapping the window.
+  const { data: bookings } = await supabaseAdmin
+    .from('bookings')
+    .select('id, start_date, end_date, production, note')
+    .eq('performer_id', userId)
+    .eq('status', 'confirmed')
+    .lte('start_date', sixStr)
+    .gte('end_date', nowStr)
+
+  const bookedDates = new Set<string>()
+  const bookingEvents: any[] = []
+  for (const b of bookings || []) {
+    const [sy, sm, sd] = b.start_date.split('-').map(Number)
+    const [ey, em, ed] = b.end_date.split('-').map(Number)
+    const cur = new Date(sy, sm - 1, sd)
+    const last = new Date(ey, em - 1, ed)
+    while (cur <= last) {
+      const mm = String(cur.getMonth() + 1).padStart(2, '0')
+      const dd = String(cur.getDate()).padStart(2, '0')
+      const ds = `${cur.getFullYear()}-${mm}-${dd}`
+      if (ds >= nowStr && ds <= sixStr) {
+        bookedDates.add(ds)
+        bookingEvents.push({
+          start: [cur.getFullYear(), cur.getMonth() + 1, cur.getDate()] as [number, number, number],
+          end: [cur.getFullYear(), cur.getMonth() + 1, cur.getDate()] as [number, number, number],
+          title: b.production ? `Booked — ${b.production}` : 'Booked — unavailable',
+          description: b.note || 'Confirmed booking — SetReady',
+          uid: `setready-booking-${b.id}-${ds}@setready.site`,
+        })
+      }
+      cur.setDate(cur.getDate() + 1)
+    }
+  }
 
   const statusLabel: Record<string, string> = {
     available: 'Available for filming',
@@ -42,18 +79,20 @@ export async function GET(req: Request) {
     afternoon: 'Available for filming (afternoon only)',
   }
 
-  const events = (avail || []).map((day: any) => {
-    const [y, m, d] = day.date.split('-').map(Number)
-    return {
-      start: [y, m, d] as [number, number, number],
-      end: [y, m, d] as [number, number, number],
-      title: statusLabel[day.status] || 'Available for filming',
-      description: day.notes || 'Available for background work — SetReady',
-      uid: `setready-avail-${day.id || day.date}@setready.site`,
-    }
-  })
+  const availEvents = (avail || [])
+    .filter((day: any) => !bookedDates.has(day.date))
+    .map((day: any) => {
+      const [y, m, d] = day.date.split('-').map(Number)
+      return {
+        start: [y, m, d] as [number, number, number],
+        end: [y, m, d] as [number, number, number],
+        title: statusLabel[day.status] || 'Available for filming',
+        description: day.notes || 'Available for background work — SetReady',
+        uid: `setready-avail-${day.id || day.date}@setready.site`,
+      }
+    })
 
-  const { value, error } = createEvents(events)
+  const { value, error } = createEvents([...availEvents, ...bookingEvents])
 
   if (error || !value) {
     console.error('iCal generation error:', error)
