@@ -82,7 +82,7 @@ export default function TermsOfServicePage() {
         You may delete your account at any time in Settings. We may suspend or terminate an account that
         violates these Terms; we will provide notice and the reasons unless doing so is prohibited by law or
         would create a security risk. You may appeal within 14 days by emailing
-        <a style={a} href="mailto:support@setready.site"> support@setready.site</a>.
+        <a style={a} href="mailto:setready@mail.com"> setready@mail.com</a>.
       </p>
 
       <h2 style={h2}>4. Your content and conduct</h2>
@@ -212,7 +212,7 @@ export default function TermsOfServicePage() {
       </p>
 
       <h2 style={h2}>15. Contact</h2>
-      <p style={p}>For any inquiry, including legal and support matters: <a style={a} href="mailto:support@setready.site">support@setready.site</a>.</p>
+      <p style={p}>For any inquiry, including legal and support matters: <a style={a} href="mailto:setready@mail.com">setready@mail.com</a>.</p>
 
       <h2 style={h2}>16. Entire agreement</h2>
       <p style={p}>These Terms and the Privacy Policy are the entire agreement between you and SetReady regarding the Service and supersede any prior agreements.</p>
