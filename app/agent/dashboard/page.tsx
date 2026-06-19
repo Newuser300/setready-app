@@ -86,6 +86,19 @@ interface AvailCheck {
   users: { email: string; raw_user_meta_data: { full_name?: string } } | null
 }
 
+interface Booking {
+  id: string
+  performer_id: string
+  created_by_id: string
+  created_by_type: string
+  created_by_name: string | null
+  start_date: string
+  end_date: string
+  status: string
+  production: string | null
+  note: string | null
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TABS = ['Overview','Roster','Union','Requests','Submissions','Calendar','Financials','Avail','Settings'] as const
@@ -234,6 +247,17 @@ export default function AgentDashboardPage() {
   const [availCheckId, setAvailCheckId] = useState('')
   const [availResponses, setAvailResponses] = useState<AvailCheck[]>([])
 
+  // Booking holds (Calendar tab)
+  const [holds, setHolds] = useState<Booking[]>([])
+  const [holdsLoading, setHoldsLoading] = useState(false)
+  const [holdPerformerId, setHoldPerformerId] = useState('')
+  const [holdStart, setHoldStart] = useState('')
+  const [holdEnd, setHoldEnd] = useState('')
+  const [holdProduction, setHoldProduction] = useState('')
+  const [holdNote, setHoldNote] = useState('')
+  const [holdSubmitting, setHoldSubmitting] = useState(false)
+  const [holdMsg, setHoldMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+
   // ── Auth ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -323,6 +347,13 @@ export default function AgentDashboardPage() {
     setCommUnpaidTotal(data.filter(c => !c.paid).reduce((a, c) => a + c.commission_amount, 0))
   }, [])
 
+  const loadHolds = useCallback(async () => {
+    setHoldsLoading(true)
+    const res = await fetch('/api/bookings')
+    setHoldsLoading(false)
+    if (res.ok) setHolds(await res.json())
+  }, [])
+
   useEffect(() => {
     if (activeTab === 'Overview') loadStats()
     if (activeTab === 'Roster') loadRoster()
@@ -330,7 +361,8 @@ export default function AgentDashboardPage() {
     if (activeTab === 'Requests') loadRequests()
     if (activeTab === 'Submissions') loadSubmissions()
     if (activeTab === 'Financials') loadCommissions()
-  }, [activeTab, loadStats, loadRoster, loadRequests, loadSubmissions, loadCommissions])
+    if (activeTab === 'Calendar') { loadRoster(); loadSubmissions(); loadHolds() }
+  }, [activeTab, loadStats, loadRoster, loadRequests, loadSubmissions, loadCommissions, loadHolds])
 
   async function addToRoster() {
     if (!addEmail.trim()) return
@@ -425,6 +457,47 @@ export default function AgentDashboardPage() {
   async function markCommPaid(id: string) {
     await fetch('/api/agent/commissions', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, paid: true }) })
     setCommissions(prev => prev.map(c => c.id === id ? { ...c, paid: true } : c))
+  }
+
+  async function placeHold() {
+    if (!holdPerformerId || !holdStart || !holdEnd) return
+    setHoldSubmitting(true); setHoldMsg(null)
+    const res = await fetch('/api/bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        performerId: holdPerformerId,
+        startDate: holdStart,
+        endDate: holdEnd,
+        production: holdProduction || undefined,
+        note: holdNote || undefined,
+      }),
+    })
+    setHoldSubmitting(false)
+    const d = await res.json().catch(() => ({}))
+    if (res.ok) {
+      setHoldMsg({ type: 'ok', text: 'Hold placed — the performer has been notified.' })
+      setHoldStart(''); setHoldEnd(''); setHoldProduction(''); setHoldNote('')
+      loadHolds()
+    } else {
+      setHoldMsg({ type: 'err', text: d.error || 'Could not place the hold.' })
+    }
+  }
+
+  async function bookingAction(id: string, action: 'confirm' | 'cancel') {
+    if (action === 'cancel' && !confirm('Cancel this booking? The performer will be notified.')) return
+    const res = await fetch(`/api/bookings/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action }),
+    })
+    const d = await res.json().catch(() => ({}))
+    if (res.ok) {
+      setHoldMsg({ type: 'ok', text: action === 'confirm' ? 'Booking confirmed.' : 'Booking cancelled.' })
+      loadHolds()
+    } else {
+      setHoldMsg({ type: 'err', text: d.error || 'Action failed.' })
+    }
   }
 
   async function signOut() {
@@ -707,18 +780,100 @@ export default function AgentDashboardPage() {
         {activeTab === 'Calendar' && (
           <div>
             <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white', margin: '0 0 20px' }}>Booking Calendar</h1>
-            <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '24px', border: '1px solid rgba(255,255,255,0.06)', textAlign: 'center' }}>
-              <div style={{ fontSize: '40px', marginBottom: '12px' }}>📅</div>
-              <div style={{ fontSize: '15px', color: 'white', fontWeight: '700', marginBottom: '8px' }}>Confirmed Bookings</div>
-              <div style={{ fontSize: '13px', color: '#9ca3af', marginBottom: '20px' }}>Showing confirmed submissions for your roster performers.</div>
+
+            {/* Place a hold */}
+            <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '20px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '15px', fontWeight: '700', color: 'white', margin: '0 0 6px' }}>Place a Hold</h2>
+              <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '14px' }}>Put a tentative hold on a roster performer&rsquo;s calendar. They&rsquo;ll be notified and can accept it.</div>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={lbl}>Performer *</label>
+                  <select value={holdPerformerId} onChange={e => setHoldPerformerId(e.target.value)} style={inp}>
+                    <option value="">Select a performer&hellip;</option>
+                    {roster.map(r => <option key={r.user_id} value={r.user_id}>{pName(r)}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={lbl}>Production</label>
+                  <input value={holdProduction} onChange={e => setHoldProduction(e.target.value)} placeholder="Show / project name" style={inp} />
+                </div>
+                <div>
+                  <label style={lbl}>Start date *</label>
+                  <input type="date" value={holdStart} onChange={e => setHoldStart(e.target.value)} style={inp} />
+                </div>
+                <div>
+                  <label style={lbl}>End date *</label>
+                  <input type="date" value={holdEnd} onChange={e => setHoldEnd(e.target.value)} style={inp} />
+                </div>
+                <div style={{ gridColumn: isMobile ? '1' : '1 / -1' }}>
+                  <label style={lbl}>Note (optional)</label>
+                  <input value={holdNote} onChange={e => setHoldNote(e.target.value)} placeholder="e.g. Need confirmation by Friday" style={inp} />
+                </div>
+              </div>
+              {holdMsg && (
+                <div style={{ marginTop: '12px', fontSize: '13px', fontWeight: '600', color: holdMsg.type === 'ok' ? '#22c55e' : '#ef4444' }}>{holdMsg.text}</div>
+              )}
+              <button
+                onClick={placeHold}
+                disabled={holdSubmitting || !holdPerformerId || !holdStart || !holdEnd}
+                style={{ marginTop: '14px', padding: '11px 20px', backgroundColor: (holdPerformerId && holdStart && holdEnd) ? '#F59E0B' : '#374151', color: (holdPerformerId && holdStart && holdEnd) ? '#1a1a2e' : '#6b7280', fontWeight: '800', border: 'none', borderRadius: '8px', cursor: (holdPerformerId && holdStart && holdEnd) ? 'pointer' : 'not-allowed', fontSize: '14px' }}
+              >
+                {holdSubmitting ? 'Placing…' : '＋ Place Hold'}
+              </button>
+            </div>
+
+            {/* Current holds & bookings */}
+            <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '20px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '15px', fontWeight: '700', color: 'white', margin: '0 0 4px' }}>Holds &amp; Bookings</h2>
+              <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '14px' }}><span style={{ color: '#a855f7', fontWeight: 700 }}>● Pending</span> &nbsp; <span style={{ color: '#3b82f6', fontWeight: 700 }}>● Confirmed</span></div>
+              {holdsLoading
+                ? <div style={{ textAlign: 'center', padding: '20px', color: '#9ca3af' }}>Loading&hellip;</div>
+                : (() => {
+                    const active = holds.filter(h => h.status === 'pending' || h.status === 'confirmed')
+                      .sort((a, b) => (a.start_date < b.start_date ? -1 : 1))
+                    if (active.length === 0) return <div style={{ color: '#6b7280', fontSize: '14px' }}>No holds or bookings yet. Place one above.</div>
+                    return active.map(h => {
+                      const rp = roster.find(r => r.user_id === h.performer_id)
+                      const name = rp ? pName(rp) : 'Performer'
+                      const isPending = h.status === 'pending'
+                      const range = h.end_date !== h.start_date ? `${fmtDate(h.start_date)} – ${fmtDate(h.end_date)}` : fmtDate(h.start_date)
+                      const accent = isPending ? '#a855f7' : '#3b82f6'
+                      const mine = h.created_by_type === 'agent'
+                      return (
+                        <div key={h.id} style={{ backgroundColor: '#1a1a2e', borderRadius: '10px', padding: '12px 14px', marginBottom: '8px', display: 'flex', gap: '12px', alignItems: 'center', border: `1px solid ${accent}55` }}>
+                          <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: accent, flexShrink: 0 }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: '700', color: 'white', fontSize: '14px' }}>{name}{h.production ? ` · ${h.production}` : ''}</div>
+                            <div style={{ fontSize: '12px', color: '#9ca3af' }}>{range} · <span style={{ color: accent, fontWeight: 700 }}>{isPending ? 'Pending' : 'Confirmed'}</span>{h.created_by_type === 'casting' ? ' · by casting' : ''}</div>
+                            {h.note && <div style={{ fontSize: '11px', color: '#6b7280', fontStyle: 'italic', marginTop: '2px' }}>{h.note}</div>}
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                            {isPending && mine && (
+                              <button onClick={() => bookingAction(h.id, 'confirm')} style={{ padding: '6px 12px', backgroundColor: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '7px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', whiteSpace: 'nowrap' }}>Confirm</button>
+                            )}
+                            {mine && (
+                              <button onClick={() => bookingAction(h.id, 'cancel')} style={{ padding: '6px 12px', backgroundColor: 'transparent', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '7px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', whiteSpace: 'nowrap' }}>Cancel</button>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })
+                  })()
+              }
+            </div>
+
+            {/* Confirmed casting submissions (existing) */}
+            <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '20px', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <h2 style={{ fontSize: '15px', fontWeight: '700', color: 'white', margin: '0 0 4px' }}>Confirmed Casting Submissions</h2>
+              <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '14px' }}>Submissions to casting requests that have been confirmed.</div>
               {submissions.filter(s => s.status === 'confirmed').length === 0
-                ? <div style={{ color: '#6b7280', fontSize: '14px' }}>No confirmed bookings yet.</div>
+                ? <div style={{ color: '#6b7280', fontSize: '14px' }}>No confirmed submissions yet.</div>
                 : submissions.filter(s => s.status === 'confirmed').sort((a, b) => {
                     const da = a.casting_requests?.shoot_date || ''
                     const db = b.casting_requests?.shoot_date || ''
                     return da < db ? -1 : 1
                   }).map(sub => (
-                    <div key={sub.id} style={{ backgroundColor: '#1a1a2e', borderRadius: '10px', padding: '12px 14px', marginBottom: '8px', textAlign: 'left', display: 'flex', gap: '12px', alignItems: 'center', border: '1px solid rgba(34,197,94,0.2)' }}>
+                    <div key={sub.id} style={{ backgroundColor: '#1a1a2e', borderRadius: '10px', padding: '12px 14px', marginBottom: '8px', display: 'flex', gap: '12px', alignItems: 'center', border: '1px solid rgba(34,197,94,0.2)' }}>
                       <div style={{ fontSize: '24px' }}>✅</div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: '700', color: 'white', fontSize: '14px' }}>{sName(sub)}</div>
