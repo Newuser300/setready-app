@@ -155,9 +155,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   // ---- CANCEL ----
   if (action === 'cancel') {
-    if (!isPerformer && !isCreator) {
+    // Only the agent/casting director who created the booking may cancel it.
+    // Performers cannot cancel — they can only accept a hold.
+    if (!isCreator) {
       return NextResponse.json(
-        { error: 'Only the performer or whoever created this booking can cancel it.' },
+        { error: 'Only the agent or casting director who placed this booking can cancel it.' },
         { status: 403 }
       )
     }
