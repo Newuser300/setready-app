@@ -132,6 +132,26 @@ export async function POST(request: Request) {
         break;
       }
 
+      // One-time profile boost: extend boost_expires_at by the purchased months
+      if (session.mode === 'payment' && session.metadata?.type === 'boost') {
+        const months = parseInt(session.metadata?.months || '1', 10);
+        const { data: prof } = await supabaseAdmin
+          .from('performer_profiles')
+          .select('boost_expires_at')
+          .eq('id', userId)
+          .maybeSingle();
+        const nowDate = new Date();
+        const current = prof?.boost_expires_at ? new Date(prof.boost_expires_at) : null;
+        const base = current && current > nowDate ? current : nowDate;
+        base.setMonth(base.getMonth() + months);
+        const { error: boostError } = await supabaseAdmin
+          .from('performer_profiles')
+          .update({ boost_expires_at: base.toISOString() })
+          .eq('id', userId);
+        if (boostError) console.error('❌ Failed to extend profile boost:', boostError);
+        break;
+      }
+
       // Subscription checkout: stripeCustomerId is required
       if (!stripeCustomerId) {
         console.error('❌ No stripeCustomerId on session. Skipping.');
