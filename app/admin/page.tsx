@@ -178,7 +178,7 @@ export default function AdminPage() {
   const [confirmDeleteUser, setConfirmDeleteUser] = useState(false);
 
   // Casting tab
-  const [castingSubTab, setCastingSubTab] = useState<'pending' | 'stats' | 'requests' | 'agents' | 'performers' | 'casting_directors'>('pending');
+  const [castingSubTab, setCastingSubTab] = useState<'pending' | 'stats' | 'requests' | 'agents' | 'performers' | 'casting_directors' | 'castings'>('pending');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [castingData, setCastingData] = useState<any>(null);
   const [castingLoading, setCastingLoading] = useState(false);
@@ -213,6 +213,10 @@ export default function AdminPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [castingDirectorsList, setCastingDirectorsList] = useState<any[]>([]);
   const [castingDirectorsLoading, setCastingDirectorsLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [castings, setCastings] = useState<any[]>([]);
+  const [castingsLoading, setCastingsLoading] = useState(false);
+  const [castLens, setCastLens] = useState<'both' | 'list' | 'performer' | 'production'>('both');
 
   // Messages tab state
   const [msgSubTab, setMsgSubTab] = useState<'compose' | 'sent' | 'all' | 'stats' | 'restrictions'>('compose')
@@ -663,6 +667,13 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
       body: JSON.stringify({ action: 'toggle_auto_approve', id: cdId, value }),
     });
     loadCastingDirectors();
+  }
+
+  async function loadCastings() {
+    setCastingsLoading(true);
+    const res = await fetch('/api/admin/casting?type=castings', { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (res.ok) setCastings(await res.json());
+    setCastingsLoading(false);
   }
 
   async function loadPromoCodes() {
@@ -2618,6 +2629,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                 { key: 'stats',      label: 'Platform Stats' },
                 { key: 'requests',   label: 'All Requests' },
                 { key: 'casting_directors', label: 'Casting Directors' },
+                { key: 'castings',   label: 'Who Was Cast' },
                 { key: 'agents',     label: 'Agents' },
                 { key: 'performers', label: 'Performers' },
               ] as const).map(t => (
@@ -2626,6 +2638,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                   if (t.key === 'agents') { loadAgents(); return; }
                   if (t.key === 'performers') { loadPerformers(); return; }
                   if (t.key === 'casting_directors') { loadCastingDirectors(); return; }
+                  if (t.key === 'castings') { loadCastings(); return; }
                   setCastingLoading(true)
                   const res = await fetch(`/api/admin/casting?type=${t.key}`, { headers: { Authorization: `Bearer ${accessToken}` } })
                   setCastingLoading(false)
@@ -2775,7 +2788,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
             )}
 
             {/* Load initial data on mount */}
-            {!castingLoading && !castingData && castingSubTab !== 'agents' && castingSubTab !== 'performers' && castingSubTab !== 'casting_directors' && (
+            {!castingLoading && !castingData && castingSubTab !== 'agents' && castingSubTab !== 'performers' && castingSubTab !== 'casting_directors' && castingSubTab !== 'castings' && (
               <button onClick={async () => {
                 setCastingLoading(true)
                 const res = await fetch('/api/admin/casting?type=pending', { headers: { Authorization: `Bearer ${accessToken}` } })
@@ -2821,6 +2834,118 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Who Was Cast Sub-tab */}
+            {castingSubTab === 'castings' && (
+              <div className="space-y-4">
+                <div className="flex gap-2 flex-wrap">
+                  {([
+                    { key: 'both', label: 'Summary + List' },
+                    { key: 'list', label: 'All Castings' },
+                    { key: 'performer', label: 'By Performer' },
+                    { key: 'production', label: 'By Production' },
+                  ] as const).map(l => (
+                    <button key={l.key} onClick={() => setCastLens(l.key)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${castLens === l.key ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}`}>
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
+
+                {castingsLoading ? (
+                  <div className="text-center py-10 text-gray-400">Loading castings...</div>
+                ) : castings.length === 0 ? (
+                  <p className="text-gray-400 text-sm">No confirmed castings yet.</p>
+                ) : (
+                  <>
+                    {castLens === 'both' && (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div className="bg-white border border-gray-200 rounded-xl p-5 text-center">
+                          <div className="text-3xl font-black text-gray-800">{castings.length}</div>
+                          <div className="text-xs text-gray-500 mt-1">Confirmed Castings</div>
+                        </div>
+                        <div className="bg-white border border-gray-200 rounded-xl p-5 text-center">
+                          <div className="text-3xl font-black text-gray-800">{new Set(castings.map((c: any) => c.performer_email)).size}</div>
+                          <div className="text-xs text-gray-500 mt-1">Distinct Performers</div>
+                        </div>
+                        <div className="bg-white border border-gray-200 rounded-xl p-5 text-center">
+                          <div className="text-3xl font-black text-gray-800">{new Set(castings.map((c: any) => c.production_name)).size}</div>
+                          <div className="text-xs text-gray-500 mt-1">Productions</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {(castLens === 'both' || castLens === 'list') && (
+                      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                        <table className="min-w-full text-sm">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Performer</th>
+                              <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Production</th>
+                              <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Shoot Date</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {castings.map((c: any) => (
+                              <tr key={c.id} className="hover:bg-gray-50">
+                                <td className="px-4 py-2.5 text-gray-800 font-medium">{c.performer_name} <span className="text-gray-400 text-xs">{c.performer_email}</span></td>
+                                <td className="px-4 py-2.5 text-gray-600">{c.production_name}</td>
+                                <td className="px-4 py-2.5 text-gray-500 text-xs">{c.shoot_date || '—'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {castLens === 'performer' && (
+                      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                        <table className="min-w-full text-sm">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Performer</th>
+                              <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Times Cast</th>
+                              <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Productions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {Object.values(castings.reduce((acc: any, c: any) => {
+                              const key = c.performer_email || c.performer_name
+                              if (!acc[key]) acc[key] = { name: c.performer_name, email: c.performer_email, count: 0, productions: [] }
+                              acc[key].count++
+                              acc[key].productions.push(c.production_name)
+                              return acc
+                            }, {})).sort((a: any, b: any) => b.count - a.count).map((p: any) => (
+                              <tr key={p.email} className="hover:bg-gray-50">
+                                <td className="px-4 py-2.5 text-gray-800 font-medium">{p.name} <span className="text-gray-400 text-xs">{p.email}</span></td>
+                                <td className="px-4 py-2.5 text-gray-700 font-bold">{p.count}</td>
+                                <td className="px-4 py-2.5 text-gray-500 text-xs">{p.productions.join(', ')}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {castLens === 'production' && (
+                      <div className="space-y-3">
+                        {Object.values(castings.reduce((acc: any, c: any) => {
+                          const key = c.production_name
+                          if (!acc[key]) acc[key] = { production: c.production_name, shoot_date: c.shoot_date, performers: [] }
+                          acc[key].performers.push(c.performer_name)
+                          return acc
+                        }, {})).map((pr: any) => (
+                          <div key={pr.production} className="bg-white border border-gray-200 rounded-xl p-4">
+                            <div className="font-bold text-gray-800">{pr.production} <span className="font-normal text-gray-400 text-sm">· {pr.shoot_date || '—'}</span></div>
+                            <div className="text-sm text-gray-600 mt-1">{pr.performers.length} confirmed: {pr.performers.join(', ')}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
 

@@ -112,6 +112,34 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(directors || [])
   }
 
+  if (type === 'castings') {
+    const { data: subs } = await supabaseAdmin
+      .from('casting_submissions')
+      .select('id, performer_user_id, casting_request_id, updated_at, casting_requests:casting_request_id (production_name, shoot_date)')
+      .eq('status', 'confirmed')
+      .order('updated_at', { ascending: false })
+
+    if (!subs?.length) return NextResponse.json([])
+
+    const userIds = [...new Set(subs.map((s: any) => s.performer_user_id).filter(Boolean))]
+    const { data: users } = await supabaseAdmin
+      .from('users')
+      .select('id, email, name')
+      .in('id', userIds)
+    const userMap: Record<string, { email: string; name: string | null }> = {}
+    ;(users || []).forEach((u: any) => { userMap[u.id] = { email: u.email, name: u.name } })
+
+    const result = subs.map((s: any) => ({
+      id: s.id,
+      performer_name: userMap[s.performer_user_id]?.name || userMap[s.performer_user_id]?.email || 'Unknown',
+      performer_email: userMap[s.performer_user_id]?.email || '',
+      production_name: (s.casting_requests as any)?.production_name || '—',
+      shoot_date: (s.casting_requests as any)?.shoot_date || null,
+    }))
+
+    return NextResponse.json(result)
+  }
+
   if (type === 'performers') {
     const now = new Date()
     const thisYear = now.getFullYear()
