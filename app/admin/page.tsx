@@ -2626,12 +2626,12 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                         </div>
                         <div className="flex gap-2 shrink-0">
                           <button onClick={async () => {
-                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve', id: cd.id, entityType: 'casting_director' }) })
+                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ action: 'approve', id: cd.id, entityType: 'casting_director' }) })
                             setCastingData((d: any) => ({ ...d, castingDirectors: d.castingDirectors.filter((x: any) => x.id !== cd.id) }))
                           }} className="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700">Approve</button>
                           <button onClick={async () => {
                             if (!confirm('Reject and delete this application?')) return
-                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reject', id: cd.id, entityType: 'casting_director' }) })
+                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ action: 'reject', id: cd.id, entityType: 'casting_director' }) })
                             setCastingData((d: any) => ({ ...d, castingDirectors: d.castingDirectors.filter((x: any) => x.id !== cd.id) }))
                           }} className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 text-xs font-bold rounded-lg hover:bg-red-100">Reject</button>
                         </div>
@@ -2653,12 +2653,12 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                         </div>
                         <div className="flex gap-2 shrink-0">
                           <button onClick={async () => {
-                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve', id: ag.id, entityType: 'agency' }) })
+                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ action: 'approve', id: ag.id, entityType: 'agency' }) })
                             setCastingData((d: any) => ({ ...d, agencies: d.agencies.filter((x: any) => x.id !== ag.id) }))
                           }} className="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700">Approve</button>
                           <button onClick={async () => {
                             if (!confirm('Reject and delete this application?')) return
-                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reject', id: ag.id, entityType: 'agency' }) })
+                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ action: 'reject', id: ag.id, entityType: 'agency' }) })
                             setCastingData((d: any) => ({ ...d, agencies: d.agencies.filter((x: any) => x.id !== ag.id) }))
                           }} className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 text-xs font-bold rounded-lg hover:bg-red-100">Reject</button>
                         </div>
@@ -2679,12 +2679,12 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                         </div>
                         <div className="flex gap-2 shrink-0">
                           <button onClick={async () => {
-                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve', id: cr.id, entityType: 'casting_request' }) })
+                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ action: 'approve', id: cr.id, entityType: 'casting_request' }) })
                             setCastingData((d: any) => ({ ...d, pendingRequests: d.pendingRequests.filter((x: any) => x.id !== cr.id) }))
                           }} className="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700">Approve</button>
                           <button onClick={async () => {
                             const reason = prompt('Rejection reason (optional):') ?? undefined
-                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reject', id: cr.id, entityType: 'casting_request', reason }) })
+                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ action: 'reject', id: cr.id, entityType: 'casting_request', reason }) })
                             setCastingData((d: any) => ({ ...d, pendingRequests: d.pendingRequests.filter((x: any) => x.id !== cr.id) }))
                           }} className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 text-xs font-bold rounded-lg hover:bg-red-100">Reject</button>
                         </div>
