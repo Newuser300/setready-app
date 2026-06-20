@@ -138,7 +138,7 @@ export async function POST(request: Request) {
         const { data: prof } = await supabaseAdmin
           .from('performer_profiles')
           .select('boost_expires_at')
-          .eq('id', userId)
+          .eq('user_id', userId)
           .maybeSingle();
         const nowDate = new Date();
         const current = prof?.boost_expires_at ? new Date(prof.boost_expires_at) : null;
@@ -147,7 +147,7 @@ export async function POST(request: Request) {
         const { error: boostError } = await supabaseAdmin
           .from('performer_profiles')
           .update({ boost_expires_at: base.toISOString() })
-          .eq('id', userId);
+          .eq('user_id', userId);
         if (boostError) console.error('❌ Failed to extend profile boost:', boostError);
         break;
       }

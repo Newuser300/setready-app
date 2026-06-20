@@ -34,6 +34,7 @@ export async function POST(req: Request) {
       ethnicity,
       union_status,
       union_priority,
+      boost_expires_at,
       special_skills,
       film_region_code,
       city,
@@ -97,6 +98,22 @@ export async function POST(req: Request) {
       if (aAvail !== bAvail) return aAvail - bAvail
       return (a.union_priority ?? 4) - (b.union_priority ?? 4)
     })
+  }
+
+  // Boost: pin boosted profiles to the top of the matched results. Boost data is
+  // read from the original profiles (not the AI passthrough) so it's always present.
+  const boostMap: Record<string, string | null> = {}
+  ;(profiles || []).forEach((p: any) => { boostMap[p.user_id] = p.boost_expires_at || null })
+  const nowMs = Date.now()
+  const isBoosted = (uid: string) => {
+    const exp = boostMap[uid]
+    return exp ? new Date(exp).getTime() > nowMs : false
+  }
+  if (Array.isArray(result.performers)) {
+    result.performers = [
+      ...result.performers.filter((p: any) => isBoosted(p.user_id)),
+      ...result.performers.filter((p: any) => !isBoosted(p.user_id)),
+    ]
   }
 
   return NextResponse.json(result)

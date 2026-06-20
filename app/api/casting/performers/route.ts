@@ -35,6 +35,7 @@ export async function GET(req: Request) {
       ethnicity,
       union_status,
       union_priority,
+      boost_expires_at,
       special_skills,
       languages,
       agency_id,
@@ -152,18 +153,18 @@ export async function GET(req: Request) {
   }
 
   function sortPerformers(arr: any[]) {
+    const nowMs = Date.now()
+    const isBoosted = (p: any) => p.boost_expires_at ? new Date(p.boost_expires_at).getTime() > nowMs : false
     return arr.sort((a, b) => {
-      // 1. Union priority (Full=1 first)
+      const aB = isBoosted(a) ? 0 : 1
+      const bB = isBoosted(b) ? 0 : 1
+      if (aB !== bB) return aB - bB
       const pA = a.union_priority ?? 4
       const pB = b.union_priority ?? 4
       if (pA !== pB) return pA - pB
-
-      // 2. Availability
       const aAvail = a.availabilityStatus === 'available' ? 0 : 1
       const bAvail = b.availabilityStatus === 'available' ? 0 : 1
       if (aAvail !== bAvail) return aAvail - bAvail
-
-      // 3. Has headshot (profile completeness proxy)
       const aHead = a.headshot_url ? 0 : 1
       const bHead = b.headshot_url ? 0 : 1
       return aHead - bHead
