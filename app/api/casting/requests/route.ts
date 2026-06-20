@@ -91,7 +91,16 @@ export async function POST(req: Request) {
     .select('auto_approve')
     .eq('id', session.accountId)
     .maybeSingle()
-  const autoApprove = directorRow?.auto_approve === true
+
+  // Global override: when review mode is ON, every request is reviewed regardless of trust.
+  const { data: reviewSetting } = await supabaseAdmin
+    .from('admin_settings')
+    .select('value')
+    .eq('key', 'casting_request_review_mode')
+    .maybeSingle()
+  const globalReviewMode = reviewSetting?.value === 'true'
+
+  const autoApprove = directorRow?.auto_approve === true && !globalReviewMode
 
   const { data: request, error } = await supabaseAdmin
     .from('casting_requests')

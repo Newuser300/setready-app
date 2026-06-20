@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
       .from('casting_requests')
       .select(`
         id, production_name, project_type, shoot_date, role_type,
-        performers_needed, filled_count, status, created_at,
+        performers_needed, filled_count, status, moderation_status, created_at,
         casting_directors:casting_director_id (name, company, email)
       `)
       .order('created_at', { ascending: false })

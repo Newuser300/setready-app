@@ -2457,8 +2457,8 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                 <p className="font-semibold text-gray-800 text-sm">Casting Request Review Mode</p>
                 <p className="text-xs text-gray-500 mt-0.5">
                   {reviewMode
-                    ? 'ON — New casting requests require admin review before being sent to agents.'
-                    : 'OFF — Casting requests go directly to agents immediately.'}
+                    ? 'ON — Every new request is held for review, even from trusted directors.'
+                    : 'OFF — Trusted directors auto-publish; everyone else is held for review.'}
                 </p>
               </div>
               <button
@@ -2748,12 +2748,27 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
               <div className="space-y-3">
                 {(Array.isArray(castingData) ? castingData : (castingData.requests || [])).length === 0 && <p className="text-gray-400 text-sm">No casting requests yet.</p>}
                 {(Array.isArray(castingData) ? castingData : (castingData.requests || [])).map((r: any) => (
-                  <div key={r.id} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between">
+                  <div key={r.id} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between gap-4">
                     <div>
                       <div className="font-bold text-gray-800">{r.production_name}</div>
                       <div className="text-sm text-gray-500">{r.role_type} · {r.shoot_date} · {(r.casting_directors as any)?.company || (r.casting_directors as any)?.name}</div>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${r.status === 'open' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{r.status}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${r.status === 'open' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{r.status}</span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                        r.moderation_status === 'approved' ? 'bg-blue-50 text-blue-700'
+                        : r.moderation_status === 'pending' ? 'bg-yellow-50 text-yellow-700'
+                        : 'bg-red-50 text-red-600'
+                      }`}>{r.moderation_status}</span>
+                      {r.moderation_status === 'approved' && (
+                        <button onClick={async () => {
+                          const reason = prompt('Reason for pulling this live request (optional):') ?? undefined
+                          await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ action: 'reject', id: r.id, entityType: 'casting_request', reason }) })
+                          const res = await fetch('/api/admin/casting?type=requests', { headers: { Authorization: `Bearer ${accessToken}` } })
+                          if (res.ok) setCastingData(await res.json())
+                        }} className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 text-xs font-bold rounded-lg hover:bg-red-100">Pull</button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
