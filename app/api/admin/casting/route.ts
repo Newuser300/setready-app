@@ -140,6 +140,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(result)
   }
 
+  if (type === 'reports') {
+    const { data: reports } = await supabaseAdmin
+      .from('casting_request_reports')
+      .select('id, casting_request_id, reason, created_at, casting_requests:casting_request_id (production_name, role_type, shoot_date, status, moderation_status, casting_directors:casting_director_id (name, company))')
+      .order('created_at', { ascending: false })
+    return NextResponse.json(reports || [])
+  }
+
   if (type === 'performers') {
     const now = new Date()
     const thisYear = now.getFullYear()

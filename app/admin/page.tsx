@@ -178,7 +178,7 @@ export default function AdminPage() {
   const [confirmDeleteUser, setConfirmDeleteUser] = useState(false);
 
   // Casting tab
-  const [castingSubTab, setCastingSubTab] = useState<'pending' | 'stats' | 'requests' | 'agents' | 'performers' | 'casting_directors' | 'castings'>('pending');
+  const [castingSubTab, setCastingSubTab] = useState<'pending' | 'stats' | 'requests' | 'agents' | 'performers' | 'casting_directors' | 'castings' | 'reports'>('pending');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [castingData, setCastingData] = useState<any>(null);
   const [castingLoading, setCastingLoading] = useState(false);
@@ -217,6 +217,9 @@ export default function AdminPage() {
   const [castings, setCastings] = useState<any[]>([]);
   const [castingsLoading, setCastingsLoading] = useState(false);
   const [castLens, setCastLens] = useState<'both' | 'list' | 'performer' | 'production'>('both');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [reports, setReports] = useState<any[]>([]);
+  const [reportsLoading, setReportsLoading] = useState(false);
 
   // Messages tab state
   const [msgSubTab, setMsgSubTab] = useState<'compose' | 'sent' | 'all' | 'stats' | 'restrictions'>('compose')
@@ -674,6 +677,13 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
     const res = await fetch('/api/admin/casting?type=castings', { headers: { Authorization: `Bearer ${accessToken}` } });
     if (res.ok) setCastings(await res.json());
     setCastingsLoading(false);
+  }
+
+  async function loadReports() {
+    setReportsLoading(true);
+    const res = await fetch('/api/admin/casting?type=reports', { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (res.ok) setReports(await res.json());
+    setReportsLoading(false);
   }
 
   async function loadPromoCodes() {
@@ -2628,6 +2638,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                 { key: 'pending',    label: 'Pending Applications' },
                 { key: 'stats',      label: 'Platform Stats' },
                 { key: 'requests',   label: 'All Requests' },
+                { key: 'reports',    label: 'Reported' },
                 { key: 'casting_directors', label: 'Casting Directors' },
                 { key: 'castings',   label: 'Who Was Cast' },
                 { key: 'agents',     label: 'Agents' },
@@ -2639,6 +2650,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                   if (t.key === 'performers') { loadPerformers(); return; }
                   if (t.key === 'casting_directors') { loadCastingDirectors(); return; }
                   if (t.key === 'castings') { loadCastings(); return; }
+                  if (t.key === 'reports') { loadReports(); return; }
                   setCastingLoading(true)
                   const res = await fetch(`/api/admin/casting?type=${t.key}`, { headers: { Authorization: `Bearer ${accessToken}` } })
                   setCastingLoading(false)
@@ -2788,7 +2800,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
             )}
 
             {/* Load initial data on mount */}
-            {!castingLoading && !castingData && castingSubTab !== 'agents' && castingSubTab !== 'performers' && castingSubTab !== 'casting_directors' && castingSubTab !== 'castings' && (
+            {!castingLoading && !castingData && castingSubTab !== 'agents' && castingSubTab !== 'performers' && castingSubTab !== 'casting_directors' && castingSubTab !== 'castings' && castingSubTab !== 'reports' && (
               <button onClick={async () => {
                 setCastingLoading(true)
                 const res = await fetch('/api/admin/casting?type=pending', { headers: { Authorization: `Bearer ${accessToken}` } })
@@ -2834,6 +2846,49 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Reported Sub-tab */}
+            {castingSubTab === 'reports' && (
+              <div className="space-y-3">
+                {reportsLoading ? (
+                  <div className="text-center py-10 text-gray-400">Loading reports...</div>
+                ) : reports.length === 0 ? (
+                  <p className="text-gray-400 text-sm">No reported requests.</p>
+                ) : (
+                  Object.values(reports.reduce((acc: any, rep: any) => {
+                    const key = rep.casting_request_id
+                    if (!acc[key]) acc[key] = { requestId: key, request: rep.casting_requests, reasons: [], count: 0 }
+                    acc[key].count++
+                    if (rep.reason) acc[key].reasons.push(rep.reason)
+                    return acc
+                  }, {})).map((g: any) => (
+                    <div key={g.requestId} className="bg-white border border-red-200 rounded-xl p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div className="font-bold text-gray-800">{g.request?.production_name || '(request removed)'} <span className="font-normal text-red-600 text-sm">· {g.count} report{g.count > 1 ? 's' : ''}</span></div>
+                          <div className="text-sm text-gray-500">{g.request?.role_type} · {g.request?.shoot_date} · {(g.request?.casting_directors as any)?.company || (g.request?.casting_directors as any)?.name}</div>
+                          <div className="text-xs text-gray-400 mt-1">Status: {g.request?.status} / {g.request?.moderation_status}</div>
+                          {g.reasons.length > 0 && (
+                            <ul className="mt-2 space-y-0.5">
+                              {g.reasons.map((rsn: string, i: number) => (
+                                <li key={i} className="text-xs text-gray-600">• {rsn}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                        {g.request?.moderation_status === 'approved' && (
+                          <button onClick={async () => {
+                            const reason = prompt('Reason for pulling this request (optional):') ?? undefined
+                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ action: 'reject', id: g.requestId, entityType: 'casting_request', reason }) })
+                            loadReports()
+                          }} className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 text-xs font-bold rounded-lg shrink-0 hover:bg-red-100">Pull request</button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             )}
 

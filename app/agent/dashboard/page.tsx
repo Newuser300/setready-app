@@ -693,6 +693,27 @@ export default function AgentDashboardPage() {
                           <div style={{ padding: '0 18px 16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                             {req.description && <p style={{ fontSize: '13px', color: '#d1d5db', marginBottom: '12px', lineHeight: '1.6' }}>{req.description}</p>}
                             {req.wardrobe_notes && <p style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '12px' }}>👔 {req.wardrobe_notes}</p>}
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation()
+                                const reason = prompt('Why are you reporting this casting request? (optional)')
+                                if (reason === null) return
+                                const res = await fetch('/api/agent/report-request', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ requestId: req.id, reason }),
+                                })
+                                if (res.ok) {
+                                  const d = await res.json().catch(() => ({}))
+                                  alert(d.alreadyReported ? 'You already reported this request.' : 'Thanks — this request has been flagged for admin review.')
+                                } else {
+                                  alert('Could not submit the report. Please try again.')
+                                }
+                              }}
+                              style={{ display: 'block', fontSize: '11px', color: '#f87171', background: 'none', border: 'none', cursor: 'pointer', padding: '0 0 12px', textDecoration: 'underline' }}
+                            >
+                              ⚑ Report this request
+                            </button>
                             <div style={{ fontSize: '13px', fontWeight: '700', color: '#F59E0B', marginBottom: '8px' }}>Submit a performer:</div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                               {roster.slice(0, 8).map(r => (
