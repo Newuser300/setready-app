@@ -2666,6 +2666,32 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                     ))
                   }
                 </div>
+                <div>
+                  <h3 className="text-sm font-bold text-gray-700 mb-3">Casting Requests ({castingData.pendingRequests?.length || 0} pending approval)</h3>
+                  {castingData.pendingRequests?.length === 0
+                    ? <p className="text-gray-400 text-sm">No pending casting requests.</p>
+                    : castingData.pendingRequests?.map((cr: any) => (
+                      <div key={cr.id} className="bg-white border border-gray-200 rounded-xl p-4 mb-3 flex items-start justify-between gap-4">
+                        <div>
+                          <div className="font-bold text-gray-800">{cr.production_name}</div>
+                          <div className="text-sm text-gray-500">{cr.role_type} · {cr.shoot_date} · {(cr.casting_directors as any)?.company || (cr.casting_directors as any)?.name}</div>
+                          <div className="text-xs text-gray-300 mt-1">{new Date(cr.created_at).toLocaleString('en-CA')}</div>
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          <button onClick={async () => {
+                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve', id: cr.id, entityType: 'casting_request' }) })
+                            setCastingData((d: any) => ({ ...d, pendingRequests: d.pendingRequests.filter((x: any) => x.id !== cr.id) }))
+                          }} className="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700">Approve</button>
+                          <button onClick={async () => {
+                            const reason = prompt('Rejection reason (optional):') ?? undefined
+                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reject', id: cr.id, entityType: 'casting_request', reason }) })
+                            setCastingData((d: any) => ({ ...d, pendingRequests: d.pendingRequests.filter((x: any) => x.id !== cr.id) }))
+                          }} className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 text-xs font-bold rounded-lg hover:bg-red-100">Reject</button>
+                        </div>
+                      </div>
+                    ))
+                  }
+                </div>
               </div>
             )}
 
@@ -2690,8 +2716,8 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
             {/* All Requests */}
             {!castingLoading && castingSubTab === 'requests' && castingData && (
               <div className="space-y-3">
-                {castingData.length === 0 && <p className="text-gray-400 text-sm">No casting requests yet.</p>}
-                {castingData.map((r: any) => (
+                {(Array.isArray(castingData) ? castingData : (castingData.requests || [])).length === 0 && <p className="text-gray-400 text-sm">No casting requests yet.</p>}
+                {(Array.isArray(castingData) ? castingData : (castingData.requests || [])).map((r: any) => (
                   <div key={r.id} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between">
                     <div>
                       <div className="font-bold text-gray-800">{r.production_name}</div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail } from '@/lib/email'
 import { verifyAdminRequest, supabaseAdmin } from '@/utils/isAdmin'
+import { notifyAllAgents, notifyIndependentPerformers } from '@/lib/casting-notify'
 
 export async function GET(req: NextRequest) {
   if (!(await verifyAdminRequest(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -9,7 +10,7 @@ export async function GET(req: NextRequest) {
   const type = searchParams.get('type') || 'pending'
 
   if (type === 'pending') {
-    const [{ data: pendingCDs }, { data: pendingAgencies }] = await Promise.all([
+    const [{ data: pendingCDs }, { data: pendingAgencies }, { data: pendingRequests }] = await Promise.all([
       supabaseAdmin
         .from('casting_directors')
         .select('id, name, company, email, phone, heard_from, description, created_at')
@@ -20,11 +21,17 @@ export async function GET(req: NextRequest) {
         .select('id, name, contact_name, email, phone, city, province, website, created_at')
         .eq('is_approved', false)
         .order('created_at', { ascending: false }),
+      supabaseAdmin
+        .from('casting_requests')
+        .select('id, production_name, shoot_date, role_type, performers_needed, created_at, casting_directors(name, company, email)')
+        .eq('moderation_status', 'pending')
+        .order('created_at', { ascending: false }),
     ])
 
     return NextResponse.json({
       castingDirectors: pendingCDs || [],
       agencies: pendingAgencies || [],
+      pendingRequests: pendingRequests || [],
     })
   }
 
@@ -210,6 +217,45 @@ export async function POST(req: NextRequest) {
           html: `<p>Congratulations!</p><p>Your agency <strong>${ag.name}</strong> has been approved on SetReady Casting.</p><p>You can now log in at <a href="https://setready.site/agent/login">setready.site/agent/login</a> and begin building your roster.</p><p>— The SetReady Team</p>`,
         }).catch(() => {})
       }
+    } else if (entityType === 'casting_request') {
+      const { data: cr } = await supabaseAdmin
+        .from('casting_requests')
+        .select('id, production_name, shoot_date, location, role_type, performers_needed, description, rate, casting_director_id, casting_directors(email, name)')
+        .eq('id', id)
+        .single()
+      await supabaseAdmin
+        .from('casting_requests')
+        .update({ moderation_status: 'approved', moderated_at: new Date().toISOString() })
+        .eq('id', id)
+      if (cr) {
+        const { data: settingsRows } = await supabaseAdmin
+          .from('admin_settings')
+          .select('key, value')
+          .in('key', ['email_agents_on_request', 'notify_independent_performers', 'email_independent_performers'])
+        const settingsMap: Record<string, string> = {}
+        ;(settingsRows || []).forEach((row: any) => { settingsMap[row.key] = row.value })
+        await notifyAllAgents(
+          'new_casting_request',
+          `New Casting Request: ${cr.production_name}`,
+          `${cr.role_type} needed for ${cr.shoot_date}${cr.location ? ` in ${cr.location}` : ''}. ${cr.performers_needed || 1} performer${(cr.performers_needed || 1) > 1 ? 's' : ''} needed.`,
+          `/agent/dashboard`,
+          cr.id,
+          cr,
+          settingsMap['email_agents_on_request'] === 'true'
+        )
+        if (settingsMap['notify_independent_performers'] === 'true') {
+          try { await notifyIndependentPerformers(cr, settingsMap['email_independent_performers'] === 'true') } catch {}
+        }
+        const cdEmail = (cr.casting_directors as any)?.email
+        const cdName = (cr.casting_directors as any)?.name
+        if (cdEmail) {
+          await sendEmail({
+            to: cdEmail,
+            subject: `Your casting request "${cr.production_name}" has been approved`,
+            html: `<p>Hi ${cdName || 'there'},</p><p>Your casting request for <strong>${cr.production_name}</strong> has been approved and is now live. Agents will be notified.</p><p>— The SetReady Team</p>`,
+          }).catch(() => {})
+        }
+      }
     }
     return NextResponse.json({ success: true })
   }
@@ -234,6 +280,25 @@ export async function POST(req: NextRequest) {
           to: ag.email,
           subject: 'Update on Your SetReady Agency Application',
           html: `<p>Hi ${ag.contact_name || 'there'},</p><p>After review, we are unable to approve your agency application for <strong>${ag.name}</strong> at this time.${reason ? ` Reason: ${reason}` : ''}</p><p>If you have questions, please contact us at setready@mail.com.</p><p>— The SetReady Team</p>`,
+        }).catch(() => {})
+      }
+    } else if (entityType === 'casting_request') {
+      const { data: cr } = await supabaseAdmin
+        .from('casting_requests')
+        .select('production_name, casting_directors(email, name)')
+        .eq('id', id)
+        .single()
+      await supabaseAdmin
+        .from('casting_requests')
+        .update({ moderation_status: 'rejected', moderated_at: new Date().toISOString(), moderation_reason: reason || null })
+        .eq('id', id)
+      const cdEmail = (cr?.casting_directors as any)?.email
+      const cdName = (cr?.casting_directors as any)?.name
+      if (cdEmail) {
+        await sendEmail({
+          to: cdEmail,
+          subject: `Update on your casting request "${cr?.production_name}"`,
+          html: `<p>Hi ${cdName || 'there'},</p><p>Your casting request for <strong>${cr?.production_name}</strong> was not approved at this time.${reason ? ` Reason: ${reason}` : ''}</p><p>Please contact us at setready@mail.com if you have questions.</p><p>— The SetReady Team</p>`,
         }).catch(() => {})
       }
     }
