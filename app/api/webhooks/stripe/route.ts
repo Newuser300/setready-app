@@ -57,6 +57,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
+  // ─── Idempotency: process each Stripe event id at most once ──────────────
+  // Stripe redelivers events (network timeouts, etc.). Recording the event id
+  // first and skipping duplicates makes the whole webhook replay-safe. Most
+  // handlers below set fixed values and are already idempotent, but the
+  // headshot-credits path does an arithmetic add that would otherwise double-count.
+  {
+    const { error: dedupeError } = await supabaseAdmin
+      .from('stripe_webhook_events')
+      .insert({ id: event.id, type: event.type });
+
+    if (dedupeError) {
+      // 23505 = unique_violation → already processed. Ack so Stripe stops retrying.
+      if ((dedupeError as { code?: string }).code === '23505') {
+        return NextResponse.json({ received: true, duplicate: true });
+      }
+      // Any other error writing the dedupe row: log and continue rather than
+      // dropping a real event.
+      console.error('⚠️ Stripe event dedupe insert failed (continuing):', dedupeError);
+    }
+  }
+
   switch (event.type) {
 
     // ─── STEP 2: Store stripe_customer_id when checkout completes ────────────
