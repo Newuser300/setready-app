@@ -27,6 +27,16 @@ export async function POST(req: Request) {
 
   if (!rosterEntry) return NextResponse.json({ error: 'Performer not on your roster' }, { status: 403 })
 
+  // Guard: only allow submissions to a live, approved request
+  const { data: castingReqCheck } = await supabaseAdmin
+    .from('casting_requests')
+    .select('status, moderation_status')
+    .eq('id', reqId)
+    .single()
+  if (!castingReqCheck || castingReqCheck.status !== 'open' || castingReqCheck.moderation_status !== 'approved') {
+    return NextResponse.json({ error: 'This casting request is not open for submissions' }, { status: 400 })
+  }
+
   // Upsert submission
   const { data, error } = await supabaseAdmin
     .from('casting_submissions')

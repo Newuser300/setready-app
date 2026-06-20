@@ -85,6 +85,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'productionName, shootDate, roleType required' }, { status: 400 })
   }
 
+  // Per-director trust flag: trusted directors auto-publish; everyone else is queued.
+  const { data: directorRow } = await supabaseAdmin
+    .from('casting_directors')
+    .select('auto_approve')
+    .eq('id', session.accountId)
+    .maybeSingle()
+  const autoApprove = directorRow?.auto_approve === true
+
   const { data: request, error } = await supabaseAdmin
     .from('casting_requests')
     .insert({
@@ -106,6 +114,7 @@ export async function POST(req: Request) {
       description: description || null,
       wardrobe_notes: wardrobeNotes || null,
       status: 'open',
+      moderation_status: autoApprove ? 'approved' : 'pending',
     })
     .select()
     .single()
@@ -125,38 +134,42 @@ export async function POST(req: Request) {
   const notifyIndependent = settingsMap['notify_independent_performers'] === 'true'
   const emailIndependent = settingsMap['email_independent_performers'] === 'true'
 
-  // Notify agents
-  if (notifyAll !== false) {
-    await notifyAllAgents(
-      'new_casting_request',
-      `New Casting Request: ${productionName}`,
-      `${roleType} needed for ${shootDate}${location ? ` in ${location}` : ''}. ${performersNeeded || 1} performer${performersNeeded > 1 ? 's' : ''} needed.`,
-      `/agent/dashboard`,
-      request.id,
-      request,
-      emailAgents
-    )
-  } else if (specificAgencyIds?.length) {
-    const notifications = specificAgencyIds.map((agencyId: string) => ({
-      recipient_type: 'agent' as const,
-      recipient_id: agencyId,
-      type: 'new_casting_request',
-      title: `New Casting Request: ${productionName}`,
-      message: `${roleType} needed for ${shootDate}.`,
-      action_url: `/agent/dashboard`,
-      related_request_id: request.id,
-    }))
-    await supabaseAdmin.from('casting_notifications').insert(notifications)
-  }
+  // Only notify when the request is live. A pending request notifies nobody until
+  // an admin approves it — the approve action fires these same calls.
+  if (autoApprove) {
+    // Notify agents
+    if (notifyAll !== false) {
+      await notifyAllAgents(
+        'new_casting_request',
+        `New Casting Request: ${productionName}`,
+        `${roleType} needed for ${shootDate}${location ? ` in ${location}` : ''}. ${performersNeeded || 1} performer${performersNeeded > 1 ? 's' : ''} needed.`,
+        `/agent/dashboard`,
+        request.id,
+        request,
+        emailAgents
+      )
+    } else if (specificAgencyIds?.length) {
+      const notifications = specificAgencyIds.map((agencyId: string) => ({
+        recipient_type: 'agent' as const,
+        recipient_id: agencyId,
+        type: 'new_casting_request',
+        title: `New Casting Request: ${productionName}`,
+        message: `${roleType} needed for ${shootDate}.`,
+        action_url: `/agent/dashboard`,
+        related_request_id: request.id,
+      }))
+      await supabaseAdmin.from('casting_notifications').insert(notifications)
+    }
 
-  // Notify independent performers
-  if (notifyIndependent) {
-    try {
-      await notifyIndependentPerformers(request, emailIndependent)
-    } catch {
-      // Non-fatal: don't block request creation if notification fails
+    // Notify independent performers
+    if (notifyIndependent) {
+      try {
+        await notifyIndependentPerformers(request, emailIndependent)
+      } catch {
+        // Non-fatal: don't block request creation if notification fails
+      }
     }
   }
 
-  return NextResponse.json({ success: true, request })
+  return NextResponse.json({ success: true, request, pendingApproval: !autoApprove })
 }

@@ -41,6 +41,7 @@ export async function GET(req: Request) {
       )
     `)
     .eq('status', statusFilter)
+    .eq('moderation_status', 'approved')
     .order('shoot_date', { ascending: true })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
