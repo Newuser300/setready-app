@@ -124,35 +124,6 @@ export default function SettingsPage() {
     setPasswordLoading(false);
   }
 
-  /**
-   * Cancel Lemon Squeezy subscription via API route
-   * This calls your internal API which then calls Lemon Squeezy
-   */
-  async function cancelLemonSqueezySubscription(subscriptionId: string): Promise<boolean> {
-    try {
-      const response = await fetch('/api/lemon/cancel-subscription', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ subscriptionId }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('Lemon Squeezy cancellation failed:', error);
-        return false;
-      }
-
-      const data = await response.json();
-      console.log('Subscription cancelled:', data);
-      return true;
-    } catch (error) {
-      console.error('Error cancelling subscription:', error);
-      return false;
-    }
-  }
-
   async function applyReferralCode(e: React.FormEvent) {
     e.preventDefault();
     if (!referralInput.trim()) return;
@@ -195,61 +166,14 @@ export default function SettingsPage() {
     setDeleting(true);
 
     try {
-      // STEP 1: Get user's subscription info before deleting
-      const { data: userData, error: fetchError } = await supabase
-        .from('users')
-        .select('subscription_id, subscription_status')
-        .eq('id', user.id)
-        .single();
-
-      if (fetchError) {
-        console.error('Error fetching user subscription:', fetchError);
+      const res = await fetch('/api/account/delete', { method: 'POST' });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        alert(d.error || 'Error deleting account. Please contact support at setready@mail.com');
+        return;
       }
-
-      // STEP 2: Cancel Lemon Squeezy subscription if it exists and is active
-      if (userData?.subscription_id && userData.subscription_status === 'active') {
-        console.log('Cancelling subscription:', userData.subscription_id);
-        const cancellationSuccess = await cancelLemonSqueezySubscription(userData.subscription_id);
-        
-        if (!cancellationSuccess) {
-          const continueDeletion = confirm(
-            'Warning: We could not automatically cancel your subscription. ' +
-            'You may need to cancel it manually from your Lemon Squeezy customer portal. ' +
-            'Do you still want to delete your account?'
-          );
-          if (!continueDeletion) {
-            setDeleting(false);
-            return;
-          }
-        } else {
-          console.log('Subscription cancelled successfully');
-        }
-      }
-
-      // STEP 3: Delete user data from Supabase tables
-      // Delete from user_progress
-      await supabase.from('user_progress').delete().eq('user_id', user.id);
-      
-      // Delete from work_logs
-      await supabase.from('work_logs').delete().eq('user_id', user.id);
-      
-      // Delete from certificates
-      await supabase.from('certificates').delete().eq('user_id', user.id);
-      
-      // Delete from users
-      await supabase.from('users').delete().eq('id', user.id);
-      
-      // Delete auth user (this will cascade to remaining tables)
-      const { error } = await supabase.auth.admin.deleteUser(user.id);
-      
-      if (error) {
-        console.error('Error deleting user:', error);
-      }
-      
-      // Sign out
       await supabase.auth.signOut();
       router.push('/auth/sign-in');
-      
     } catch (err) {
       console.error('Delete error:', err);
       alert('Error deleting account. Please contact support at setready@mail.com');

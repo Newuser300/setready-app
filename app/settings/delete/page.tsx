@@ -16,22 +16,24 @@ export default function DeleteAccountPage() {
       setError('Type "DELETE" to confirm');
       return;
     }
-    
+
     setDeleting(true);
     setError('');
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/auth/sign-in');
-      return;
+
+    try {
+      const res = await fetch('/api/account/delete', { method: 'POST' });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setError(d.error || 'Error deleting account. Please contact support at setready@mail.com');
+        return;
+      }
+      await supabase.auth.signOut();
+      router.push('/');
+    } catch {
+      setError('Error deleting account. Please contact support at setready@mail.com');
+    } finally {
+      setDeleting(false);
     }
-    
-    await supabase.from('user_progress').delete().eq('user_id', user.id);
-    await supabase.from('certificates').delete().eq('user_id', user.id);
-    await supabase.from('users').delete().eq('id', user.id);
-    await supabase.auth.signOut();
-    
-    router.push('/');
   }
 
   return (
