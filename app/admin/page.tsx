@@ -178,7 +178,7 @@ export default function AdminPage() {
   const [confirmDeleteUser, setConfirmDeleteUser] = useState(false);
 
   // Casting tab
-  const [castingSubTab, setCastingSubTab] = useState<'pending' | 'stats' | 'requests' | 'agents' | 'performers'>('pending');
+  const [castingSubTab, setCastingSubTab] = useState<'pending' | 'stats' | 'requests' | 'agents' | 'performers' | 'casting_directors'>('pending');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [castingData, setCastingData] = useState<any>(null);
   const [castingLoading, setCastingLoading] = useState(false);
@@ -210,6 +210,9 @@ export default function AdminPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [performers, setPerformers] = useState<any[]>([]);
   const [performersLoading, setPerformersLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [castingDirectorsList, setCastingDirectorsList] = useState<any[]>([]);
+  const [castingDirectorsLoading, setCastingDirectorsLoading] = useState(false);
 
   // Messages tab state
   const [msgSubTab, setMsgSubTab] = useState<'compose' | 'sent' | 'all' | 'stats' | 'restrictions'>('compose')
@@ -635,6 +638,31 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
     const res = await fetch('/api/admin/casting?type=performers', { headers: { Authorization: `Bearer ${accessToken}` } });
     if (res.ok) setPerformers(await res.json());
     setPerformersLoading(false);
+  }
+
+  async function loadCastingDirectors() {
+    setCastingDirectorsLoading(true);
+    const res = await fetch('/api/admin/casting?type=casting_directors', { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (res.ok) setCastingDirectorsList(await res.json());
+    setCastingDirectorsLoading(false);
+  }
+
+  async function toggleCDSuspension(cdId: string, suspend: boolean) {
+    await fetch('/api/admin/casting', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ action: suspend ? 'suspend_cd' : 'restore_cd', id: cdId }),
+    });
+    loadCastingDirectors();
+  }
+
+  async function toggleCDAutoApprove(cdId: string, value: boolean) {
+    await fetch('/api/admin/casting', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ action: 'toggle_auto_approve', id: cdId, value }),
+    });
+    loadCastingDirectors();
   }
 
   async function loadPromoCodes() {
@@ -2589,6 +2617,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                 { key: 'pending',    label: 'Pending Applications' },
                 { key: 'stats',      label: 'Platform Stats' },
                 { key: 'requests',   label: 'All Requests' },
+                { key: 'casting_directors', label: 'Casting Directors' },
                 { key: 'agents',     label: 'Agents' },
                 { key: 'performers', label: 'Performers' },
               ] as const).map(t => (
@@ -2596,6 +2625,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                   setCastingSubTab(t.key)
                   if (t.key === 'agents') { loadAgents(); return; }
                   if (t.key === 'performers') { loadPerformers(); return; }
+                  if (t.key === 'casting_directors') { loadCastingDirectors(); return; }
                   setCastingLoading(true)
                   const res = await fetch(`/api/admin/casting?type=${t.key}`, { headers: { Authorization: `Bearer ${accessToken}` } })
                   setCastingLoading(false)
@@ -2730,7 +2760,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
             )}
 
             {/* Load initial data on mount */}
-            {!castingLoading && !castingData && castingSubTab !== 'agents' && castingSubTab !== 'performers' && (
+            {!castingLoading && !castingData && castingSubTab !== 'agents' && castingSubTab !== 'performers' && castingSubTab !== 'casting_directors' && (
               <button onClick={async () => {
                 setCastingLoading(true)
                 const res = await fetch('/api/admin/casting?type=pending', { headers: { Authorization: `Bearer ${accessToken}` } })
@@ -2739,6 +2769,44 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
               }} className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700">
                 Load Casting Data
               </button>
+            )}
+
+            {/* Casting Directors Sub-tab */}
+            {castingSubTab === 'casting_directors' && (
+              <div>
+                {castingDirectorsLoading ? (
+                  <div className="text-center py-10 text-gray-400">Loading casting directors...</div>
+                ) : castingDirectorsList.length === 0 ? (
+                  <p className="text-gray-400 text-sm">No approved casting directors yet.</p>
+                ) : castingDirectorsList.map((cd: any) => (
+                  <div key={cd.id} className="bg-white border border-gray-200 rounded-xl p-4 mb-3 flex items-start justify-between gap-4">
+                    <div>
+                      <div className="font-bold text-gray-800">{cd.name} {cd.company && <span className="font-normal text-gray-500">· {cd.company}</span>}</div>
+                      <div className="text-sm text-gray-500">{cd.email}{cd.phone ? ` · ${cd.phone}` : ''}</div>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${cd.is_active === false ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-700'}`}>
+                          {cd.is_active === false ? '🚫 Suspended' : '✅ Active'}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${cd.auto_approve ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
+                          {cd.auto_approve ? '⚡ Auto-publishes' : 'Requests reviewed'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      {cd.auto_approve ? (
+                        <button onClick={() => toggleCDAutoApprove(cd.id, false)} className="px-3 py-1.5 bg-gray-100 text-gray-700 border border-gray-200 text-xs font-bold rounded-lg hover:bg-gray-200">Untrust</button>
+                      ) : (
+                        <button onClick={() => toggleCDAutoApprove(cd.id, true)} className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700">Trust (auto-publish)</button>
+                      )}
+                      {cd.is_active === false ? (
+                        <button onClick={() => toggleCDSuspension(cd.id, false)} className="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700">Restore</button>
+                      ) : (
+                        <button onClick={() => { if (confirm(`Suspend ${cd.name}? They won't be able to log in.`)) toggleCDSuspension(cd.id, true) }} className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 text-xs font-bold rounded-lg hover:bg-red-100">Suspend</button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
 
             {/* Agents Sub-tab */}

@@ -9,7 +9,7 @@ export async function GET() {
 
   const { data: cd } = await supabaseAdmin
     .from('casting_directors')
-    .select('id, name, email, company, is_verified')
+    .select('id, name, email, company, is_verified, is_active')
     .eq('id', session.accountId)
     .single()
 
@@ -40,6 +40,11 @@ export async function POST(req: Request) {
 
     if (!cd.is_verified) return NextResponse.json(
       { error: 'Account pending approval. We will email you when approved.' },
+      { status: 403 }
+    )
+
+    if (cd.is_active === false) return NextResponse.json(
+      { error: 'Your account has been suspended. Please contact setready@mail.com.' },
       { status: 403 }
     )
 

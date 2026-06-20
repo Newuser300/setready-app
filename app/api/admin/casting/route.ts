@@ -103,6 +103,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(result)
   }
 
+  if (type === 'casting_directors') {
+    const { data: directors } = await supabaseAdmin
+      .from('casting_directors')
+      .select('id, name, company, email, phone, is_active, auto_approve, created_at')
+      .eq('is_verified', true)
+      .order('created_at', { ascending: false })
+    return NextResponse.json(directors || [])
+  }
+
   if (type === 'performers') {
     const now = new Date()
     const thisYear = now.getFullYear()
@@ -318,6 +327,21 @@ export async function POST(req: NextRequest) {
       .from('agencies')
       .update({ is_suspended: false, can_receive_requests: true })
       .eq('id', id)
+    return NextResponse.json({ success: true })
+  }
+
+  if (action === 'suspend_cd') {
+    await supabaseAdmin.from('casting_directors').update({ is_active: false }).eq('id', id)
+    return NextResponse.json({ success: true })
+  }
+
+  if (action === 'restore_cd') {
+    await supabaseAdmin.from('casting_directors').update({ is_active: true }).eq('id', id)
+    return NextResponse.json({ success: true })
+  }
+
+  if (action === 'toggle_auto_approve') {
+    await supabaseAdmin.from('casting_directors').update({ auto_approve: body.value === true }).eq('id', id)
     return NextResponse.json({ success: true })
   }
 
