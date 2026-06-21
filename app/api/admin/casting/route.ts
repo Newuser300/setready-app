@@ -161,7 +161,7 @@ export async function GET(req: NextRequest) {
     const [{ data: performers }, { data: availability }, { data: rosterData }] = await Promise.all([
       supabaseAdmin
         .from('performer_profiles')
-        .select('id, user_id, union_status, union_priority')
+        .select('id, user_id, union_status, union_priority, boost_expires_at')
         .eq('is_public', true)
         .order('union_priority', { ascending: true }),
       supabaseAdmin
@@ -206,6 +206,7 @@ export async function GET(req: NextRequest) {
 
     const result = performers.map((p: any) => ({
       id: p.id,
+      user_id: p.user_id,
       name: userMap[p.user_id]?.name || null,
       email: userMap[p.user_id]?.email || '',
       union_status: p.union_status,
@@ -213,6 +214,7 @@ export async function GET(req: NextRequest) {
       this_month_available: thisMonthCounts[p.user_id] || 0,
       next_month_available: nextMonthCounts[p.user_id] || 0,
       agency_name: agencyMap[p.user_id] || null,
+      boost_expires_at: p.boost_expires_at || null,
     }))
 
     return NextResponse.json(result)
@@ -378,6 +380,38 @@ export async function POST(req: NextRequest) {
 
   if (action === 'toggle_auto_approve') {
     await supabaseAdmin.from('casting_directors').update({ auto_approve: body.value === true }).eq('id', id)
+    return NextResponse.json({ success: true })
+  }
+
+  if (action === 'set_boost') {
+    const { userId, months } = body
+    if (!userId || !months) return NextResponse.json({ error: 'userId and months required' }, { status: 400 })
+    const { data: profile } = await supabaseAdmin
+      .from('performer_profiles')
+      .select('boost_expires_at')
+      .eq('user_id', userId)
+      .maybeSingle()
+    const now = new Date()
+    const current = profile?.boost_expires_at ? new Date(profile.boost_expires_at) : null
+    const base = current && current > now ? current : now
+    const newExpiry = new Date(base)
+    newExpiry.setMonth(newExpiry.getMonth() + Number(months))
+    const { error } = await supabaseAdmin
+      .from('performer_profiles')
+      .update({ boost_expires_at: newExpiry.toISOString() })
+      .eq('user_id', userId)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ success: true, boost_expires_at: newExpiry.toISOString() })
+  }
+
+  if (action === 'remove_boost') {
+    const { userId } = body
+    if (!userId) return NextResponse.json({ error: 'userId required' }, { status: 400 })
+    const { error } = await supabaseAdmin
+      .from('performer_profiles')
+      .update({ boost_expires_at: null })
+      .eq('user_id', userId)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ success: true })
   }
 

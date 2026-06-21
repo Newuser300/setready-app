@@ -210,6 +210,7 @@ export default function AdminPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [performers, setPerformers] = useState<any[]>([]);
   const [performersLoading, setPerformersLoading] = useState(false);
+  const [boostBusyId, setBoostBusyId] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [castingDirectorsList, setCastingDirectorsList] = useState<any[]>([]);
   const [castingDirectorsLoading, setCastingDirectorsLoading] = useState(false);
@@ -645,6 +646,33 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
     const res = await fetch('/api/admin/casting?type=performers', { headers: { Authorization: `Bearer ${accessToken}` } });
     if (res.ok) setPerformers(await res.json());
     setPerformersLoading(false);
+  }
+
+  async function setBoost(userId: string, months: number) {
+    if (!userId) { toast.error('This performer has no linked user id.'); return; }
+    setBoostBusyId(userId);
+    const res = await fetch('/api/admin/casting', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ action: 'set_boost', userId, months }),
+    });
+    if (res.ok) { toast.success(`Boosted +${months} month${months > 1 ? 's' : ''}`); await loadPerformers(); }
+    else { const d = await res.json().catch(() => ({})); toast.error(d.error || 'Failed to boost'); }
+    setBoostBusyId(null);
+  }
+
+  async function removeBoost(userId: string) {
+    if (!userId) return;
+    if (!confirm('Remove this performer\'s boost?')) return;
+    setBoostBusyId(userId);
+    const res = await fetch('/api/admin/casting', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ action: 'remove_boost', userId }),
+    });
+    if (res.ok) { toast.success('Boost removed'); await loadPerformers(); }
+    else { const d = await res.json().catch(() => ({})); toast.error(d.error || 'Failed to remove'); }
+    setBoostBusyId(null);
   }
 
   async function loadCastingDirectors() {
@@ -3066,6 +3094,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                           <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">This Month</th>
                           <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Next Month</th>
                           <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Agency</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Boost</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
@@ -3085,6 +3114,21 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                             <td className="px-4 py-3 text-gray-700 font-semibold">{p.this_month_available ?? 0}</td>
                             <td className="px-4 py-3 text-gray-700">{p.next_month_available ?? 0}</td>
                             <td className="px-4 py-3 text-gray-500 text-xs">{p.agency_name || '—'}</td>
+                            <td className="px-4 py-3">
+                              {p.boost_expires_at && new Date(p.boost_expires_at) > new Date() ? (
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 whitespace-nowrap">⭐ until {new Date(p.boost_expires_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                  <button onClick={() => removeBoost(p.user_id)} disabled={boostBusyId === p.user_id} className="text-xs px-1.5 py-0.5 border border-red-200 text-red-600 rounded hover:bg-red-50 disabled:opacity-50">Remove</button>
+                                </div>
+                              ) : (
+                                <span className="text-gray-300 text-xs">Not boosted</span>
+                              )}
+                              <div className="flex gap-1 mt-1">
+                                {[1, 3, 6, 12].map(m => (
+                                  <button key={m} onClick={() => setBoost(p.user_id, m)} disabled={boostBusyId === p.user_id} className="text-xs px-1.5 py-0.5 border border-blue-200 text-blue-600 rounded hover:bg-blue-50 disabled:opacity-50">+{m}m</button>
+                                ))}
+                              </div>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
