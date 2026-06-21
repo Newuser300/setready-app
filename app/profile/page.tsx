@@ -123,6 +123,8 @@ export default function ProfilePage() {
   const [photoExtra, setPhotoExtra] = useState('')
   // Paid photo slots (photo_additional_2, photo_full_body_side, headshot_alt, wardrobe_formal)
   const [photosUnlocked, setPhotosUnlocked] = useState(false)
+  const [boostExpiresAt, setBoostExpiresAt] = useState<string | null>(null)
+  const [boostLoading, setBoostLoading] = useState<string | null>(null)
   const [photoPaid1, setPhotoPaid1] = useState('') // photo_additional_2
   const [photoPaid2, setPhotoPaid2] = useState('') // photo_full_body_side
   const [photoPaid3, setPhotoPaid3] = useState('') // headshot_alt
@@ -224,6 +226,15 @@ export default function ProfilePage() {
     })()
   }, [router])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('boost') === 'success') {
+      setToast('✅ Profile boost activated! It may take a moment to appear.')
+      window.history.replaceState({}, '', '/profile')
+    }
+  }, [])
+
   async function loadProfile() {
     const res = await fetch('/api/profile', { credentials: 'include' })
     if (res.ok) {
@@ -243,6 +254,7 @@ export default function ProfilePage() {
         setPhotoFront(p.photo_full_body_front || '')
         setPhotoExtra(p.photo_additional || '')
         setPhotosUnlocked(p.photos_unlocked ?? false)
+        setBoostExpiresAt(p.boost_expires_at || null)
         setPhotoPaid1(p.photo_additional_2 || '')
         setPhotoPaid2(p.photo_full_body_side || '')
         setPhotoPaid3(p.headshot_alt || '')
@@ -1253,6 +1265,69 @@ export default function ProfilePage() {
 
           <p style={{ fontSize: '11px', color: '#6b7280', margin: '12px 0 0' }}>JPG, PNG, WebP or HEIC. Compressed to WebP automatically.</p>
         </CS>
+
+        {/* ── PROFILE BOOST ── */}
+        <div style={{ border: '2px solid #F59E0B', borderRadius: '14px', padding: '18px', marginBottom: '20px', backgroundColor: '#1a1a2e' }}>
+          <div style={{ fontSize: '15px', fontWeight: '800', color: '#F59E0B', marginBottom: '4px' }}>🚀 Boost Your Profile</div>
+          <p style={{ fontSize: '12px', color: '#d1d5db', margin: '0 0 14px', lineHeight: '1.5' }}>
+            Boosted profiles appear at the top of casting director searches. One-time purchase — no subscription.
+          </p>
+
+          {boostExpiresAt && new Date(boostExpiresAt) > new Date() ? (
+            <div style={{ backgroundColor: 'rgba(245,158,11,0.12)', border: '1px solid #F59E0B', borderRadius: '10px', padding: '12px', marginBottom: '12px' }}>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: '#F59E0B' }}>✓ Boost active</div>
+              <div style={{ fontSize: '12px', color: '#d1d5db', marginTop: '2px' }}>
+                Boosted until {new Date(boostExpiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}. Buy more to extend.
+              </div>
+            </div>
+          ) : (
+            <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '12px' }}>Not currently boosted.</div>
+          )}
+
+          {!isPublic && (
+            <div style={{ fontSize: '11px', color: '#fca5a5', marginBottom: '10px' }}>
+              Your profile is private — make it public above so a boost actually surfaces you in searches.
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            {([
+              { tier: '1', label: '1 month', price: '$5.98' },
+              { tier: '3', label: '3 months', price: '$14.98' },
+              { tier: '6', label: '6 months', price: '$19.98' },
+              { tier: '12', label: '12 months', price: '$29.98' },
+            ]).map(opt => (
+              <button
+                key={opt.tier}
+                disabled={boostLoading !== null}
+                onClick={async () => {
+                  setBoostLoading(opt.tier)
+                  try {
+                    const res = await fetch('/api/checkout/boost', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      credentials: 'include',
+                      body: JSON.stringify({ tier: opt.tier }),
+                    })
+                    if (res.ok) {
+                      const { url } = await res.json()
+                      if (url) { window.location.href = url; return }
+                    }
+                    setMessage('❌ Could not start checkout. Please try again.')
+                  } catch {
+                    setMessage('❌ Could not start checkout. Please try again.')
+                  }
+                  setBoostLoading(null)
+                }}
+                style={{ padding: '12px 8px', backgroundColor: 'transparent', color: '#F59E0B', border: '2px solid #F59E0B', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: boostLoading !== null ? 'not-allowed' : 'pointer', opacity: boostLoading !== null && boostLoading !== opt.tier ? 0.5 : 1, display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'center' }}
+              >
+                <span>{boostLoading === opt.tier ? '…' : opt.label}</span>
+                <span style={{ fontSize: '12px', fontWeight: '800' }}>{boostLoading === opt.tier ? '' : opt.price}</span>
+              </button>
+            ))}
+          </div>
+          <p style={{ fontSize: '11px', color: '#6b7280', margin: '10px 0 0', textAlign: 'center' }}>One-time payment. A boost cannot be cancelled — it simply expires.</p>
+        </div>
 
         {/* ── SAVE ── */}
         {saveMessage && (
