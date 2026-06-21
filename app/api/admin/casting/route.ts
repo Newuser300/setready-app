@@ -161,7 +161,7 @@ export async function GET(req: NextRequest) {
     const [{ data: performers }, { data: availability }, { data: rosterData }] = await Promise.all([
       supabaseAdmin
         .from('performer_profiles')
-        .select('id, union_status, union_priority')
+        .select('id, user_id, union_status, union_priority')
         .eq('is_public', true)
         .order('union_priority', { ascending: true }),
       supabaseAdmin
@@ -178,7 +178,7 @@ export async function GET(req: NextRequest) {
 
     if (!performers?.length) return NextResponse.json([])
 
-    const userIds = performers.map((p: any) => p.id)
+    const userIds = performers.map((p: any) => p.user_id).filter(Boolean)
     const { data: users } = await supabaseAdmin
       .from('users')
       .select('id, email, name')
@@ -206,13 +206,13 @@ export async function GET(req: NextRequest) {
 
     const result = performers.map((p: any) => ({
       id: p.id,
-      name: userMap[p.id]?.name || null,
-      email: userMap[p.id]?.email || '',
+      name: userMap[p.user_id]?.name || null,
+      email: userMap[p.user_id]?.email || '',
       union_status: p.union_status,
       union_priority: p.union_priority ?? 4,
-      this_month_available: thisMonthCounts[p.id] || 0,
-      next_month_available: nextMonthCounts[p.id] || 0,
-      agency_name: agencyMap[p.id] || null,
+      this_month_available: thisMonthCounts[p.user_id] || 0,
+      next_month_available: nextMonthCounts[p.user_id] || 0,
+      agency_name: agencyMap[p.user_id] || null,
     }))
 
     return NextResponse.json(result)
