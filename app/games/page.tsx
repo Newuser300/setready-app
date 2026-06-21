@@ -97,6 +97,32 @@ export default function GamesPage() {
           </div>
         </Link>
 
+        {/* Set Match card */}
+        <Link href="/games/set-match" style={{ textDecoration: 'none', display: 'block', marginTop: '14px' }}>
+          <div style={{
+            backgroundColor: 'white', borderRadius: '16px', border: '1px solid #e5e7eb', padding: '24px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)', display: 'flex', alignItems: 'flex-start', gap: '18px', cursor: 'pointer', transition: 'box-shadow 0.15s',
+          }}
+            onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.12)')}
+            onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)')}
+          >
+            <div style={{ fontSize: '48px', lineHeight: 1, flexShrink: 0 }}>🎞️</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span style={{ fontWeight: '800', fontSize: '18px', color: '#1a1a2e' }}>Set Match</span>
+              </div>
+              <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 12px', lineHeight: '1.5' }}>
+                Swap film props to match three or more. Clear the target score before you run out of moves and climb the levels.
+              </p>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '12px', color: '#9ca3af', backgroundColor: '#f3f4f6', padding: '3px 10px', borderRadius: '20px' }}>🧩 Match-3</span>
+                <span style={{ fontSize: '12px', color: '#9ca3af', backgroundColor: '#f3f4f6', padding: '3px 10px', borderRadius: '20px' }}>📈 Endless levels</span>
+              </div>
+            </div>
+            <div style={{ fontSize: '20px', color: '#d1d5db', flexShrink: 0, alignSelf: 'center' }}>›</div>
+          </div>
+        </Link>
+
         {/* More coming soon */}
         <div style={{ marginTop: '16px', backgroundColor: 'white', borderRadius: '16px', border: '1px dashed #e5e7eb', padding: '24px', textAlign: 'center' }}>
           <div style={{ fontSize: '32px', marginBottom: '8px' }}>🚧</div>
