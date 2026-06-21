@@ -91,6 +91,7 @@ export default function SetMatch() {
   const [notice, setNotice] = useState('');
   const [showIntro, setShowIntro] = useState(false);
   const [showHow, setShowHow] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(true);
   const [now, setNow] = useState(Date.now());
   const sRef = useRef<Save>(s); sRef.current = s;
   const ownedRef = useRef<string[]>(owned); ownedRef.current = owned;
@@ -225,7 +226,11 @@ export default function SetMatch() {
           </div>
         </div>
 
-        <div style={{ marginTop: '14px', display: 'grid', gridTemplateColumns: `repeat(${SIZE}, 1fr)`, gap: '4px' }}>
+        <div style={{ ...card, marginTop: '12px', padding: '10px 14px', backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }}>
+          <div style={{ fontSize: '13px', color: '#1e40af', fontWeight: 600, lineHeight: '1.45' }}>👆 Tap a tile, then tap a neighbour to swap them. Line up <strong>3 or more</strong> of the same prop in a row or column to clear them and score.</div>
+        </div>
+
+        <div style={{ marginTop: '12px', display: 'grid', gridTemplateColumns: `repeat(${SIZE}, 1fr)`, gap: '4px' }}>
           {board.map((row, r) => row.map((v, c) => {
             const seld = !!sel && sel.r === r && sel.c === c;
             return (
@@ -243,6 +248,26 @@ export default function SetMatch() {
             🌀 Shuffle ({s.shuffles})
           </button>
           <button onClick={() => setShowHow(true)} style={{ ...card, padding: '12px 16px', cursor: 'pointer', fontWeight: 700, fontSize: '14px', color: '#6b7280' }}>ℹ️</button>
+        </div>
+
+        <div style={{ ...card, marginTop: '16px', padding: '14px 16px' }}>
+          <button onClick={() => setGuideOpen(v => !v)} style={{ width: '100%', background: 'none', border: 'none', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+            <span style={{ fontWeight: 800, fontSize: '14px', color: '#374151' }}>ℹ️ How to play</span>
+            <span style={{ fontSize: '13px', color: '#9ca3af' }}>{guideOpen ? 'Hide' : 'Show'}</span>
+          </button>
+          {guideOpen && (
+            <div style={{ marginTop: '12px', fontSize: '13px', color: '#4b5563', lineHeight: '1.6' }}>
+              <p style={{ margin: '0 0 8px' }}><strong>The goal:</strong> clear each level by reaching the target score before your Moves run out.</p>
+              <p style={{ margin: '0 0 8px' }}><strong>1. Pick a tile.</strong> Tap any prop on the board — it lights up with an orange border to show it is selected.</p>
+              <p style={{ margin: '0 0 8px' }}><strong>2. Swap it.</strong> Tap a tile right next to it — up, down, left, or right. The two trade places.</p>
+              <p style={{ margin: '0 0 8px' }}><strong>3. Make a line of 3 or more.</strong> A swap only works if it lines up three or more of the same prop in a row or column. If it would not, the tiles stay put and no Move is used — just try a different pair.</p>
+              <p style={{ margin: '0 0 8px' }}><strong>What to look for:</strong> two of the same prop side by side, with a third of that prop one tile away that you can slide into line.</p>
+              <p style={{ margin: '0 0 8px' }}>Matched props vanish, the ones above drop down, and fresh props fall in from the top — which can chain into more matches for bonus points.</p>
+              <p style={{ margin: '0 0 8px' }}>The green bar tracks your progress to the target. Each swap spends one <strong>Move</strong>. Reach the target before Moves hit 0 to win the level and move on.</p>
+              <p style={{ margin: '0 0 8px' }}><strong>Lives:</strong> fail a level and you lose a heart ❤️. Hearts refill over time, or get Unlimited Lives in the Store.</p>
+              <p style={{ margin: 0 }}><strong>No good moves left?</strong> Tap <strong>🌀 Shuffle</strong> to rearrange the whole board.</p>
+            </div>
+          )}
         </div>
 
         <div style={{ marginTop: '20px', fontWeight: 800, fontSize: '14px', color: '#374151' }}>Store 💎</div>
