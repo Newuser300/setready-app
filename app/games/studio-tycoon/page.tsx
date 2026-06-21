@@ -152,7 +152,7 @@ export default function StudioTycoon() {
   const ips = incomePerSec(s);
 
   useEffect(() => {
-    let save: Save = DEFAULT_SAVE;
+    let save: Save = { ...DEFAULT_SAVE };
     try {
       const raw = localStorage.getItem(SAVE_KEY);
       if (raw) save = { ...DEFAULT_SAVE, ...JSON.parse(raw) };
@@ -189,7 +189,7 @@ export default function StudioTycoon() {
     const save = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify({ ...sRef.current, lastSeen: Date.now() })); } catch {} };
     document.addEventListener('visibilitychange', save);
     window.addEventListener('beforeunload', save);
-    return () => { save(); document.removeEventListener('visibilitychange', save); window.removeEventListener('beforeunload', save); };
+    return () => { document.removeEventListener('visibilitychange', save); window.removeEventListener('beforeunload', save); };
   }, []);
 
   // Reconcile server-verified Studio Store purchases on load
