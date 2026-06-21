@@ -56,7 +56,6 @@ export default function GamesPage() {
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                 <span style={{ fontWeight: '800', fontSize: '18px', color: '#1a1a2e' }}>Film Set Trivia</span>
-                <span style={{ backgroundColor: '#22c55e', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: '4px', lineHeight: '1.6' }}>FREE</span>
               </div>
               <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 12px', lineHeight: '1.5' }}>
                 Test your knowledge of film set terminology. See a definition — pick the correct term. 10 questions per round.
@@ -65,6 +64,33 @@ export default function GamesPage() {
                 <span style={{ fontSize: '12px', color: '#9ca3af', backgroundColor: '#f3f4f6', padding: '3px 10px', borderRadius: '20px' }}>📖 60 terms</span>
                 <span style={{ fontSize: '12px', color: '#9ca3af', backgroundColor: '#f3f4f6', padding: '3px 10px', borderRadius: '20px' }}>⏱ ~3 min</span>
                 <span style={{ fontSize: '12px', color: '#9ca3af', backgroundColor: '#f3f4f6', padding: '3px 10px', borderRadius: '20px' }}>🔁 Randomised</span>
+              </div>
+            </div>
+            <div style={{ fontSize: '20px', color: '#d1d5db', flexShrink: 0, alignSelf: 'center' }}>›</div>
+          </div>
+        </Link>
+
+        {/* Studio Tycoon card */}
+        <Link href="/games/studio-tycoon" style={{ textDecoration: 'none', display: 'block', marginTop: '14px' }}>
+          <div style={{
+            backgroundColor: 'white', borderRadius: '16px', border: '1px solid #e5e7eb', padding: '24px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)', display: 'flex', alignItems: 'flex-start', gap: '18px', cursor: 'pointer', transition: 'box-shadow 0.15s',
+          }}
+            onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.12)')}
+            onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)')}
+          >
+            <div style={{ fontSize: '48px', lineHeight: 1, flexShrink: 0 }}>🎬</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span style={{ fontWeight: '800', fontSize: '18px', color: '#1a1a2e' }}>Studio Tycoon</span>
+              </div>
+              <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 12px', lineHeight: '1.5' }}>
+                Start with one background performer and build a film empire. Earn while you play — and even while you are away.
+              </p>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '12px', color: '#9ca3af', backgroundColor: '#f3f4f6', padding: '3px 10px', borderRadius: '20px' }}>📈 Idle tycoon</span>
+                <span style={{ fontSize: '12px', color: '#9ca3af', backgroundColor: '#f3f4f6', padding: '3px 10px', borderRadius: '20px' }}>⭐ Daily rewards</span>
+                <span style={{ fontSize: '12px', color: '#9ca3af', backgroundColor: '#f3f4f6', padding: '3px 10px', borderRadius: '20px' }}>🌙 Offline earnings</span>
               </div>
             </div>
             <div style={{ fontSize: '20px', color: '#d1d5db', flexShrink: 0, alignSelf: 'center' }}>›</div>
