@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getCastingSession, supabaseAdmin } from '@/lib/casting-auth'
 import { notifyAllAgents, notifyIndependentPerformers } from '@/lib/casting-notify'
+import { sendEmail } from '@/lib/email'
 
 export async function GET(req: Request) {
   const session = await getCastingSession()
@@ -177,6 +178,18 @@ export async function POST(req: Request) {
       } catch {
         // Non-fatal: don't block request creation if notification fails
       }
+    }
+  }
+
+  // Email the admin(s) when a request needs approval, so it isn't missed
+  if (!autoApprove) {
+    const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean)
+    for (const adminEmail of adminEmails) {
+      await sendEmail({
+        to: adminEmail,
+        subject: `Casting request needs approval: ${productionName}`,
+        html: `<p>A casting request was submitted and is waiting for approval.</p><p><strong>Production:</strong> ${productionName}<br/><strong>Role:</strong> ${roleType}<br/><strong>Shoot date:</strong> ${shootDate}${location ? `<br/><strong>Location:</strong> ${location}` : ''}</p><p>Review under Casting → Pending Applications: <a href="https://setready.site/admin">setready.site/admin</a></p>`,
+      }).catch(() => {})
     }
   }
 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import bcrypt from 'bcryptjs'
 import { createSession, getAgentSession, deleteSession, supabaseAdmin } from '@/lib/casting-auth'
+import { sendEmail } from '@/lib/email'
 
 export async function GET() {
   const session = await getAgentSession()
@@ -115,6 +116,16 @@ export async function POST(req: Request) {
         message: `${agencyName} has applied to join SetReady Casting.`,
         action_url: '/admin'
       })
+
+    // Email the admin(s) so a pending application isn't missed
+    const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean)
+    for (const adminEmail of adminEmails) {
+      await sendEmail({
+        to: adminEmail,
+        subject: `New agency application: ${agencyName}`,
+        html: `<p>A new agency has applied and is awaiting approval.</p><p><strong>Agency:</strong> ${agencyName}<br/><strong>Contact:</strong> ${name}<br/><strong>Email:</strong> ${email.toLowerCase()}${phone ? `<br/><strong>Phone:</strong> ${phone}` : ''}${city ? `<br/><strong>City:</strong> ${city}, ${province || 'BC'}` : ''}${licenceNumber ? `<br/><strong>Licence:</strong> ${licenceNumber}` : ''}</p><p>Review under Casting → Pending Applications: <a href="https://setready.site/admin">setready.site/admin</a></p>`,
+      }).catch(() => {})
+    }
 
     return NextResponse.json({
       success: true,
