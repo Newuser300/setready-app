@@ -37,7 +37,7 @@ type Save = {
   cash: number; gens: Record<string, number>; genMult: Record<string, number>;
   globalMult: number; tapMult: number; bought: string[]; awards: number;
   totalEarned: number; lastSeen: number; lastDaily: string; streak: number;
-  offlineCapHours: number; premBoost: number; auto: boolean; claimed: string[];
+  offlineCapHours: number; premBoost: number; auto: boolean; claimed: string[]; skipsApplied: number;
 };
 type Gen = (typeof GENERATORS)[number];
 type Upg = (typeof UPGRADES)[number];
@@ -48,7 +48,7 @@ type Ambition = { id: string; tier: number; label: string; test: (c: Ctx) => boo
 const DEFAULT_SAVE: Save = {
   cash: 0, gens: {}, genMult: {}, globalMult: 1, tapMult: 1, bought: [],
   awards: 0, totalEarned: 0, lastSeen: Date.now(), lastDaily: '', streak: 0,
-  offlineCapHours: 8, premBoost: 1, auto: false, claimed: [],
+  offlineCapHours: 8, premBoost: 1, auto: false, claimed: [], skipsApplied: 0,
 };
 
 const TIER_NAMES: Record<number, string> = { 1: 'Lights, Camera', 2: 'Rising Studio', 3: 'Major Player', 4: 'Hollywood Legend' };
@@ -192,6 +192,40 @@ export default function StudioTycoon() {
     return () => { save(); document.removeEventListener('visibilitychange', save); window.removeEventListener('beforeunload', save); };
   }, []);
 
+  // Reconcile server-verified Studio Store purchases on load
+  useEffect(() => {
+    if (!ready) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/game-purchases');
+        const data = await res.json();
+        if (cancelled || !data) return;
+        const items: string[] = Array.isArray(data.items) ? data.items : [];
+        const skipCount: number = data.skipCount || 0;
+        setS(prev => {
+          const next = { ...prev };
+          next.premBoost = items.includes('boost2') ? 2 : 1;
+          next.offlineCapHours = items.includes('offline') ? 24 : 8;
+          next.auto = items.includes('auto');
+          const applied = next.skipsApplied || 0;
+          if (skipCount > applied) {
+            const grant = incomePerSec(next) * 4 * 3600 * (skipCount - applied);
+            next.cash += grant; next.totalEarned += grant; next.skipsApplied = skipCount;
+          }
+          return next;
+        });
+        if (window.location.search.includes('purchase=success')) {
+          setNotice('Purchase complete — enjoy your boost!');
+          setTimeout(() => setNotice(''), 2600);
+          window.history.replaceState({}, '', '/games/studio-tycoon');
+        }
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready]);
+
   // Award $200 per newly-completed ambition
   useEffect(() => {
     if (!ready) return;
@@ -257,12 +291,22 @@ export default function StudioTycoon() {
     setS(p => ({
       ...DEFAULT_SAVE, awards: p.awards + awardsFor(p.totalEarned),
       offlineCapHours: p.offlineCapHours, premBoost: p.premBoost, auto: p.auto,
-      lastDaily: p.lastDaily, streak: p.streak, claimed: p.claimed, lastSeen: Date.now(),
+      lastDaily: p.lastDaily, streak: p.streak, claimed: p.claimed, skipsApplied: p.skipsApplied, lastSeen: Date.now(),
     }));
     toast('Studio rebooted! Awards banked.');
   };
 
-  const buyPremium = () => toast('Premium store connects in the next update.');
+  const buyPremium = async (item: string) => {
+    try {
+      const res = await fetch('/api/checkout/studio-tycoon', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item }),
+      });
+      const data = await res.json();
+      if (data?.url) { window.location.href = data.url as string; return; }
+      toast(data?.error || 'Could not start checkout — are you signed in?');
+    } catch { toast('Could not start checkout. Please try again.'); }
+  };
   const dismissIntro = () => { try { localStorage.setItem('sr-tycoon-intro', '1'); } catch {}; setShowIntro(false); };
   const startTut = () => { try { localStorage.setItem('sr-tycoon-intro', '1'); } catch {}; setShowIntro(false); setShowHow(false); setTutStep(0); };
   const nextTut = () => setTutStep(t => (t + 1 >= TUTORIAL.length ? -1 : t + 1));
@@ -424,7 +468,7 @@ export default function StudioTycoon() {
                 <div style={{ fontWeight: 700, fontSize: '14px', color: '#1a1a2e' }}>{p.name}</div>
                 <div style={{ fontSize: '12px', color: '#6b7280' }}>{p.desc}</div>
               </div>
-              <button onClick={buyPremium} style={{ backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: '10px', padding: '9px 14px', fontWeight: 800, fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap' }}>{p.price}</button>
+              <button onClick={() => buyPremium(p.id)} style={{ backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: '10px', padding: '9px 14px', fontWeight: 800, fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap' }}>{p.price}</button>
             </div>
           ))}
         </div>

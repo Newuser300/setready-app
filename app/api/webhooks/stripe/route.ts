@@ -152,6 +152,17 @@ export async function POST(request: Request) {
         break;
       }
 
+      // One-time game purchase: record it; the game reconciles effects on load
+      if (session.mode === 'payment' && session.metadata?.type === 'game_purchase') {
+        const game = session.metadata?.game || '';
+        const item = session.metadata?.item || '';
+        const { error: gpError } = await supabaseAdmin
+          .from('game_purchases')
+          .insert({ user_id: userId, game, item, stripe_session_id: session.id });
+        if (gpError) console.error('❌ Failed to record game purchase:', gpError);
+        break;
+      }
+
       // Subscription checkout: stripeCustomerId is required
       if (!stripeCustomerId) {
         console.error('❌ No stripeCustomerId on session. Skipping.');
