@@ -145,8 +145,7 @@ export default function AvailabilityPage() {
   const monthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
   const today = new Date().toISOString().slice(0, 10)
   const monthName = currentDate.toLocaleDateString('en-CA', { month: 'long', year: 'numeric' })
-  const isCurrentMonth =
-    currentYear === new Date().getFullYear() && currentMonth === new Date().getMonth()
+  const isPastMonth = monthStr < today.slice(0, 7)
 
   useEffect(() => { availabilityRef.current = availability }, [availability])
 
@@ -209,13 +208,11 @@ export default function AvailabilityPage() {
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       )
-      const todayStr = new Date().toISOString().slice(0, 10)
       const { data, error } = await bc
         .from('bookings')
         .select('*')
         .eq('performer_id', uid)
         .in('status', ['pending', 'confirmed'])
-        .gte('end_date', todayStr)
       if (!error && data) setBookings(data as Booking[])
     } catch { /* non-fatal */ }
   }
@@ -714,6 +711,7 @@ export default function AvailabilityPage() {
         </div>
 
         {/* ── Quick Actions ── */}
+        {!isPastMonth && (
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '12px', scrollbarWidth: 'none' }}>
           {[
             { label: '🟢 Open For Work', fn: openForWork },
@@ -731,6 +729,7 @@ export default function AvailabilityPage() {
             </button>
           ))}
         </div>
+        )}
 
         {/* ── Legend ── */}
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', padding: '10px 14px', backgroundColor: '#1e1e35', borderRadius: '10px', marginBottom: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -749,9 +748,8 @@ export default function AvailabilityPage() {
         {/* ── Month Navigation ── */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', marginBottom: '12px' }}>
           <button
-            onClick={() => !isCurrentMonth && setCurrentDate(new Date(currentYear, currentMonth - 1, 1))}
-            disabled={isCurrentMonth}
-            style={{ width: '40px', height: '40px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', backgroundColor: isCurrentMonth ? 'transparent' : '#1e1e35', color: isCurrentMonth ? '#3a3a4e' : 'white', cursor: isCurrentMonth ? 'not-allowed' : 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            onClick={() => setCurrentDate(new Date(currentYear, currentMonth - 1, 1))}
+            style={{ width: '40px', height: '40px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', backgroundColor: '#1e1e35', color: 'white', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >◀</button>
           <span style={{ color: 'white', fontWeight: '700', fontSize: '20px', minWidth: '200px', textAlign: 'center' }}>{monthName}</span>
           <button
@@ -759,6 +757,14 @@ export default function AvailabilityPage() {
             style={{ width: '40px', height: '40px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', backgroundColor: '#1e1e35', color: 'white', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >▶</button>
         </div>
+
+        {isPastMonth && (
+          <div style={{ textAlign: 'center', marginTop: '-4px', marginBottom: '12px' }}>
+            <span style={{ fontSize: '12px', color: '#9ca3af', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '6px', padding: '4px 12px' }}>
+              👁 Viewing a past month — read only
+            </span>
+          </div>
+        )}
 
         {/* ── Calendar Grid ── */}
         <div
@@ -790,8 +796,7 @@ export default function AvailabilityPage() {
                 const isWeekend = dow === 0 || dow === 6
                 const dayNum = parseInt(dateStr.slice(8), 10)
 
-                const bgColor = isPast ? '#18182a'
-                  : isHighlighted ? (dragStatusRef.current ? STATUS_BG[dragStatusRef.current] || 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.05)')
+                const bgColor = isHighlighted ? (dragStatusRef.current ? STATUS_BG[dragStatusRef.current] || 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.05)')
                   : booking ? BOOKING_BG[booking.status]
                   : status ? STATUS_BG[status] || '#2a2a3e' : '#2a2a3e'
 
@@ -814,7 +819,7 @@ export default function AvailabilityPage() {
                       border: `2px ${booking?.status === 'pending' ? 'dashed' : 'solid'} ${borderColor}`,
                       backgroundColor: bgColor,
                       cursor: isPast ? 'default' : 'pointer',
-                      opacity: isPast ? 0.38 : 1,
+                      opacity: isPast ? 0.5 : 1,
                       position: 'relative',
                       display: 'flex',
                       flexDirection: 'column',
@@ -827,12 +832,12 @@ export default function AvailabilityPage() {
                     <span style={{ fontSize: '11px', fontWeight: isToday ? '900' : '500', color: isWeekend && !isPast ? '#F59E0B' : 'rgba(255,255,255,0.9)', lineHeight: 1 }}>
                       {dayNum}
                     </span>
-                    {(booking || status) && !isPast && (
+                    {(booking || status) && (
                       <span style={{ fontSize: '9px', lineHeight: 1, marginTop: '1px' }}>
                         {booking ? BOOKING_ICON[booking.status] : STATUS_ICON[status] || ''}
                       </span>
                     )}
-                    {hasNote && !isPast && (
+                    {hasNote && (
                       <span style={{ position: 'absolute', bottom: '2px', right: '3px', width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#F59E0B', flexShrink: 0 }} />
                     )}
                   </div>
