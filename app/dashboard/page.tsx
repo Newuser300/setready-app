@@ -104,6 +104,9 @@ export default function Dashboard() {
   // SECTION 2 POP-UP STATE
   const [showSection2Popup, setShowSection2Popup] = useState(false);
 
+  // CONTACT MODAL STATE
+  const [showContactModal, setShowContactModal] = useState(false);
+
   // MODULE ACCESS MODALS
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
   const [showSection2Modal, setShowSection2Modal] = useState(false);
@@ -1395,6 +1398,7 @@ export default function Dashboard() {
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px', display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
             <Link href="/privacy" style={{ fontSize: '12px', color: '#6b7280', textDecoration: 'none' }}>Privacy Policy</Link>
             <Link href="/terms" style={{ fontSize: '12px', color: '#6b7280', textDecoration: 'none' }}>Terms of Service</Link>
+            <button onClick={() => setShowContactModal(true)} style={{ fontSize: '12px', color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer' }}>Contact</button>
             <Link href="/donate" style={{ fontSize: '12px', color: '#F59E0B', fontWeight: '600', textDecoration: 'none' }}>☕ Support SetReady</Link>
             <button onClick={async () => { await supabase.auth.signOut(); router.push('/auth/sign-in'); }} style={{ fontSize: '12px', color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer' }}>
               Sign Out
@@ -1881,6 +1885,36 @@ export default function Dashboard() {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* CONTACT MODAL */}
+      {showContactModal && (
+        <div
+          onClick={() => setShowContactModal(false)}
+          style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '16px' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ backgroundColor: 'white', borderRadius: '16px', maxWidth: '400px', width: '90%', padding: '28px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}
+          >
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>📬</div>
+            <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 8px' }}>Contact SetReady</h2>
+            <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 20px', lineHeight: '1.5' }}>
+              Questions, feedback, or need help? Email our support team and we&apos;ll get back to you.
+            </p>
+            <a
+              href="mailto:setready@mail.com"
+              style={{ display: 'block', width: '100%', padding: '14px', backgroundColor: '#1a1a2e', color: 'white', borderRadius: '10px', fontSize: '15px', fontWeight: '700', textDecoration: 'none', boxSizing: 'border-box' }}
+            >
+              ✉️ setready@mail.com
+            </a>
+            <button
+              onClick={() => setShowContactModal(false)}
+              style={{ width: '100%', marginTop: '12px', padding: '12px', backgroundColor: 'transparent', color: '#9ca3af', border: '1px solid #e5e7eb', borderRadius: '10px', fontSize: '14px', cursor: 'pointer' }}
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
