@@ -6,7 +6,7 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data, error } = await supabaseAdmin
-    .from('casting_request_templates')
+    .from('casting_templates')
     .select('*')
     .eq('casting_director_id', session.accountId)
     .order('created_at', { ascending: false })
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   if (!name || !template_data) return NextResponse.json({ error: 'name and template_data required' }, { status: 400 })
 
   const { data, error } = await supabaseAdmin
-    .from('casting_request_templates')
+    .from('casting_templates')
     .insert({ casting_director_id: session.accountId, name, template_data })
     .select()
     .single()
@@ -40,7 +40,7 @@ export async function DELETE(req: Request) {
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
   const { error } = await supabaseAdmin
-    .from('casting_request_templates')
+    .from('casting_templates')
     .delete()
     .eq('id', id)
     .eq('casting_director_id', session.accountId)
