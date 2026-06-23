@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSessionUser } from '@/utils/supabase/server'
 import { supabaseAdmin } from '@/utils/isAdmin'
 import { replyToMessage } from '@/lib/messages'
+import { sendEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   const user = await getSessionUser()
@@ -14,10 +15,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'parentMessageId and body required' }, { status: 400 })
   }
 
-  // Verify the user actually received this message
   const { data: parent } = await supabaseAdmin
     .from('messages')
-    .select('id, recipient_id, recipient_type, sender_type, sender_id')
+    .select('id, recipient_id, recipient_type, sender_type, sender_id, subject')
     .eq('id', parentMessageId)
     .single()
 
@@ -35,6 +35,12 @@ export async function POST(request: NextRequest) {
     .single()
 
   const senderName = userData?.name || userData?.email || 'Performer'
+  const senderEmail = userData?.email || user.email || 'no email on file'
+
+  // If replying to a system/admin message, route to admin so it does not dead-letter
+  const isToAdmin = parent.sender_type === 'system' || parent.sender_type === 'admin'
+  const finalRecipientType = isToAdmin ? 'admin' : (recipientType || parent.sender_type || 'admin')
+  const finalRecipientId = isToAdmin ? '' : (recipientId || parent.sender_id || '')
 
   const reply = await replyToMessage({
     parentMessageId,
@@ -42,11 +48,34 @@ export async function POST(request: NextRequest) {
     senderId: user.id,
     senderName,
     body: replyBody.trim(),
-    recipientType: recipientType || parent.sender_type || 'admin',
-    recipientId: recipientId || parent.sender_id || '',
+    recipientType: finalRecipientType,
+    recipientId: finalRecipientId,
   })
 
   if (!reply) return NextResponse.json({ error: 'Failed to send reply' }, { status: 500 })
+
+  // Email the admin when the reply is directed to admin
+  if (isToAdmin) {
+    const adminEmail = (process.env.ADMIN_EMAILS || '')
+      .split(',')
+      .map(e => e.trim())
+      .filter(Boolean)[0] || null
+    if (adminEmail) {
+      try {
+        await sendEmail({
+          to: adminEmail,
+          subject: `Performer reply from ${senderName}`,
+          html: `<p>A performer replied to "${parent.subject || 'a message'}".</p>
+<p><strong>From:</strong> ${senderName} (${senderEmail})</p>
+<p><strong>Message:</strong></p>
+<p style="white-space:pre-wrap;border-left:3px solid #F59E0B;padding-left:12px;">${replyBody.trim().replace(/</g, '&lt;')}</p>
+<p style="color:#888;font-size:12px;">Reply directly to ${senderEmail} to respond.</p>`,
+        })
+      } catch {
+        // email failure should not block the reply
+      }
+    }
+  }
 
   return NextResponse.json({ success: true, reply })
 }

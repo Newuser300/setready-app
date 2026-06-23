@@ -90,6 +90,33 @@ const quickActions = [
   { icon: '☕', label: 'Support SetReady', action: 'link' as const, href: '/donate' },
 ];
 
+function ContactModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '16px' }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ backgroundColor: 'white', borderRadius: '16px', maxWidth: '420px', width: '90%', padding: '28px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}
+      >
+        <div style={{ fontSize: '40px', marginBottom: '12px' }}>📬</div>
+        <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 8px' }}>Contact SetReady</h2>
+        <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 16px', lineHeight: '1.5' }}>Questions, feedback, or need help? Email us and we&apos;ll get back to you.</p>
+        <a
+          href="mailto:setready@mail.com"
+          style={{ display: 'inline-block', fontSize: '16px', fontWeight: '700', color: '#1a1a2e', backgroundColor: '#F59E0B', padding: '13px 24px', borderRadius: '10px', textDecoration: 'none', marginBottom: '16px' }}
+        >
+          ✉️ setready@mail.com
+        </a>
+        <div>
+          <button onClick={onClose} style={{ width: '100%', padding: '12px', backgroundColor: 'transparent', color: '#9ca3af', border: '1px solid #e5e7eb', borderRadius: '10px', fontSize: '14px', cursor: 'pointer' }}>Close</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const [modules, setModules] = useState<Module[]>([]);
@@ -1890,33 +1917,7 @@ export default function Dashboard() {
       )}
       {/* CONTACT MODAL */}
       {showContactModal && (
-        <div
-          onClick={() => setShowContactModal(false)}
-          style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '16px' }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{ backgroundColor: 'white', borderRadius: '16px', maxWidth: '400px', width: '90%', padding: '28px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}
-          >
-            <div style={{ fontSize: '40px', marginBottom: '12px' }}>📬</div>
-            <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 8px' }}>Contact SetReady</h2>
-            <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 20px', lineHeight: '1.5' }}>
-              Questions, feedback, or need help? Email our support team and we&apos;ll get back to you.
-            </p>
-            <a
-              href="mailto:setready@mail.com"
-              style={{ display: 'block', width: '100%', padding: '14px', backgroundColor: '#1a1a2e', color: 'white', borderRadius: '10px', fontSize: '15px', fontWeight: '700', textDecoration: 'none', boxSizing: 'border-box' }}
-            >
-              ✉️ setready@mail.com
-            </a>
-            <button
-              onClick={() => setShowContactModal(false)}
-              style={{ width: '100%', marginTop: '12px', padding: '12px', backgroundColor: 'transparent', color: '#9ca3af', border: '1px solid #e5e7eb', borderRadius: '10px', fontSize: '14px', cursor: 'pointer' }}
-            >
-              Close
-            </button>
-          </div>
-        </div>
+        <ContactModal onClose={() => setShowContactModal(false)} />
       )}
     </>
   );
