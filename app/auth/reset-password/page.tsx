@@ -1,94 +1,97 @@
-'use client';
+'use client'
+import { useState, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
+import Logo from '@/components/Logo'
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { createClient } from '@/utils/supabase/client';
-const supabase = createClient()
+function ResetForm() {
+  const params = useSearchParams()
+  const router = useRouter()
+  const token = params?.get('token') || ''
+  const type = params?.get('type') || ''
 
-export default function ResetPasswordPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [error, setError] = useState('');
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [done, setDone] = useState(false)
 
-  const handleReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+  const loginPath = type === 'casting' ? '/casting/login' : '/agent/login'
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/update-password`,
-    });
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    if (password.length < 8) { setError('Password must be at least 8 characters'); return }
+    if (password !== confirm) { setError('Passwords do not match'); return }
+    setLoading(true)
+    const res = await fetch('/api/auth/password-reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'reset', token, password }),
+    })
+    const data = await res.json()
+    setLoading(false)
+    if (!res.ok) { setError(data.error || 'Reset failed'); return }
+    setDone(true)
+  }
 
-    if (error) {
-      setError(error.message);
-    } else {
-      setSent(true);
-    }
-    setLoading(false);
-  };
+  if (!token) {
+    return <p style={{ color: '#dc2626', fontSize: '14px', textAlign: 'center' }}>Invalid reset link. Please request a new one.</p>
+  }
 
-  if (sent) {
+  if (done) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full p-8 bg-white rounded-xl shadow text-center">
-          <div className="text-5xl mb-4">📧</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Check your email</h1>
-          <p className="text-gray-600 mb-4">
-            We sent a password reset link to <strong>{email}</strong>
-          </p>
-          <Link href="/auth/sign-in" className="text-blue-600 hover:underline">
-            Back to Sign In
-          </Link>
-        </div>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '40px', marginBottom: '12px' }}>✅</div>
+        <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 8px' }}>Password updated</h1>
+        <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 20px' }}>You can now sign in with your new password.</p>
+        <Link href={loginPath} style={{ display: 'inline-block', padding: '12px 24px', backgroundColor: '#1a1a2e', color: 'white', fontWeight: '700', fontSize: '15px', borderRadius: '10px', textDecoration: 'none' }}>Go to Sign In</Link>
       </div>
-    );
+    )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full p-8 bg-white rounded-xl shadow">
-        <h1 className="text-2xl font-bold text-center text-gray-900 mb-2">Reset Password</h1>
-        <p className="text-center text-gray-600 mb-6">
-          Enter your email and we'll send you a link to reset your password.
-        </p>
+    <>
+      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+        <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 4px' }}>Choose a new password</h1>
+        <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>Enter and confirm your new password below.</p>
+      </div>
+      {error && (
+        <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px', padding: '10px 14px', marginBottom: '16px', color: '#dc2626', fontSize: '14px' }}>{error}</div>
+      )}
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div>
+          <label style={labelStyle}>New Password</label>
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 8 characters" required style={inputStyle} />
+        </div>
+        <div>
+          <label style={labelStyle}>Confirm New Password</label>
+          <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Re-enter password" required style={inputStyle} />
+        </div>
+        <button type="submit" disabled={loading} style={{ width: '100%', padding: '13px', backgroundColor: loading ? '#9ca3af' : '#F59E0B', color: loading ? 'white' : '#1a1a2e', fontWeight: '700', fontSize: '15px', border: 'none', borderRadius: '10px', cursor: loading ? 'not-allowed' : 'pointer', marginTop: '4px' }}>
+          {loading ? 'Updating...' : 'Update Password'}
+        </button>
+      </form>
+    </>
+  )
+}
 
-        <form onSubmit={handleReset} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email Address
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="you@example.com"
-            />
-          </div>
-
-          {error && (
-            <p className="text-red-500 text-sm text-center">{error}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? 'Sending...' : 'Send Reset Link'}
-          </button>
-        </form>
-
-        <p className="text-center text-sm text-gray-600 mt-4">
-          <Link href="/auth/sign-in" className="text-blue-600 hover:underline">
-            Back to Sign In
-          </Link>
-        </p>
+export default function ResetPasswordPage() {
+  return (
+    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ backgroundColor: '#1a1a2e', padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <Logo size="md" darkBackground={true} showText={true} />
+      </div>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px' }}>
+        <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '32px', width: '100%', maxWidth: '420px', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+          <Suspense fallback={<p style={{ textAlign: 'center', color: '#6b7280' }}>Loading...</p>}>
+            <ResetForm />
+          </Suspense>
+        </div>
       </div>
     </div>
-  );
+  )
 }
+
+const labelStyle: React.CSSProperties = { display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' }
+const inputStyle: React.CSSProperties = { width: '100%', padding: '11px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', color: '#1a1a2e', outline: 'none', boxSizing: 'border-box' }

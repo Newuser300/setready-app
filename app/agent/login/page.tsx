@@ -10,6 +10,23 @@ export default function AgentLoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showForgot, setShowForgot] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotMsg, setForgotMsg] = useState('')
+  const [forgotSending, setForgotSending] = useState(false)
+
+  async function handleForgot(e: React.FormEvent) {
+    e.preventDefault()
+    setForgotSending(true)
+    setForgotMsg('')
+    await fetch('/api/auth/password-reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'request', email: forgotEmail, accountType: 'agent' }),
+    })
+    setForgotSending(false)
+    setForgotMsg('If an account exists for that email, we have sent a reset link. Check your inbox.')
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -112,6 +129,28 @@ export default function AgentLoginPage() {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
+
+          <div style={{ textAlign: 'center', marginTop: '14px' }}>
+            <button type="button" onClick={() => { setShowForgot(v => !v); setForgotMsg('') }} style={{ background: 'none', border: 'none', color: '#F59E0B', fontWeight: '600', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline' }}>
+              Forgot password?
+            </button>
+          </div>
+
+          {showForgot && (
+            <div style={{ marginTop: '14px', padding: '16px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px' }}>
+              {forgotMsg ? (
+                <p style={{ fontSize: '13px', color: '#16a34a', margin: 0, textAlign: 'center' }}>{forgotMsg}</p>
+              ) : (
+                <form onSubmit={handleForgot} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <label style={labelStyle}>Enter your account email</label>
+                  <input type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} placeholder="you@agency.com" required style={inputStyle} />
+                  <button type="submit" disabled={forgotSending} style={{ width: '100%', padding: '11px', backgroundColor: forgotSending ? '#9ca3af' : '#1a1a2e', color: 'white', fontWeight: '700', fontSize: '14px', border: 'none', borderRadius: '8px', cursor: forgotSending ? 'not-allowed' : 'pointer' }}>
+                    {forgotSending ? 'Sending...' : 'Send Reset Link'}
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
 
           <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', color: '#6b7280' }}>
             New agency?{' '}
