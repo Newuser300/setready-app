@@ -490,7 +490,8 @@ export default function MessagesPage() {
               </div>
             )}
 
-            {/* Reply form */}
+            {/* Reply form — hidden for system/admin messages (one-way only) */}
+            {selectedMessage.sender_type !== 'system' && selectedMessage.sender_type !== 'admin' && (
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '16px', marginTop: '8px' }}>
               <label style={{ fontSize: '12px', fontWeight: '700', color: '#9ca3af', display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Reply to {selectedMessage.sender_name}:
@@ -523,6 +524,7 @@ export default function MessagesPage() {
                 </button>
               </div>
             </div>
+            )}
 
             {/* Footer */}
             <div style={{ display: 'flex', gap: '10px', paddingTop: '16px', marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>

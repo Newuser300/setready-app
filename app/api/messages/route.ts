@@ -84,7 +84,7 @@ export async function PATCH(request: NextRequest) {
     // Mark all direct messages as read
     await supabaseAdmin
       .from('messages')
-      .update({ is_read: true, read_at: new Date().toISOString() })
+      .update({ is_read: true })
       .eq('recipient_id', user.id)
       .eq('is_read', false)
 
@@ -137,7 +137,7 @@ export async function PATCH(request: NextRequest) {
       }
       await supabaseAdmin
         .from('messages')
-        .update({ is_read: true, read_at: new Date().toISOString() })
+        .update({ is_read: true })
         .eq('id', body.messageId)
     }
 
