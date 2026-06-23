@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import Image from 'next/image'
 import toast, { Toaster } from 'react-hot-toast'
 import Logo from '@/components/Logo'
@@ -586,7 +587,9 @@ export default function CastingDashboardPage() {
       {/* Top bar */}
       <div style={{ backgroundColor: '#1a1a2e', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50, borderBottom: '1px solid rgba(245,158,11,0.15)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Logo size="sm" darkBackground showText />
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+            <Logo size="sm" darkBackground showText />
+          </Link>
           <span style={{ color: '#9ca3af', fontSize: '13px' }}>/ Casting</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
