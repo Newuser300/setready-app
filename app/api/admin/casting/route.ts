@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
         .order('created_at', { ascending: false }),
       supabaseAdmin
         .from('casting_requests')
-        .select('id, production_name, shoot_date, role_type, performers_needed, created_at, casting_directors(name, company, email)')
+        .select('id, production_name, shoot_date, role_type, performers_needed:number_needed, created_at, casting_directors(name, company, email)')
         .eq('moderation_status', 'pending')
         .order('created_at', { ascending: false }),
     ])
@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
       .from('casting_requests')
       .select(`
         id, production_name, project_type, shoot_date, role_type,
-        performers_needed, filled_count, status, moderation_status, created_at,
+        performers_needed:number_needed, filled_count, status, moderation_status, created_at,
         casting_directors:casting_director_id (name, company, email)
       `)
       .order('created_at', { ascending: false })
@@ -267,7 +267,7 @@ export async function POST(req: NextRequest) {
     } else if (entityType === 'casting_request') {
       const { data: cr } = await supabaseAdmin
         .from('casting_requests')
-        .select('id, production_name, shoot_date, location, role_type, performers_needed, description, rate, casting_director_id, casting_directors(email, name)')
+        .select('id, production_name, shoot_date, location, role_type, performers_needed:number_needed, description:scene_description, rate, casting_director_id, casting_directors(email, name)')
         .eq('id', id)
         .single()
       await supabaseAdmin
@@ -380,6 +380,16 @@ export async function POST(req: NextRequest) {
 
   if (action === 'toggle_auto_approve') {
     await supabaseAdmin.from('casting_directors').update({ auto_approve: body.value === true }).eq('id', id)
+    return NextResponse.json({ success: true })
+  }
+
+  if (action === 'pause_request') {
+    await supabaseAdmin.from('casting_requests').update({ status: 'paused' }).eq('id', id)
+    return NextResponse.json({ success: true })
+  }
+
+  if (action === 'resume_request') {
+    await supabaseAdmin.from('casting_requests').update({ status: 'open' }).eq('id', id)
     return NextResponse.json({ success: true })
   }
 

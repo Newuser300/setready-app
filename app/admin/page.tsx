@@ -2813,6 +2813,20 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                         : r.moderation_status === 'pending' ? 'bg-yellow-50 text-yellow-700'
                         : 'bg-red-50 text-red-600'
                       }`}>{r.moderation_status}</span>
+                      {r.moderation_status === 'approved' && r.status !== 'paused' && (
+                        <button onClick={async () => {
+                          await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ action: 'pause_request', id: r.id }) })
+                          const res = await fetch('/api/admin/casting?type=requests', { headers: { Authorization: `Bearer ${accessToken}` } })
+                          if (res.ok) setCastingData(await res.json())
+                        }} className="px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold rounded-lg hover:bg-amber-100">Pause</button>
+                      )}
+                      {r.moderation_status === 'approved' && r.status === 'paused' && (
+                        <button onClick={async () => {
+                          await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ action: 'resume_request', id: r.id }) })
+                          const res = await fetch('/api/admin/casting?type=requests', { headers: { Authorization: `Bearer ${accessToken}` } })
+                          if (res.ok) setCastingData(await res.json())
+                        }} className="px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 text-xs font-bold rounded-lg hover:bg-green-100">Resume</button>
+                      )}
                       {r.moderation_status === 'approved' && (
                         <button onClick={async () => {
                           const reason = prompt('Reason for pulling this live request (optional):') ?? undefined
