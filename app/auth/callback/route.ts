@@ -54,14 +54,15 @@ Here is how to get started:
 1. Complete your performer profile
    Add your headshot, physical stats and special skills so agents and casting directors can find you.
 
-2. Set your availability
-   Mark the dates you can work on your availability calendar.
-
-3. Explore your free tools
+2. Explore your free tools
    You have instant access to the rate calculator, film set glossary, on-set journal, voucher wallet and more.
 
-4. Consider training
-   When you are ready, unlock 5 professional training modules for $9.99.
+3. Consider training
+   When you are ready, unlock professional training modules for $9.99.
+
+4. Try the free games.
+
+5. Check What's Filming.
 
 If you have any questions contact us at setready@mail.com
 
