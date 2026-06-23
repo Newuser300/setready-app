@@ -5,7 +5,6 @@ export async function GET() {
   const session = await getAgentSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Get agencyId for this agent
   const { data: agent } = await supabaseAdmin
     .from('agent_accounts')
     .select('agency_id')
@@ -14,7 +13,6 @@ export async function GET() {
 
   if (!agent) return NextResponse.json({ error: 'Agent not found' }, { status: 404 })
 
-  // Build this week's date range
   const today = new Date()
   const weekStart = new Date(today)
   weekStart.setDate(today.getDate() - today.getDay())
@@ -23,53 +21,49 @@ export async function GET() {
   const weekStartStr = weekStart.toISOString().slice(0, 10)
   const weekEndStr = weekEnd.toISOString().slice(0, 10)
 
-  // Fetch roster with profiles
+  // Roster rows (no embedded joins — agency_roster has no FK relationships defined)
   const { data: roster, error } = await supabaseAdmin
     .from('agency_roster')
-    .select(`
-      id,
-      status,
-      added_at,
-      user_id,
-      users:user_id (
-        id,
-        email,
-        raw_user_meta_data
-      ),
-      performer_profiles:user_id (
-        headshot_url,
-        union_status,
-        height_cm,
-        hair_color,
-        eye_color,
-        gender,
-        is_public
-      )
-    `)
+    .select('id, status, joined_at, performer_user_id')
     .eq('agency_id', agent.agency_id)
-    .order('added_at', { ascending: false })
+    .order('joined_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Collect user IDs for availability query
-  const userIds = (roster || []).map(r => r.user_id)
+  const userIds = (roster || []).map(r => r.performer_user_id).filter(Boolean)
 
+  // Fetch users + profiles separately, then stitch
+  let usersMap: Record<string, any> = {}
+  let profilesMap: Record<string, any> = {}
   let availabilityMap: Record<string, Record<string, string>> = {}
-  if (userIds.length > 0) {
-    const { data: avail } = await supabaseAdmin
-      .from('performer_availability')
-      .select('user_id, date, status')
-      .in('user_id', userIds)
-      .gte('date', weekStartStr)
-      .lte('date', weekEndStr)
 
-    ;(avail || []).forEach(a => {
+  if (userIds.length > 0) {
+    const [{ data: users }, { data: profiles }, { data: avail }] = await Promise.all([
+      supabaseAdmin.from('users').select('id, email, name').in('id', userIds),
+      supabaseAdmin.from('performer_profiles')
+        .select('user_id, headshot_url, union_status, union_priority, height_cm, hair_color, eye_color, gender, film_region_code, is_public')
+        .in('user_id', userIds),
+      supabaseAdmin.from('performer_availability')
+        .select('user_id, date, status')
+        .in('user_id', userIds)
+        .gte('date', weekStartStr)
+        .lte('date', weekEndStr),
+    ])
+
+    ;(users || []).forEach((u: any) => {
+      usersMap[u.id] = {
+        id: u.id,
+        email: u.email,
+        raw_user_meta_data: { full_name: u.name || '' },
+      }
+    })
+    ;(profiles || []).forEach((p: any) => { profilesMap[p.user_id] = p })
+    ;(avail || []).forEach((a: any) => {
       if (!availabilityMap[a.user_id]) availabilityMap[a.user_id] = {}
       availabilityMap[a.user_id][a.date] = a.status
     })
   }
 
-  // Build week days array
   const weekDays: string[] = []
   for (let i = 0; i < 7; i++) {
     const d = new Date(weekStart)
@@ -78,10 +72,15 @@ export async function GET() {
   }
 
   const result = (roster || []).map(r => ({
-    ...r,
+    id: r.id,
+    status: r.status,
+    joined_at: r.joined_at,
+    user_id: r.performer_user_id,
+    users: usersMap[r.performer_user_id] || null,
+    performer_profiles: profilesMap[r.performer_user_id] || null,
     weekAvailability: weekDays.map(date => ({
       date,
-      status: availabilityMap[r.user_id]?.[date] || null,
+      status: availabilityMap[r.performer_user_id]?.[date] || null,
     })),
   }))
 
@@ -103,7 +102,6 @@ export async function POST(req: Request) {
 
   if (!agent) return NextResponse.json({ error: 'Agent not found' }, { status: 404 })
 
-  // Look up user by email via public users view
   const { data: found, error: lookupError } = await supabaseAdmin
     .from('users')
     .select('id, email')
@@ -117,13 +115,12 @@ export async function POST(req: Request) {
     )
   }
 
-  // Check if already on roster
   const { data: existing } = await supabaseAdmin
     .from('agency_roster')
     .select('id, status')
     .eq('agency_id', agent.agency_id)
-    .eq('user_id', found.id)
-    .single()
+    .eq('performer_user_id', found.id)
+    .maybeSingle()
 
   if (existing) {
     return NextResponse.json(
@@ -136,22 +133,20 @@ export async function POST(req: Request) {
     .from('agency_roster')
     .insert({
       agency_id: agent.agency_id,
-      user_id: found.id,
-      status: 'pending',
-      added_by: session.accountId,
+      performer_user_id: found.id,
+      status: 'active',
     })
     .select()
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Notify the performer
   await supabaseAdmin.from('casting_notifications').insert({
     recipient_type: 'performer',
     recipient_id: found.id,
-    type: 'roster_invite',
-    title: 'Agency Roster Invite',
-    message: `An agency has added you to their roster. Log in to confirm or decline.`,
+    type: 'roster_added',
+    title: 'Added to an Agency Roster',
+    message: `An agency has added you to their roster.`,
     action_url: '/dashboard',
   })
 

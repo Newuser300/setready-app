@@ -177,7 +177,22 @@ export default function SignUp() {
 
         router.push('/dashboard');
       } else {
-        // Email confirmation required — show confirmation screen
+        // Email confirmation required — no session yet, but still create the
+        // public.users profile row now so the account is findable/bookable
+        // before they confirm. (Without this, confirmation-flow signups never
+        // get a public.users row.)
+        await fetch('/api/auth/create-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: data.user.id,
+            email,
+            name,
+            province,
+            city: city || null,
+            referred_by: referralCode || null,
+          }),
+        }).catch(() => {});
         sessionStorage.removeItem('referral_code');
         setShowConfirmation(true);
       }
