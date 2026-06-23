@@ -78,7 +78,7 @@ const quickActions = [
   { icon: '💰', label: 'Rate Calculator', action: 'link' as const, href: '/rate-calculator' },
   { icon: '⚖️', label: 'Know Your Rights', action: 'external' as const, href: 'https://ubcpactra.ca/agreements/' },
   { icon: '🤝', label: 'My Referrals', action: 'link' as const, href: '/referrals' },
-  { icon: '🎬', label: 'Productions in BC', action: 'external' as const, href: 'https://ubcpactra.ca/production-list/' },
+  { icon: '🎬', label: "What's Filming", action: 'link' as const, href: '/whats-filming' },
   { icon: '🍁', label: 'Find Agencies', action: 'link' as const, href: '/agencies' },
   { icon: '🎭', label: 'Agency Click', action: 'modal' as const, modal: 'agencyClick' },
   { icon: '🎬', label: 'SetReady Casting', action: 'link' as const, href: '/casting-portal' },
