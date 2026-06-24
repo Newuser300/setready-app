@@ -258,6 +258,8 @@ export default function AgentDashboardPage() {
   const [showPw, setShowPw] = useState(false)
   const [pwSaving, setPwSaving] = useState(false)
   const [pwMsg, setPwMsg] = useState<{ text: string; ok: boolean } | null>(null)
+  const [emailPref, setEmailPref] = useState(true)
+  const [emailPrefSaving, setEmailPrefSaving] = useState(false)
 
   // Booking holds (Calendar tab)
   const [holds, setHolds] = useState<Booking[]>([])
@@ -284,6 +286,7 @@ export default function AgentDashboardPage() {
       if (!d) { router.replace('/agent/login'); return }
       setAgentName(d.name || d.email)
       setNameInput(d.name || '')
+      setEmailPref(d.emailOnRequest !== false)
       setAgencyId(d.agencyId || '')
     })
   }, [router])
@@ -511,6 +514,17 @@ export default function AgentDashboardPage() {
     } else {
       setHoldMsg({ type: 'err', text: d.error || 'Action failed.' })
     }
+  }
+
+  async function saveEmailPref(value: boolean) {
+    setEmailPref(value)
+    setEmailPrefSaving(true)
+    await fetch('/api/agent/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'update_email_pref', emailOnRequest: value }),
+    })
+    setEmailPrefSaving(false)
   }
 
   async function saveName() {
@@ -1121,6 +1135,17 @@ export default function AgentDashboardPage() {
                 </button>
                 {pwMsg && <div style={{ fontSize: '13px', color: pwMsg.ok ? '#22c55e' : '#ef4444' }}>{pwMsg.ok ? '✓ ' : '✗ '}{pwMsg.text}</div>}
               </div>
+            </div>
+
+            {/* Email notifications */}
+            <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '20px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '15px', fontWeight: '700', color: 'white', margin: '0 0 6px' }}>Email Notifications</h2>
+              <div style={{ fontSize: '13px', color: '#9ca3af', marginBottom: '14px' }}>Get an email when a new casting request is posted. You&rsquo;ll still see requests in your dashboard either way.</div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                <input type="checkbox" checked={emailPref} disabled={emailPrefSaving} onChange={e => saveEmailPref(e.target.checked)} style={{ width: '16px', height: '16px' }} />
+                <span style={{ fontSize: '14px', color: 'white' }}>Email me about new casting requests</span>
+                {emailPrefSaving && <span style={{ fontSize: '12px', color: '#6b7280' }}>saving…</span>}
+              </label>
             </div>
 
             {/* Availability links */}

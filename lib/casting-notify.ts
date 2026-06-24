@@ -57,7 +57,7 @@ export async function notifyAllAgents(
 ) {
   const { data: agents } = await supabaseAdmin
     .from('agent_accounts')
-    .select('id, email, name, agency_id, agencies(name)')
+    .select('id, email, name, agency_id, email_on_request, agencies(name)')
     .eq('is_active', true)
 
   if (!agents?.length) return
@@ -93,6 +93,7 @@ export async function notifyAllAgents(
   if (sendEmailNotification && castingRequestData) {
     for (const agent of agents) {
       if (!agent.email) continue
+      if (agent.email_on_request === false) continue
       await sendEmail({
         to: agent.email,
         subject: `New Casting Request: ${castingRequestData.production_name}`,

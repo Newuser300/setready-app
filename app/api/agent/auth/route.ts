@@ -10,7 +10,7 @@ export async function GET() {
 
   const { data: agent } = await supabaseAdmin
     .from('agent_accounts')
-    .select('name, agency_id, agencies(name)')
+    .select('name, agency_id, email_on_request, agencies(name)')
     .eq('id', session.accountId)
     .single()
 
@@ -18,11 +18,12 @@ export async function GET() {
     name: agent?.name || session.name,
     agencyName: (agent?.agencies as any)?.name || '',
     agencyId: agent?.agency_id,
+    emailOnRequest: agent?.email_on_request !== false,
   })
 }
 
 export async function POST(req: Request) {
-  const { action, email, password, name, agencyName, phone, city, province, licenceNumber, website, currentPassword, newPassword } =
+  const { action, email, password, name, agencyName, phone, city, province, licenceNumber, website, currentPassword, newPassword, emailOnRequest } =
     await req.json()
 
   if (action === 'login') {
@@ -140,6 +141,16 @@ export async function POST(req: Request) {
     if (!newName) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
     await supabaseAdmin.from('agent_accounts').update({ name: newName }).eq('id', session.accountId)
     return NextResponse.json({ success: true, name: newName })
+  }
+
+  if (action === 'update_email_pref') {
+    const session = await getAgentSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    await supabaseAdmin
+      .from('agent_accounts')
+      .update({ email_on_request: emailOnRequest === true })
+      .eq('id', session.accountId)
+    return NextResponse.json({ success: true, emailOnRequest: emailOnRequest === true })
   }
 
   if (action === 'change_password') {
