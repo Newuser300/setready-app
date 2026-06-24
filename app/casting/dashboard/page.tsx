@@ -278,6 +278,17 @@ export default function CastingDashboardPage() {
   const [createdQR, setCreatedQR] = useState<{ token: string; url: string } | null>(null)
   const [signinDetail, setSigninDetail] = useState<any | null>(null)
 
+  // Settings — name + password
+  const [nameInput, setNameInput] = useState('')
+  const [nameSaving, setNameSaving] = useState(false)
+  const [nameMsg, setNameMsg] = useState<{ text: string; ok: boolean } | null>(null)
+  const [curPw, setCurPw] = useState('')
+  const [newPw, setNewPw] = useState('')
+  const [confirmPw, setConfirmPw] = useState('')
+  const [showPw, setShowPw] = useState(false)
+  const [pwSaving, setPwSaving] = useState(false)
+  const [pwMsg, setPwMsg] = useState<{ text: string; ok: boolean } | null>(null)
+
   // Holds (performer quick-view modal)
   const [holds, setHolds] = useState<Booking[]>([])
   const [holdsLoading, setHoldsLoading] = useState(false)
@@ -301,6 +312,7 @@ export default function CastingDashboardPage() {
     fetch('/api/casting/auth').then(r => r.ok ? r.json() : null).then(d => {
       if (!d) { router.replace('/casting/login'); return }
       setCdName(d.name || d.email)
+      setNameInput(d.name || '')
     })
     fetch('/api/casting/pro-status').then(r => r.ok ? r.json() : null).then(d => { if (d) setIsCastingPro(d.isPro) })
   }, [router])
@@ -571,6 +583,36 @@ export default function CastingDashboardPage() {
       const refresh = await fetch(`/api/bookings?performerId=${quickView.user_id}`)
       if (refresh.ok) setHolds(await refresh.json())
     }
+  }
+
+  async function saveName() {
+    if (!nameInput.trim()) return
+    setNameSaving(true); setNameMsg(null)
+    const res = await fetch('/api/casting/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'update_profile', name: nameInput.trim() }),
+    })
+    const d = await res.json()
+    setNameSaving(false)
+    if (res.ok) { setCdName(d.name); setNameMsg({ text: 'Name updated', ok: true }) }
+    else setNameMsg({ text: d.error || 'Failed to update', ok: false })
+  }
+
+  async function changePassword() {
+    setPwMsg(null)
+    if (newPw.length < 8) { setPwMsg({ text: 'New password must be at least 8 characters', ok: false }); return }
+    if (newPw !== confirmPw) { setPwMsg({ text: 'New passwords do not match', ok: false }); return }
+    setPwSaving(true)
+    const res = await fetch('/api/casting/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'change_password', currentPassword: curPw, newPassword: newPw }),
+    })
+    const d = await res.json()
+    setPwSaving(false)
+    if (res.ok) { setPwMsg({ text: 'Password updated', ok: true }); setCurPw(''); setNewPw(''); setConfirmPw('') }
+    else setPwMsg({ text: d.error || 'Failed to update password', ok: false })
   }
 
   async function signOut() {
@@ -1233,9 +1275,35 @@ export default function CastingDashboardPage() {
               }
             </div>
 
-            <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '20px', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '20px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '16px' }}>
               <h2 style={{ fontSize: '15px', fontWeight: '700', color: 'white', margin: '0 0 14px' }}>Account</h2>
-              <div style={{ fontSize: '13px', color: '#9ca3af', marginBottom: '16px' }}>Logged in as {cdName}</div>
+              <label style={lbl}>Your Display Name</label>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
+                <input value={nameInput} onChange={e => setNameInput(e.target.value)} placeholder="Your name" style={{ ...inp, flex: 1 }} />
+                <button onClick={saveName} disabled={nameSaving || !nameInput.trim()} style={{ padding: '8px 18px', backgroundColor: nameInput.trim() ? '#F59E0B' : '#374151', color: nameInput.trim() ? '#1a1a2e' : '#6b7280', fontWeight: '700', border: 'none', borderRadius: '8px', cursor: nameSaving || !nameInput.trim() ? 'not-allowed' : 'pointer', fontSize: '14px', whiteSpace: 'nowrap' }}>
+                  {nameSaving ? '...' : 'Save'}
+                </button>
+              </div>
+              {nameMsg && <div style={{ fontSize: '13px', color: nameMsg.ok ? '#22c55e' : '#ef4444' }}>{nameMsg.ok ? '✓ ' : '✗ '}{nameMsg.text}</div>}
+            </div>
+
+            <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '20px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '15px', fontWeight: '700', color: 'white', margin: '0 0 14px' }}>Change Password</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <input type={showPw ? 'text' : 'password'} value={curPw} onChange={e => setCurPw(e.target.value)} placeholder="Current password" style={inp} />
+                <input type={showPw ? 'text' : 'password'} value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="New password (min 8 characters)" style={inp} />
+                <input type={showPw ? 'text' : 'password'} value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="Confirm new password" style={inp} />
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#9ca3af', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={showPw} onChange={e => setShowPw(e.target.checked)} /> Show passwords
+                </label>
+                <button onClick={changePassword} disabled={pwSaving} style={{ alignSelf: 'flex-start', padding: '9px 18px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', border: 'none', borderRadius: '8px', cursor: pwSaving ? 'not-allowed' : 'pointer', fontSize: '14px', opacity: pwSaving ? 0.5 : 1 }}>
+                  {pwSaving ? 'Updating...' : 'Update Password'}
+                </button>
+                {pwMsg && <div style={{ fontSize: '13px', color: pwMsg.ok ? '#22c55e' : '#ef4444' }}>{pwMsg.ok ? '✓ ' : '✗ '}{pwMsg.text}</div>}
+              </div>
+            </div>
+
+            <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '20px', border: '1px solid rgba(255,255,255,0.06)' }}>
               <button onClick={signOut} style={{ padding: '10px 20px', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', background: 'transparent', color: '#ef4444', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Sign Out</button>
             </div>
           </div>
