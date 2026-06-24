@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   if (!performerId || !tag) return NextResponse.json({ error: 'performerId and tag required' }, { status: 400 })
 
   const { data, error } = await supabaseAdmin
-    .from('performer_roster_tags')
+    .from('performer_tags')
     .upsert({ agency_id: agent.agency_id, performer_id: performerId, tag }, { onConflict: 'agency_id,performer_id,tag' })
     .select()
     .single()
@@ -41,7 +41,7 @@ export async function DELETE(req: Request) {
   const { performerId, tag } = await req.json()
 
   const { error } = await supabaseAdmin
-    .from('performer_roster_tags')
+    .from('performer_tags')
     .delete()
     .eq('agency_id', agent.agency_id)
     .eq('performer_id', performerId)
@@ -64,7 +64,7 @@ export async function GET(req: Request) {
   if (!agent) return NextResponse.json({ error: 'Agent not found' }, { status: 404 })
 
   const { data, error } = await supabaseAdmin
-    .from('performer_roster_tags')
+    .from('performer_tags')
     .select('performer_id, tag')
     .eq('agency_id', agent.agency_id)
 
