@@ -16,7 +16,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const statusFilter = searchParams.get('status') || 'open'
 
-  // Fetch casting requests
+  // Fetch casting requests (no embedded casting_directors join — no FK relationship)
   const { data: requests, error } = await supabaseAdmin
     .from('casting_requests')
     .select(`
@@ -29,16 +29,14 @@ export async function GET(req: Request) {
       age_min,
       age_max,
       union_status,
-      performers_needed,
+      performers_needed:number_needed,
       rate,
       rate_notes,
-      description,
+      description:scene_description,
+      shoot_region_code,
       status,
       created_at,
-      casting_directors (
-        name,
-        company
-      )
+      casting_director_id
     `)
     .eq('status', statusFilter)
     .eq('moderation_status', 'approved')
@@ -47,6 +45,17 @@ export async function GET(req: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   if (!requests?.length) return NextResponse.json([])
+
+  // Fetch casting director names separately and stitch
+  const directorIds = [...new Set(requests.map(r => r.casting_director_id).filter(Boolean))]
+  const directorsById: Record<string, { name: string; company: string }> = {}
+  if (directorIds.length > 0) {
+    const { data: directors } = await supabaseAdmin
+      .from('casting_directors')
+      .select('id, name, company')
+      .in('id', directorIds)
+    ;(directors || []).forEach(d => { directorsById[d.id] = { name: d.name, company: d.company } })
+  }
 
   // For each request, get submission count for THIS agency
   const requestIds = requests.map(r => r.id)
@@ -64,6 +73,7 @@ export async function GET(req: Request) {
 
   const result = requests.map(r => ({
     ...r,
+    casting_directors: r.casting_director_id ? (directorsById[r.casting_director_id] || null) : null,
     mySubmissionCount: countMap[r.id] || 0,
   }))
 

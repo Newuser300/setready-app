@@ -105,12 +105,12 @@ export async function POST(req: Request) {
   // Skip already-submitted performers for this request
   const { data: existing } = await supabaseAdmin
     .from('casting_submissions')
-    .select('performer_id')
+    .select('performer_user_id')
     .eq('casting_request_id', castingRequestId)
     .eq('agency_id', agent.agency_id)
-    .in('performer_id', performerIds)
+    .in('performer_user_id', performerIds)
 
-  const alreadySubmitted = new Set((existing || []).map(e => e.performer_id))
+  const alreadySubmitted = new Set((existing || []).map(e => e.performer_user_id))
   const toSubmit = performerIds.filter((id: string) => !alreadySubmitted.has(id))
 
   if (!toSubmit.length) {
@@ -123,10 +123,10 @@ export async function POST(req: Request) {
   const rows = toSubmit.map((performerId: string) => ({
     casting_request_id: castingRequestId,
     agency_id: agent.agency_id,
-    performer_id: performerId,
-    submitted_by: session.accountId,
+    performer_user_id: performerId,
+    submitted_by_agent_id: session.accountId,
     status: 'submitted',
-    notes: notes || null,
+    agent_notes: notes || null,
     submitted_at: new Date().toISOString(),
   }))
 

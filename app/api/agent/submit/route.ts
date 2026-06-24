@@ -18,12 +18,12 @@ export async function POST(req: Request) {
 
   // Verify performer is on this agency's roster
   const { data: rosterEntry } = await supabaseAdmin
-    .from('agency_performers')
+    .from('agency_roster')
     .select('id')
     .eq('agency_id', agent.agency_id)
-    .eq('user_id', performerId)
+    .eq('performer_user_id', performerId)
     .eq('status', 'active')
-    .single()
+    .maybeSingle()
 
   if (!rosterEntry) return NextResponse.json({ error: 'Performer not on your roster' }, { status: 403 })
 
@@ -42,12 +42,13 @@ export async function POST(req: Request) {
     .from('casting_submissions')
     .upsert({
       casting_request_id: reqId,
-      performer_id: performerId,
+      performer_user_id: performerId,
+      submitted_by_agent_id: session.accountId,
       agency_id: agent.agency_id,
       status: 'submitted',
-      notes: notes || null,
+      agent_notes: notes || null,
       submitted_at: new Date().toISOString(),
-    }, { onConflict: 'casting_request_id,performer_id' })
+    }, { onConflict: 'casting_request_id,performer_user_id' })
     .select()
     .single()
 
@@ -63,11 +64,11 @@ export async function POST(req: Request) {
   if (castingReq) {
     const { data: performer } = await supabaseAdmin
       .from('users')
-      .select('raw_user_meta_data, email')
+      .select('name, email')
       .eq('id', performerId)
       .single()
 
-    const performerName = performer?.raw_user_meta_data?.full_name || performer?.email || 'A performer'
+    const performerName = performer?.name || performer?.email || 'A performer'
 
     await supabaseAdmin
       .from('casting_notifications')
