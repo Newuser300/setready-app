@@ -31,11 +31,53 @@ export default function AgentSettingsPage() {
   const [promoLoading, setPromoLoading] = useState(false)
   const [promoMsg, setPromoMsg] = useState<{ text: string; ok: boolean } | null>(null)
 
+  const [nameInput, setNameInput] = useState('')
+  const [nameSaving, setNameSaving] = useState(false)
+  const [nameMsg, setNameMsg] = useState<{ text: string; ok: boolean } | null>(null)
+
+  const [curPw, setCurPw] = useState('')
+  const [newPw, setNewPw] = useState('')
+  const [confirmPw, setConfirmPw] = useState('')
+  const [showPw, setShowPw] = useState(false)
+  const [pwSaving, setPwSaving] = useState(false)
+  const [pwMsg, setPwMsg] = useState<{ text: string; ok: boolean } | null>(null)
+
+  async function saveName() {
+    if (!nameInput.trim()) return
+    setNameSaving(true); setNameMsg(null)
+    const res = await fetch('/api/agent/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'update_profile', name: nameInput.trim() }),
+    })
+    const d = await res.json()
+    setNameSaving(false)
+    if (res.ok) { setAgentName(d.name); setNameMsg({ text: 'Name updated', ok: true }) }
+    else setNameMsg({ text: d.error || 'Failed to update', ok: false })
+  }
+
+  async function changePassword() {
+    setPwMsg(null)
+    if (newPw.length < 8) { setPwMsg({ text: 'New password must be at least 8 characters', ok: false }); return }
+    if (newPw !== confirmPw) { setPwMsg({ text: 'New passwords do not match', ok: false }); return }
+    setPwSaving(true)
+    const res = await fetch('/api/agent/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'change_password', currentPassword: curPw, newPassword: newPw }),
+    })
+    const d = await res.json()
+    setPwSaving(false)
+    if (res.ok) { setPwMsg({ text: 'Password updated', ok: true }); setCurPw(''); setNewPw(''); setConfirmPw('') }
+    else setPwMsg({ text: d.error || 'Failed to update password', ok: false })
+  }
+
   useEffect(() => {
     fetch('/api/agent/auth', { method: 'GET' }).then(async res => {
       if (!res.ok) { router.push('/agent/login'); return }
       const d = await res.json()
       setAgentName(d.name || '')
+      setNameInput(d.name || '')
       setAgencyName(d.agencyName || '')
       setAgencyId(d.agencyId || '')
     }).catch(() => router.push('/agent/login'))
@@ -126,10 +168,33 @@ export default function AgentSettingsPage() {
               <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Agency</span>
               <p style={{ fontSize: '16px', fontWeight: '700', margin: '2px 0 0' }}>{agencyName}</p>
             </div>
-            <div>
-              <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contact</span>
-              <p style={{ fontSize: '15px', margin: '2px 0 0' }}>{agentName}</p>
+            <div style={{ marginTop: '4px' }}>
+              <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Your Display Name</span>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                <input value={nameInput} onChange={e => setNameInput(e.target.value)} placeholder="Your name" style={{ flex: 1, padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
+                <button onClick={saveName} disabled={nameSaving || !nameInput.trim()} style={{ padding: '9px 16px', backgroundColor: '#1a1a2e', color: 'white', fontWeight: '700', border: 'none', borderRadius: '8px', cursor: nameSaving || !nameInput.trim() ? 'not-allowed' : 'pointer', fontSize: '14px', whiteSpace: 'nowrap', opacity: nameSaving || !nameInput.trim() ? 0.5 : 1 }}>
+                  {nameSaving ? '...' : 'Save'}
+                </button>
+              </div>
+              {nameMsg && <p style={{ fontSize: '13px', margin: '6px 0 0', color: nameMsg.ok ? '#16a34a' : '#dc2626' }}>{nameMsg.ok ? '✓ ' : '✗ '}{nameMsg.text}</p>}
             </div>
+          </div>
+        </div>
+
+        {/* Change Password */}
+        <div style={sectionStyle}>
+          <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#1a1a2e', margin: '0 0 12px' }}>Change Password</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <input type={showPw ? 'text' : 'password'} value={curPw} onChange={e => setCurPw(e.target.value)} placeholder="Current password" style={{ padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
+            <input type={showPw ? 'text' : 'password'} value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="New password (min 8 characters)" style={{ padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
+            <input type={showPw ? 'text' : 'password'} value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="Confirm new password" style={{ padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#6b7280', cursor: 'pointer' }}>
+              <input type="checkbox" checked={showPw} onChange={e => setShowPw(e.target.checked)} /> Show passwords
+            </label>
+            <button onClick={changePassword} disabled={pwSaving} style={{ alignSelf: 'flex-start', padding: '9px 18px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', border: 'none', borderRadius: '8px', cursor: pwSaving ? 'not-allowed' : 'pointer', fontSize: '14px', opacity: pwSaving ? 0.5 : 1 }}>
+              {pwSaving ? 'Updating...' : 'Update Password'}
+            </button>
+            {pwMsg && <p style={{ fontSize: '13px', margin: '2px 0 0', color: pwMsg.ok ? '#16a34a' : '#dc2626' }}>{pwMsg.ok ? '✓ ' : '✗ '}{pwMsg.text}</p>}
           </div>
         </div>
 

@@ -11,6 +11,7 @@ export default function CastingLoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showForgot, setShowForgot] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [forgotEmail, setForgotEmail] = useState('')
   const [forgotMsg, setForgotMsg] = useState('')
   const [forgotSending, setForgotSending] = useState(false)
@@ -50,7 +51,9 @@ export default function CastingLoginPage() {
 
       {/* Header */}
       <div style={{ backgroundColor: '#1a1a2e', padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <Logo size="md" darkBackground={true} showText={true} />
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+          <Logo size="md" darkBackground={true} showText={true} />
+        </Link>
         <span style={{ color: '#9ca3af', fontSize: '14px', marginLeft: '4px' }}>/ Casting</span>
       </div>
 
@@ -86,7 +89,12 @@ export default function CastingLoginPage() {
             </div>
             <div>
               <label style={labelStyle}>Password</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required style={inputStyle} />
+              <div style={{ position: 'relative' }}>
+                <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required style={{ ...inputStyle, paddingRight: '64px' }} />
+                <button type="button" onClick={() => setShowPassword(v => !v)} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6b7280', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
             </div>
             <button type="submit" disabled={loading} style={{ width: '100%', padding: '13px', backgroundColor: loading ? '#9ca3af' : '#F59E0B', color: loading ? 'white' : '#1a1a2e', fontWeight: '700', fontSize: '15px', border: 'none', borderRadius: '10px', cursor: loading ? 'not-allowed' : 'pointer', marginTop: '4px' }}>
               {loading ? 'Signing in...' : 'Sign In'}

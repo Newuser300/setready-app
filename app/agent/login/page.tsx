@@ -11,6 +11,7 @@ export default function AgentLoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showForgot, setShowForgot] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [forgotEmail, setForgotEmail] = useState('')
   const [forgotMsg, setForgotMsg] = useState('')
   const [forgotSending, setForgotSending] = useState(false)
@@ -55,7 +56,9 @@ export default function AgentLoginPage() {
 
       {/* Header */}
       <div style={{ backgroundColor: '#1a1a2e', padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <Logo size="md" darkBackground={true} showText={true} />
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+          <Logo size="md" darkBackground={true} showText={true} />
+        </Link>
         <span style={{ color: '#9ca3af', fontSize: '14px', marginLeft: '4px' }}>/ Agent Portal</span>
       </div>
 
@@ -103,14 +106,23 @@ export default function AgentLoginPage() {
 
             <div>
               <label style={labelStyle}>Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                style={inputStyle}
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  style={{ ...inputStyle, paddingRight: '64px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6b7280', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
             </div>
 
             <button

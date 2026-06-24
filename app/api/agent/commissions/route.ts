@@ -19,15 +19,12 @@ export async function GET(req: Request) {
 
   let query = supabaseAdmin
     .from('agency_commissions')
-    .select(`
-      *,
-      users:performer_id (email, raw_user_meta_data)
-    `)
+    .select('*')
     .eq('agency_id', agent.agency_id)
-    .order('shoot_date', { ascending: false })
+    .order('booking_date', { ascending: false })
 
-  if (from) query = query.gte('shoot_date', from)
-  if (to) query = query.lte('shoot_date', to)
+  if (from) query = query.gte('booking_date', from)
+  if (to) query = query.lte('booking_date', to)
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -47,7 +44,7 @@ export async function POST(req: Request) {
   if (!agent) return NextResponse.json({ error: 'Agent not found' }, { status: 404 })
 
   const body = await req.json()
-  const { performerId, productionName, shootDate, grossPay, commissionRate, notes } = body
+  const { performerName, productionName, bookingDate, shootDate, grossPay, commissionRate, notes } = body
 
   const rate = commissionRate || 10.00
   const commissionAmount = parseFloat(grossPay) * (rate / 100)
@@ -56,14 +53,14 @@ export async function POST(req: Request) {
     .from('agency_commissions')
     .insert({
       agency_id: agent.agency_id,
-      performer_id: performerId || null,
+      performer_name: performerName || null,
       production_name: productionName,
-      shoot_date: shootDate,
+      booking_date: bookingDate || shootDate,
       gross_pay: parseFloat(grossPay),
       commission_rate: rate,
       commission_amount: commissionAmount,
       notes: notes || null,
-      is_paid: false,
+      paid: false,
     })
     .select()
     .single()
@@ -76,12 +73,12 @@ export async function PATCH(req: Request) {
   const session = await getAgentSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { id, is_paid } = await req.json()
+  const { id, is_paid, paid } = await req.json()
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
   const { error } = await supabaseAdmin
     .from('agency_commissions')
-    .update({ is_paid })
+    .update({ paid: paid ?? is_paid })
     .eq('id', id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

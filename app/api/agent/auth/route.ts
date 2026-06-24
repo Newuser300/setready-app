@@ -22,7 +22,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { action, email, password, name, agencyName, phone, city, province, licenceNumber, website } =
+  const { action, email, password, name, agencyName, phone, city, province, licenceNumber, website, currentPassword, newPassword } =
     await req.json()
 
   if (action === 'login') {
@@ -131,6 +131,36 @@ export async function POST(req: Request) {
       success: true,
       message: 'Agency application submitted. We will review and approve within 24 hours.'
     })
+  }
+
+  if (action === 'update_profile') {
+    const session = await getAgentSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const newName = (name || '').trim()
+    if (!newName) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+    await supabaseAdmin.from('agent_accounts').update({ name: newName }).eq('id', session.accountId)
+    return NextResponse.json({ success: true, name: newName })
+  }
+
+  if (action === 'change_password') {
+    const session = await getAgentSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!currentPassword || !newPassword) return NextResponse.json({ error: 'Both current and new password are required' }, { status: 400 })
+    if (newPassword.length < 8) return NextResponse.json({ error: 'New password must be at least 8 characters' }, { status: 400 })
+
+    const { data: acct } = await supabaseAdmin
+      .from('agent_accounts')
+      .select('password_hash')
+      .eq('id', session.accountId)
+      .single()
+    if (!acct) return NextResponse.json({ error: 'Account not found' }, { status: 404 })
+
+    const valid = await bcrypt.compare(currentPassword, acct.password_hash)
+    if (!valid) return NextResponse.json({ error: 'Current password is incorrect' }, { status: 400 })
+
+    const hash = await bcrypt.hash(newPassword, 12)
+    await supabaseAdmin.from('agent_accounts').update({ password_hash: hash }).eq('id', session.accountId)
+    return NextResponse.json({ success: true })
   }
 
   if (action === 'logout') {

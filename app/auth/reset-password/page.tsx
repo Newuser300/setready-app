@@ -15,6 +15,7 @@ function ResetForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const loginPath = type === 'casting' ? '/casting/login' : '/agent/login'
 
@@ -62,11 +63,16 @@ function ResetForm() {
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         <div>
           <label style={labelStyle}>New Password</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 8 characters" required style={inputStyle} />
+          <div style={{ position: 'relative' }}>
+            <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 8 characters" required style={{ ...inputStyle, paddingRight: '64px' }} />
+            <button type="button" onClick={() => setShowPassword(v => !v)} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6b7280', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+              {showPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
         </div>
         <div>
           <label style={labelStyle}>Confirm New Password</label>
-          <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Re-enter password" required style={inputStyle} />
+          <input type={showPassword ? 'text' : 'password'} value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Re-enter password" required style={inputStyle} />
         </div>
         <button type="submit" disabled={loading} style={{ width: '100%', padding: '13px', backgroundColor: loading ? '#9ca3af' : '#F59E0B', color: loading ? 'white' : '#1a1a2e', fontWeight: '700', fontSize: '15px', border: 'none', borderRadius: '10px', cursor: loading ? 'not-allowed' : 'pointer', marginTop: '4px' }}>
           {loading ? 'Updating...' : 'Update Password'}
