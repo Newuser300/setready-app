@@ -21,6 +21,7 @@ type Message = {
   created_at: string
   reply_count?: number
   is_reply?: boolean
+  saved?: boolean
 }
 
 type WeatherResult = {
@@ -166,6 +167,17 @@ export default function MessagesPage() {
     })
     setMessages(prev => prev.filter(m => m.id !== messageId))
     setSelectedMessage(null)
+  }
+
+  async function toggleSave(message: Message) {
+    const newSaved = !message.saved
+    await fetch('/api/messages', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: newSaved ? 'save' : 'unsave', messageId: message.id }),
+    })
+    setMessages(prev => prev.map(m => m.id === message.id ? { ...m, saved: newSaved } : m))
+    setSelectedMessage(prev => prev && prev.id === message.id ? { ...prev, saved: newSaved } : prev)
   }
 
   async function loadThread(messageId: string) {
@@ -470,6 +482,22 @@ export default function MessagesPage() {
                 </Link>
               </div>
             )}
+
+            {/* Save / Delete actions */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '24px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '16px' }}>
+              <button
+                onClick={() => toggleSave(selectedMessage)}
+                style={{ flex: 1, padding: '10px', backgroundColor: selectedMessage.saved ? 'rgba(245,158,11,0.15)' : 'transparent', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.4)', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}
+              >
+                {selectedMessage.saved ? '★ Saved' : '☆ Save'}
+              </button>
+              <button
+                onClick={() => { if (confirm('Delete this message?')) deleteMessage(selectedMessage.id) }}
+                style={{ flex: 1, padding: '10px', backgroundColor: 'transparent', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}
+              >
+                🗑 Delete
+              </button>
+            </div>
 
             {/* Thread replies */}
             {threadReplies.length > 0 && (

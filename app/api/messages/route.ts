@@ -80,6 +80,17 @@ export async function PATCH(request: NextRequest) {
 
   const body = await request.json()
 
+  if (body.action === 'save' || body.action === 'unsave') {
+    if (!body.messageId) return NextResponse.json({ error: 'messageId required' }, { status: 400 })
+    const { error } = await supabaseAdmin
+      .from('messages')
+      .update({ saved: body.action === 'save' })
+      .eq('id', body.messageId)
+      .eq('recipient_id', user.id)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ success: true, saved: body.action === 'save' })
+  }
+
   if (body.all) {
     // Mark all direct messages as read
     await supabaseAdmin
@@ -147,33 +158,20 @@ export async function PATCH(request: NextRequest) {
   return NextResponse.json({ error: 'Missing messageId or all flag' }, { status: 400 })
 }
 
-export async function DELETE(request: NextRequest) {
+export async function DELETE(req: Request) {
   const user = await getSessionUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await request.json()
-  if (!body.messageId) return NextResponse.json({ error: 'Missing messageId' }, { status: 400 })
+  const { id, messageId } = await req.json()
+  const targetId = id || messageId
+  if (!targetId) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
-  // Only allow deleting own direct messages
-  const { data: msg } = await supabaseAdmin
+  const { error } = await supabaseAdmin
     .from('messages')
-    .select('id, recipient_id, recipient_type')
-    .eq('id', body.messageId)
-    .single()
+    .update({ is_deleted: true })
+    .eq('id', targetId)
+    .eq('recipient_id', user.id)
 
-  if (!msg) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-
-  const isBroadcast = ['all_performers', 'all_users'].includes(msg.recipient_type)
-  if (!isBroadcast && msg.recipient_id !== user.id) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
-
-  if (!isBroadcast) {
-    await supabaseAdmin
-      .from('messages')
-      .update({ is_deleted: true })
-      .eq('id', body.messageId)
-  }
-
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
 }
