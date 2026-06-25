@@ -71,7 +71,7 @@ type AdminRecord = {
   added_at: string;
 };
 
-type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools' | 'casting' | 'promos' | 'messages' | 'tester_codes' | 'photo_promo';
+type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools' | 'casting' | 'promos' | 'messages' | 'tester_codes' | 'photo_promo' | 'verified_badges';
 
 interface TesterCode {
   id: string;
@@ -179,6 +179,21 @@ export default function AdminPage() {
 
   // Casting tab
   const [castingSubTab, setCastingSubTab] = useState<'pending' | 'stats' | 'requests' | 'agents' | 'performers' | 'casting_directors' | 'castings' | 'reports'>('pending');
+
+  // Verified badges (own top-level tab)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [pendingBadges, setPendingBadges] = useState<any[]>([]);
+  const [badgesLoading, setBadgesLoading] = useState(false);
+
+  async function loadVerifiedBadges() {
+    setBadgesLoading(true);
+    const res = await fetch('/api/admin/casting?type=pending', { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (res.ok) {
+      const data = await res.json();
+      setPendingBadges(data.pendingBadges || []);
+    }
+    setBadgesLoading(false);
+  }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [castingData, setCastingData] = useState<any>(null);
   const [castingLoading, setCastingLoading] = useState(false);
@@ -1127,6 +1142,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
     { key: 'photo_promo',  label: 'Photo Promos',  icon: '📸' },
     { key: 'referrals',    label: 'Referrals',     icon: '💰' },
     { key: 'messages',     label: 'Messages',      icon: '📬' },
+    { key: 'verified_badges', label: 'Verified Badges', icon: '✓' },
   ];
 
   return (
@@ -1178,6 +1194,9 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                 }
                 if (item.key === 'photo_promo') {
                   fetchPhotoCodes();
+                }
+                if (item.key === 'verified_badges') {
+                  loadVerifiedBadges();
                 }
               }}
               className={`px-4 py-3 text-sm font-medium transition border-b-2 whitespace-nowrap ${
@@ -2775,32 +2794,6 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                     ))
                   }
 
-                  <h3 className="text-sm font-bold text-gray-700 mb-3 mt-6">Verified Badge Requests ({castingData.pendingBadges?.length || 0} pending)</h3>
-                  {castingData.pendingBadges?.length === 0
-                    ? <p className="text-gray-400 text-sm">No pending badge requests.</p>
-                    : castingData.pendingBadges?.map((b: any) => (
-                      <div key={b.user_id} className="bg-white border border-gray-200 rounded-xl p-4 mb-3 flex items-start justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                          {b.headshot_url && <img src={b.headshot_url} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />}
-                          <div>
-                            <div className="font-bold text-gray-800">{(b.users as any)?.name || (b.users as any)?.email || b.user_id}</div>
-                            <div className="text-xs text-gray-400">{(b.users as any)?.email}</div>
-                            <a href={`/profile/${b.user_id}`} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline">View profile</a>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 shrink-0">
-                          <button onClick={async () => {
-                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ action: 'approve_badge', id: b.user_id }) })
-                            setCastingData((d: any) => ({ ...d, pendingBadges: d.pendingBadges.filter((x: any) => x.user_id !== b.user_id) }))
-                          }} className="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700">✓ Approve</button>
-                          <button onClick={async () => {
-                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ action: 'deny_badge', id: b.user_id }) })
-                            setCastingData((d: any) => ({ ...d, pendingBadges: d.pendingBadges.filter((x: any) => x.user_id !== b.user_id) }))
-                          }} className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 text-xs font-bold rounded-lg hover:bg-red-100">Deny</button>
-                        </div>
-                      </div>
-                    ))
-                  }
                 </div>
               </div>
             )}
@@ -3181,6 +3174,50 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
           </div>
         )}
       </div>
+
+      {/* ══════════════════════════════════════
+          VERIFIED BADGES
+      ══════════════════════════════════════ */}
+      {activeSection === 'verified_badges' && (
+        <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">✓ Verified Badge Requests</h2>
+              <p className="text-sm text-gray-500">Performers who purchased a verified badge, awaiting your approval.</p>
+            </div>
+            <button onClick={loadVerifiedBadges} className="text-xs text-blue-600 font-semibold hover:underline">{badgesLoading ? 'Loading...' : 'Refresh'}</button>
+          </div>
+
+          {badgesLoading ? (
+            <div className="text-center py-10 text-gray-400">Loading...</div>
+          ) : pendingBadges.length === 0 ? (
+            <div className="text-center py-10 text-gray-400">No pending badge requests.</div>
+          ) : (
+            pendingBadges.map((b: any) => (
+              <div key={b.user_id} className="bg-white border border-gray-200 rounded-xl p-4 flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  {b.headshot_url && <img src={b.headshot_url} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />}
+                  <div>
+                    <div className="font-bold text-gray-800">{(b.users as any)?.name || (b.users as any)?.email || b.user_id}</div>
+                    <div className="text-xs text-gray-400">{(b.users as any)?.email}</div>
+                    <a href={`/profile/${b.user_id}`} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline">View profile</a>
+                  </div>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button onClick={async () => {
+                    await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ action: 'approve_badge', id: b.user_id }) })
+                    setPendingBadges(prev => prev.filter(x => x.user_id !== b.user_id))
+                  }} className="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700">✓ Approve</button>
+                  <button onClick={async () => {
+                    await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ action: 'deny_badge', id: b.user_id }) })
+                    setPendingBadges(prev => prev.filter(x => x.user_id !== b.user_id))
+                  }} className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 text-xs font-bold rounded-lg hover:bg-red-100">Deny</button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
       {/* ══════════════════════════════════════
           MESSAGES

@@ -1363,7 +1363,7 @@ export default function ProfilePage() {
               </div>
               {insights.productions?.length > 0 && (
                 <div style={{ marginBottom: '10px' }}>
-                  <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '6px' }}>Productions that viewed you</div>
+                  <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '6px' }}>Who viewed you</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                     {insights.productions.slice(0, 12).map((p: string, i: number) => (
                       <span key={i} style={{ fontSize: '11px', padding: '3px 9px', backgroundColor: 'rgba(59,130,246,0.2)', color: '#93c5fd', borderRadius: '20px' }}>{p}</span>

@@ -123,6 +123,7 @@ export default function Dashboard() {
   const [progress, setProgress] = useState<Record<string, Progress>>({});
   const [user, setUser] = useState<any>(null);
   const [displayName, setDisplayName] = useState('');
+  const [verifiedBadge, setVerifiedBadge] = useState(false);
   const [section2Visible, setSection2Visible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -217,13 +218,14 @@ export default function Dashboard() {
       .then(r => r.ok ? r.json() : {})
       .then((d: {
         union_status?: string; gender?: string; date_of_birth?: string; headshot_url?: string;
-        home_city?: string; has_residency_docs?: boolean;
+        home_city?: string; has_residency_docs?: boolean; verified_badge?: boolean;
         section1_completed?: boolean; subscription_status?: string;
         promo_training_expires_at?: string; section2_unlocked?: boolean;
         referral_code?: string; referred_by?: string; subscription_started_at?: string;
       }) => {
         setDashUnionStatus(d.union_status || 'non-union')
         setDashProfile({ gender: d.gender, date_of_birth: d.date_of_birth, headshot_url: d.headshot_url, home_city: d.home_city, has_residency_docs: d.has_residency_docs })
+        setVerifiedBadge(d.verified_badge ?? false)
         setSection2Visible(d.section1_completed ?? false)
         const hasPromo = d.promo_training_expires_at
           ? new Date(d.promo_training_expires_at) > new Date()
@@ -822,6 +824,12 @@ export default function Dashboard() {
               <div>
                 <h1 className="font-bold tracking-tight" style={{ fontSize: isMobile ? '20px' : '28px' }}>
                   Welcome back, <span className="text-yellow-300">{displayName || user?.email?.split('@')[0]}</span>
+                  {verifiedBadge && (
+                    <span title="Verified Pro" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#22c55e', color: '#06281a', fontSize: '13px', fontWeight: 700, padding: '4px 12px 4px 10px', borderRadius: '999px', marginLeft: '10px', verticalAlign: 'middle' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#06281a', color: '#22c55e', fontSize: '11px', fontWeight: 900 }}>✓</span>
+                      Verified Pro
+                    </span>
+                  )}
                 </h1>
               </div>
               <div className="flex items-center gap-4">
