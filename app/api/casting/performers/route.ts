@@ -36,6 +36,7 @@ export async function GET(req: Request) {
       union_status,
       union_priority,
       boost_expires_at,
+      verified_badge,
       special_skills,
       languages,
       agency_id,

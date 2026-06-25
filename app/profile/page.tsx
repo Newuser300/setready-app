@@ -125,6 +125,11 @@ export default function ProfilePage() {
   const [photosUnlocked, setPhotosUnlocked] = useState(false)
   const [boostExpiresAt, setBoostExpiresAt] = useState<string | null>(null)
   const [boostLoading, setBoostLoading] = useState<string | null>(null)
+  const [insights, setInsights] = useState<any>(null)
+  const [insightsLoading, setInsightsLoading] = useState<boolean>(false)
+  const [verifiedBadge, setVerifiedBadge] = useState(false)
+  const [verifiedPending, setVerifiedPending] = useState(false)
+  const [badgeLoading, setBadgeLoading] = useState(false)
   const [photoPaid1, setPhotoPaid1] = useState('') // photo_additional_2
   const [photoPaid2, setPhotoPaid2] = useState('') // photo_full_body_side
   const [photoPaid3, setPhotoPaid3] = useState('') // headshot_alt
@@ -223,6 +228,7 @@ export default function ProfilePage() {
       setUserEmail(user.email || '')
       loadProfile()
       loadAgencyLinks()
+      fetch('/api/profile/insights').then(r => r.ok ? r.json() : null).then(d => { if (d) setInsights(d) })
     })()
   }, [router])
 
@@ -231,6 +237,14 @@ export default function ProfilePage() {
     const params = new URLSearchParams(window.location.search)
     if (params.get('boost') === 'success') {
       setToast('✅ Profile boost activated! It may take a moment to appear.')
+      window.history.replaceState({}, '', '/profile')
+    }
+    if (params.get('insights') === 'success') {
+      setToast('✅ Pro Insights unlocked!')
+      window.history.replaceState({}, '', '/profile')
+    }
+    if (params.get('badge') === 'success') {
+      setToast('✅ Verified badge purchased — pending review.')
       window.history.replaceState({}, '', '/profile')
     }
   }, [])
@@ -255,6 +269,8 @@ export default function ProfilePage() {
         setPhotoExtra(p.photo_additional || '')
         setPhotosUnlocked(p.photos_unlocked ?? false)
         setBoostExpiresAt(p.boost_expires_at || null)
+        setVerifiedBadge(p.verified_badge ?? false)
+        setVerifiedPending(p.verified_badge_pending ?? false)
         setPhotoPaid1(p.photo_additional_2 || '')
         setPhotoPaid2(p.photo_full_body_side || '')
         setPhotoPaid3(p.headshot_alt || '')
@@ -1327,6 +1343,94 @@ export default function ProfilePage() {
             ))}
           </div>
           <p style={{ fontSize: '11px', color: '#6b7280', margin: '10px 0 0', textAlign: 'center' }}>One-time payment. A boost cannot be cancelled — it simply expires.</p>
+        </div>
+
+        {/* ── PRO INSIGHTS ── */}
+        <div style={{ border: '2px solid #3b82f6', borderRadius: '14px', padding: '18px', marginBottom: '20px', backgroundColor: '#1a1a2e' }}>
+          <div style={{ fontSize: '15px', fontWeight: '800', color: '#60a5fa', marginBottom: '4px' }}>📊 Pro Insights</div>
+          {insights?.unlocked ? (
+            <>
+              <p style={{ fontSize: '12px', color: '#d1d5db', margin: '0 0 14px' }}>Who's been looking at your profile.</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
+                <div style={{ backgroundColor: 'rgba(59,130,246,0.12)', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '24px', fontWeight: '900', color: '#60a5fa' }}>{insights.totalViews ?? 0}</div>
+                  <div style={{ fontSize: '11px', color: '#9ca3af' }}>Total views</div>
+                </div>
+                <div style={{ backgroundColor: 'rgba(59,130,246,0.12)', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '24px', fontWeight: '900', color: '#60a5fa' }}>{insights.last30Days ?? 0}</div>
+                  <div style={{ fontSize: '11px', color: '#9ca3af' }}>Last 30 days</div>
+                </div>
+              </div>
+              {insights.productions?.length > 0 && (
+                <div style={{ marginBottom: '10px' }}>
+                  <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '6px' }}>Productions that viewed you</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {insights.productions.slice(0, 12).map((p: string, i: number) => (
+                      <span key={i} style={{ fontSize: '11px', padding: '3px 9px', backgroundColor: 'rgba(59,130,246,0.2)', color: '#93c5fd', borderRadius: '20px' }}>{p}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {insights.recent?.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {insights.recent.slice(0, 8).map((v: any, i: number) => (
+                    <div key={i} style={{ fontSize: '12px', color: '#d1d5db', display: 'flex', justifyContent: 'space-between', padding: '6px 10px', backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: '6px' }}>
+                      <span>{v.viewer_name || v.production_name || 'A casting director'}</span>
+                      <span style={{ color: '#6b7280' }}>{new Date(v.created_at).toLocaleDateString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <p style={{ fontSize: '12px', color: '#d1d5db', margin: '0 0 14px', lineHeight: '1.5' }}>See how many casting directors viewed your profile, which productions, and when. One-time unlock.</p>
+              <button
+                disabled={insightsLoading}
+                onClick={async () => {
+                  setInsightsLoading(true)
+                  try {
+                    const res = await fetch('/api/checkout/insights', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include' })
+                    if (res.ok) { const { url } = await res.json(); if (url) { window.location.href = url; return } }
+                    setMessage('❌ Could not start checkout. Please try again.')
+                  } catch { setMessage('❌ Could not start checkout. Please try again.') }
+                  setInsightsLoading(false)
+                }}
+                style={{ width: '100%', padding: '12px', backgroundColor: 'transparent', color: '#60a5fa', border: '2px solid #3b82f6', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: insightsLoading ? 'not-allowed' : 'pointer' }}
+              >
+                {insightsLoading ? '…' : '🔓 Unlock Pro Insights — $4.99'}
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* ── VERIFIED BADGE ── */}
+        <div style={{ border: '2px solid #22c55e', borderRadius: '14px', padding: '18px', marginBottom: '20px', backgroundColor: '#1a1a2e' }}>
+          <div style={{ fontSize: '15px', fontWeight: '800', color: '#4ade80', marginBottom: '4px' }}>✓ Verified Badge</div>
+          {verifiedBadge ? (
+            <div style={{ fontSize: '13px', fontWeight: '700', color: '#4ade80' }}>✓ Your profile is verified.</div>
+          ) : verifiedPending ? (
+            <div style={{ fontSize: '12px', color: '#fcd34d' }}>⏳ Purchased — pending admin review. Your badge appears once approved.</div>
+          ) : (
+            <>
+              <p style={{ fontSize: '12px', color: '#d1d5db', margin: '0 0 14px', lineHeight: '1.5' }}>Stand out with a verified checkmark on your profile and in casting searches. Reviewed by our team before it goes live.</p>
+              <button
+                disabled={badgeLoading}
+                onClick={async () => {
+                  setBadgeLoading(true)
+                  try {
+                    const res = await fetch('/api/checkout/verified-badge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include' })
+                    if (res.ok) { const { url } = await res.json(); if (url) { window.location.href = url; return } }
+                    setMessage('❌ Could not start checkout. Please try again.')
+                  } catch { setMessage('❌ Could not start checkout. Please try again.') }
+                  setBadgeLoading(false)
+                }}
+                style={{ width: '100%', padding: '12px', backgroundColor: 'transparent', color: '#4ade80', border: '2px solid #22c55e', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: badgeLoading ? 'not-allowed' : 'pointer' }}
+              >
+                {badgeLoading ? '…' : '✓ Get Verified — $9.99'}
+              </button>
+            </>
+          )}
         </div>
 
         {/* ── SAVE ── */}

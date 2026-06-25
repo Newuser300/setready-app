@@ -23,6 +23,7 @@ type Profile = {
   preferred_contact: string | null
   instagram: string | null
   imdb_url: string | null
+  verified_badge?: boolean | null
 }
 
 type Agency = {
@@ -63,6 +64,11 @@ export default function PublicProfilePage() {
     if (!userId) return
     loadProfile()
     checkViewerIsAgent()
+    fetch('/api/profile/log-view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ performerUserId: userId }),
+    }).catch(() => {})
   }, [userId])
 
   async function loadProfile() {
@@ -188,7 +194,12 @@ export default function PublicProfilePage() {
 
           {/* Name + agency */}
           <div style={{ padding: '20px 20px 16px' }}>
-            <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 8px' }}>{displayName}</h1>
+            <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {displayName}
+              {profile.verified_badge && (
+                <span title="Verified" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '50%', backgroundColor: '#22c55e', color: 'white', fontSize: '13px', fontWeight: '900' }}>✓</span>
+              )}
+            </h1>
             {agency ? (
               <div>
                 <p style={{ fontSize: '14px', color: '#F59E0B', fontWeight: '700', margin: '0 0 6px' }}>

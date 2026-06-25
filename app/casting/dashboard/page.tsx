@@ -26,6 +26,7 @@ interface Performer {
   availabilityStatus: string | null
   agencies: { id: string; name: string } | null
   users: { email: string; raw_user_meta_data: { full_name?: string } } | null
+  verified_badge?: boolean | null
 }
 
 interface CastingRequest {
@@ -153,7 +154,7 @@ function PerformerCard({ p, onClick }: { p: Performer; onClick: () => void }) {
         )}
       </div>
       <div style={{ padding: '8px 10px' }}>
-        <div style={{ fontWeight: '700', fontSize: '13px', color: 'white', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</div>
+        <div style={{ fontWeight: '700', fontSize: '13px', color: 'white', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}{p.verified_badge && <span title="Verified" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#22c55e', color: 'white', fontSize: '10px', fontWeight: '900', marginLeft: '4px' }}>✓</span>}</div>
         <div style={{ fontSize: '11px', color: '#F59E0B', fontWeight: '600' }}>{tier}</div>
         {p.film_region_code && <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '2px' }}>{getRegionName(p.film_region_code)}</div>}
       </div>

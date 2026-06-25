@@ -152,6 +152,26 @@ export async function POST(request: Request) {
         break;
       }
 
+      // One-time Pro Insights unlock
+      if (session.mode === 'payment' && session.metadata?.type === 'insights') {
+        const { error: insErr } = await supabaseAdmin
+          .from('users')
+          .update({ insights_unlocked: true })
+          .eq('id', userId);
+        if (insErr) console.error('❌ Failed to unlock insights:', insErr);
+        break;
+      }
+
+      // One-time Verified Badge — goes pending for admin approval, not instant
+      if (session.mode === 'payment' && session.metadata?.type === 'verified_badge') {
+        const { error: vbErr } = await supabaseAdmin
+          .from('performer_profiles')
+          .update({ verified_badge_pending: true })
+          .eq('user_id', userId);
+        if (vbErr) console.error('❌ Failed to set verified_badge_pending:', vbErr);
+        break;
+      }
+
       // One-time game purchase: record it; the game reconciles effects on load
       if (session.mode === 'payment' && session.metadata?.type === 'game_purchase') {
         const game = session.metadata?.game || '';

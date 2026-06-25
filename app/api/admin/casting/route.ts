@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   const type = searchParams.get('type') || 'pending'
 
   if (type === 'pending') {
-    const [{ data: pendingCDs }, { data: pendingAgencies }, { data: pendingRequests }] = await Promise.all([
+    const [{ data: pendingCDs }, { data: pendingAgencies }, { data: pendingRequests }, { data: pendingBadges }] = await Promise.all([
       supabaseAdmin
         .from('casting_directors')
         .select('id, name, company, email, phone, heard_from, description, created_at')
@@ -26,12 +26,18 @@ export async function GET(req: NextRequest) {
         .select('id, production_name, shoot_date, role_type, performers_needed:number_needed, created_at, casting_directors(name, company, email)')
         .eq('moderation_status', 'pending')
         .order('created_at', { ascending: false }),
+      supabaseAdmin
+        .from('performer_profiles')
+        .select('user_id, headshot_url, users(email, name)')
+        .eq('verified_badge_pending', true)
+        .order('user_id', { ascending: false }),
     ])
 
     return NextResponse.json({
       castingDirectors: pendingCDs || [],
       agencies: pendingAgencies || [],
       pendingRequests: pendingRequests || [],
+      pendingBadges: pendingBadges || [],
     })
   }
 
@@ -421,6 +427,24 @@ export async function POST(req: NextRequest) {
       .from('performer_profiles')
       .update({ boost_expires_at: null })
       .eq('user_id', userId)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ success: true })
+  }
+
+  if (action === 'approve_badge') {
+    const { error } = await supabaseAdmin
+      .from('performer_profiles')
+      .update({ verified_badge: true, verified_badge_pending: false })
+      .eq('user_id', id)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ success: true })
+  }
+
+  if (action === 'deny_badge') {
+    const { error } = await supabaseAdmin
+      .from('performer_profiles')
+      .update({ verified_badge: false, verified_badge_pending: false })
+      .eq('user_id', id)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ success: true })
   }

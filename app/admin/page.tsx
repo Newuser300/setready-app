@@ -2774,6 +2774,33 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                       </div>
                     ))
                   }
+
+                  <h3 className="text-sm font-bold text-gray-700 mb-3 mt-6">Verified Badge Requests ({castingData.pendingBadges?.length || 0} pending)</h3>
+                  {castingData.pendingBadges?.length === 0
+                    ? <p className="text-gray-400 text-sm">No pending badge requests.</p>
+                    : castingData.pendingBadges?.map((b: any) => (
+                      <div key={b.user_id} className="bg-white border border-gray-200 rounded-xl p-4 mb-3 flex items-start justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          {b.headshot_url && <img src={b.headshot_url} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />}
+                          <div>
+                            <div className="font-bold text-gray-800">{(b.users as any)?.name || (b.users as any)?.email || b.user_id}</div>
+                            <div className="text-xs text-gray-400">{(b.users as any)?.email}</div>
+                            <a href={`/profile/${b.user_id}`} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline">View profile</a>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          <button onClick={async () => {
+                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ action: 'approve_badge', id: b.user_id }) })
+                            setCastingData((d: any) => ({ ...d, pendingBadges: d.pendingBadges.filter((x: any) => x.user_id !== b.user_id) }))
+                          }} className="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700">✓ Approve</button>
+                          <button onClick={async () => {
+                            await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ action: 'deny_badge', id: b.user_id }) })
+                            setCastingData((d: any) => ({ ...d, pendingBadges: d.pendingBadges.filter((x: any) => x.user_id !== b.user_id) }))
+                          }} className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 text-xs font-bold rounded-lg hover:bg-red-100">Deny</button>
+                        </div>
+                      </div>
+                    ))
+                  }
                 </div>
               </div>
             )}
