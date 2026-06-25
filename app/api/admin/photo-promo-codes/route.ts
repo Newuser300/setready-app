@@ -27,9 +27,12 @@ export async function POST(req: NextRequest) {
   const parsedMax = parseInt(body.max_uses, 10)
   const maxUses = Number.isFinite(parsedMax) && parsedMax >= 1 ? parsedMax : 1
 
+  const allowedTypes = ['photo', 'insights', 'verified_badge']
+  const codeType = allowedTypes.includes(body.type) ? body.type : 'photo'
+
   const { data, error } = await supabaseAdmin
     .from('photo_promo_codes')
-    .insert({ code, is_used: false, use_count: 0, max_uses: maxUses, created_by: admin.email })
+    .insert({ code, is_used: false, use_count: 0, max_uses: maxUses, type: codeType, created_by: admin.email })
     .select()
     .single()
 

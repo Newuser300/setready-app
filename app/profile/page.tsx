@@ -130,6 +130,30 @@ export default function ProfilePage() {
   const [verifiedBadge, setVerifiedBadge] = useState(false)
   const [verifiedPending, setVerifiedPending] = useState(false)
   const [badgeLoading, setBadgeLoading] = useState(false)
+  const [codeInput, setCodeInput] = useState('')
+  const [codeBusy, setCodeBusy] = useState(false)
+  const [codeMsg, setCodeMsg] = useState('')
+
+  async function redeemFeatureCode(expectedType: string) {
+    if (!codeInput.trim()) return
+    setCodeBusy(true); setCodeMsg('')
+    const res = await fetch('/api/photo-promo/redeem', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ code: codeInput.trim() }),
+    })
+    const data = await res.json().catch(() => ({}))
+    setCodeBusy(false)
+    if (res.ok) {
+      if (data.type === 'insights') { setInsights((prev: any) => ({ ...(prev || {}), unlocked: true })); setToast('✅ Pro Insights unlocked!') }
+      else if (data.type === 'verified_badge') { setVerifiedPending(true); setToast('✅ Verified badge applied — pending review.') }
+      else { setPhotosUnlocked(true); setToast('✅ Photo slots unlocked!') }
+      setCodeInput(''); setCodeMsg('')
+    } else {
+      setCodeMsg(data.error || 'Invalid code')
+    }
+  }
   const [photoPaid1, setPhotoPaid1] = useState('') // photo_additional_2
   const [photoPaid2, setPhotoPaid2] = useState('') // photo_full_body_side
   const [photoPaid3, setPhotoPaid3] = useState('') // headshot_alt
@@ -1259,7 +1283,9 @@ export default function ProfilePage() {
                             const data = await res.json()
                             setPromoLoading(false)
                             if (res.ok) {
-                              setPhotosUnlocked(true)
+                              if (data.type === 'insights') { setInsights((prev: any) => ({ ...(prev || {}), unlocked: true })); setToast('✅ Pro Insights unlocked!') }
+                              else if (data.type === 'verified_badge') { setVerifiedPending(true); setToast('✅ Verified badge applied — pending review.') }
+                              else { setPhotosUnlocked(true) }
                               setShowPromoInput(false)
                               setPromoCode('')
                             } else {
@@ -1400,6 +1426,19 @@ export default function ProfilePage() {
               >
                 {insightsLoading ? '…' : '🔓 Unlock Pro Insights — $4.99'}
               </button>
+              <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
+                <input
+                  value={codeInput}
+                  onChange={e => { setCodeInput(e.target.value.toUpperCase()); setCodeMsg('') }}
+                  placeholder="Have a code?"
+                  style={{ flex: 1, padding: '8px 10px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', fontSize: '12px', fontFamily: 'monospace', color: 'white', backgroundColor: 'rgba(255,255,255,0.05)', outline: 'none', boxSizing: 'border-box' }}
+                />
+                <button onClick={() => redeemFeatureCode('insights')} disabled={codeBusy || !codeInput.trim()}
+                  style={{ padding: '8px 14px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '12px', cursor: codeBusy || !codeInput.trim() ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: codeBusy || !codeInput.trim() ? 0.5 : 1 }}>
+                  {codeBusy ? '…' : 'Apply'}
+                </button>
+              </div>
+              {codeMsg && <div style={{ fontSize: '11px', color: '#fca5a5', marginTop: '6px' }}>{codeMsg}</div>}
             </>
           )}
         </div>
@@ -1429,6 +1468,19 @@ export default function ProfilePage() {
               >
                 {badgeLoading ? '…' : '✓ Get Verified — $9.99'}
               </button>
+              <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
+                <input
+                  value={codeInput}
+                  onChange={e => { setCodeInput(e.target.value.toUpperCase()); setCodeMsg('') }}
+                  placeholder="Have a code?"
+                  style={{ flex: 1, padding: '8px 10px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', fontSize: '12px', fontFamily: 'monospace', color: 'white', backgroundColor: 'rgba(255,255,255,0.05)', outline: 'none', boxSizing: 'border-box' }}
+                />
+                <button onClick={() => redeemFeatureCode('verified_badge')} disabled={codeBusy || !codeInput.trim()}
+                  style={{ padding: '8px 14px', backgroundColor: '#22c55e', color: '#06281a', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '12px', cursor: codeBusy || !codeInput.trim() ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: codeBusy || !codeInput.trim() ? 0.5 : 1 }}>
+                  {codeBusy ? '…' : 'Apply'}
+                </button>
+              </div>
+              {codeMsg && <div style={{ fontSize: '11px', color: '#fca5a5', marginTop: '6px' }}>{codeMsg}</div>}
             </>
           )}
         </div>

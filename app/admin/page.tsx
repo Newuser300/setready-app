@@ -96,6 +96,7 @@ interface PhotoPromoCode {
   created_at: string;
   max_uses: number | null;
   use_count: number | null;
+  type?: string | null;
 }
 
 interface FinanceEntry {
@@ -286,6 +287,7 @@ export default function AdminPage() {
   const [generatingPhotoCode, setGeneratingPhotoCode] = useState(false);
   const [customPhotoCode, setCustomPhotoCode] = useState('');
 const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
+  const [photoCodeType, setPhotoCodeType] = useState('photo');
 
   // Finance entries
   const [financeEntries, setFinanceEntries] = useState<FinanceEntry[]>([]);
@@ -856,7 +858,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
     const res = await fetch('/api/admin/photo-promo-codes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-      body: JSON.stringify({ code, max_uses: parseInt(photoCodeMaxUses, 10) || 1 }),
+      body: JSON.stringify({ code, max_uses: parseInt(photoCodeMaxUses, 10) || 1, type: photoCodeType }),
     });
     if (res.ok) {
       toast.success('Photo promo code created: ' + code);
@@ -2420,7 +2422,20 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                 />
                 <span className="text-xs text-gray-400">(1 = single use, like before)</span>
               </div>
- 
+
+              <div className="flex gap-2 items-center flex-wrap">
+                <label className="text-xs font-semibold text-gray-600">Code unlocks:</label>
+                <select
+                  value={photoCodeType}
+                  onChange={e => setPhotoCodeType(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                >
+                  <option value="photo">📸 Photo Slots</option>
+                  <option value="insights">📊 Pro Insights</option>
+                  <option value="verified_badge">✓ Verified Badge (pending review)</option>
+                </select>
+              </div>
+
               <div className="flex gap-3 flex-wrap items-center">
                 <button
                   onClick={() => generatePhotoPromoCode()}
@@ -2466,6 +2481,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Code</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Type</th>
                       <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Status</th>
                       <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Uses</th>
                       <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Created</th>
@@ -2482,6 +2498,11 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                       return (
                         <tr key={pc.id} className="hover:bg-gray-50">
                           <td className="px-4 py-3 font-mono font-bold text-gray-800 tracking-wider">{pc.code}</td>
+                          <td className="px-4 py-3">
+                            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600">
+                              {pc.type === 'insights' ? '📊 Insights' : pc.type === 'verified_badge' ? '✓ Badge' : '📸 Photo'}
+                            </span>
+                          </td>
                           <td className="px-4 py-3">
                             {isFull
                               ? <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-50 text-red-600">Full</span>

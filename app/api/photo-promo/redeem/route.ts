@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   // Fetch code (service role bypasses RLS)
   const { data: pc, error: fetchError } = await supabaseAdmin
     .from('photo_promo_codes')
-    .select('id, is_used, use_count, max_uses, used_by, used_at')
+    .select('id, is_used, use_count, max_uses, used_by, used_at, type')
     .eq('code', code)
     .maybeSingle()
 
@@ -70,16 +70,34 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'This code has reached its usage limit' }, { status: 400 })
   }
 
-  // Slot claimed — unlock photos for this user
-  const { error: unlockError } = await supabaseAdmin
-    .from('users')
-    .update({ photos_unlocked: true })
-    .eq('id', user.id)
+  // Slot claimed — apply the unlock based on the code's type
+  const codeType = pc.type ?? 'photo'
+  let unlockError: { message?: string } | null = null
+
+  if (codeType === 'insights') {
+    const { error } = await supabaseAdmin
+      .from('users')
+      .update({ insights_unlocked: true })
+      .eq('id', user.id)
+    unlockError = error
+  } else if (codeType === 'verified_badge') {
+    const { error } = await supabaseAdmin
+      .from('performer_profiles')
+      .update({ verified_badge_pending: true })
+      .eq('user_id', user.id)
+    unlockError = error
+  } else {
+    const { error } = await supabaseAdmin
+      .from('users')
+      .update({ photos_unlocked: true })
+      .eq('id', user.id)
+    unlockError = error
+  }
 
   if (unlockError) {
-    console.error('❌ photo-promo unlock error:', unlockError)
+    console.error('❌ promo unlock error:', unlockError)
     return NextResponse.json({ error: 'Code accepted but unlock failed — contact support' }, { status: 500 })
   }
 
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true, type: codeType })
 }
