@@ -197,7 +197,10 @@ export default function PublicProfilePage() {
             <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               {displayName}
               {profile.verified_badge && (
-                <span title="Verified" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '50%', backgroundColor: '#22c55e', color: 'white', fontSize: '13px', fontWeight: '900' }}>✓</span>
+                <span title="Verified Pro" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#22c55e', color: '#06281a', fontSize: '13px', fontWeight: 700, padding: '4px 12px 4px 10px', borderRadius: '999px', verticalAlign: 'middle' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#06281a', color: '#22c55e', fontSize: '11px', fontWeight: 900 }}>✓</span>
+                  Verified Pro
+                </span>
               )}
             </h1>
             {agency ? (

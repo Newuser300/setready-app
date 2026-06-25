@@ -154,7 +154,15 @@ function PerformerCard({ p, onClick }: { p: Performer; onClick: () => void }) {
         )}
       </div>
       <div style={{ padding: '8px 10px' }}>
-        <div style={{ fontWeight: '700', fontSize: '13px', color: 'white', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}{p.verified_badge && <span title="Verified" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#22c55e', color: 'white', fontSize: '10px', fontWeight: '900', marginLeft: '4px' }}>✓</span>}</div>
+        <div style={{ fontWeight: '700', fontSize: '13px', color: 'white', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span>
+          {p.verified_badge && (
+            <span title="Verified Pro" style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: '3px', backgroundColor: '#22c55e', color: '#06281a', fontSize: '10px', fontWeight: 700, padding: '2px 7px 2px 5px', borderRadius: '999px', whiteSpace: 'nowrap' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '13px', height: '13px', borderRadius: '50%', backgroundColor: '#06281a', color: '#22c55e', fontSize: '9px', fontWeight: 900 }}>✓</span>
+              Pro
+            </span>
+          )}
+        </div>
         <div style={{ fontSize: '11px', color: '#F59E0B', fontWeight: '600' }}>{tier}</div>
         {p.film_region_code && <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '2px' }}>{getRegionName(p.film_region_code)}</div>}
       </div>
