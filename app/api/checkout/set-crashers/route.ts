@@ -8,12 +8,17 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 const ITEMS: Record<string, { priceEnv: string }> = {
-  pack_studio: { priceEnv: 'STRIPE_SETCRASHERS_PACK_PRICE_ID' },
-  proj_coffee: { priceEnv: 'STRIPE_SETCRASHERS_COFFEE_PRICE_ID' },
-  proj_boom:   { priceEnv: 'STRIPE_SETCRASHERS_BOOM_PRICE_ID' },
-  proj_reel:   { priceEnv: 'STRIPE_SETCRASHERS_REEL_PRICE_ID' },
-  hints_5:     { priceEnv: 'STRIPE_SETCRASHERS_HINTS5_PRICE_ID' },
-  skips_3:     { priceEnv: 'STRIPE_SETCRASHERS_SKIPS3_PRICE_ID' },
+  pack_studio:    { priceEnv: 'STRIPE_SETCRASHERS_PACK_PRICE_ID' },
+  proj_coffee:    { priceEnv: 'STRIPE_SETCRASHERS_COFFEE_PRICE_ID' },
+  proj_boom:      { priceEnv: 'STRIPE_SETCRASHERS_BOOM_PRICE_ID' },
+  proj_reel:      { priceEnv: 'STRIPE_SETCRASHERS_REEL_PRICE_ID' },
+  proj_boomerang: { priceEnv: 'STRIPE_SETCRASHERS_BOOMERANG_PRICE_ID' },
+  proj_bomb:      { priceEnv: 'STRIPE_SETCRASHERS_BOMB_PRICE_ID' },
+  proj_stunt:     { priceEnv: 'STRIPE_SETCRASHERS_STUNT_PRICE_ID' },
+  bundle_powerups:{ priceEnv: 'STRIPE_SETCRASHERS_BUNDLE_POWERUPS_PRICE_ID' },
+  bundle_mega:    { priceEnv: 'STRIPE_SETCRASHERS_BUNDLE_MEGA_PRICE_ID' },
+  hints_5:        { priceEnv: 'STRIPE_SETCRASHERS_HINTS5_PRICE_ID' },
+  skips_3:        { priceEnv: 'STRIPE_SETCRASHERS_SKIPS3_PRICE_ID' },
 };
 
 export async function POST(request: Request) {
