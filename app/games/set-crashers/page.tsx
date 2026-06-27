@@ -214,10 +214,12 @@ const LEVELS: Level[] = [
   }),
 ];
 
-type SaveData = { stars: Record<number, number>; owned: string[]; ammoCounts: Record<string, number>; claimedMilestones: string[]; claimedRewards: number[]; claimedPurchases: string[]; hints: number; skips: number; lastUnlocked: number; bonusBest: number; lastPlayDate: string; dailyStreak: number; badges: string[]; perfectClears: number; bestCombo: number; bestStreak: number; bossClears: number };
-const DEFAULT_SAVE: SaveData = { stars: {}, owned: [], ammoCounts: {}, claimedMilestones: [], claimedRewards: [], claimedPurchases: [], hints: 1, skips: 0, lastUnlocked: 0, bonusBest: 0, lastPlayDate: '', dailyStreak: 0, badges: [], perfectClears: 0, bestCombo: 0, bestStreak: 0, bossClears: 0 };
+type SaveData = { stars: Record<number, number>; owned: string[]; ammoCounts: Record<string, number>; claimedMilestones: string[]; claimedRewards: number[]; claimedPurchases: string[]; hints: number; skips: number; lastUnlocked: number; bonusBest: number; lastPlayDate: string; dailyStreak: number; badges: string[]; perfectClears: number; bestCombo: number; bestStreak: number; bossClears: number; lastBonusAt: number };
+const DEFAULT_SAVE: SaveData = { stars: {}, owned: [], ammoCounts: {}, claimedMilestones: [], claimedRewards: [], claimedPurchases: [], hints: 1, skips: 0, lastUnlocked: 0, bonusBest: 0, lastPlayDate: '', dailyStreak: 0, badges: [], perfectClears: 0, bestCombo: 0, bestStreak: 0, bossClears: 0, lastBonusAt: 0 };
+const BONUS_COOLDOWN_MS = 15 * 60 * 1000; // bonus round playable once every 15 minutes
+const RESUME_KEY = 'sr-set-crashers-resume'; // remembers the exact level last played
 function loadSave(): SaveData {
-  try { const raw = localStorage.getItem(SAVE_KEY); if (raw) { const s = { ...DEFAULT_SAVE, ...JSON.parse(raw) }; if (!s.ammoCounts) s.ammoCounts = {}; if (!s.claimedMilestones) s.claimedMilestones = []; if (!s.claimedRewards) s.claimedRewards = []; if (!s.claimedPurchases) s.claimedPurchases = []; if (typeof s.lastPlayDate !== 'string') s.lastPlayDate = ''; if (typeof s.dailyStreak !== 'number') s.dailyStreak = 0; if (!Array.isArray(s.badges)) s.badges = []; if (typeof s.perfectClears !== 'number') s.perfectClears = 0; if (typeof s.bestCombo !== 'number') s.bestCombo = 0; if (typeof s.bestStreak !== 'number') s.bestStreak = 0; if (typeof s.bossClears !== 'number') s.bossClears = 0; return s; } } catch {}
+  try { const raw = localStorage.getItem(SAVE_KEY); if (raw) { const s = { ...DEFAULT_SAVE, ...JSON.parse(raw) }; if (!s.ammoCounts) s.ammoCounts = {}; if (!s.claimedMilestones) s.claimedMilestones = []; if (!s.claimedRewards) s.claimedRewards = []; if (!s.claimedPurchases) s.claimedPurchases = []; if (typeof s.lastPlayDate !== 'string') s.lastPlayDate = ''; if (typeof s.dailyStreak !== 'number') s.dailyStreak = 0; if (!Array.isArray(s.badges)) s.badges = []; if (typeof s.perfectClears !== 'number') s.perfectClears = 0; if (typeof s.bestCombo !== 'number') s.bestCombo = 0; if (typeof s.bestStreak !== 'number') s.bestStreak = 0; if (typeof s.bossClears !== 'number') s.bossClears = 0; if (typeof s.lastBonusAt !== 'number') s.lastBonusAt = 0; return s; } } catch {}
   return { ...DEFAULT_SAVE };
 }
 const PURCHASE_USES = 3; // a paid power-up purchase grants this many uses
@@ -281,6 +283,7 @@ export default function SetCrashers() {
   const [dailyFx, setDailyFx] = useState<{ streak: number; label: string; emoji: string } | null>(null);
   const [bonusResult, setBonusResult] = useState<{ caught: Record<string, number>; total: number } | null>(null);
   const [bonusTime, setBonusTime] = useState(15);
+  const [nowTick, setNowTick] = useState(Date.now());
   const [notice, setNotice] = useState('');
   const [showHow, setShowHow] = useState(false);
   const [hintActive, setHintActive] = useState(false);
@@ -305,6 +308,12 @@ export default function SetCrashers() {
   // Do NOT re-sync it to levelIdx on every render — that clobbers the value startLevel just
   // set (before setLevelIdx's state update commits), which made "Next" read a stale level.
   const lvlRef = useRef(levelIdx);
+
+  useEffect(() => {
+    if (screen !== 'menu') return;
+    const id = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [screen]);
 
   const persist = useCallback((s: SaveData) => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch {} }, []);
   const toast = (m: string) => { setNotice(m); setTimeout(() => setNotice(''), 2400); };
@@ -527,11 +536,20 @@ export default function SetCrashers() {
 
   const startLevel = (idx: number) => {
     setLevelIdx(idx); lvlRef.current = idx; setMode('level'); setScreen('play'); setHintActive(false);
+    try { localStorage.setItem(RESUME_KEY, String(idx)); } catch {}
     const def = projUnlocked(selRef.current) ? selRef.current : FREE_PROJECTILE; setSelProj(def);
     if (isBossLevel(idx)) { const bi = bossInfo(idx); setBossCard(bi); setTimeout(() => SFX.win(), 100); setTimeout(() => setBossCard(null), 2400); }
     setTimeout(() => buildArena(idx, 'level'), 30);
   };
   const startBonus = () => {
+    const last = saveRef.current.lastBonusAt || 0;
+    const remaining = BONUS_COOLDOWN_MS - (Date.now() - last);
+    if (remaining > 0) {
+      const mins = Math.ceil(remaining / 60000);
+      toast(`Bonus Round recharging — try again in ${mins} min${mins === 1 ? '' : 's'}.`);
+      return;
+    }
+    setSave(prev => { const n = { ...prev, lastBonusAt: Date.now() }; persist(n); return n; });
     setMode('bonus'); setScreen('play'); setHintActive(false);
     const def = projUnlocked(selRef.current) ? selRef.current : FREE_PROJECTILE; setSelProj(def);
     setTimeout(() => buildArena(0, 'bonus'), 30);
@@ -1036,22 +1054,28 @@ export default function SetCrashers() {
             <div style={{ fontSize: '46px' }}>🎬💥</div>
             <div style={{ fontSize: '22px', fontWeight: 900, marginTop: '6px' }}>Set Crashers</div>
             <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginTop: '4px', lineHeight: 1.5 }}>Pull back the slingshot, launch a clapperboard, and topple the stacks to knock out every ⭐ target. Fewer shots = more stars.</div>
-            <button onClick={() => startLevel(Math.min(save.lastUnlocked, LEVELS.length - 1))} disabled={!engineReady}
+            <button onClick={() => { let resume = save.lastUnlocked; try { const r = localStorage.getItem(RESUME_KEY); if (r !== null) resume = Math.min(Math.max(0, parseInt(r, 10) || 0), save.lastUnlocked, LEVELS.length - 1); } catch {} startLevel(Math.min(resume, LEVELS.length - 1)); }} disabled={!engineReady}
               style={{ marginTop: '16px', backgroundColor: engineReady ? '#F59E0B' : '#6b7280', color: '#1a1a2e', border: 'none', borderRadius: '12px', padding: '14px 28px', fontSize: '16px', fontWeight: 800, cursor: engineReady ? 'pointer' : 'wait' }}>
               {engineReady ? `▶ ${save.lastUnlocked > 0 ? 'Continue' : 'Play'}` : 'Loading engine…'}
             </button>
           </div>
 
           {/* Bonus round */}
-          <button onClick={startBonus} disabled={!engineReady} style={{ ...card, marginTop: '12px', width: '100%', background: 'linear-gradient(135deg,#7c3aed,#db2777)', border: 'none', color: 'white', display: 'flex', alignItems: 'center', gap: '12px', cursor: engineReady ? 'pointer' : 'wait', textAlign: 'left' }}>
-            <span style={{ fontSize: '30px' }}>🎁</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 800, fontSize: '15px' }}>Bonus Round — Prize Drop</div>
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.85)' }}>15 seconds. Prizes rain down — shoot as many as you can and keep them all!</div>
-            </div>
-            <span style={{ fontSize: '12px', fontWeight: 800, whiteSpace: 'nowrap' }}>Best: {save.bonusBest}</span>
-          </button>
-
+          {(() => {
+            const remaining = BONUS_COOLDOWN_MS - (nowTick - (save.lastBonusAt || 0));
+            const onCooldown = remaining > 0;
+            const mm = Math.floor(remaining / 60000); const ss = Math.floor((remaining % 60000) / 1000);
+            return (
+              <button onClick={startBonus} disabled={!engineReady || onCooldown} style={{ ...card, marginTop: '12px', width: '100%', background: onCooldown ? 'linear-gradient(135deg,#4b5563,#374151)' : 'linear-gradient(135deg,#7c3aed,#db2777)', border: 'none', color: 'white', display: 'flex', alignItems: 'center', gap: '12px', cursor: (engineReady && !onCooldown) ? 'pointer' : 'not-allowed', textAlign: 'left', opacity: onCooldown ? 0.75 : 1 }}>
+                <span style={{ fontSize: '30px' }}>{onCooldown ? '⏳' : '🎁'}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 800, fontSize: '15px' }}>Bonus Round — Prize Drop</div>
+                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.85)' }}>{onCooldown ? `Recharging — ready in ${mm}:${String(ss).padStart(2, '0')}` : '15 seconds. Prizes rain down — shoot as many as you can and keep them all!'}</div>
+                </div>
+                <span style={{ fontSize: '12px', fontWeight: 800, whiteSpace: 'nowrap' }}>Best: {save.bonusBest}</span>
+              </button>
+            );
+          })()}
           <div style={{ ...card, marginTop: '12px', padding: '14px 16px' }}>
             <button onClick={() => setShowHow(v => !v)} style={{ width: '100%', background: 'none', border: 'none', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
               <span style={{ fontWeight: 800, fontSize: '14px', color: '#374151' }}>ℹ️ How to play</span><span style={{ fontSize: '13px', color: '#9ca3af' }}>{showHow ? 'Hide' : 'Show'}</span>
@@ -1080,7 +1104,7 @@ export default function SetCrashers() {
               <p style={{ margin: '0 0 8px' }}><strong>Director&apos;s Cut 🎦:</strong> every 10th level is a special named boss set-piece, marked in gold. Clear one for a guaranteed bonus haul (power-ups, hints, and a skip) and the Director&apos;s Cut badge.</p>
               <p style={{ margin: '0 0 8px' }}><strong>Badges 🏅:</strong> earn collectible badges for milestones, skill, and dedication — first clear, 3-star shots, perfect clears, big combos, daily streaks, and more. Tap the 🏅 button at the top to see your collection and what&apos;s left to unlock.</p>
               <p style={{ margin: '0 0 8px' }}><strong>Sound 🔊:</strong> toggle audio with the speaker icon at the top of the play screen.</p>
-              <p style={{ margin: '0 0 8px' }}><strong>Bonus Round:</strong> 15 seconds of non-stop prize drops with unlimited ammo and free power-ups — shoot as many prizes as you can and keep everything you hit. Your best haul is saved.</p>
+              <p style={{ margin: '0 0 8px' }}><strong>Bonus Round:</strong> 15 seconds of non-stop prize drops with unlimited ammo and free power-ups — shoot as many prizes as you can and keep everything you hit. Your best haul is saved. The Bonus Round recharges once every 15 minutes.</p>
               <p style={{ margin: '0 0 8px' }}><strong>Stars &amp; help:</strong> finish at or under par for 3★, one over for 2★, otherwise 1★. 💡 <strong>Hint</strong> shows a suggested arc; ⏭️ <strong>Skip</strong> jumps past a tough level keeping 1★. Earn more hints/skips from prize drops or the Store. Star milestones also award free power-up uses.</p>
               <p style={{ margin: '0 0 8px' }}><strong>🎟️ Studio Lot Pack:</strong> a paid pack of <strong>12 extra levels</strong> beyond the free &ldquo;On Location&rdquo; set. They&apos;re tougher — taller fortresses, multi-target shelves, and bigger domino chains that escalate as you progress (later stages give you fewer shots, so chaining matters). It&apos;s a <strong>one-time unlock</strong> (not consumable): once you own it, all 12 levels are yours forever. Buy it on its own, or get it included in the Mega Pack.</p>
               <p style={{ margin: 0 }}><strong>Store &amp; bundles:</strong> buy individual power-ups (3 uses each), the Studio Lot Pack, or save with bundles — the <strong>Power-Up Bundle</strong> gives 3 uses of all six power-ups, and the <strong>Mega Pack</strong> adds the Studio Lot Pack on top for the best value. Hints and skips are also sold in packs.</p>
