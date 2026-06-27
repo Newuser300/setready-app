@@ -623,6 +623,14 @@ export default function ProfilePage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <h1 style={{ fontSize: '24px', fontWeight: '700', margin: '0 0 4px' }}>🎭 My Profile</h1>
+            {agencyLinks.length > 0 && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)', borderRadius: '999px', padding: '4px 12px', margin: '2px 0 6px' }}>
+                <span style={{ fontSize: '13px' }}>🏢</span>
+                <span style={{ fontSize: '13px', fontWeight: '700', color: '#fcd34d' }}>
+                  Represented by {agencyLinks.map(a => a.agency_name).join(', ')}
+                </span>
+              </div>
+            )}
             <p style={{ color: '#9ca3af', margin: 0, fontSize: '14px' }}>Your casting profile — visible to approved agents and casting directors</p>
           </div>
           <div style={{ textAlign: 'center', flexShrink: 0 }}>
@@ -642,6 +650,29 @@ export default function ProfilePage() {
       </div>
 
       <div style={{ maxWidth: '640px', margin: '0 auto', padding: '16px' }}>
+
+        {agencyLinks.length > 0 && (
+          <div style={{
+            background: 'linear-gradient(135deg,#1a1a2e,#2d2d54)', color: 'white',
+            borderRadius: '12px', padding: '14px 18px', marginBottom: '16px',
+            display: 'flex', alignItems: 'center', gap: '10px'
+          }}>
+            <span style={{ fontSize: '22px' }}>🎭</span>
+            <div>
+              <div style={{ fontSize: '12px', opacity: 0.7, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Represented by
+              </div>
+              <div style={{ fontSize: '16px', fontWeight: 800 }}>
+                {agencyLinks.map(a => a.agency_name).join(', ')}
+                {agencyLinks.some(a => a.status && a.status !== 'active') && (
+                  <span style={{ fontSize: '12px', fontWeight: 600, opacity: 0.7, marginLeft: '8px' }}>
+                    ({agencyLinks.map(a => a.status).join(', ')})
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Status */}
         {isProfileLive ? (

@@ -19,6 +19,13 @@ export async function GET() {
     supabaseAdmin.from('residency_documents').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
   ])
 
+  // Resolve the represented-by agency name from the profile's agency_id (set when an agent rosters them).
+  let agencyName: string | null = null
+  if ((data as any)?.agency_id) {
+    const { data: ag } = await supabaseAdmin.from('agencies').select('name').eq('id', (data as any).agency_id).maybeSingle()
+    agencyName = ag?.name ?? null
+  }
+
   if (error && error.code !== 'PGRST116') {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
@@ -31,6 +38,7 @@ export async function GET() {
   return NextResponse.json({
     ...(data || {}),
     name: userData?.name ?? null,
+    agency_name: agencyName,
     home_city: userData?.home_city ?? null,
     home_region_code: userData?.home_region_code ?? null,
     home_lat: userData?.home_lat ?? null,

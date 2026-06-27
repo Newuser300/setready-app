@@ -141,13 +141,21 @@ export async function POST(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Link the performer's profile to this agency so the profile + casting views
+  // (which read performer_profiles.agency_id) reflect the representation.
+  const { error: agencyLinkError } = await supabaseAdmin
+    .from('performer_profiles')
+    .update({ agency_id: agent.agency_id })
+    .eq('user_id', found.id)
+  if (agencyLinkError) console.error('Failed to set profile agency_id:', agencyLinkError)
+
   await supabaseAdmin.from('casting_notifications').insert({
     recipient_type: 'performer',
     recipient_id: found.id,
     type: 'roster_added',
     title: 'Added to an Agency Roster',
     message: `An agency has added you to their roster.`,
-    action_url: '/dashboard',
+    action_url: '/profile',
   })
 
   return NextResponse.json({ success: true, entry })
@@ -168,6 +176,14 @@ export async function DELETE(req: Request) {
 
   if (!agent) return NextResponse.json({ error: 'Agent not found' }, { status: 404 })
 
+  // Look up who this roster row belongs to before deleting, so we can clear their profile link.
+  const { data: rosterRow } = await supabaseAdmin
+    .from('agency_roster')
+    .select('performer_user_id')
+    .eq('id', rosterId)
+    .eq('agency_id', agent.agency_id)
+    .maybeSingle()
+
   const { error } = await supabaseAdmin
     .from('agency_roster')
     .delete()
@@ -175,5 +191,16 @@ export async function DELETE(req: Request) {
     .eq('agency_id', agent.agency_id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Clear the profile's agency link, but only if it still points at THIS agency
+  // (don't wipe a link the performer may have re-established with another agency).
+  if (rosterRow?.performer_user_id) {
+    await supabaseAdmin
+      .from('performer_profiles')
+      .update({ agency_id: null })
+      .eq('user_id', rosterRow.performer_user_id)
+      .eq('agency_id', agent.agency_id)
+  }
+
   return NextResponse.json({ success: true })
 }
