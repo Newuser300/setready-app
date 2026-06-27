@@ -297,7 +297,7 @@ export default function SetCrashers() {
     aiming: boolean; aimX: number; aimY: number; particles: Particle[]; shake: number;
     ammo: number; armed: boolean; loadGuard: number; ended: boolean; powerUsed: boolean;
     settleT: number; flightT: number; last: number; launchDir: number; projKind: string; detonate: boolean;
-    comboCount?: number; comboLast?: number; shotTargets?: number; maxComboThisLevel?: number;
+    comboCount?: number; comboLast?: number; shotTargets?: number; maxComboThisLevel?: number; settleLossT?: number;
     drops: Drop[]; dropTimer: number; bonusT: number; bonusCaught: Record<string, number>; bonusEnded: boolean;
   }>({ engine: null, raf: 0, mode: 'level', bodies: [], targets: [], projectile: null, flying: false, extra: [], aiming: false, aimX: 0, aimY: 0, particles: [], shake: 0, ammo: 0, armed: false, loadGuard: 0, ended: false, powerUsed: false, settleT: 0, flightT: 0, last: 0, launchDir: 1, projKind: 'clapper', detonate: false, drops: [], dropTimer: 6, bonusT: 15, bonusCaught: {}, bonusEnded: false });
 
@@ -481,7 +481,7 @@ export default function SetCrashers() {
 
     G.bodies = bodies; G.targets = targets; G.extra = []; G.projectile = null; G.flying = false;
     G.aiming = false; G.particles = []; G.shake = 0; G.armed = false; G.loadGuard = 0.5;
-    G.ended = false; G.powerUsed = false; G.settleT = 0; G.flightT = 0; G.bonusEnded = false; G.drops = []; G.dropTimer = m === 'bonus' ? 0.3 : 6;
+    G.ended = false; G.powerUsed = false; G.settleT = 0; G.flightT = 0; G.bonusEnded = false; G.drops = []; G.dropTimer = m === 'bonus' ? 0.3 : 6; G.settleLossT = 0;
     setResult(null); setBonusResult(null); setPerfectFx(false); setDailyFx(null); setComboFx(null);
     g.current.comboCount = 0; g.current.comboLast = 0; g.current.maxComboThisLevel = 0;
 
@@ -624,7 +624,25 @@ export default function SetCrashers() {
   const settleCheck = useCallback(() => {
     const G = g.current; if (G.mode !== 'level' || G.ended) return;
     if (G.targets.length === 0) { finish(true); return; }
-    if (G.ammo <= 0 && !G.flying) { finish(false); return; }
+    if (G.ammo <= 0 && !G.flying) {
+      // Don't declare a loss while the world is still settling — a target may be
+      // mid-fall (teetering off a perch) and about to count as down. Wait until
+      // every target AND loose debris has come to rest, then re-check.
+      const Matter = MatterRef.current;
+      const moving = (b: any) => b && !b.isStatic && Math.hypot(b.velocity?.x || 0, b.velocity?.y || 0) > 0.35;
+      const anyTargetMoving = G.targets.some((t: any) => moving(t));
+      const anyTargetInGrace = G.targets.some((t: any) => (t.crasherDownT || 0) > 0); // actively going down
+      const anyDebrisMoving = [...G.bodies, ...G.extra].some((b: any) => moving(b));
+      if (anyTargetMoving || anyTargetInGrace || anyDebrisMoving) {
+        // still in motion — give it more time, then check again (cap re-checks via settleLossT)
+        G.settleLossT = (G.settleLossT || 0) + 1;
+        if (G.settleLossT < 30) { setTimeout(() => settleCheck(), 250); return; }
+        // safety cap (~7.5s) so we can never hang; fall through to judge
+      }
+      // world is at rest and targets remain → genuine loss
+      if (G.targets.length === 0) { finish(true); return; } // last-moment win if something just dropped
+      finish(false); return;
+    }
   }, []);
 
   const finish = useCallback((won: boolean) => {
