@@ -31,6 +31,15 @@ const PROJECTILES: Record<string, ProjDef> = {
   stunt:     { emoji: '🎭', name: 'Stunt Doubles', r: 24, density: 0.004, power: 'multi',     desc: 'Tap mid-flight — splits into a wide 5-way spread.', color: '#4b5563', free: true },
 };
 const FREE_PROJECTILE = 'clapper';
+// ── Stackable buff power-ups (modifiers applied on top of any base projectile) ──
+const STRENGTH_MULT = 1.75;   // +75% launch power
+const SIZE_MULT = 1.6;        // bigger projectile
+const BUFFS: Record<string, { emoji: string; name: string; desc: string; color: string }> = {
+  buff_strength: { emoji: '💪', name: 'Power Sling', desc: 'Boosts slingshot strength by 75% and enlarges the sling. Stacks with other shot buffs.', color: '#dc2626' },
+  buff_size:     { emoji: '🔎', name: 'Big Shot',    desc: 'Makes the launched item much larger for a wider hit. Stacks with other shot buffs.', color: '#0891b2' },
+  buff_aimer:    { emoji: '🎯', name: 'Long Sight',  desc: 'Extends the dotted aimer all the way to the ground, every shot. Stacks with other shot buffs.', color: '#16a34a' },
+};
+const BUFF_KEYS = ['buff_strength', 'buff_size', 'buff_aimer'];
 const FREE_UNLOCK_KEYS = ['boomerang', 'bomb', 'stunt']; // unlockable without paying
 // star milestones that guarantee a free projectile even if you never catch a drop
 const STAR_MILESTONES: { stars: number; key: string }[] = [
@@ -51,6 +60,9 @@ const STORE = [
   { id: 'bundle_mega',     emoji: '🏆', name: 'Mega Pack',      desc: 'Every projectile PLUS the Studio Lot level pack — best value.', price: '$8.99', kind: 'bundle', grants: ['proj_coffee', 'proj_boom', 'proj_reel', 'proj_boomerang', 'proj_bomb', 'proj_stunt', 'pack_studio'] },
   { id: 'hints_5',     emoji: '💡', name: '5 Hints',          desc: 'See a suggested shot arc.',                     price: '$0.99', kind: 'consumable' },
   { id: 'skips_3',     emoji: '⏭️', name: '3 Level Skips',    desc: 'Stuck? Skip a level and keep 1 star.',          price: '$0.99', kind: 'consumable' },
+  { id: 'buff_strength', emoji: '💪', name: 'Power Sling (3 uses)', desc: '+75% slingshot strength and a bigger sling. Stacks with other shot buffs.', price: '$1.99', kind: 'proj' },
+  { id: 'buff_size',     emoji: '🔎', name: 'Big Shot (3 uses)',    desc: 'Launch a much larger item for a wider hit. Stacks with other shot buffs.',  price: '$1.99', kind: 'proj' },
+  { id: 'buff_aimer',    emoji: '🎯', name: 'Long Sight (3 uses)',  desc: 'Dotted aimer reaches the ground every shot. Stacks with other shot buffs.',  price: '$1.99', kind: 'proj' },
 ];
 // what each bundle unlocks, used to mark them owned + to grant on purchase reconcile
 const BUNDLE_GRANTS: Record<string, string[]> = {
@@ -273,6 +285,7 @@ export default function SetCrashers() {
   const [ammoLeft, setAmmoLeft] = useState(0);
   const [targetsLeft, setTargetsLeft] = useState(0);
   const [selProj, setSelProj] = useState<string>(FREE_PROJECTILE);
+  const [buffs, setBuffs] = useState<{ strength: boolean; size: boolean; aimer: boolean }>({ strength: false, size: false, aimer: false });
   const [result, setResult] = useState<{ won: boolean; stars: number } | null>(null);
   const [rewardInfo, setRewardInfo] = useState<{ emoji: string; label: string; jackpot?: boolean } | null>(null);
   const [comboFx, setComboFx] = useState<{ label: string; n: number; x: number; y: number; t: number } | null>(null);
@@ -303,6 +316,7 @@ export default function SetCrashers() {
 
   const saveRef = useRef(save); saveRef.current = save;
   const selRef = useRef(selProj); selRef.current = selProj;
+  const buffsRef = useRef(buffs); buffsRef.current = buffs;
   const hintRef = useRef(hintActive); hintRef.current = hintActive;
   // lvlRef is the source of truth for the active level. It's set explicitly in startLevel.
   // Do NOT re-sync it to levelIdx on every render — that clobbers the value startLevel just
@@ -993,11 +1007,19 @@ export default function SetCrashers() {
     ctx.restore();
   };
   const drawTrajectory = (ctx: CanvasRenderingContext2D) => {
-    const G = g.current; const dx = SLING.x - G.aimX, dy = SLING.y - G.aimY; const pull = Math.min(Math.hypot(dx, dy), MAX_PULL); const power = pull / MAX_PULL;
+    const G = g.current; const B = buffsRef.current; const dx = SLING.x - G.aimX, dy = SLING.y - G.aimY; const pull = Math.min(Math.hypot(dx, dy), MAX_PULL); const power = pull / MAX_PULL;
     // matches the real engine: position moves by velocity each frame, gravity ~0.34px/frame²
-    let vx = dx * LAUNCH_SCALE, vy = dy * LAUNCH_SCALE; let x = G.aimX, y = G.aimY;
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    for (let i = 0; i < 60; i++) { x += vx; y += vy; vy += 0.34; if (i % 2 === 0) { ctx.globalAlpha = Math.max(0.12, 1 - i / 60); ctx.beginPath(); ctx.arc(x, y, Math.max(1.5, 5 - i * 0.06), 0, Math.PI * 2); ctx.fill(); } if (y > GROUND_Y || x > WORLD_W) break; }
+    // strength buff boosts the preview too, so the dotted arc stays accurate to the actual shot.
+    const boost = B.strength ? STRENGTH_MULT : 1;
+    let vx = dx * LAUNCH_SCALE * boost, vy = dy * LAUNCH_SCALE * boost;
+    const VMAX = MAX_PULL * LAUNCH_SCALE * 1.1; // buff adds reach but stays on-world at full pull
+    const sp0 = Math.hypot(vx, vy);
+    if (sp0 > VMAX) { const kk = VMAX / sp0; vx *= kk; vy *= kk; }
+    let x = G.aimX, y = G.aimY;
+    // aimer buff extends the dotted line all the way down — more steps, only stop at the ground.
+    const steps = B.aimer ? 220 : 60;
+    ctx.fillStyle = B.aimer ? 'rgba(34,197,94,0.75)' : 'rgba(255,255,255,0.6)';
+    for (let i = 0; i < steps; i++) { x += vx; y += vy; vy += 0.34; if (i % 2 === 0) { ctx.globalAlpha = Math.max(0.12, 1 - i / steps); ctx.beginPath(); ctx.arc(x, y, Math.max(1.5, 5 - i * 0.06), 0, Math.PI * 2); ctx.fill(); } if (y > GROUND_Y || x > WORLD_W + 200 || x < -200) break; }
     ctx.globalAlpha = 1;
     ctx.fillStyle = power > 0.9 ? '#ef4444' : '#22c55e'; ctx.fillRect(SLING.x - 30, SLING.y + 140, 60 * power, 8);
     ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1; ctx.strokeRect(SLING.x - 30, SLING.y + 140, 60, 8);
@@ -1028,12 +1050,21 @@ export default function SetCrashers() {
     try { canvasRef.current!.releasePointerCapture(e.pointerId); } catch {}
     const dx = SLING.x - G.aimX, dy = SLING.y - G.aimY; const dist = Math.hypot(dx, dy); if (dist < 22) return;
     const key = selRef.current; const def = PROJECTILES[key];
-    const proj = Matter.Bodies.circle(G.aimX, G.aimY, def.r, { density: def.density, restitution: 0.3, friction: 0.4, frictionAir: 0.001, label: 'proj' });
+    const B = buffsRef.current;
+    // Size buff enlarges the projectile; strength buff boosts launch velocity. Both stack.
+    const sizeMult = B.size ? SIZE_MULT : 1;
+    const r = def.r * sizeMult;
+    const proj = Matter.Bodies.circle(G.aimX, G.aimY, r, { density: def.density, restitution: 0.3, friction: 0.4, frictionAir: 0.001, label: 'proj' });
     Matter.Composite.add(G.engine.world, proj);
-    const boost = key === 'boomerang' ? 1.5 : 1;   // boomerang needs more power to fly out before curving
-    const vx = dx * LAUNCH_SCALE * boost, vy = dy * LAUNCH_SCALE * boost;
+    const boost = (key === 'boomerang' ? 1.5 : 1) * (B.strength ? STRENGTH_MULT : 1);   // boomerang needs more power; strength buff adds +75%
+    let vx = dx * LAUNCH_SCALE * boost, vy = dy * LAUNCH_SCALE * boost;
+    // Cap total launch speed so a +75% buff on an already-full pull can't sail off-world;
+    // the buff still gives real extra reach from weak/medium pulls (its intended use).
+    const VMAX = MAX_PULL * LAUNCH_SCALE * 1.1; // buff adds reach but stays on-world at full pull
+    const sp = Math.hypot(vx, vy);
+    if (sp > VMAX) { const k = VMAX / sp; vx *= k; vy *= k; }
     Matter.Body.setVelocity(proj, { x: vx, y: vy });
-    G.projectile = proj; proj.crasherProjKind = key; G.flying = true; G.powerUsed = false; G.settleT = 0; G.flightT = 0; G.detonate = false; G.armed = true; G.launchDir = vx >= 0 ? 1 : -1; G.projKind = key;
+    G.projectile = proj; proj.crasherProjKind = key; proj.crasherR = r; G.flying = true; G.powerUsed = false; G.settleT = 0; G.flightT = 0; G.detonate = false; G.armed = true; G.launchDir = vx >= 0 ? 1 : -1; G.projKind = key;
     if (G.mode === 'level') {
       G.ammo--; setAmmoLeft(G.ammo);
       // power-ups are limited-use ammo (clapper is unlimited). Spend one use; re-lock + fall back when depleted.
@@ -1042,6 +1073,11 @@ export default function SetCrashers() {
         spendProjectile(key);
         if (remaining <= 0) setSelProj(FREE_PROJECTILE);
       }
+      // Spend one use of each active buff, then clear the toggles for the next shot.
+      if (B.strength) spendProjectile('buff_strength');
+      if (B.size) spendProjectile('buff_size');
+      if (B.aimer) spendProjectile('buff_aimer');
+      if (B.strength || B.size || B.aimer) setBuffs({ strength: false, size: false, aimer: false });
     }
     if (hintRef.current) setHintActive(false);
     spawnParticles(G.aimX, G.aimY, 8, '#fcd34d', 120);
@@ -1293,7 +1329,16 @@ export default function SetCrashers() {
                 {!unlocked && <span style={{ position: 'absolute', top: '-5px', right: '-4px', fontSize: '10px' }}>🔒</span>}
               </button>); })}
           </div>
-          <div style={{ textAlign: 'center', fontSize: '11px', color: '#6b7280', marginTop: '6px' }}>{mode === 'bonus' ? 'Shoot the falling prizes — keep every one you hit!' : PROJECTILES[selProj]?.power !== 'none' && PROJECTILES[selProj]?.power !== 'boomerang' ? 'Tap mid-flight to trigger power' : PROJECTILES[selProj]?.power === 'boomerang' ? 'Curves back automatically — aim to hit on the return' : 'Drag back from the slingshot to aim'}</div>
+          {mode === 'level' && (
+            <div style={{ display: 'flex', gap: '6px', marginTop: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              {BUFF_KEYS.map(bk => { const uses = ammoOf(bk); const owned = uses > 0; const bdef = BUFFS[bk]; const flag = bk === 'buff_strength' ? 'strength' : bk === 'buff_size' ? 'size' : 'aimer'; const on = (buffs as any)[flag]; return (
+                <button key={bk} onClick={() => { if (!owned) { buyItem(bk); return; } if (!g.current.flying) setBuffs(prev => ({ ...prev, [flag]: !(prev as any)[flag] })); }} title={bdef.name} style={{ height: '34px', padding: '0 10px', borderRadius: '9px', border: on ? `2px solid ${bdef.color}` : '1px solid #374151', backgroundColor: on ? bdef.color : '#1a1a2e', color: 'white', fontSize: '13px', fontWeight: 700, cursor: 'pointer', opacity: owned ? 1 : 0.45, position: 'relative', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ fontSize: '16px' }}>{bdef.emoji}</span><span style={{ fontSize: '11px' }}>{bdef.name}</span>
+                  {owned && <span style={{ position: 'absolute', bottom: '-5px', right: '-3px', fontSize: '9px', fontWeight: 900, color: '#fff', backgroundColor: '#16a34a', borderRadius: '7px', padding: '0 4px', lineHeight: '13px' }}>{uses}</span>}
+                  {!owned && <span style={{ position: 'absolute', top: '-5px', right: '-4px', fontSize: '9px' }}>🔒</span>}
+                </button>); })}
+            </div>
+          )}
         </div>
       )}
 
