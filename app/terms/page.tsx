@@ -29,7 +29,7 @@ export default function TermsOfServicePage() {
     <main style={wrap}>
       <a href="/" style={back}>&larr; Back to SetReady</a>
       <h1 style={h1}>Terms of Service</h1>
-      <p style={updated}>Last updated: June 18, 2026</p>
+      <p style={updated}>Last updated: June 27, 2026</p>
 
       <div style={intro}>
         By using SetReady you agree to these Terms and to our <a style={a} href="/privacy">Privacy Policy</a>.
@@ -78,11 +78,26 @@ export default function TermsOfServicePage() {
       <h3 style={h3}>3.3 Your account</h3>
       <p style={p}>You are responsible for providing accurate information, keeping your login credentials secure, and all activity under your account. Do not share your account.</p>
       <h3 style={h3}>3.4 Suspension and termination</h3>
+      <p style={p}>You may delete your account at any time in Settings.</p>
       <p style={p}>
-        You may delete your account at any time in Settings. We may suspend or terminate an account that
-        violates these Terms; we will provide notice and the reasons unless doing so is prohibited by law or
-        would create a security risk. You may appeal within 14 days by emailing
-        <a style={a} href="mailto:setready@mail.com"> setready@mail.com</a>.
+        SetReady reserves the right, at its sole discretion, to suspend, restrict, or terminate your account or
+        access to all or part of the Service, at any time and with or without notice, including where: (a) you
+        breach or we reasonably suspect you have breached these Terms; (b) your conduct is unlawful, fraudulent,
+        abusive, harassing, or harmful to other users, to SetReady, or to any third party; (c) you fail to pay
+        fees when due; (d) we are required to do so by law or by a request from law enforcement or a governmental
+        authority; or (e) we discontinue or materially modify the Service.
+      </p>
+      <p style={p}>
+        Where the circumstances are not urgent and do not involve a risk of harm, fraud, illegality, or a breach
+        requiring immediate action, we will endeavour to provide notice and the reasons for the action, unless
+        doing so is prohibited by law or would create a security risk. In urgent cases, we may suspend or terminate
+        access immediately and without prior notice. You may appeal a suspension or termination within 14 days by
+        emailing <a style={a} href="mailto:setready@mail.com">setready@mail.com</a>.
+      </p>
+      <p style={p}>
+        Upon termination, your right to access and use the Service will immediately cease. Termination does not
+        relieve you of obligations or liabilities accrued before termination, including outstanding payment
+        obligations, and the provisions of these Terms that by their nature should survive termination will survive.
       </p>
 
       <h2 style={h2}>4. Your content and conduct</h2>
