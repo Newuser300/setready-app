@@ -10,7 +10,7 @@ export async function GET() {
 
   const { data: agent } = await supabaseAdmin
     .from('agent_accounts')
-    .select('name, agency_id, email_on_request, agencies(name)')
+    .select('name, agency_id, email_on_request, agencies(name, logo_url)')
     .eq('id', session.accountId)
     .single()
 
@@ -18,6 +18,7 @@ export async function GET() {
     name: agent?.name || session.name,
     agencyName: (agent?.agencies as any)?.name || '',
     agencyId: agent?.agency_id,
+    logoUrl: (agent?.agencies as any)?.logo_url || null,
     emailOnRequest: agent?.email_on_request !== false,
   })
 }

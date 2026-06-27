@@ -16,6 +16,22 @@ export default function AgentSettingsPage() {
   const [agentName, setAgentName] = useState('')
   const [agencyName, setAgencyName] = useState('')
   const [agencyId, setAgencyId] = useState('')
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  const [logoUploading, setLogoUploading] = useState(false)
+  const [logoMsg, setLogoMsg] = useState<{ text: string; ok: boolean } | null>(null)
+
+  async function uploadLogo(file: File) {
+    if (!file.type.startsWith('image/')) { setLogoMsg({ text: 'Please choose an image file', ok: false }); return }
+    if (file.size > 2 * 1024 * 1024) { setLogoMsg({ text: 'Logo must be under 2 MB', ok: false }); return }
+    setLogoUploading(true); setLogoMsg(null)
+    const fd = new FormData()
+    fd.append('logo', file)
+    const res = await fetch('/api/agent/logo', { method: 'POST', body: fd })
+    const d = await res.json().catch(() => ({}))
+    setLogoUploading(false)
+    if (res.ok) { setLogoUrl(d.logo_url); setLogoMsg({ text: 'Logo updated', ok: true }) }
+    else setLogoMsg({ text: d.error || 'Upload failed', ok: false })
+  }
   const [isPro, setIsPro] = useState(false)
   const [proExpiresAt, setProExpiresAt] = useState<string | null>(null)
   const [rosterLimit, setRosterLimit] = useState<number | null>(25)
@@ -80,6 +96,7 @@ export default function AgentSettingsPage() {
       setNameInput(d.name || '')
       setAgencyName(d.agencyName || '')
       setAgencyId(d.agencyId || '')
+      setLogoUrl(d.logoUrl || null)
     }).catch(() => router.push('/agent/login'))
 
     fetch('/api/agent/pro-status').then(async res => {
@@ -166,7 +183,21 @@ export default function AgentSettingsPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div>
               <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Agency</span>
-              <p style={{ fontSize: '16px', fontWeight: '700', margin: '2px 0 0' }}>{agencyName}</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '6px' }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: '10px', border: '1px solid #e5e7eb', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                  {logoUrl ? <img src={logoUrl} alt="Agency logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <span style={{ fontSize: '22px' }}>🏢</span>}
+                </div>
+                <div>
+                  <p style={{ fontSize: '16px', fontWeight: '700', margin: 0 }}>{agencyName}</p>
+                  <label style={{ display: 'inline-block', marginTop: '6px', fontSize: '12px', fontWeight: '700', color: '#1a1a2e', cursor: 'pointer', padding: '6px 12px', border: '1px solid #d1d5db', borderRadius: '8px', backgroundColor: '#f9fafb' }}>
+                    {logoUploading ? 'Uploading…' : (logoUrl ? 'Change logo' : 'Upload logo')}
+                    <input type="file" accept="image/*" style={{ display: 'none' }} disabled={logoUploading}
+                      onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f) }} />
+                  </label>
+                  <p style={{ fontSize: '11px', color: '#9ca3af', margin: '4px 0 0' }}>PNG or JPG, under 2 MB. Shown on your performers&apos; profiles.</p>
+                  {logoMsg && <p style={{ fontSize: '12px', fontWeight: '600', margin: '4px 0 0', color: logoMsg.ok ? '#16a34a' : '#dc2626' }}>{logoMsg.text}</p>}
+                </div>
+              </div>
             </div>
             <div style={{ marginTop: '4px' }}>
               <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Your Display Name</span>
