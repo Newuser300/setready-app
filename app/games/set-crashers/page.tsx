@@ -26,11 +26,11 @@ const PROJECTILES: Record<string, ProjDef> = {
   boom:      { emoji: '🎤', name: 'Boom Mic',      r: 20, density: 0.012, power: 'heavy',     desc: 'Heavy. Tap to dive down and smash through stacks.', color: '#374151' },
   reel:      { emoji: '🎞️', name: 'Film Reel',     r: 26, density: 0.003, power: 'split',     desc: 'Tap mid-flight — splits into 3.', color: '#4b5563' },
   // ---- free unlock (earned by catching prize drops or by star milestones) ----
-  boomerang: { emoji: '🪃', name: 'Boomerang',     r: 22, density: 0.004, power: 'boomerang', desc: 'Curves back mid-flight — hit targets behind cover.', color: '#a16207', free: true },
+  boomerang: { emoji: '↩️', name: 'Boomerang',     r: 22, density: 0.004, power: 'boomerang', desc: 'Curves back mid-flight — hit targets behind cover.', color: '#a16207', free: true },
   bomb:      { emoji: '💣', name: 'Bomb',          r: 22, density: 0.005, power: 'bomb',      desc: 'Explodes on impact with a huge blast. (Or tap to detonate early.)', color: '#111827', free: true },
   stunt:     { emoji: '🎭', name: 'Stunt Doubles', r: 24, density: 0.004, power: 'multi',     desc: 'Tap mid-flight — splits into a wide 5-way spread.', color: '#4b5563', free: true },
-  bombstunt: { emoji: '💥', name: 'Stunt Bomb Squad', r: 24, density: 0.005, power: 'bombstunt', desc: 'SUPER: tap mid-flight — splits into 2 giant stunt doubles that each blow up huge.', color: '#b91c1c' },
-  skystrike: { emoji: '☄️', name: 'Sky Strike',    r: 24, density: 0.006, power: 'skystrike', desc: 'SUPER: rockets up, then slams straight down at huge speed for a gigantic blast.', color: '#4338ca' },
+  bombstunt: { emoji: '💥', name: 'Stunt Bomb Squad', r: 24, density: 0.005, power: 'bombstunt', desc: 'SUPER: splits into a squad of giant stunt doubles on launch — each blows up on contact (or tap to detonate all).', color: '#b91c1c' },
+  skystrike: { emoji: '☄️', name: 'Sky Strike',    r: 24, density: 0.006, power: 'skystrike', desc: 'SUPER: tap mid-flight to surge +300% speed in its current direction, then a gigantic blast on contact.', color: '#4338ca' },
 };
 const FREE_PROJECTILE = 'clapper';
 // ── Stackable buff power-ups (modifiers applied on top of any base projectile) ──
@@ -54,7 +54,7 @@ const STORE = [
   { id: 'proj_boom',   emoji: '🎤', name: 'Boom Mic Ammo',    desc: 'Unlock the heavy smashing boom mic.',           price: '$1.99', kind: 'proj' },
   { id: 'proj_reel',   emoji: '🎞️', name: 'Film Reel Ammo',  desc: 'Unlock the splitting film reel.',               price: '$1.99', kind: 'proj' },
   // free-earn power-ups, also buyable as a shortcut (Option A)
-  { id: 'proj_boomerang', emoji: '🪃', name: 'Boomerang Ammo', desc: 'Unlock now (or earn it free through play).',    price: '$1.99', kind: 'proj' },
+  { id: 'proj_boomerang', emoji: '↩️', name: 'Boomerang Ammo', desc: 'Unlock now (or earn it free through play).',    price: '$1.99', kind: 'proj' },
   { id: 'proj_bomb',      emoji: '💣', name: 'Bomb Ammo',      desc: 'Unlock now (or earn it free through play).',    price: '$1.99', kind: 'proj' },
   { id: 'proj_stunt',     emoji: '🎭', name: 'Stunt Doubles Ammo', desc: 'Unlock now (or earn it free through play).', price: '$1.99', kind: 'proj' },
   // bundles (discounted vs buying separately)
@@ -232,7 +232,7 @@ const LEVELS: Level[] = [
 
 type SaveData = { stars: Record<number, number>; owned: string[]; ammoCounts: Record<string, number>; claimedMilestones: string[]; claimedRewards: number[]; claimedPurchases: string[]; hints: number; skips: number; lastUnlocked: number; bonusBest: number; lastPlayDate: string; dailyStreak: number; badges: string[]; perfectClears: number; bestCombo: number; bestStreak: number; bossClears: number; lastBonusAt: number };
 const DEFAULT_SAVE: SaveData = { stars: {}, owned: [], ammoCounts: {}, claimedMilestones: [], claimedRewards: [], claimedPurchases: [], hints: 1, skips: 0, lastUnlocked: 0, bonusBest: 0, lastPlayDate: '', dailyStreak: 0, badges: [], perfectClears: 0, bestCombo: 0, bestStreak: 0, bossClears: 0, lastBonusAt: 0 };
-const BONUS_COOLDOWN_MS = 15 * 60 * 1000; // bonus round playable once every 15 minutes
+const BONUS_COOLDOWN_MS = 3 * 60 * 1000; // bonus round playable once every 3 minutes
 const RESUME_KEY = 'sr-set-crashers-resume'; // remembers the exact level last played
 function loadSave(): SaveData {
   try { const raw = localStorage.getItem(SAVE_KEY); if (raw) { const s = { ...DEFAULT_SAVE, ...JSON.parse(raw) }; if (!s.ammoCounts) s.ammoCounts = {}; if (!s.claimedMilestones) s.claimedMilestones = []; if (!s.claimedRewards) s.claimedRewards = []; if (!s.claimedPurchases) s.claimedPurchases = []; if (typeof s.lastPlayDate !== 'string') s.lastPlayDate = ''; if (typeof s.dailyStreak !== 'number') s.dailyStreak = 0; if (!Array.isArray(s.badges)) s.badges = []; if (typeof s.perfectClears !== 'number') s.perfectClears = 0; if (typeof s.bestCombo !== 'number') s.bestCombo = 0; if (typeof s.bestStreak !== 'number') s.bestStreak = 0; if (typeof s.bossClears !== 'number') s.bossClears = 0; if (typeof s.lastBonusAt !== 'number') s.lastBonusAt = 0; return s; } } catch {}
@@ -248,6 +248,8 @@ type Mode = 'level' | 'bonus';
 type Mat = any;
 
 const PROJ_EMOJIS = ['boomerang', 'bomb', 'stunt']; // possible projectile prizes
+// Weighted pool for bonus/level drops — favors the requested power-ups (more copies = higher odds).
+const BONUS_DROP_POOL = ['bombstunt', 'bombstunt', 'skystrike', 'skystrike', 'stunt', 'stunt', 'bomb', 'bomb', 'boomerang'];
 const MILESTONE_EVERY = 5; // award a random prize every N distinct levels cleared
 
 // ── Director's Cut: every 10th level is a named "boss" set-piece ──
@@ -525,6 +527,18 @@ export default function SetCrashers() {
           G.projectile = null; G.flying = false;
           if (G.mode === 'level') setTimeout(() => settleCheck(), 500);
         }
+        // Stunt Bomb Squad pieces: each explodes big on first contact with anything.
+        for (const [body] of [[a], [b]] as [Mat][]) {
+          if (body && (body as any).crasherBombStunt && !(body as any).crasherExploded) {
+            (body as any).crasherExploded = true;
+            const bx = body.position.x, by = body.position.y;
+            explodeAt(bx, by, 240, 0.9);
+            try { Matter.Composite.remove(G.engine.world, body); } catch {}
+            G.extra = G.extra.filter(e => e !== body);
+            if (G.projectile === body) { G.projectile = null; }
+            if (G.mode === 'level') setTimeout(() => settleCheck(), 450);
+          }
+        }
         // impact thud when the live projectile strikes something hard
         if (G.flying && impact > 4 && G.projectile && (a === G.projectile || b === G.projectile)) SFX.impact();
         for (const [t, other] of [[a, b], [b, a]] as [Mat, Mat][]) {
@@ -593,10 +607,14 @@ export default function SetCrashers() {
   const spawnDrop = (forBonus: boolean) => {
     const G = g.current; const roll = Math.random();
     let kind: Drop['kind'] = 'hint'; let projKey: string | undefined; let emoji = '💡';
-    // power-ups are consumable now, so drops can always offer +1 use of a random one
-    if (roll < (forBonus ? 0.4 : 0.5)) {
-      kind = 'proj'; projKey = PROJ_EMOJIS[Math.floor(Math.random() * PROJ_EMOJIS.length)]; emoji = PROJECTILES[projKey].emoji;
-    } else if (roll < 0.75) { kind = 'hint'; emoji = '💡'; }
+    // More power-ups, fewer hints/skips. In the bonus round 80% of drops are power-ups.
+    if (roll < (forBonus ? 0.8 : 0.6)) {
+      kind = 'proj';
+      // Weighted pool favoring the requested power-ups: bombstunt, skystrike, stunt, bomb.
+      const pool = BONUS_DROP_POOL;
+      projKey = pool[Math.floor(Math.random() * pool.length)];
+      emoji = PROJECTILES[projKey].emoji;
+    } else if (roll < (forBonus ? 0.9 : 0.8)) { kind = 'hint'; emoji = '💡'; }
     else { kind = 'skip'; emoji = '⏭️'; }
     const x = 360 + Math.random() * (WORLD_W - 520);
     G.drops.push({ x, y: -30, vy: forBonus ? 150 + Math.random() * 60 : 110, r: 24, kind, projKey, emoji, t: 0 });
@@ -654,43 +672,30 @@ export default function SetCrashers() {
       if (G.mode === 'level') setTimeout(() => settleCheck(), 700);
     }
     else if (def.power === 'bombstunt') {
-      // SUPER: split into 2 GIANT stunt doubles; each one detonates a big explosion shortly after.
+      // Squad already split on launch. A mid-flight tap detonates every squad piece at once.
       spawnParticles(p.position.x, p.position.y, 26, '#fca5a5', 260); G.shake = Math.min(G.shake + 12, 40);
-      const baseAngle = Math.atan2(p.velocity.y, p.velocity.x);
-      const speed = Math.max(Math.hypot(p.velocity.x, p.velocity.y), 6);
-      const bigR = def.r * 2; // stunt doubles are twice as big
-      for (let i = 0; i < 2; i++) {
-        const a = baseAngle + (i === 0 ? -0.22 : 0.22);
-        const c = Matter.Bodies.circle(p.position.x, p.position.y, bigR, { density: def.density * 0.8, restitution: 0.3, friction: 0.4, frictionAir: 0.001, label: 'proj' });
-        c.crasherProjKind = 'stunt'; c.crasherR = bigR; c.crasherBombStunt = true;
-        Matter.Body.setVelocity(c, { x: Math.cos(a) * speed, y: Math.sin(a) * speed });
-        Matter.Composite.add(G.engine.world, c); G.extra.push(c);
-        // each giant double explodes big after a short flight, wherever it is
-        const ref = c;
-        setTimeout(() => {
-          if (!ref.position) return;
-          explodeAt(ref.position.x, ref.position.y, 240, 0.9);
-          try { Matter.Composite.remove(G.engine.world, ref); } catch {}
-          G.extra = G.extra.filter(e => e !== ref);
-          if (G.mode === 'level') setTimeout(() => settleCheck(), 400);
-        }, 650 + i * 120);
+      const squad = [p, ...G.extra.filter(e => (e as any).crasherBombStunt && !(e as any).crasherExploded)];
+      for (const piece of squad) {
+        if (!piece || (piece as any).crasherExploded) continue;
+        (piece as any).crasherExploded = true;
+        explodeAt(piece.position.x, piece.position.y, 240, 0.9);
+        try { Matter.Composite.remove(G.engine.world, piece); } catch {}
       }
-      Matter.Composite.remove(G.engine.world, p); G.projectile = null; G.flying = false;
-      if (G.mode === 'level') setTimeout(() => settleCheck(), 1600);
+      G.extra = G.extra.filter(e => !(e as any).crasherExploded);
+      G.projectile = null; G.flying = false;
+      if (G.mode === 'level') setTimeout(() => settleCheck(), 600);
     }
     else if (def.power === 'skystrike') {
-      // SUPER: rocket straight up at huge speed, then after a split second slam straight
-      // down at huge speed; a gigantic explosion fires on impact.
-      spawnParticles(p.position.x, p.position.y, 22, '#a5b4fc', 240); G.shake = Math.min(G.shake + 10, 40);
-      const launchX = p.position.x;
-      Matter.Body.setVelocity(p, { x: 0, y: -46 }); // up, tremendous speed
+      // SUPER: on trigger, surge to +300% speed (4x) in the CURRENT direction of travel.
+      const cvx = p.velocity.x, cvy = p.velocity.y;
+      const cs = Math.hypot(cvx, cvy) || 1;
+      const ux = cvx / cs, uy = cvy / cs;       // current heading
+      const newSpeed = cs * 4;                   // +300%
+      Matter.Body.setVelocity(p, { x: ux * newSpeed, y: uy * newSpeed });
+      p.crasherSkySlam = true;                    // detonates a gigantic blast on contact
       G.skyStrikeActive = true;
-      setTimeout(() => {
-        if (!p.position) return;
-        Matter.Body.setPosition(p, { x: launchX, y: Math.max(40, p.position.y) });
-        Matter.Body.setVelocity(p, { x: 0, y: 52 }); // slam down, tremendous speed
-        p.crasherSkySlam = true;
-      }, 360);
+      spawnParticles(p.position.x, p.position.y, 30, '#a5b4fc', 320); G.shake = Math.min(G.shake + 12, 40);
+      SFX.launch();
     }
   };
 
@@ -1008,27 +1013,8 @@ export default function SetCrashers() {
   };
   const drawProj = (ctx: CanvasRenderingContext2D, x: number, y: number, angle: number, kind?: string, radius?: number) => {
     const def = PROJECTILES[kind || selRef.current] || PROJECTILES[selRef.current]; const r = radius || def.r;
-    const k = kind || selRef.current;
     ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
     ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
-    if (k === 'boomerang') {
-      // Hand-drawn boomerang: a bent V/L shape with rounded arms (no emoji-font reliance).
-      ctx.rotate(-0.5);
-      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      ctx.beginPath();
-      ctx.moveTo(-r * 0.85, r * 0.35);
-      ctx.quadraticCurveTo(0, -r * 0.95, r * 0.85, r * 0.35); // outer curve (the bend at top)
-      ctx.lineWidth = r * 0.5;
-      ctx.strokeStyle = '#b45309'; ctx.stroke(); // dark wood edge
-      ctx.lineWidth = r * 0.30;
-      ctx.strokeStyle = '#f59e0b'; ctx.stroke(); // bright wood face
-      // small accent notches near each tip
-      ctx.shadowBlur = 0; ctx.fillStyle = '#fde68a';
-      ctx.beginPath(); ctx.arc(-r * 0.78, r * 0.32, r * 0.10, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(r * 0.78, r * 0.32, r * 0.10, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-      return;
-    }
     const grad = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.2, 0, 0, r);
     grad.addColorStop(0, '#fff'); grad.addColorStop(0.35, def.color); grad.addColorStop(1, '#000');
     ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
@@ -1119,6 +1105,28 @@ export default function SetCrashers() {
     if (sp > VMAX) { const k = VMAX / sp; vx *= k; vy *= k; }
     Matter.Body.setVelocity(proj, { x: vx, y: vy });
     G.projectile = proj; proj.crasherProjKind = key; proj.crasherR = r; G.flying = true; G.powerUsed = false; G.settleT = 0; G.flightT = 0; G.detonate = false; G.armed = true; G.launchDir = vx >= 0 ? 1 : -1; G.projKind = key;
+    // Stunt Bomb Squad: divides immediately on release into multiple giant stunt doubles that
+    // fan out; each explodes on contact (or all detonate together if the user taps mid-flight).
+    if (key === 'bombstunt') {
+      const count = 3;
+      const baseAngle = Math.atan2(vy, vx);
+      const speed = Math.max(Math.hypot(vx, vy), 6);
+      const bigR = def.r * 2 * sizeMult; // doubles are twice as big (and respect size buff)
+      const fan = 0.45;
+      // retire the single launched body; replace with the fanned squad
+      Matter.Composite.remove(G.engine.world, proj); G.projectile = null;
+      let lead: any = null;
+      for (let i = 0; i < count; i++) {
+        const a = baseAngle + (i - (count - 1) / 2) * (fan / Math.max(count - 1, 1));
+        const c = Matter.Bodies.circle(G.aimX, G.aimY, bigR, { density: def.density * 0.8, restitution: 0.3, friction: 0.4, frictionAir: 0.001, label: 'proj' });
+        c.crasherProjKind = 'stunt'; c.crasherR = bigR; c.crasherBombStunt = true;
+        Matter.Body.setVelocity(c, { x: Math.cos(a) * speed, y: Math.sin(a) * speed });
+        Matter.Composite.add(G.engine.world, c); G.extra.push(c);
+        if (i === Math.floor(count / 2)) lead = c;
+      }
+      // keep one as the "live" projectile so tapping can still trigger a synced detonation
+      G.projectile = lead; if (lead) { G.extra = G.extra.filter(e => e !== lead); }
+    }
     if (G.mode === 'level') {
       G.ammo--; setAmmoLeft(G.ammo);
       // power-ups are limited-use ammo (clapper is unlimited). Spend one use; re-lock + fall back when depleted.
@@ -1225,7 +1233,7 @@ export default function SetCrashers() {
               <p style={{ margin: '0 0 3px', paddingLeft: '12px' }}>☕ <strong>Hot Coffee</strong> — explodes on impact with a blast radius.</p>
               <p style={{ margin: '0 0 3px', paddingLeft: '12px' }}>🎤 <strong>Boom Mic</strong> — heavy; tap mid-flight to dive-smash downward.</p>
               <p style={{ margin: '0 0 3px', paddingLeft: '12px' }}>🎞️ <strong>Film Reel</strong> — tap mid-flight to split into a spread of shots.</p>
-              <p style={{ margin: '0 0 3px', paddingLeft: '12px' }}>🪃 <strong>Boomerang</strong> — flies out then curves back on its own; hits targets behind cover.</p>
+              <p style={{ margin: '0 0 3px', paddingLeft: '12px' }}>↩️ <strong>Boomerang</strong> — flies out then curves back on its own; hits targets behind cover.</p>
               <p style={{ margin: '0 0 3px', paddingLeft: '12px' }}>💣 <strong>Bomb</strong> — explodes on impact with a huge blast (or tap to detonate early).</p>
               <p style={{ margin: '0 0 8px', paddingLeft: '12px' }}>🎭 <strong>Stunt Doubles</strong> — tap mid-flight to burst into 5 pieces fanning out.</p>
               <p style={{ margin: '0 0 8px' }}><strong>Prize drops 🎁:</strong> parachuting prizes fall during play — hit one with your shot to grab it. They give +1 power-up use, a 💡 hint, or an ⏭️ skip. Miss it and it floats away.</p>
@@ -1236,7 +1244,7 @@ export default function SetCrashers() {
               <p style={{ margin: '0 0 8px' }}><strong>Director&apos;s Cut 🎦:</strong> every 10th level is a special named boss set-piece, marked in gold. Clear one for a guaranteed bonus haul (power-ups, hints, and a skip) and the Director&apos;s Cut badge.</p>
               <p style={{ margin: '0 0 8px' }}><strong>Badges 🏅:</strong> earn collectible badges for milestones, skill, and dedication — first clear, 3-star shots, perfect clears, big combos, daily streaks, and more. Tap the 🏅 button at the top to see your collection and what&apos;s left to unlock.</p>
               <p style={{ margin: '0 0 8px' }}><strong>Sound 🔊:</strong> toggle audio with the speaker icon at the top of the play screen.</p>
-              <p style={{ margin: '0 0 8px' }}><strong>Bonus Round:</strong> 15 seconds of non-stop prize drops with unlimited ammo and free power-ups — shoot as many prizes as you can and keep everything you hit. Your best haul is saved. The Bonus Round recharges once every 15 minutes.</p>
+              <p style={{ margin: '0 0 8px' }}><strong>Bonus Round:</strong> 15 seconds of non-stop prize drops with unlimited ammo and free power-ups — shoot as many prizes as you can and keep everything you hit. Your best haul is saved. The Bonus Round recharges once every 3 minutes.</p>
               <p style={{ margin: '0 0 8px' }}><strong>Stars &amp; help:</strong> finish at or under par for 3★, one over for 2★, otherwise 1★. 💡 <strong>Hint</strong> shows a suggested arc; ⏭️ <strong>Skip</strong> jumps past a tough level keeping 1★. Earn more hints/skips from prize drops or the Store. Star milestones also award free power-up uses.</p>
               <p style={{ margin: '0 0 8px' }}><strong>🎟️ Studio Lot Pack:</strong> a paid pack of <strong>12 extra levels</strong> beyond the free &ldquo;On Location&rdquo; set. They&apos;re tougher — taller fortresses, multi-target shelves, and bigger domino chains that escalate as you progress (later stages give you fewer shots, so chaining matters). It&apos;s a <strong>one-time unlock</strong> (not consumable): once you own it, all 12 levels are yours forever. Buy it on its own, or get it included in the Mega Pack.</p>
               <p style={{ margin: 0 }}><strong>Store &amp; bundles:</strong> buy individual power-ups (3 uses each), the Studio Lot Pack, or save with bundles — the <strong>Power-Up Bundle</strong> gives 3 uses of all six power-ups, and the <strong>Mega Pack</strong> adds the Studio Lot Pack on top for the best value. Hints and skips are also sold in packs.</p>
@@ -1277,7 +1285,7 @@ export default function SetCrashers() {
           })}
 
           <div style={{ marginTop: '22px', fontWeight: 800, fontSize: '14px', color: '#e5e7eb' }}>Store 💎</div>
-          <div style={{ fontSize: '11px', color: '#6b7280', margin: '2px 0 8px' }}>Optional — the free pack &amp; bonus round are fully playable, and the 🪃/💣/🎭 ammo unlocks free through play.</div>
+          <div style={{ fontSize: '11px', color: '#6b7280', margin: '2px 0 8px' }}>Optional — the free pack &amp; bonus round are fully playable, and the ↩️/💣/🎭 ammo unlocks free through play.</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {STORE.map(it => {
               const isProj = it.kind === 'proj';
