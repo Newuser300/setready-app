@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
 
   const { error } = await supabaseAdmin
     .from('agency_roster')
-    .insert({ user_id: user.id, agency_id: agencyId, status: 'pending' });
+    .insert({ performer_user_id: user.id, agency_id: agencyId, status: 'pending' });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
