@@ -214,10 +214,10 @@ const LEVELS: Level[] = [
   }),
 ];
 
-type SaveData = { stars: Record<number, number>; owned: string[]; ammoCounts: Record<string, number>; claimedMilestones: string[]; claimedRewards: number[]; claimedPurchases: string[]; hints: number; skips: number; lastUnlocked: number; bonusBest: number };
-const DEFAULT_SAVE: SaveData = { stars: {}, owned: [], ammoCounts: {}, claimedMilestones: [], claimedRewards: [], claimedPurchases: [], hints: 1, skips: 0, lastUnlocked: 0, bonusBest: 0 };
+type SaveData = { stars: Record<number, number>; owned: string[]; ammoCounts: Record<string, number>; claimedMilestones: string[]; claimedRewards: number[]; claimedPurchases: string[]; hints: number; skips: number; lastUnlocked: number; bonusBest: number; lastPlayDate: string; dailyStreak: number; badges: string[]; perfectClears: number; bestCombo: number; bestStreak: number; bossClears: number };
+const DEFAULT_SAVE: SaveData = { stars: {}, owned: [], ammoCounts: {}, claimedMilestones: [], claimedRewards: [], claimedPurchases: [], hints: 1, skips: 0, lastUnlocked: 0, bonusBest: 0, lastPlayDate: '', dailyStreak: 0, badges: [], perfectClears: 0, bestCombo: 0, bestStreak: 0, bossClears: 0 };
 function loadSave(): SaveData {
-  try { const raw = localStorage.getItem(SAVE_KEY); if (raw) { const s = { ...DEFAULT_SAVE, ...JSON.parse(raw) }; if (!s.ammoCounts) s.ammoCounts = {}; if (!s.claimedMilestones) s.claimedMilestones = []; if (!s.claimedRewards) s.claimedRewards = []; if (!s.claimedPurchases) s.claimedPurchases = []; return s; } } catch {}
+  try { const raw = localStorage.getItem(SAVE_KEY); if (raw) { const s = { ...DEFAULT_SAVE, ...JSON.parse(raw) }; if (!s.ammoCounts) s.ammoCounts = {}; if (!s.claimedMilestones) s.claimedMilestones = []; if (!s.claimedRewards) s.claimedRewards = []; if (!s.claimedPurchases) s.claimedPurchases = []; if (typeof s.lastPlayDate !== 'string') s.lastPlayDate = ''; if (typeof s.dailyStreak !== 'number') s.dailyStreak = 0; if (!Array.isArray(s.badges)) s.badges = []; if (typeof s.perfectClears !== 'number') s.perfectClears = 0; if (typeof s.bestCombo !== 'number') s.bestCombo = 0; if (typeof s.bestStreak !== 'number') s.bestStreak = 0; if (typeof s.bossClears !== 'number') s.bossClears = 0; return s; } } catch {}
   return { ...DEFAULT_SAVE };
 }
 const PURCHASE_USES = 3; // a paid power-up purchase grants this many uses
@@ -232,6 +232,36 @@ type Mat = any;
 const PROJ_EMOJIS = ['boomerang', 'bomb', 'stunt']; // possible projectile prizes
 const MILESTONE_EVERY = 5; // award a random prize every N distinct levels cleared
 
+// ── Director's Cut: every 10th level is a named "boss" set-piece ──
+const isBossLevel = (idx: number) => (idx + 1) % 10 === 0;
+const BOSS_NAMES: Record<number, { title: string; subtitle: string }> = {
+  9:  { title: 'The Watchtower', subtitle: 'Act I Finale' },
+  19: { title: 'Demolition Day', subtitle: 'Act II Finale' },
+  29: { title: 'The Grand Finale', subtitle: 'Act III Finale' },
+};
+const bossInfo = (idx: number) => BOSS_NAMES[idx] || { title: `Director's Cut ${Math.floor((idx + 1) / 10)}`, subtitle: 'Featured Set-Piece' };
+
+// ── Badges: collectible achievements across progression, skill, dedication ──
+type BadgeDef = { id: string; name: string; emoji: string; desc: string; check: (s: SaveData, levelCount: number) => boolean };
+const BADGES: BadgeDef[] = [
+  // Progression
+  { id: 'first_clear', name: 'Lights, Camera!', emoji: '🎬', desc: 'Clear your first level', check: s => Object.values(s.stars).filter(v => v > 0).length >= 1 },
+  { id: 'cleared_5', name: 'Getting Started', emoji: '🎞️', desc: 'Clear 5 levels', check: s => Object.values(s.stars).filter(v => v > 0).length >= 5 },
+  { id: 'cleared_15', name: 'Set Veteran', emoji: '🎥', desc: 'Clear 15 levels', check: s => Object.values(s.stars).filter(v => v > 0).length >= 15 },
+  { id: 'cleared_all', name: 'Studio Master', emoji: '🏆', desc: 'Clear every level', check: (s, lc) => Object.values(s.stars).filter(v => v > 0).length >= lc },
+  // Skill
+  { id: 'first_3star', name: 'Sharpshooter', emoji: '🎯', desc: 'Earn 3 stars on a level', check: s => Object.values(s.stars).some(v => v >= 3) },
+  { id: 'stars_50', name: 'Star Collector', emoji: '⭐', desc: 'Earn 50 total stars', check: s => Object.values(s.stars).reduce((a, b) => a + b, 0) >= 50 },
+  { id: 'perfect_1', name: 'One and Done', emoji: '🌟', desc: 'Clear a level in a single shot', check: s => (s.perfectClears || 0) >= 1 },
+  { id: 'perfect_5', name: 'Perfectionist', emoji: '💎', desc: 'Get 5 perfect (one-shot) clears', check: s => (s.perfectClears || 0) >= 5 },
+  { id: 'combo_4', name: 'Demolition Expert', emoji: '💥', desc: 'Knock out 4 targets in one shot', check: s => (s.bestCombo || 0) >= 4 },
+  // Dedication
+  { id: 'streak_3', name: 'Regular', emoji: '🔥', desc: 'Reach a 3-day streak', check: s => (s.bestStreak || 0) >= 3 },
+  { id: 'streak_7', name: 'Devoted', emoji: '🗓️', desc: 'Reach a 7-day streak', check: s => (s.bestStreak || 0) >= 7 },
+  { id: 'bonus_20', name: 'Bonus Hunter', emoji: '🎁', desc: 'Catch 20 prizes in one bonus round', check: s => (s.bonusBest || 0) >= 20 },
+  { id: 'boss_1', name: "Director's Cut", emoji: '🎦', desc: 'Clear a Director\u2019s Cut boss level', check: s => (s.bossClears || 0) >= 1 },
+];
+
 export default function SetCrashers() {
   const [save, setSave] = useState<SaveData>(DEFAULT_SAVE);
   const [ready, setReady] = useState(false);
@@ -243,6 +273,12 @@ export default function SetCrashers() {
   const [selProj, setSelProj] = useState<string>(FREE_PROJECTILE);
   const [result, setResult] = useState<{ won: boolean; stars: number } | null>(null);
   const [rewardInfo, setRewardInfo] = useState<{ emoji: string; label: string; jackpot?: boolean } | null>(null);
+  const [comboFx, setComboFx] = useState<{ label: string; n: number; x: number; y: number; t: number } | null>(null);
+  const [perfectFx, setPerfectFx] = useState(false);
+  const [badgeFx, setBadgeFx] = useState<BadgeDef | null>(null);
+  const [showBadges, setShowBadges] = useState(false);
+  const [bossCard, setBossCard] = useState<{ title: string; subtitle: string } | null>(null);
+  const [dailyFx, setDailyFx] = useState<{ streak: number; label: string; emoji: string } | null>(null);
   const [bonusResult, setBonusResult] = useState<{ caught: Record<string, number>; total: number } | null>(null);
   const [bonusTime, setBonusTime] = useState(15);
   const [notice, setNotice] = useState('');
@@ -258,6 +294,7 @@ export default function SetCrashers() {
     aiming: boolean; aimX: number; aimY: number; particles: Particle[]; shake: number;
     ammo: number; armed: boolean; loadGuard: number; ended: boolean; powerUsed: boolean;
     settleT: number; flightT: number; last: number; launchDir: number; projKind: string; detonate: boolean;
+    comboCount?: number; comboLast?: number; shotTargets?: number; maxComboThisLevel?: number;
     drops: Drop[]; dropTimer: number; bonusT: number; bonusCaught: Record<string, number>; bonusEnded: boolean;
   }>({ engine: null, raf: 0, mode: 'level', bodies: [], targets: [], projectile: null, flying: false, extra: [], aiming: false, aimX: 0, aimY: 0, particles: [], shake: 0, ammo: 0, armed: false, loadGuard: 0, ended: false, powerUsed: false, settleT: 0, flightT: 0, last: 0, launchDir: 1, projKind: 'clapper', detonate: false, drops: [], dropTimer: 6, bonusT: 15, bonusCaught: {}, bonusEnded: false });
 
@@ -336,8 +373,69 @@ export default function SetCrashers() {
   const addHints = (n: number) => setSave(prev => { const x = { ...prev, hints: prev.hints + n }; persist(x); return x; });
   const addSkips = (n: number) => setSave(prev => { const x = { ...prev, skips: prev.skips + n }; persist(x); return x; });
 
+  // Evaluate badges against a save draft; mutates n.badges, returns newly-earned defs (for popup).
+  const evalBadges = (n: SaveData): BadgeDef[] => {
+    const have = new Set(n.badges || []);
+    const earned: BadgeDef[] = [];
+    for (const b of BADGES) {
+      if (!have.has(b.id) && b.check(n, LEVELS.length)) { have.add(b.id); earned.push(b); }
+    }
+    n.badges = Array.from(have);
+    return earned;
+  };
+  // Show earned badges one at a time as celebratory popups.
+  const announceBadges = (earned: BadgeDef[]) => {
+    earned.forEach((b, i) => setTimeout(() => { setBadgeFx(b); SFX.prize(); toast(`🏅 Badge earned: ${b.name}!`); setTimeout(() => setBadgeFx(null), 2600); }, 1400 + i * 2800));
+  };
+
   const spawnParticles = (x: number, y: number, n: number, color: string, spread = 280) => {
     for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, sp = Math.random() * spread + 40; g.current.particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60, life: 0.5 + Math.random() * 0.5, max: 1, color, size: 2 + Math.random() * 4 }); }
+  };
+
+  // ── Sound engine: synthesized via Web Audio (no asset files) ───────────────
+  const audioRef = useRef<AudioContext | null>(null);
+  const mutedRef = useRef(false);
+  const [muted, setMuted] = useState(false);
+  const ac = () => {
+    if (typeof window === 'undefined') return null;
+    if (!audioRef.current) { try { audioRef.current = new (window.AudioContext || (window as any).webkitAudioContext)(); } catch { return null; } }
+    if (audioRef.current.state === 'suspended') audioRef.current.resume().catch(() => {});
+    return audioRef.current;
+  };
+  // play a tone with an ADSR-ish envelope
+  const tone = (freq: number, dur: number, type: OscillatorType = 'sine', vol = 0.18, slideTo?: number) => {
+    if (mutedRef.current) return; const ctx = ac(); if (!ctx) return;
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = type; osc.frequency.setValueAtTime(freq, t);
+    if (slideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(1, slideTo), t + dur);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(vol, t + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t); osc.stop(t + dur + 0.02);
+  };
+  // short noise burst (for crashes/impacts)
+  const noise = (dur: number, vol = 0.2) => {
+    if (mutedRef.current) return; const ctx = ac(); if (!ctx) return;
+    const t = ctx.currentTime; const n = Math.floor(ctx.sampleRate * dur);
+    const buf = ctx.createBuffer(1, n, ctx.sampleRate); const data = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const gain = ctx.createGain(); gain.gain.setValueAtTime(vol, t); gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 1200;
+    src.connect(filter); filter.connect(gain); gain.connect(ctx.destination); src.start(t);
+  };
+  const SFX = {
+    launch: () => tone(380, 0.16, 'triangle', 0.16, 140),
+    impact: () => { noise(0.12, 0.18); tone(120, 0.1, 'square', 0.1, 60); },
+    smash: () => { noise(0.18, 0.24); tone(180, 0.14, 'sawtooth', 0.12, 70); },
+    explode: () => { noise(0.35, 0.3); tone(90, 0.3, 'sawtooth', 0.16, 40); },
+    prize: () => { tone(660, 0.09, 'sine', 0.16); setTimeout(() => tone(990, 0.12, 'sine', 0.16), 80); },
+    win: () => { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => tone(f, 0.18, 'sine', 0.16), i * 90)); },
+    combo: (n: number) => { const base = 440 + n * 110; tone(base, 0.1, 'square', 0.15); setTimeout(() => tone(base * 1.5, 0.12, 'square', 0.15), 70); },
+    perfect: () => { [784, 988, 1319, 1568].forEach((f, i) => setTimeout(() => tone(f, 0.2, 'triangle', 0.18), i * 80)); },
+    jackpot: () => { [523, 659, 784, 1047, 1319, 1047, 1319, 1568].forEach((f, i) => setTimeout(() => tone(f, 0.16, 'square', 0.17), i * 70)); },
   };
 
   /* ---- Build a level (or bonus arena) ---- */
@@ -375,7 +473,8 @@ export default function SetCrashers() {
     G.bodies = bodies; G.targets = targets; G.extra = []; G.projectile = null; G.flying = false;
     G.aiming = false; G.particles = []; G.shake = 0; G.armed = false; G.loadGuard = 0.5;
     G.ended = false; G.powerUsed = false; G.settleT = 0; G.flightT = 0; G.bonusEnded = false; G.drops = []; G.dropTimer = m === 'bonus' ? 0.3 : 6;
-    setResult(null); setBonusResult(null);
+    setResult(null); setBonusResult(null); setPerfectFx(false); setDailyFx(null); setComboFx(null);
+    g.current.comboCount = 0; g.current.comboLast = 0; g.current.maxComboThisLevel = 0;
 
     Matter.Events.on(engine, 'collisionStart', (ev: Mat) => {
       if (m === 'bonus') return;
@@ -388,6 +487,8 @@ export default function SetCrashers() {
         if (G.flying && !G.powerUsed && (G.projKind === 'coffee' || G.projKind === 'bomb') && G.projectile && (a === G.projectile || b === G.projectile)) {
           G.detonate = true;
         }
+        // impact thud when the live projectile strikes something hard
+        if (G.flying && impact > 4 && G.projectile && (a === G.projectile || b === G.projectile)) SFX.impact();
         for (const [t, other] of [[a, b], [b, a]] as [Mat, Mat][]) {
           if (t.label === 'target' && t.crasherAlive) {
             const force = (other.label === 'proj' || other.crasherKind || other.label === 'ground') ? impact : 0;
@@ -403,6 +504,23 @@ export default function SetCrashers() {
     if (!t.crasherAlive) return; t.crasherAlive = false;
     spawnParticles(t.position.x, t.position.y, 24, '#fca5a5', 340); G.shake = Math.min(G.shake + 14, 30);
     Matter.Composite.remove(G.engine.world, t); G.targets = G.targets.filter(x => x !== t); setTargetsLeft(G.targets.length);
+    SFX.smash();
+    // ── Combo: count targets destroyed within a short window (same shot/chain) ──
+    if (G.mode === 'level') {
+      const now = G.last;
+      if (now - (G.comboLast || 0) < 0.8) G.comboCount = (G.comboCount || 0) + 1;
+      else G.comboCount = 1;
+      G.comboLast = now;
+      G.maxComboThisLevel = Math.max(G.maxComboThisLevel || 0, G.comboCount);
+      if (G.comboCount >= 2) {
+        const labels = ['', '', 'DOUBLE!', 'TRIPLE!', 'QUAD!', 'MEGA!', 'DEMOLITION!'];
+        const label = labels[Math.min(G.comboCount, 6)] || 'DEMOLITION!';
+        G.shake = Math.min(G.shake + 6 + G.comboCount * 2, 40);
+        spawnParticles(t.position.x, t.position.y, 18 + G.comboCount * 4, '#fbbf24', 400);
+        SFX.combo(G.comboCount);
+        setComboFx({ label, n: G.comboCount, x: t.position.x, y: t.position.y, t: Date.now() });
+      }
+    }
     // win the instant the last target is gone — from ANY cause (smashed, fell off, knocked down)
     if (G.mode === 'level' && G.targets.length === 0 && !G.ended) setTimeout(() => settleCheck(), 200);
   };
@@ -410,6 +528,7 @@ export default function SetCrashers() {
   const startLevel = (idx: number) => {
     setLevelIdx(idx); lvlRef.current = idx; setMode('level'); setScreen('play'); setHintActive(false);
     const def = projUnlocked(selRef.current) ? selRef.current : FREE_PROJECTILE; setSelProj(def);
+    if (isBossLevel(idx)) { const bi = bossInfo(idx); setBossCard(bi); setTimeout(() => SFX.win(), 100); setTimeout(() => setBossCard(null), 2400); }
     setTimeout(() => buildArena(idx, 'level'), 30);
   };
   const startBonus = () => {
@@ -433,7 +552,7 @@ export default function SetCrashers() {
 
   const catchDrop = (d: Drop) => {
     const G = g.current;
-    spawnParticles(d.x, d.y, 26, '#fbbf24', 320); G.shake = Math.min(G.shake + 8, 24);
+    spawnParticles(d.x, d.y, 26, '#fbbf24', 320); G.shake = Math.min(G.shake + 8, 24); SFX.prize();
     if (G.mode === 'bonus') {
       const key = d.kind === 'proj' ? `proj:${d.projKey}` : d.kind;
       G.bonusCaught[key] = (G.bonusCaught[key] || 0) + 1;
@@ -450,7 +569,7 @@ export default function SetCrashers() {
   /* ---- Special powers ---- */
   const explodeAt = (x: number, y: number, radius: number, force: number) => {
     const Matter = MatterRef.current; const G = g.current;
-    spawnParticles(x, y, 44, '#fb923c', 480); G.shake = 28;
+    spawnParticles(x, y, 44, '#fb923c', 480); G.shake = 28; SFX.explode();
     for (const b of [...G.bodies, ...G.targets]) {
       if (b.isStatic) continue;
       const dx = b.position.x - x, dy = b.position.y - y, d = Math.hypot(dx, dy) || 1;
@@ -493,13 +612,42 @@ export default function SetCrashers() {
   const finish = useCallback((won: boolean) => {
     const G = g.current; if (G.ended) return; G.ended = true;
     const lvl = LEVELS[lvlRef.current]; let stars = 0;
-    if (won) { const used = lvl.ammo - G.ammo; stars = used <= lvl.par ? 3 : used <= lvl.par + 1 ? 2 : 1; }
+    const shotsUsed = lvl.ammo - G.ammo;
+    const isPerfect = won && shotsUsed <= 1; // cleared the whole level in a single shot
+    if (won) { stars = shotsUsed <= lvl.par ? 3 : shotsUsed <= lvl.par + 1 ? 2 : 1; }
+    if (won) setTimeout(() => { isPerfect ? SFX.perfect() : SFX.win(); }, 200);
     setTimeout(() => {
       setRewardInfo(null);
+      setPerfectFx(isPerfect);
       setResult({ won, stars });
       if (won) setSave(prev => {
         const ps = prev.stars[lvlRef.current] || 0;
         const n = { ...prev, stars: { ...prev.stars, [lvlRef.current]: Math.max(ps, stars) }, lastUnlocked: Math.max(prev.lastUnlocked, lvlRef.current + 1) };
+
+        // ── Daily streak: reward the first level cleared each calendar day ──
+        const today = new Date(); const todayStr = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
+        if (n.lastPlayDate !== todayStr) {
+          // determine if yesterday → continue streak, else reset to 1
+          const y = new Date(today); y.setDate(today.getDate() - 1);
+          const yStr = `${y.getFullYear()}-${y.getMonth()}-${y.getDate()}`;
+          n.dailyStreak = (n.lastPlayDate === yStr) ? (n.dailyStreak || 0) + 1 : 1;
+          n.lastPlayDate = todayStr;
+          n.bestStreak = Math.max(n.bestStreak || 0, n.dailyStreak);
+          const streak = n.dailyStreak;
+          // day 7+ (and every 7th) = jackpot; otherwise escalating prize by streak
+          if (streak % 7 === 0) {
+            const jpEach = 2;
+            const jc = { ...n.ammoCounts }; for (const k of PROJ_EMOJIS) jc[k] = (jc[k] || 0) + jpEach; n.ammoCounts = jc;
+            n.hints = (n.hints || 0) + 3; n.skips = (n.skips || 0) + 2;
+            setTimeout(() => { setDailyFx({ streak, emoji: '🗓️', label: `Day ${streak} JACKPOT! 2× every power-up, +3 hints, +2 skips` }); toast(`🗓️ Day ${streak} streak — JACKPOT!`); }, 1000);
+          } else {
+            const qty = Math.min(1 + Math.floor(streak / 2), 3); // grows 1→3 across the week
+            const dRoll = Math.random();
+            if (dRoll < 0.5) { const key = PROJ_EMOJIS[Math.floor(Math.random() * PROJ_EMOJIS.length)]; n.ammoCounts = { ...n.ammoCounts, [key]: (n.ammoCounts[key] || 0) + qty }; setTimeout(() => { setDailyFx({ streak, emoji: PROJECTILES[key].emoji, label: `Day ${streak}: +${qty} ${PROJECTILES[key].name}` }); toast(`🗓️ Day ${streak} reward: +${qty} ${PROJECTILES[key].name}!`); }, 1000); }
+            else if (dRoll < 0.8) { n.hints = (n.hints || 0) + qty + 1; setTimeout(() => { setDailyFx({ streak, emoji: '💡', label: `Day ${streak}: +${qty + 1} Hints` }); toast(`🗓️ Day ${streak} reward: +${qty + 1} Hints!`); }, 1000); }
+            else { n.skips = (n.skips || 0) + qty; setTimeout(() => { setDailyFx({ streak, emoji: '⏭️', label: `Day ${streak}: +${qty} Skip${qty > 1 ? 's' : ''}` }); toast(`🗓️ Day ${streak} reward: +${qty} Skip${qty > 1 ? 's' : ''}!`); }, 1000); }
+          }
+        }
         // star-milestone power-up rewards: +1 use, granted once per milestone
         const total = Object.values(n.stars).reduce((a, b) => a + b, 0);
         const claimed = [...(n.claimedMilestones || [])];
@@ -534,7 +682,7 @@ export default function SetCrashers() {
             n.ammoCounts = jpCounts;
             n.hints = (n.hints || 0) + (tier + 2);
             n.skips = (n.skips || 0) + tier;
-            setTimeout(() => { setRewardInfo({ emoji: '💰', label: `JACKPOT! ${jpEach}× every power-up, +${tier + 2} hints, +${tier} skips`, jackpot: true }); toast(`💰 JACKPOT milestone reward!`); }, 600);
+            setTimeout(() => { setRewardInfo({ emoji: '💰', label: `JACKPOT! ${jpEach}× every power-up, +${tier + 2} hints, +${tier} skips`, jackpot: true }); toast(`💰 JACKPOT milestone reward!`); SFX.jackpot(); }, 600);
           } else {
             const roll = Math.random();
             if (roll < 0.6) {
@@ -551,6 +699,38 @@ export default function SetCrashers() {
           }
           n.claimedRewards = rewarded;
         }
+
+        // ── Perfect clear bonus: 1-shot win grants a bonus, once per level ──
+        if (isPerfect) {
+          n.perfectClears = (n.perfectClears || 0) + 1;
+          const pdone = [...(n.claimedRewards || [])].includes(-lvlRef.current - 1);
+          if (!pdone) {
+            n.hints = (n.hints || 0) + 1;
+            n.claimedRewards = [...(n.claimedRewards || []), -lvlRef.current - 1]; // negative key = perfect claimed
+          }
+        }
+
+        // capture best combo achieved this level (set on the game object during play)
+        n.bestCombo = Math.max(n.bestCombo || 0, G.maxComboThisLevel || 0);
+
+        // ── Director's Cut boss: guaranteed reward + counter, once per boss level ──
+        if (isBossLevel(lvlRef.current)) {
+          const bkey = -1000 - lvlRef.current; // unique negative key, won't collide with perfect keys
+          if (!(n.claimedRewards || []).includes(bkey)) {
+            n.bossClears = (n.bossClears || 0) + 1;
+            // generous guaranteed haul: 2 of a random power-up + 2 hints + 1 skip
+            const bk = PROJ_EMOJIS[Math.floor(Math.random() * PROJ_EMOJIS.length)];
+            n.ammoCounts = { ...n.ammoCounts, [bk]: (n.ammoCounts[bk] || 0) + 2 };
+            n.hints = (n.hints || 0) + 2; n.skips = (n.skips || 0) + 1;
+            n.claimedRewards = [...(n.claimedRewards || []), bkey];
+            setTimeout(() => { setRewardInfo({ emoji: '🎦', label: `Director's Cut cleared! +2 ${PROJECTILES[bk].name}, +2 hints, +1 skip`, jackpot: true }); toast(`🎦 Director's Cut complete!`); SFX.jackpot(); }, 900);
+          }
+        }
+
+        // ── Check for newly-earned badges and announce them ──
+        const newBadges = evalBadges(n);
+        if (newBadges.length) announceBadges(newBadges);
+
         persist(n); return n;
       });
     }, won ? 500 : 800);
@@ -560,7 +740,7 @@ export default function SetCrashers() {
     const G = g.current; if (G.bonusEnded) return; G.bonusEnded = true;
     const caught = { ...G.bonusCaught }; const total = Object.values(caught).reduce((a, b) => a + b, 0);
     setBonusResult({ caught, total });
-    setSave(prev => { const n = { ...prev, bonusBest: Math.max(prev.bonusBest, total) }; persist(n); return n; });
+    setSave(prev => { const n = { ...prev, bonusBest: Math.max(prev.bonusBest, total) }; const nb = evalBadges(n); if (nb.length) announceBadges(nb); persist(n); return n; });
   }, [persist]);
 
   /* ---- Main loop ---- */
@@ -805,6 +985,7 @@ export default function SetCrashers() {
     }
     if (hintRef.current) setHintActive(false);
     spawnParticles(G.aimX, G.aimY, 8, '#fcd34d', 120);
+    SFX.launch();
   };
 
   /* ---- Buttons ---- */
@@ -843,6 +1024,7 @@ export default function SetCrashers() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '13px', color: '#fbbf24', fontWeight: 700 }}>⭐ {totalStars}</span>
+            <button onClick={() => setShowBadges(true)} style={navBtn} title="Badges">🏅 {(save.badges || []).length}</button>
             {screen === 'play' ? <button onClick={() => setScreen('menu')} style={navBtn}>← {mode === 'bonus' ? 'Menu' : 'Levels'}</button> : <Link href="/games" style={navBtn as React.CSSProperties}>← Games</Link>}
           </div>
         </div>
@@ -892,6 +1074,12 @@ export default function SetCrashers() {
               <p style={{ margin: '0 0 8px', paddingLeft: '12px' }}>🎭 <strong>Stunt Doubles</strong> — tap mid-flight to burst into 5 pieces fanning out.</p>
               <p style={{ margin: '0 0 8px' }}><strong>Prize drops 🎁:</strong> parachuting prizes fall during play — hit one with your shot to grab it. They give +1 power-up use, a 💡 hint, or an ⏭️ skip. Miss it and it floats away.</p>
               <p style={{ margin: '0 0 8px' }}><strong>Milestone rewards 🎁:</strong> every 5 levels you clear, you automatically earn a random prize — power-up uses, hints, or skips — shown on the level-complete screen. The rewards <strong>grow bigger the deeper you go</strong> (levels 25+ give the biggest hauls), and there&apos;s a rare <strong>💰 JACKPOT</strong> that drops a windfall of every power-up plus hints and skips at once. Keep clearing new levels to keep them coming.</p>
+              <p style={{ margin: '0 0 8px' }}><strong>Combos 🔥:</strong> knock out multiple targets with a single shot (great on domino levels) for escalating <strong>DOUBLE → TRIPLE → DEMOLITION</strong> bonuses, with extra screen-shake and sound.</p>
+              <p style={{ margin: '0 0 8px' }}><strong>Perfect clear 🌟:</strong> wipe out every target in a single shot for a PERFECT — it earns a bonus hint the first time you do it on each level.</p>
+              <p style={{ margin: '0 0 8px' }}><strong>Daily streak 🔥:</strong> the first level you clear each day grants a guaranteed reward. Come back on consecutive days to grow your streak — rewards get bigger, and every 7th day is a JACKPOT. Miss a day and the streak resets.</p>
+              <p style={{ margin: '0 0 8px' }}><strong>Director&apos;s Cut 🎦:</strong> every 10th level is a special named boss set-piece, marked in gold. Clear one for a guaranteed bonus haul (power-ups, hints, and a skip) and the Director&apos;s Cut badge.</p>
+              <p style={{ margin: '0 0 8px' }}><strong>Badges 🏅:</strong> earn collectible badges for milestones, skill, and dedication — first clear, 3-star shots, perfect clears, big combos, daily streaks, and more. Tap the 🏅 button at the top to see your collection and what&apos;s left to unlock.</p>
+              <p style={{ margin: '0 0 8px' }}><strong>Sound 🔊:</strong> toggle audio with the speaker icon at the top of the play screen.</p>
               <p style={{ margin: '0 0 8px' }}><strong>Bonus Round:</strong> 15 seconds of non-stop prize drops with unlimited ammo and free power-ups — shoot as many prizes as you can and keep everything you hit. Your best haul is saved.</p>
               <p style={{ margin: '0 0 8px' }}><strong>Stars &amp; help:</strong> finish at or under par for 3★, one over for 2★, otherwise 1★. 💡 <strong>Hint</strong> shows a suggested arc; ⏭️ <strong>Skip</strong> jumps past a tough level keeping 1★. Earn more hints/skips from prize drops or the Store. Star milestones also award free power-up uses.</p>
               <p style={{ margin: '0 0 8px' }}><strong>🎟️ Studio Lot Pack:</strong> a paid pack of <strong>12 extra levels</strong> beyond the free &ldquo;On Location&rdquo; set. They&apos;re tougher — taller fortresses, multi-target shelves, and bigger domino chains that escalate as you progress (later stages give you fewer shots, so chaining matters). It&apos;s a <strong>one-time unlock</strong> (not consumable): once you own it, all 12 levels are yours forever. Buy it on its own, or get it included in the Mega Pack.</p>
@@ -922,10 +1110,10 @@ export default function SetCrashers() {
                   {locked && <button onClick={() => buyItem('pack_studio')} style={{ fontSize: '12px', fontWeight: 800, color: '#1a1a2e', backgroundColor: '#F59E0B', border: 'none', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer' }}>Unlock $2.99</button>}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px', marginTop: '8px' }}>
-                  {levels.map(({ l, i }) => { const stars = save.stars[i] || 0; const playable = !locked && i <= save.lastUnlocked; return (
-                    <button key={i} disabled={!playable && !locked} onClick={() => locked ? buyItem('pack_studio') : playable ? startLevel(i) : null} style={{ ...card, padding: '10px 4px', textAlign: 'center', cursor: (playable || locked) ? 'pointer' : 'not-allowed', opacity: (playable || locked) ? 1 : 0.45 }}>
-                      <div style={{ fontSize: '13px', fontWeight: 800, color: '#1a1a2e' }}>{locked ? '🔒' : i - base + 1}</div>
-                      <div style={{ fontSize: '9px', color: '#9ca3af', height: '12px', overflow: 'hidden' }}>{l.name}</div>
+                  {levels.map(({ l, i }) => { const stars = save.stars[i] || 0; const playable = !locked && i <= save.lastUnlocked; const boss = isBossLevel(i); return (
+                    <button key={i} disabled={!playable && !locked} onClick={() => locked ? buyItem('pack_studio') : playable ? startLevel(i) : null} style={{ ...card, padding: '10px 4px', textAlign: 'center', cursor: (playable || locked) ? 'pointer' : 'not-allowed', opacity: (playable || locked) ? 1 : 0.45, ...(boss && !locked ? { background: 'linear-gradient(135deg,#fef3c7,#fde68a)', border: '2px solid #f59e0b' } : {}) }}>
+                      <div style={{ fontSize: '13px', fontWeight: 800, color: '#1a1a2e' }}>{locked ? '🔒' : boss ? '🎦' : i - base + 1}</div>
+                      <div style={{ fontSize: '9px', color: boss ? '#92400e' : '#9ca3af', height: '12px', overflow: 'hidden', fontWeight: boss ? 800 : 400 }}>{boss ? "Director's Cut" : l.name}</div>
                       <div style={{ fontSize: '11px', marginTop: '2px', letterSpacing: '1px' }}>{[0, 1, 2].map(n => <span key={n} style={{ color: n < stars ? '#fbbf24' : '#d1d5db' }}>★</span>)}</div>
                     </button>); })}
                 </div>
@@ -957,19 +1145,42 @@ export default function SetCrashers() {
       {screen === 'play' && (
         <div style={{ maxWidth: '900px', margin: '0 auto', padding: '12px 12px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', color: 'white' }}>
-            <div style={{ fontSize: '14px', fontWeight: 800 }}>{mode === 'bonus' ? '🎁 Bonus Round' : LEVELS[levelIdx].name}</div>
+            <div style={{ fontSize: '14px', fontWeight: 800, color: (mode !== 'bonus' && isBossLevel(levelIdx)) ? '#fbbf24' : 'white' }}>{mode === 'bonus' ? '🎁 Bonus Round' : (isBossLevel(levelIdx) ? `🎦 ${bossInfo(levelIdx).title}` : LEVELS[levelIdx].name)}</div>
             <div style={{ display: 'flex', gap: '14px', alignItems: 'center', fontSize: '13px' }}>
               {mode === 'bonus'
                 ? <span style={{ color: bonusTime <= 5 ? '#ef4444' : '#fbbf24', fontWeight: 800 }}>⏱️ {bonusTime}s</span>
                 : <><span>🎯 {targetsLeft}</span><span>🎬 {ammoLeft}</span><span style={{ color: '#9ca3af' }}>par {LEVELS[levelIdx].par}</span></>}
+              <button onClick={() => { const m = !muted; setMuted(m); mutedRef.current = m; }} title={muted ? 'Unmute' : 'Mute'} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', padding: 0, lineHeight: 1, opacity: 0.85 }}>{muted ? '🔇' : '🔊'}</button>
             </div>
           </div>
           <div style={{ position: 'relative', borderRadius: '14px', overflow: 'hidden', border: '2px solid #2d2d52', touchAction: 'none' }}>
             <canvas ref={canvasRef} width={WORLD_W} height={WORLD_H} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} style={{ width: '100%', display: 'block', cursor: 'grab', background: '#1a1a2e' }} />
+            {bossCard && (
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 5, background: 'rgba(15,15,26,0.55)' }}>
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#fbbf24', letterSpacing: '0.25em', textTransform: 'uppercase' }}>🎦 Director&apos;s Cut</div>
+                <div style={{ fontSize: '38px', fontWeight: 900, color: 'white', textShadow: '0 3px 16px rgba(0,0,0,0.8)', marginTop: '6px', textAlign: 'center', padding: '0 20px' }}>{bossCard.title}</div>
+                <div style={{ fontSize: '15px', fontWeight: 700, color: '#fcd34d', marginTop: '4px', fontStyle: 'italic' }}>{bossCard.subtitle}</div>
+              </div>
+            )}
+            {comboFx && Date.now() - comboFx.t < 900 && (
+              <div style={{ position: 'absolute', left: `${(comboFx.x / WORLD_W) * 100}%`, top: `${(comboFx.y / WORLD_H) * 100}%`, transform: 'translate(-50%,-50%)', pointerEvents: 'none', fontSize: `${20 + comboFx.n * 6}px`, fontWeight: 900, color: '#fbbf24', textShadow: '0 2px 8px rgba(0,0,0,0.8), 0 0 20px rgba(251,191,36,0.6)', WebkitTextStroke: '1px #92400e', whiteSpace: 'nowrap' }}>
+                {comboFx.label}
+              </div>
+            )}
             {result && (
               <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(15,15,26,0.82)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                <div style={{ fontSize: '26px', fontWeight: 900 }}>{result.won ? 'Nailed it!' : 'Cut! Try again'}</div>
+                <div style={{ fontSize: '26px', fontWeight: 900 }}>{result.won ? (perfectFx ? '🌟 PERFECT!' : 'Nailed it!') : 'Cut! Try again'}</div>
+                {result.won && perfectFx && <div style={{ fontSize: '13px', color: '#fcd34d', fontWeight: 700, marginTop: '2px' }}>One-shot clear — bonus hint earned!</div>}
                 {result.won && <div style={{ fontSize: '44px', marginTop: '8px', letterSpacing: '6px' }}>{[0, 1, 2].map(n => <span key={n} style={{ color: n < result.stars ? '#fbbf24' : 'rgba(255,255,255,0.25)' }}>★</span>)}</div>}
+                {result.won && dailyFx && (
+                  <div style={{ marginTop: '12px', padding: '10px 18px', background: 'linear-gradient(135deg,#0ea5e9,#22d3ee)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 6px 24px rgba(14,165,233,0.5)', maxWidth: '300px' }}>
+                    <span style={{ fontSize: '28px' }}>{dailyFx.emoji}</span>
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontSize: '10px', fontWeight: 800, color: '#082f49', textTransform: 'uppercase', letterSpacing: '0.08em' }}>🔥 {dailyFx.streak}-Day Streak</div>
+                      <div style={{ fontSize: '14px', fontWeight: 900, color: '#082f49', lineHeight: 1.2 }}>{dailyFx.label}</div>
+                    </div>
+                  </div>
+                )}
                 {result.won && rewardInfo && (
                   <div style={{ marginTop: '16px', padding: rewardInfo.jackpot ? '16px 24px' : '12px 20px', background: rewardInfo.jackpot ? 'linear-gradient(135deg,#f59e0b,#fbbf24,#f59e0b)' : 'linear-gradient(135deg,#7c3aed,#a855f7)', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: rewardInfo.jackpot ? '0 8px 32px rgba(245,158,11,0.7)' : '0 6px 24px rgba(124,58,237,0.55)', border: rewardInfo.jackpot ? '2px solid #fff' : '1px solid rgba(255,255,255,0.25)', maxWidth: '300px' }}>
                     <span style={{ fontSize: rewardInfo.jackpot ? '40px' : '32px' }}>{rewardInfo.emoji}</span>
@@ -1021,6 +1232,37 @@ export default function SetCrashers() {
       )}
 
       {notice && <div style={{ position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#374151', color: 'white', padding: '12px 20px', borderRadius: '12px', fontSize: '13px', fontWeight: 700, zIndex: 90, boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>{notice}</div>}
+
+      {badgeFx && (
+        <div style={{ position: 'fixed', top: '70px', left: '50%', transform: 'translateX(-50%)', zIndex: 120, background: 'linear-gradient(135deg,#7c3aed,#a855f7)', color: 'white', padding: '14px 22px', borderRadius: '16px', boxShadow: '0 10px 40px rgba(124,58,237,0.6)', border: '2px solid #fff', display: 'flex', alignItems: 'center', gap: '14px', maxWidth: '90vw' }}>
+          <span style={{ fontSize: '40px' }}>{badgeFx.emoji}</span>
+          <div>
+            <div style={{ fontSize: '10px', fontWeight: 800, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.1em' }}>🏅 Badge Earned</div>
+            <div style={{ fontSize: '17px', fontWeight: 900, lineHeight: 1.1 }}>{badgeFx.name}</div>
+            <div style={{ fontSize: '12px', opacity: 0.9 }}>{badgeFx.desc}</div>
+          </div>
+        </div>
+      )}
+
+      {showBadges && (
+        <div onClick={() => setShowBadges(false)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 110, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#1a1a2e', border: '2px solid #2d2d52', borderRadius: '18px', padding: '20px', maxWidth: '460px', width: '100%', maxHeight: '85vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div style={{ color: 'white', fontSize: '18px', fontWeight: 900 }}>🏅 Badges <span style={{ color: '#9ca3af', fontSize: '13px', fontWeight: 700 }}>({(save.badges || []).length}/{BADGES.length})</span></div>
+              <button onClick={() => setShowBadges(false)} style={{ background: 'none', border: 'none', color: '#9ca3af', fontSize: '24px', cursor: 'pointer', lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(130px,1fr))', gap: '10px' }}>
+              {BADGES.map(b => { const got = (save.badges || []).includes(b.id); return (
+                <div key={b.id} style={{ padding: '12px', borderRadius: '12px', textAlign: 'center', backgroundColor: got ? 'rgba(124,58,237,0.18)' : 'rgba(255,255,255,0.03)', border: `1px solid ${got ? '#a855f7' : '#2d2d52'}`, opacity: got ? 1 : 0.55 }}>
+                  <div style={{ fontSize: '32px', filter: got ? 'none' : 'grayscale(1)' }}>{got ? b.emoji : '🔒'}</div>
+                  <div style={{ color: 'white', fontSize: '12px', fontWeight: 800, marginTop: '4px' }}>{b.name}</div>
+                  <div style={{ color: '#9ca3af', fontSize: '10px', marginTop: '2px', lineHeight: 1.3 }}>{b.desc}</div>
+                </div>
+              ); })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
