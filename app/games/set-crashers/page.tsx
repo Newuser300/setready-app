@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Copyright from '@/components/Copyright';
+import { Leaderboard } from './Leaderboard';
 
 /* ============================================================================
    SET CRASHERS — slingshot physics game (Angry Birds genre), film-set themed.
@@ -17,7 +18,16 @@ const WORLD_W = 1280, WORLD_H = 720;
 const GROUND_Y = 660;
 const SLING = { x: 200, y: 470 };
 const MAX_PULL = 150;          // max drag distance (px in world space)
-const LAUNCH_SCALE = 0.12;     // pull -> velocity (calibrated: full pull reaches far targets with impact to smash)
+const LAUNCH_SCALE = 0.15;     // pull -> velocity (+25% power; VMAX cap scales from this, so shots stay on-world)
+
+// ── "BOX OFFICE" SCORING — your score is your film's gross ──
+const SC = { KNOCKDOWN: 1000, UNDER_BUDGET: 5000, ONE_TAKE: 15000, CHAIN: 500, MULTI_CAP: 4 };
+// One shot that downs N crashers scores N * 1000 * min(N,4), + chain bonus for consecutive scoring shots.
+function shotPoints(down: number, streak: number) {
+  if (down <= 0) return 0;
+  const mult = Math.min(down, SC.MULTI_CAP);
+  return down * SC.KNOCKDOWN * mult + (streak > 0 ? SC.CHAIN * streak : 0);
+}
 
 type ProjDef = { emoji: string; name: string; r: number; density: number; power: string; desc: string; color: string; free?: boolean };
 const PROJECTILES: Record<string, ProjDef> = {
@@ -230,12 +240,12 @@ const LEVELS: Level[] = [
   }),
 ];
 
-type SaveData = { stars: Record<number, number>; owned: string[]; ammoCounts: Record<string, number>; claimedMilestones: string[]; claimedRewards: number[]; claimedPurchases: string[]; hints: number; skips: number; lastUnlocked: number; bonusBest: number; lastPlayDate: string; dailyStreak: number; badges: string[]; perfectClears: number; bestCombo: number; bestStreak: number; bossClears: number; lastBonusAt: number };
-const DEFAULT_SAVE: SaveData = { stars: {}, owned: [], ammoCounts: {}, claimedMilestones: [], claimedRewards: [], claimedPurchases: [], hints: 1, skips: 0, lastUnlocked: 0, bonusBest: 0, lastPlayDate: '', dailyStreak: 0, badges: [], perfectClears: 0, bestCombo: 0, bestStreak: 0, bossClears: 0, lastBonusAt: 0 };
+type SaveData = { stars: Record<number, number>; owned: string[]; ammoCounts: Record<string, number>; claimedMilestones: string[]; claimedRewards: number[]; claimedPurchases: string[]; hints: number; skips: number; lastUnlocked: number; bonusBest: number; lastPlayDate: string; dailyStreak: number; badges: string[]; perfectClears: number; bestCombo: number; bestStreak: number; bossClears: number; lastBonusAt: number; welcomeGift: boolean; levelScores: Record<number, number>; careerBest: number; handle: string };
+const DEFAULT_SAVE: SaveData = { stars: {}, owned: [], ammoCounts: {}, claimedMilestones: [], claimedRewards: [], claimedPurchases: [], hints: 1, skips: 0, lastUnlocked: 0, bonusBest: 0, lastPlayDate: '', dailyStreak: 0, badges: [], perfectClears: 0, bestCombo: 0, bestStreak: 0, bossClears: 0, lastBonusAt: 0, welcomeGift: false, levelScores: {}, careerBest: 0, handle: '' };
 const BONUS_COOLDOWN_MS = 3 * 60 * 1000; // bonus round playable once every 3 minutes
 const RESUME_KEY = 'sr-set-crashers-resume'; // remembers the exact level last played
 function loadSave(): SaveData {
-  try { const raw = localStorage.getItem(SAVE_KEY); if (raw) { const s = { ...DEFAULT_SAVE, ...JSON.parse(raw) }; if (!s.ammoCounts) s.ammoCounts = {}; if (!s.claimedMilestones) s.claimedMilestones = []; if (!s.claimedRewards) s.claimedRewards = []; if (!s.claimedPurchases) s.claimedPurchases = []; if (typeof s.lastPlayDate !== 'string') s.lastPlayDate = ''; if (typeof s.dailyStreak !== 'number') s.dailyStreak = 0; if (!Array.isArray(s.badges)) s.badges = []; if (typeof s.perfectClears !== 'number') s.perfectClears = 0; if (typeof s.bestCombo !== 'number') s.bestCombo = 0; if (typeof s.bestStreak !== 'number') s.bestStreak = 0; if (typeof s.bossClears !== 'number') s.bossClears = 0; if (typeof s.lastBonusAt !== 'number') s.lastBonusAt = 0; return s; } } catch {}
+  try { const raw = localStorage.getItem(SAVE_KEY); if (raw) { const s = { ...DEFAULT_SAVE, ...JSON.parse(raw) }; if (!s.ammoCounts) s.ammoCounts = {}; if (!s.claimedMilestones) s.claimedMilestones = []; if (!s.claimedRewards) s.claimedRewards = []; if (!s.claimedPurchases) s.claimedPurchases = []; if (typeof s.lastPlayDate !== 'string') s.lastPlayDate = ''; if (typeof s.dailyStreak !== 'number') s.dailyStreak = 0; if (!Array.isArray(s.badges)) s.badges = []; if (typeof s.perfectClears !== 'number') s.perfectClears = 0; if (typeof s.bestCombo !== 'number') s.bestCombo = 0; if (typeof s.bestStreak !== 'number') s.bestStreak = 0; if (typeof s.bossClears !== 'number') s.bossClears = 0; if (typeof s.lastBonusAt !== 'number') s.lastBonusAt = 0; if (typeof s.welcomeGift !== 'boolean') s.welcomeGift = false; if (!s.levelScores) s.levelScores = {}; if (typeof s.careerBest !== 'number') s.careerBest = 0; if (typeof s.handle !== 'string') s.handle = ''; return s; } } catch {}
   return { ...DEFAULT_SAVE };
 }
 const PURCHASE_USES = 3; // a paid power-up purchase grants this many uses
@@ -298,6 +308,8 @@ export default function SetCrashers() {
   const [perfectFx, setPerfectFx] = useState(false);
   const [badgeFx, setBadgeFx] = useState<BadgeDef | null>(null);
   const [showBadges, setShowBadges] = useState(false);
+  const [showBoard, setShowBoard] = useState(false);
+  const [scoreFx, setScoreFx] = useState<{ level: number; career: number } | null>(null);
   const [bossCard, setBossCard] = useState<{ title: string; subtitle: string } | null>(null);
   const [dailyFx, setDailyFx] = useState<{ streak: number; label: string; emoji: string } | null>(null);
   const [bonusResult, setBonusResult] = useState<{ caught: Record<string, number>; total: number } | null>(null);
@@ -316,7 +328,7 @@ export default function SetCrashers() {
     aiming: boolean; aimX: number; aimY: number; particles: Particle[]; shake: number;
     ammo: number; armed: boolean; loadGuard: number; ended: boolean; powerUsed: boolean;
     settleT: number; flightT: number; last: number; launchDir: number; projKind: string; detonate: boolean;
-    comboCount?: number; comboLast?: number; shotTargets?: number; maxComboThisLevel?: number; settleLossT?: number; skyStrikeActive?: boolean;
+    comboCount?: number; comboLast?: number; shotTargets?: number; maxComboThisLevel?: number; settleLossT?: number; skyStrikeActive?: boolean; levelScore?: number; shotDowns?: number; scoreStreak?: number; _lastTally?: number;
     drops: Drop[]; dropTimer: number; bonusT: number; bonusCaught: Record<string, number>; bonusEnded: boolean;
   }>({ engine: null, raf: 0, mode: 'level', bodies: [], targets: [], projectile: null, flying: false, extra: [], aiming: false, aimX: 0, aimY: 0, particles: [], shake: 0, ammo: 0, armed: false, loadGuard: 0, ended: false, powerUsed: false, settleT: 0, flightT: 0, last: 0, launchDir: 1, projKind: 'clapper', detonate: false, drops: [], dropTimer: 6, bonusT: 15, bonusCaught: {}, bonusEnded: false });
 
@@ -336,6 +348,15 @@ export default function SetCrashers() {
   }, [screen]);
 
   const persist = useCallback((s: SaveData) => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch {} }, []);
+  const getToken = useCallback(async () => {
+    try { const m = await import('@/utils/supabase/client'); const supa = m.createClient(); const { data } = await supa.auth.getSession(); return data.session?.access_token || null; } catch { return null; }
+  }, []);
+  const submitScore = useCallback(async (careerScore: number, totalStars: number, levelsCleared: number, bestCombo: number, handle: string) => {
+    try {
+      const token = await getToken(); if (!token) return; // only ranked when signed in
+      await fetch('/api/games/set-crashers/score', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ careerScore, totalStars, levelsCleared, bestCombo, handle }) });
+    } catch {}
+  }, [getToken]);
   const toast = (m: string) => { setNotice(m); setTimeout(() => setNotice(''), 2400); };
 
   useEffect(() => {
@@ -345,7 +366,17 @@ export default function SetCrashers() {
   }, []);
 
   useEffect(() => {
-    const s = loadSave(); setSave(s); setReady(true);
+    const s = loadSave(); setReady(true);
+    // ── One-time welcome gift: 3 uses of every power-up (and every buff) for new players ──
+    if (!s.welcomeGift) {
+      const counts = { ...(s.ammoCounts || {}) };
+      const giftKeys = ['coffee','boom','reel','boomerang','bomb','stunt','bombstunt','skystrike','buff_strength','buff_size','buff_aimer'];
+      for (const k of giftKeys) counts[k] = (counts[k] || 0) + 3;
+      s.ammoCounts = counts; s.welcomeGift = true;
+      persist(s);
+      setTimeout(() => toast('🎁 Welcome gift: 3 free uses of every power-up!'), 600);
+    }
+    setSave(s);
     (async () => {
       try {
         const res = await fetch('/api/game-purchases?game=set-crashers'); const data = await res.json();
@@ -505,6 +536,7 @@ export default function SetCrashers() {
     G.ended = false; G.powerUsed = false; G.settleT = 0; G.flightT = 0; G.bonusEnded = false; G.drops = []; G.dropTimer = m === 'bonus' ? 0.3 : 6; G.settleLossT = 0;
     setResult(null); setBonusResult(null); setPerfectFx(false); setDailyFx(null); setComboFx(null);
     g.current.comboCount = 0; g.current.comboLast = 0; g.current.maxComboThisLevel = 0;
+    g.current.levelScore = 0; g.current.shotDowns = 0; g.current.scoreStreak = 0;
 
     Matter.Events.on(engine, 'collisionStart', (ev: Mat) => {
       if (m === 'bonus') return;
@@ -559,6 +591,7 @@ export default function SetCrashers() {
     spawnParticles(t.position.x, t.position.y, 24, '#fca5a5', 340); G.shake = Math.min(G.shake + 14, 30);
     Matter.Composite.remove(G.engine.world, t); G.targets = G.targets.filter(x => x !== t); setTargetsLeft(G.targets.length);
     SFX.smash();
+    if (G.mode === 'level') (G as any).shotDowns = ((G as any).shotDowns || 0) + 1;
     // ── Combo: count targets destroyed within a short window (same shot/chain) ──
     if (G.mode === 'level') {
       const now = G.last;
@@ -709,6 +742,15 @@ export default function SetCrashers() {
 
   const settleCheck = useCallback(() => {
     const G = g.current; if (G.mode !== 'level' || G.ended) return;
+    // bank points for the shot that just resolved
+    if (!G.flying && ((G as any).shotDowns || 0) >= 0 && (G as any)._lastTally !== G.ammo) {
+      const down = (G as any).shotDowns || 0;
+      const pts = shotPoints(down, (G as any).scoreStreak || 0);
+      (G as any).levelScore = ((G as any).levelScore || 0) + pts;
+      (G as any).scoreStreak = down > 0 ? ((G as any).scoreStreak || 0) + 1 : 0;
+      (G as any).shotDowns = 0;
+      (G as any)._lastTally = G.ammo;
+    }
     if (G.targets.length === 0) { finish(true); return; }
     if (G.ammo <= 0 && !G.flying) {
       // Don't declare a loss while the world is still settling — a target may be
@@ -744,7 +786,16 @@ export default function SetCrashers() {
       setResult({ won, stars });
       if (won) setSave(prev => {
         const ps = prev.stars[lvlRef.current] || 0;
-        const n = { ...prev, stars: { ...prev.stars, [lvlRef.current]: Math.max(ps, stars) }, lastUnlocked: Math.max(prev.lastUnlocked, lvlRef.current + 1) };
+        // ── Box Office: finalize this level's score ──
+        let levelScore = (G as any).levelScore || 0;
+        const unused = G.ammo; // ammo left when cleared
+        levelScore += unused * SC.UNDER_BUDGET;
+        if (shotsUsed <= 1) levelScore += SC.ONE_TAKE; // one-take wonder
+        const prevBest = (prev.levelScores || {})[lvlRef.current] || 0;
+        const newLevelScores = { ...(prev.levelScores || {}), [lvlRef.current]: Math.max(prevBest, levelScore) };
+        const careerScore = Object.values(newLevelScores).reduce((a: number, b: number) => a + (b || 0), 0);
+        setTimeout(() => { setScoreFx({ level: Math.max(prevBest, levelScore), career: careerScore }); submitScore(careerScore, Object.values({ ...prev.stars, [lvlRef.current]: Math.max(ps, stars) }).reduce((a, b) => a + b, 0), Object.keys(newLevelScores).length, Math.max(prev.bestCombo || 0, (G as any).maxComboThisLevel || 0), prev.handle); }, 700);
+        const n = { ...prev, stars: { ...prev.stars, [lvlRef.current]: Math.max(ps, stars) }, lastUnlocked: Math.max(prev.lastUnlocked, lvlRef.current + 1), levelScores: newLevelScores, careerBest: Math.max(prev.careerBest || 0, careerScore) };
 
         // ── Daily streak: reward the first level cleared each calendar day ──
         const today = new Date(); const todayStr = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
@@ -1146,8 +1197,19 @@ export default function SetCrashers() {
   const retry = () => { setResult(null); setHintActive(false); buildArena(lvlRef.current, 'level'); };
   const nextLevel = () => {
     const ni = lvlRef.current + 1;
-    if (ni >= LEVELS.length) { setScreen('menu'); return; }
-    if (LEVELS[ni].pack === 'studio' && !studioUnlocked()) { setScreen('menu'); toast('Unlock the Studio Lot Pack to continue!'); return; }
+    // Finished every level → back to the games dashboard with a wrap message.
+    if (ni >= LEVELS.length) {
+      try { localStorage.setItem('sr-set-crashers-flash', "🎬 That's a wrap — you cleared every level!"); } catch {}
+      window.location.href = '/games';
+      return;
+    }
+    // Hit the paid Studio Lot wall (the "few levels in" dead-end on the free pack):
+    // send the player to the games dashboard instead of the internal menu.
+    if (LEVELS[ni].pack === 'studio' && !studioUnlocked()) {
+      try { localStorage.setItem('sr-set-crashers-flash', '🎟️ You finished the free levels! Unlock the Studio Lot Pack to keep going.'); } catch {}
+      window.location.href = '/games';
+      return;
+    }
     startLevel(ni);
   };
   const buyItem = async (id: string) => {
@@ -1169,6 +1231,7 @@ export default function SetCrashers() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '13px', color: '#fbbf24', fontWeight: 700 }}>⭐ {totalStars}</span>
             <button onClick={() => setShowBadges(true)} style={navBtn} title="Badges">🏅 {(save.badges || []).length}</button>
+            <button onClick={() => setShowBoard(true)} style={navBtn} title="Leaderboard">🏆</button>
             {screen === 'play' ? <button onClick={() => setScreen('menu')} style={navBtn}>← {mode === 'bonus' ? 'Menu' : 'Levels'}</button> : <Link href="/games" style={navBtn as React.CSSProperties}>← Games</Link>}
           </div>
         </div>
@@ -1351,9 +1414,17 @@ export default function SetCrashers() {
                     </div>
                   </div>
                 )}
-                <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
+                {result.won && scoreFx && (
+                  <div style={{ marginTop: '14px', padding: '10px 18px', background: 'linear-gradient(135deg,#b45309,#f59e0b)', borderRadius: '12px', textAlign: 'center', boxShadow: '0 6px 24px rgba(245,158,11,0.4)' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#1a1a2e', letterSpacing: '0.1em', textTransform: 'uppercase' }}>🎬 Box Office</div>
+                    <div style={{ fontSize: '26px', fontWeight: 900, color: '#1a1a2e', lineHeight: 1.1 }}>+{scoreFx.level.toLocaleString()}</div>
+                    <div style={{ fontSize: '11px', color: '#1a1a2e', opacity: 0.85, marginTop: '2px' }}>Career gross: {scoreFx.career.toLocaleString()}</div>
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '10px', marginTop: '18px', flexWrap: 'wrap', justifyContent: 'center' }}>
                   <button onClick={retry} style={resBtn('#374151')}>↻ Retry</button>
                   {result.won ? <button onClick={nextLevel} style={resBtn('#F59E0B', '#1a1a2e')}>Next →</button> : saveRef.current.skips > 0 ? <button onClick={useSkip} style={resBtn('#7c3aed')}>⏭️ Skip ({saveRef.current.skips})</button> : <button onClick={() => buyItem('skips_3')} style={resBtn('#7c3aed')}>Get Skips</button>}
+                  <button onClick={() => setShowBoard(true)} style={resBtn('#1d4ed8')}>🏆 Leaderboard</button>
                 </div>
               </div>
             )}
@@ -1433,6 +1504,8 @@ export default function SetCrashers() {
           </div>
         </div>
       )}
+
+      {showBoard && <Leaderboard getAccessToken={getToken} onClose={() => setShowBoard(false)} myHandle={save.handle} onSetHandle={(h: string) => setSave(prev => { const n = { ...prev, handle: h }; persist(n); submitScore(prev.careerBest || 0, Object.values(prev.stars).reduce((a, b) => a + b, 0), Object.keys(prev.levelScores || {}).length, prev.bestCombo || 0, h); return n; })} />}
     </div>
   );
 }
