@@ -29,7 +29,7 @@ const PROJECTILES: Record<string, ProjDef> = {
   boomerang: { emoji: '↩️', name: 'Boomerang',     r: 22, density: 0.004, power: 'boomerang', desc: 'Curves back mid-flight — hit targets behind cover.', color: '#a16207', free: true },
   bomb:      { emoji: '💣', name: 'Bomb',          r: 22, density: 0.005, power: 'bomb',      desc: 'Explodes on impact with a huge blast. (Or tap to detonate early.)', color: '#111827', free: true },
   stunt:     { emoji: '🎭', name: 'Stunt Doubles', r: 24, density: 0.004, power: 'multi',     desc: 'Tap mid-flight — splits into a wide 5-way spread.', color: '#4b5563', free: true },
-  bombstunt: { emoji: '💥', name: 'Stunt Bomb Squad', r: 24, density: 0.005, power: 'bombstunt', desc: 'SUPER: splits into a squad of giant stunt doubles on launch — each blows up on contact (or tap to detonate all).', color: '#b91c1c' },
+  bombstunt: { emoji: '💥', name: 'Stunt Bomb Squad', r: 24, density: 0.005, power: 'bombstunt', desc: 'SUPER: tap mid-flight to split into a squad of giant stunt doubles — each blows up on contact with anything.', color: '#b91c1c' },
   skystrike: { emoji: '☄️', name: 'Sky Strike',    r: 24, density: 0.006, power: 'skystrike', desc: 'SUPER: tap mid-flight to surge +300% speed in its current direction, then a gigantic blast on contact.', color: '#4338ca' },
 };
 const FREE_PROJECTILE = 'clapper';
@@ -527,9 +527,11 @@ export default function SetCrashers() {
           G.projectile = null; G.flying = false;
           if (G.mode === 'level') setTimeout(() => settleCheck(), 500);
         }
-        // Stunt Bomb Squad pieces: each explodes big on first contact with anything.
-        for (const [body] of [[a], [b]] as [Mat][]) {
+        // Stunt Bomb Squad pieces: each explodes big on first contact with anything —
+        // but NOT with a fellow squad piece (they spawn together, so ignore piece-vs-piece).
+        for (const [body, other] of [[a, b], [b, a]] as [Mat, Mat][]) {
           if (body && (body as any).crasherBombStunt && !(body as any).crasherExploded) {
+            if (other && (other as any).crasherBombStunt && !(other as any).crasherExploded) continue; // skip sibling contact
             (body as any).crasherExploded = true;
             const bx = body.position.x, by = body.position.y;
             explodeAt(bx, by, 240, 0.9);
@@ -672,18 +674,24 @@ export default function SetCrashers() {
       if (G.mode === 'level') setTimeout(() => settleCheck(), 700);
     }
     else if (def.power === 'bombstunt') {
-      // Squad already split on launch. A mid-flight tap detonates every squad piece at once.
+      // Original design: flies as one projectile, splits into giant stunt doubles when tapped.
+      // Each double then explodes on contact with anything (item or ground).
       spawnParticles(p.position.x, p.position.y, 26, '#fca5a5', 260); G.shake = Math.min(G.shake + 12, 40);
-      const squad = [p, ...G.extra.filter(e => (e as any).crasherBombStunt && !(e as any).crasherExploded)];
-      for (const piece of squad) {
-        if (!piece || (piece as any).crasherExploded) continue;
-        (piece as any).crasherExploded = true;
-        explodeAt(piece.position.x, piece.position.y, 240, 0.9);
-        try { Matter.Composite.remove(G.engine.world, piece); } catch {}
+      const count = 3;
+      const baseAngle = Math.atan2(p.velocity.y, p.velocity.x);
+      const speed = Math.max(Math.hypot(p.velocity.x, p.velocity.y), 7);
+      const bigR = def.r * 2; // stunt doubles are twice as big
+      const fan = 0.5;
+      for (let i = 0; i < count; i++) {
+        const a = baseAngle + (i - (count - 1) / 2) * (fan / Math.max(count - 1, 1));
+        const c = Matter.Bodies.circle(p.position.x, p.position.y, bigR, { density: def.density * 0.8, restitution: 0.3, friction: 0.4, frictionAir: 0.001, label: 'proj' });
+        c.crasherProjKind = 'stunt'; c.crasherR = bigR; c.crasherBombStunt = true;
+        Matter.Body.setVelocity(c, { x: Math.cos(a) * speed, y: Math.sin(a) * speed });
+        Matter.Composite.add(G.engine.world, c); G.extra.push(c);
       }
-      G.extra = G.extra.filter(e => !(e as any).crasherExploded);
-      G.projectile = null; G.flying = false;
-      if (G.mode === 'level') setTimeout(() => settleCheck(), 600);
+      // remove the original; the squad members now fly on and each explodes on first contact
+      Matter.Composite.remove(G.engine.world, p); G.projectile = null; G.flying = false;
+      if (G.mode === 'level') setTimeout(() => settleCheck(), 1400);
     }
     else if (def.power === 'skystrike') {
       // SUPER: on trigger, surge to +300% speed (4x) in the CURRENT direction of travel.
@@ -1105,28 +1113,6 @@ export default function SetCrashers() {
     if (sp > VMAX) { const k = VMAX / sp; vx *= k; vy *= k; }
     Matter.Body.setVelocity(proj, { x: vx, y: vy });
     G.projectile = proj; proj.crasherProjKind = key; proj.crasherR = r; G.flying = true; G.powerUsed = false; G.settleT = 0; G.flightT = 0; G.detonate = false; G.armed = true; G.launchDir = vx >= 0 ? 1 : -1; G.projKind = key;
-    // Stunt Bomb Squad: divides immediately on release into multiple giant stunt doubles that
-    // fan out; each explodes on contact (or all detonate together if the user taps mid-flight).
-    if (key === 'bombstunt') {
-      const count = 3;
-      const baseAngle = Math.atan2(vy, vx);
-      const speed = Math.max(Math.hypot(vx, vy), 6);
-      const bigR = def.r * 2 * sizeMult; // doubles are twice as big (and respect size buff)
-      const fan = 0.45;
-      // retire the single launched body; replace with the fanned squad
-      Matter.Composite.remove(G.engine.world, proj); G.projectile = null;
-      let lead: any = null;
-      for (let i = 0; i < count; i++) {
-        const a = baseAngle + (i - (count - 1) / 2) * (fan / Math.max(count - 1, 1));
-        const c = Matter.Bodies.circle(G.aimX, G.aimY, bigR, { density: def.density * 0.8, restitution: 0.3, friction: 0.4, frictionAir: 0.001, label: 'proj' });
-        c.crasherProjKind = 'stunt'; c.crasherR = bigR; c.crasherBombStunt = true;
-        Matter.Body.setVelocity(c, { x: Math.cos(a) * speed, y: Math.sin(a) * speed });
-        Matter.Composite.add(G.engine.world, c); G.extra.push(c);
-        if (i === Math.floor(count / 2)) lead = c;
-      }
-      // keep one as the "live" projectile so tapping can still trigger a synced detonation
-      G.projectile = lead; if (lead) { G.extra = G.extra.filter(e => e !== lead); }
-    }
     if (G.mode === 'level') {
       G.ammo--; setAmmoLeft(G.ammo);
       // power-ups are limited-use ammo (clapper is unlimited). Spend one use; re-lock + fall back when depleted.
