@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { AgencyDetailPanel, CastingDirectorDetailPanel } from '@/components/AdminDetailPanels';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
@@ -71,7 +72,7 @@ type AdminRecord = {
   added_at: string;
 };
 
-type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools' | 'casting' | 'promos' | 'messages' | 'tester_codes' | 'photo_promo' | 'verified_badges';
+type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools' | 'casting' | 'promos' | 'messages' | 'tester_codes' | 'photo_promo' | 'verified_badges' | 'oversight';
 
 interface TesterCode {
   id: string;
@@ -180,6 +181,9 @@ export default function AdminPage() {
 
   // Casting tab
   const [castingSubTab, setCastingSubTab] = useState<'pending' | 'stats' | 'requests' | 'agents' | 'performers' | 'casting_directors' | 'castings' | 'reports'>('pending');
+  const [detailAgencyId, setDetailAgencyId] = useState<string | null>(null);
+  const [detailCdId, setDetailCdId] = useState<string | null>(null);
+  const [oversightView, setOversightView] = useState<'agencies' | 'cds'>('agencies');
 
   // Verified badges (own top-level tab)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1145,6 +1149,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
     { key: 'referrals',    label: 'Referrals',     icon: '💰' },
     { key: 'messages',     label: 'Messages',      icon: '📬' },
     { key: 'verified_badges', label: 'Verified Badges', icon: '✓' },
+    { key: 'oversight',       label: 'Oversight',       icon: '🔍' },
   ];
 
   return (
@@ -2895,7 +2900,10 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
             )}
 
             {/* Casting Directors Sub-tab */}
-            {castingSubTab === 'casting_directors' && (
+            {castingSubTab === 'casting_directors' && detailCdId && (
+              <CastingDirectorDetailPanel accessToken={accessToken} cdId={detailCdId} onClose={() => setDetailCdId(null)} />
+            )}
+            {castingSubTab === 'casting_directors' && !detailCdId && (
               <div>
                 {castingDirectorsLoading ? (
                   <div className="text-center py-10 text-gray-400">Loading casting directors...</div>
@@ -2916,6 +2924,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                       </div>
                     </div>
                     <div className="flex gap-2 shrink-0">
+                      <button onClick={() => setDetailCdId(cd.id)} className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700">View Details</button>
                       {cd.auto_approve ? (
                         <button onClick={() => toggleCDAutoApprove(cd.id, false)} className="px-3 py-1.5 bg-gray-100 text-gray-700 border border-gray-200 text-xs font-bold rounded-lg hover:bg-gray-200">Untrust</button>
                       ) : (
@@ -3088,7 +3097,10 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
             )}
 
             {/* Agents Sub-tab */}
-            {castingSubTab === 'agents' && (
+            {castingSubTab === 'agents' && detailAgencyId && (
+              <AgencyDetailPanel accessToken={accessToken} agencyId={detailAgencyId} onClose={() => setDetailAgencyId(null)} />
+            )}
+            {castingSubTab === 'agents' && !detailAgencyId && (
               <div>
                 {agentsLoading ? (
                   <div className="text-center py-10 text-gray-400">Loading agents...</div>
@@ -3113,6 +3125,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                       </div>
                     </div>
                     <div className="flex gap-2 shrink-0">
+                      <button onClick={() => setDetailAgencyId(ag.id)} className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700">View Details</button>
                       {ag.is_suspended ? (
                         <button
                           onClick={() => toggleAgentSuspension(ag.id, false)}
@@ -3199,6 +3212,59 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
       {/* ══════════════════════════════════════
           VERIFIED BADGES
       ══════════════════════════════════════ */}
+      {activeSection === 'oversight' && (
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-lg font-bold text-gray-800">Agency & Casting Director Oversight</h2>
+              <p className="text-sm text-gray-500">View and manage any agency or casting director — full profile, roster, and account controls. Actions are logged.</p>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => { setOversightView('agencies'); loadAgents(); setDetailAgencyId(null); setDetailCdId(null); }} className={`px-4 py-2 text-sm font-semibold rounded-lg ${oversightView === 'agencies' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}>Agencies</button>
+              <button onClick={() => { setOversightView('cds'); loadCastingDirectors(); setDetailAgencyId(null); setDetailCdId(null); }} className={`px-4 py-2 text-sm font-semibold rounded-lg ${oversightView === 'cds' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}>Casting Directors</button>
+            </div>
+
+            {oversightView === 'agencies' && detailAgencyId && (
+              <AgencyDetailPanel accessToken={accessToken} agencyId={detailAgencyId} onClose={() => setDetailAgencyId(null)} />
+            )}
+            {oversightView === 'agencies' && !detailAgencyId && (
+              <div>
+                {agentsLoading ? <div className="text-center py-10 text-gray-400">Loading agencies…</div>
+                  : agents.length === 0 ? <p className="text-gray-400 text-sm">No agencies found.</p>
+                  : agents.map((ag: any) => (
+                    <div key={ag.id} className="bg-white border border-gray-200 rounded-xl p-4 mb-2 flex items-center justify-between gap-4">
+                      <div>
+                        <div className="font-bold text-gray-800">{ag.agency_name || ag.name}</div>
+                        <div className="text-sm text-gray-500">{ag.owner_email || ag.email}{ag.city ? ` · ${ag.city}` : ''}</div>
+                      </div>
+                      <button onClick={() => setDetailAgencyId(ag.id)} className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 shrink-0">Manage →</button>
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            {oversightView === 'cds' && detailCdId && (
+              <CastingDirectorDetailPanel accessToken={accessToken} cdId={detailCdId} onClose={() => setDetailCdId(null)} />
+            )}
+            {oversightView === 'cds' && !detailCdId && (
+              <div>
+                {castingDirectorsLoading ? <div className="text-center py-10 text-gray-400">Loading casting directors…</div>
+                  : castingDirectorsList.length === 0 ? <p className="text-gray-400 text-sm">No casting directors found.</p>
+                  : castingDirectorsList.map((cd: any) => (
+                    <div key={cd.id} className="bg-white border border-gray-200 rounded-xl p-4 mb-2 flex items-center justify-between gap-4">
+                      <div>
+                        <div className="font-bold text-gray-800">{cd.name}{cd.company ? ` · ${cd.company}` : ''}</div>
+                        <div className="text-sm text-gray-500">{cd.email}</div>
+                      </div>
+                      <button onClick={() => setDetailCdId(cd.id)} className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 shrink-0">Manage →</button>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {activeSection === 'verified_badges' && (
         <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
           <div className="flex items-center justify-between">
