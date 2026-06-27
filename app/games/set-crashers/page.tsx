@@ -214,10 +214,10 @@ const LEVELS: Level[] = [
   }),
 ];
 
-type SaveData = { stars: Record<number, number>; owned: string[]; ammoCounts: Record<string, number>; claimedMilestones: string[]; claimedPurchases: string[]; hints: number; skips: number; lastUnlocked: number; bonusBest: number };
-const DEFAULT_SAVE: SaveData = { stars: {}, owned: [], ammoCounts: {}, claimedMilestones: [], claimedPurchases: [], hints: 1, skips: 0, lastUnlocked: 0, bonusBest: 0 };
+type SaveData = { stars: Record<number, number>; owned: string[]; ammoCounts: Record<string, number>; claimedMilestones: string[]; claimedRewards: number[]; claimedPurchases: string[]; hints: number; skips: number; lastUnlocked: number; bonusBest: number };
+const DEFAULT_SAVE: SaveData = { stars: {}, owned: [], ammoCounts: {}, claimedMilestones: [], claimedRewards: [], claimedPurchases: [], hints: 1, skips: 0, lastUnlocked: 0, bonusBest: 0 };
 function loadSave(): SaveData {
-  try { const raw = localStorage.getItem(SAVE_KEY); if (raw) { const s = { ...DEFAULT_SAVE, ...JSON.parse(raw) }; if (!s.ammoCounts) s.ammoCounts = {}; if (!s.claimedMilestones) s.claimedMilestones = []; if (!s.claimedPurchases) s.claimedPurchases = []; return s; } } catch {}
+  try { const raw = localStorage.getItem(SAVE_KEY); if (raw) { const s = { ...DEFAULT_SAVE, ...JSON.parse(raw) }; if (!s.ammoCounts) s.ammoCounts = {}; if (!s.claimedMilestones) s.claimedMilestones = []; if (!s.claimedRewards) s.claimedRewards = []; if (!s.claimedPurchases) s.claimedPurchases = []; return s; } } catch {}
   return { ...DEFAULT_SAVE };
 }
 const PURCHASE_USES = 3; // a paid power-up purchase grants this many uses
@@ -230,6 +230,7 @@ type Mode = 'level' | 'bonus';
 type Mat = any;
 
 const PROJ_EMOJIS = ['boomerang', 'bomb', 'stunt']; // possible projectile prizes
+const MILESTONE_EVERY = 5; // award a random prize every N distinct levels cleared
 
 export default function SetCrashers() {
   const [save, setSave] = useState<SaveData>(DEFAULT_SAVE);
@@ -241,6 +242,7 @@ export default function SetCrashers() {
   const [targetsLeft, setTargetsLeft] = useState(0);
   const [selProj, setSelProj] = useState<string>(FREE_PROJECTILE);
   const [result, setResult] = useState<{ won: boolean; stars: number } | null>(null);
+  const [rewardInfo, setRewardInfo] = useState<{ emoji: string; label: string; jackpot?: boolean } | null>(null);
   const [bonusResult, setBonusResult] = useState<{ caught: Record<string, number>; total: number } | null>(null);
   const [bonusTime, setBonusTime] = useState(15);
   const [notice, setNotice] = useState('');
@@ -493,6 +495,7 @@ export default function SetCrashers() {
     const lvl = LEVELS[lvlRef.current]; let stars = 0;
     if (won) { const used = lvl.ammo - G.ammo; stars = used <= lvl.par ? 3 : used <= lvl.par + 1 ? 2 : 1; }
     setTimeout(() => {
+      setRewardInfo(null);
       setResult({ won, stars });
       if (won) setSave(prev => {
         const ps = prev.stars[lvlRef.current] || 0;
@@ -506,6 +509,48 @@ export default function SetCrashers() {
           if (total >= ms.stars && !claimed.includes(id)) { counts[ms.key] = (counts[ms.key] || 0) + 1; claimed.push(id); }
         }
         n.claimedMilestones = claimed; n.ammoCounts = counts;
+
+        // ── Every-5-levels ESCALATING random prize (+ rare jackpot) ─────────
+        // Count DISTINCT cleared levels (>=1 star) so replays can't farm rewards.
+        const clearedCount = Object.values(n.stars).filter(s => s > 0).length;
+        const milestone = Math.floor(clearedCount / MILESTONE_EVERY) * MILESTONE_EVERY; // 5,10,15…
+        const rewarded = [...(n.claimedRewards || [])];
+        if (milestone >= MILESTONE_EVERY && !rewarded.includes(milestone)) {
+          rewarded.push(milestone);
+          // tier grows with depth: t1 at 5-10, t2 at 15-20, t3 at 25+
+          const tier = milestone >= 25 ? 3 : milestone >= 15 ? 2 : 1;
+          const powerUps = tier;          // 1 / 2 / 3 power-up uses
+          const hintQty = tier + 1;       // 2 / 3 / 4 hints
+          const skipQty = tier;           // 1 / 2 / 3 skips
+          // jackpot chance climbs with tier (10% / 15% / 22%)
+          const jackpotChance = 0.10 + (tier - 1) * 0.06;
+          const isJackpot = Math.random() < jackpotChance;
+
+          if (isJackpot) {
+            // JACKPOT: a windfall — power-ups of every type + hints + skips
+            const jpEach = tier;          // uses of EACH power-up
+            const jpCounts = { ...n.ammoCounts };
+            for (const k of PROJ_EMOJIS) jpCounts[k] = (jpCounts[k] || 0) + jpEach;
+            n.ammoCounts = jpCounts;
+            n.hints = (n.hints || 0) + (tier + 2);
+            n.skips = (n.skips || 0) + tier;
+            setTimeout(() => { setRewardInfo({ emoji: '💰', label: `JACKPOT! ${jpEach}× every power-up, +${tier + 2} hints, +${tier} skips`, jackpot: true }); toast(`💰 JACKPOT milestone reward!`); }, 600);
+          } else {
+            const roll = Math.random();
+            if (roll < 0.6) {
+              const key = PROJ_EMOJIS[Math.floor(Math.random() * PROJ_EMOJIS.length)];
+              n.ammoCounts = { ...n.ammoCounts, [key]: (n.ammoCounts[key] || 0) + powerUps };
+              setTimeout(() => { setRewardInfo({ emoji: PROJECTILES[key].emoji, label: `+${powerUps} ${PROJECTILES[key].name}` }); toast(`🎁 Milestone reward: +${powerUps} ${PROJECTILES[key].name}!`); }, 600);
+            } else if (roll < 0.8) {
+              n.hints = (n.hints || 0) + hintQty;
+              setTimeout(() => { setRewardInfo({ emoji: '💡', label: `+${hintQty} Hints` }); toast(`🎁 Milestone reward: +${hintQty} Hints!`); }, 600);
+            } else {
+              n.skips = (n.skips || 0) + skipQty;
+              setTimeout(() => { setRewardInfo({ emoji: '⏭️', label: `+${skipQty} Skip${skipQty > 1 ? 's' : ''}` }); toast(`🎁 Milestone reward: +${skipQty} Skip${skipQty > 1 ? 's' : ''}!`); }, 600);
+            }
+          }
+          n.claimedRewards = rewarded;
+        }
         persist(n); return n;
       });
     }, won ? 500 : 800);
@@ -846,6 +891,7 @@ export default function SetCrashers() {
               <p style={{ margin: '0 0 3px', paddingLeft: '12px' }}>💣 <strong>Bomb</strong> — explodes on impact with a huge blast (or tap to detonate early).</p>
               <p style={{ margin: '0 0 8px', paddingLeft: '12px' }}>🎭 <strong>Stunt Doubles</strong> — tap mid-flight to burst into 5 pieces fanning out.</p>
               <p style={{ margin: '0 0 8px' }}><strong>Prize drops 🎁:</strong> parachuting prizes fall during play — hit one with your shot to grab it. They give +1 power-up use, a 💡 hint, or an ⏭️ skip. Miss it and it floats away.</p>
+              <p style={{ margin: '0 0 8px' }}><strong>Milestone rewards 🎁:</strong> every 5 levels you clear, you automatically earn a random prize — power-up uses, hints, or skips — shown on the level-complete screen. The rewards <strong>grow bigger the deeper you go</strong> (levels 25+ give the biggest hauls), and there&apos;s a rare <strong>💰 JACKPOT</strong> that drops a windfall of every power-up plus hints and skips at once. Keep clearing new levels to keep them coming.</p>
               <p style={{ margin: '0 0 8px' }}><strong>Bonus Round:</strong> 15 seconds of non-stop prize drops with unlimited ammo and free power-ups — shoot as many prizes as you can and keep everything you hit. Your best haul is saved.</p>
               <p style={{ margin: '0 0 8px' }}><strong>Stars &amp; help:</strong> finish at or under par for 3★, one over for 2★, otherwise 1★. 💡 <strong>Hint</strong> shows a suggested arc; ⏭️ <strong>Skip</strong> jumps past a tough level keeping 1★. Earn more hints/skips from prize drops or the Store. Star milestones also award free power-up uses.</p>
               <p style={{ margin: '0 0 8px' }}><strong>🎟️ Studio Lot Pack:</strong> a paid pack of <strong>12 extra levels</strong> beyond the free &ldquo;On Location&rdquo; set. They&apos;re tougher — taller fortresses, multi-target shelves, and bigger domino chains that escalate as you progress (later stages give you fewer shots, so chaining matters). It&apos;s a <strong>one-time unlock</strong> (not consumable): once you own it, all 12 levels are yours forever. Buy it on its own, or get it included in the Mega Pack.</p>
@@ -924,6 +970,15 @@ export default function SetCrashers() {
               <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(15,15,26,0.82)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
                 <div style={{ fontSize: '26px', fontWeight: 900 }}>{result.won ? 'Nailed it!' : 'Cut! Try again'}</div>
                 {result.won && <div style={{ fontSize: '44px', marginTop: '8px', letterSpacing: '6px' }}>{[0, 1, 2].map(n => <span key={n} style={{ color: n < result.stars ? '#fbbf24' : 'rgba(255,255,255,0.25)' }}>★</span>)}</div>}
+                {result.won && rewardInfo && (
+                  <div style={{ marginTop: '16px', padding: rewardInfo.jackpot ? '16px 24px' : '12px 20px', background: rewardInfo.jackpot ? 'linear-gradient(135deg,#f59e0b,#fbbf24,#f59e0b)' : 'linear-gradient(135deg,#7c3aed,#a855f7)', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: rewardInfo.jackpot ? '0 8px 32px rgba(245,158,11,0.7)' : '0 6px 24px rgba(124,58,237,0.55)', border: rewardInfo.jackpot ? '2px solid #fff' : '1px solid rgba(255,255,255,0.25)', maxWidth: '300px' }}>
+                    <span style={{ fontSize: rewardInfo.jackpot ? '40px' : '32px' }}>{rewardInfo.emoji}</span>
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 800, color: rewardInfo.jackpot ? '#1a1a2e' : 'white', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{rewardInfo.jackpot ? '💰 JACKPOT' : '🎁 Milestone Reward'}</div>
+                      <div style={{ fontSize: rewardInfo.jackpot ? '15px' : '17px', fontWeight: 900, color: rewardInfo.jackpot ? '#1a1a2e' : 'white', lineHeight: 1.2 }}>{rewardInfo.label}</div>
+                    </div>
+                  </div>
+                )}
                 <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
                   <button onClick={retry} style={resBtn('#374151')}>↻ Retry</button>
                   {result.won ? <button onClick={nextLevel} style={resBtn('#F59E0B', '#1a1a2e')}>Next →</button> : saveRef.current.skips > 0 ? <button onClick={useSkip} style={resBtn('#7c3aed')}>⏭️ Skip ({saveRef.current.skips})</button> : <button onClick={() => buyItem('skips_3')} style={resBtn('#7c3aed')}>Get Skips</button>}
