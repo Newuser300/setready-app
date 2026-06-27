@@ -1264,6 +1264,17 @@ export default function SetCrashers() {
           </div>
           <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '6px' }}>{PROJECTILES[selProj]?.desc}</div>
 
+          <div style={{ marginTop: '16px', fontWeight: 800, fontSize: '14px', color: '#e5e7eb' }}>Shot Buffs <span style={{ fontSize: '11px', fontWeight: 600, color: '#9ca3af' }}>— stack on any shot, activate in-game</span></div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px', marginTop: '8px' }}>
+            {BUFF_KEYS.map(bk => { const uses = ammoOf(bk); const owned = uses > 0; const bdef = BUFFS[bk]; return (
+              <button key={bk} onClick={() => { if (!owned) buyItem(bk); }} style={{ ...card, padding: '10px 6px', textAlign: 'center', cursor: owned ? 'default' : 'pointer', border: `1px solid ${owned ? bdef.color : '#e5e7eb'}`, opacity: owned ? 1 : 0.85 }}>
+                <div style={{ fontSize: '26px' }}>{bdef.emoji}</div><div style={{ fontSize: '10px', fontWeight: 700, color: '#374151', marginTop: '2px' }}>{bdef.name}</div>
+                {uses > 0 ? <div style={{ fontSize: '10px', color: '#16a34a', fontWeight: 800, marginTop: '2px' }}>×{uses} left</div>
+                  : <div style={{ fontSize: '9px', color: '#F59E0B', fontWeight: 800, marginTop: '2px' }}>Buy ($1.99)</div>}
+              </button>); })}
+          </div>
+          <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '6px' }}>Buffs are toggled on during a level (below the slingshot) and stack with each other and your chosen power-up.</div>
+
           {(['free', 'studio'] as const).map(pack => {
             const levels = LEVELS.map((l, i) => ({ l, i })).filter(x => x.l.pack === pack);
             const locked = pack === 'studio' && !studioUnlocked(); const base = LEVELS.findIndex(x => x.pack === pack);
