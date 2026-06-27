@@ -155,7 +155,7 @@ export default function Home() {
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
             <div style={{ textAlign: 'center', padding: '24px 56px' }}>
-              <p style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(64px, 10vw, 96px)', fontWeight: '700', color: '#F59E0B', lineHeight: '1', margin: '0 0 10px' }}>17</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(36px, 6vw, 52px)', fontWeight: '700', color: '#F59E0B', lineHeight: '1.1', margin: '0 0 10px' }}>over 12</p>
               <p style={{ fontSize: '13px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>free tools</p>
             </div>
             <div style={{ width: '1px', height: '80px', backgroundColor: '#F59E0B', opacity: 0.35, flexShrink: 0 }} />
