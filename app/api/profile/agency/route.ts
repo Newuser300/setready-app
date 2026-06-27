@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await supabaseAdmin
     .from('agency_roster')
-    .select('id, agency_id, status, agencies(name)')
+    .select('id, agency_id, status, agencies(name, logo_url)')
     .eq('performer_user_id', user.id)
     .neq('status', 'inactive');
 
@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
     id: r.id,
     agency_id: r.agency_id,
     agency_name: r.agencies?.name || 'Unknown Agency',
+    logo_url: r.agencies?.logo_url || null,
     status: r.status,
   }));
 

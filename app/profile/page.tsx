@@ -174,7 +174,7 @@ export default function ProfilePage() {
   const [unionStatus, setUnionStatus] = useState('')
   const [memberNumber, setMemberNumber] = useState('')
   const [agencyId, setAgencyId] = useState('')
-  const [agencyLinks, setAgencyLinks] = useState<Array<{ id: string; agency_id: string; agency_name: string; status: string }>>([])
+  const [agencyLinks, setAgencyLinks] = useState<Array<{ id: string; agency_id: string; agency_name: string; logo_url?: string | null; status: string }>>([])
 
   // Physical
   const [heightCm, setHeightCm] = useState('')
@@ -1117,6 +1117,9 @@ export default function ProfilePage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {agencyLinks.filter(l => l.status !== 'inactive').map(link => (
                 <div key={link.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', backgroundColor: (link.status === 'approved' || link.status === 'active') ? '#f0fdf4' : '#f9fafb', border: `1px solid ${(link.status === 'approved' || link.status === 'active') ? '#86efac' : '#e5e7eb'}`, borderRadius: '8px' }}>
+                  {link.logo_url && (
+                    <img src={link.logo_url} alt={link.agency_name} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'contain', backgroundColor: 'white', border: '1px solid #e5e7eb', flexShrink: 0 }} />
+                  )}
                   <div>
                     <p style={{ fontWeight: '600', fontSize: '14px', color: '#1a1a2e', margin: '0 0 2px' }}>{link.agency_name}</p>
                     <span style={{ fontSize: '11px', fontWeight: '700', color: (link.status === 'approved' || link.status === 'active') ? '#16a34a' : '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
