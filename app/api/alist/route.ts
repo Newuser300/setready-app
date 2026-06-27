@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// ── A-LIST — AI scene-partner game backend ──
+// ── A-LIST: Interactive Scenes — AI scene-partner game backend ──
 // One route, three actions: generate a scene, react as the scene partner, score the take.
 // The Anthropic key stays server-side. Output is strict JSON the client renders.
+// Cost control: the frequent scene-partner reaction uses Haiku; scene generation and
+// the Director's scoring (where quality matters most) use Sonnet.
 
-const MODEL = 'claude-sonnet-4-6'
+const MODEL_SONNET = 'claude-sonnet-4-6'
+const MODEL_HAIKU = 'claude-haiku-4-5-20251001'
 
-async function callClaude(system: string, user: string, maxTokens = 900): Promise<string> {
+async function callClaude(system: string, user: string, maxTokens = 900, model = MODEL_SONNET): Promise<string> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -15,7 +18,7 @@ async function callClaude(system: string, user: string, maxTokens = 900): Promis
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: MODEL,
+      model,
       max_tokens: maxTokens,
       system,
       messages: [{ role: 'user', content: user }],
@@ -81,7 +84,7 @@ export async function POST(req: NextRequest) {
       const system = `You are "${scene.partnerName}", ${scene.partnerRole}, performing a ${scene.genre} scene opposite a human actor. Stay fully in character. React truthfully and specifically to what the actor just said — reward emotional honesty, surprise, and commitment with a richer reaction; respond to deflection or flatness as the character realistically would. Keep your reply to 1-3 sentences of spoken dialogue (optionally a brief *stage direction* in asterisks). Never break character, never mention being an AI. Output ONLY JSON:
 { "line": "your in-character spoken response", "beat": "one short phrase naming the emotional shift you just played" }`
       const user = `SCENE: ${scene.slug}\nSETUP: ${scene.setup}\nYour character: ${scene.partnerName} — ${scene.partnerRole}\n\nScene so far:\n${convo}\n\nACTOR just said: "${playerLine}"\n\nRespond in character.`
-      const text = await callClaude(system, user, 350)
+      const text = await callClaude(system, user, 350, MODEL_HAIKU)
       const out = extractJSON(text)
       return NextResponse.json({ reaction: out })
     }

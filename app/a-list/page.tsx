@@ -3,21 +3,25 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 
 /* ════════════════════════════════════════════════════════════════════
-   A-LIST — the AI scene-partner game
+   A-LIST: INTERACTIVE SCENES — the AI scene-partner game
    You audition opposite an AI character; a Director scores your take; you
    climb from Extra to Legend. Scenes are generated, so it never repeats.
+   First scene is free; after that, a 20-scene pass unlocks more for $4.98.
+   You can TYPE or SPEAK your own lines (on-device voice, no extra cost).
    Visual identity: a screening room. Theatrical black, one tungsten-amber
    spotlight accent, shooting-script slates, a stamped director's verdict.
 ════════════════════════════════════════════════════════════════════ */
 
 const SAVE_KEY = 'sr-alist-save'
-const RANKS = ['Extra', 'Day Player', 'Supporting', 'Lead', 'A-List', 'Legend']
+const FREE_SCENES = 1            // free taste before the paywall
+const PACK_SCENES = 20           // scenes granted per $4.98 pass
 // Buzz thresholds to reach each rank (index aligns with RANKS).
+const RANKS = ['Extra', 'Day Player', 'Supporting', 'Lead', 'A-List', 'Legend']
 const RANK_AT = [0, 120, 360, 800, 1600, 3200]
 const GENRES = ['Drama', 'Rom-Com', 'Horror', 'Action', 'Thriller', 'Sci-Fi', 'Soap Opera', 'Period Drama', 'Comedy', 'Crime']
 
-type Save = { buzz: number; auditions: number; bestOverall: number; filmography: any[]; lastDailyDate: string; dailyStreak: number }
-const DEFAULT_SAVE: Save = { buzz: 0, auditions: 0, bestOverall: 0, filmography: [], lastDailyDate: '', dailyStreak: 0 }
+type Save = { buzz: number; auditions: number; bestOverall: number; filmography: any[]; lastDailyDate: string; dailyStreak: number; scenesUsed: number; scenesPurchased: number; claimedPurchases: string[]; seenTutorial: boolean }
+const DEFAULT_SAVE: Save = { buzz: 0, auditions: 0, bestOverall: 0, filmography: [], lastDailyDate: '', dailyStreak: 0, scenesUsed: 0, scenesPurchased: 0, claimedPurchases: [], seenTutorial: false }
 
 function loadSave(): Save {
   try { const r = localStorage.getItem(SAVE_KEY); if (r) return { ...DEFAULT_SAVE, ...JSON.parse(r) } } catch {}
@@ -69,14 +73,42 @@ export default function AListPage() {
   const [result, setResult] = useState<any>(null)
   const [isDaily, setIsDaily] = useState(false)
   const [pickGenre, setPickGenre] = useState<string | null>(null)
+  const [showTutorial, setShowTutorial] = useState(false)
+  const [showPaywall, setShowPaywall] = useState(false)
+  const [buying, setBuying] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => { setSave(loadSave()); setReady(true) }, [])
+  useEffect(() => { const s = loadSave(); setSave(s); setReady(true); if (!s.seenTutorial) setShowTutorial(true) }, [])
   useEffect(() => { if (ready) try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)) } catch {} }, [save, ready])
   useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight }, [history, reacting])
 
+  // Reconcile any completed scene-pass purchases (mirrors other games' pattern).
+  useEffect(() => {
+    if (!ready) return
+    fetch('/api/game-purchases?game=a-list').then(r => r.ok ? r.json() : null).then((data: any) => {
+      const rows: any[] = Array.isArray(data) ? data : (data?.purchases || [])
+      if (!rows.length) return
+      setSave(s => {
+        const claimed = [...(s.claimedPurchases || [])]
+        let added = 0
+        for (const p of rows) {
+          const id = p.stripe_session_id || p.id
+          if (!id || claimed.includes(id)) continue
+          if (p.item === 'scenes_20') added += PACK_SCENES
+          claimed.push(id)
+        }
+        if (!added) return s
+        return { ...s, scenesPurchased: s.scenesPurchased + added, claimedPurchases: claimed }
+      })
+      // clear the ?purchase=success flag
+      try { if (window.location.search.includes('purchase=')) window.history.replaceState({}, '', '/a-list') } catch {}
+    }).catch(() => {})
+  }, [ready])
+
   const rank = rankFor(save.buzz)
   const dailyAvailable = save.lastDailyDate !== todayStr()
+  const scenesLeft = (FREE_SCENES + save.scenesPurchased) - save.scenesUsed
+  const canPlay = scenesLeft > 0
 
   async function api(payload: any) {
     const res = await fetch('/api/alist', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
@@ -85,7 +117,19 @@ export default function AListPage() {
     return data
   }
 
+  async function buyScenes() {
+    setBuying(true); setErr('')
+    try {
+      const res = await fetch('/api/checkout/a-list', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item: 'scenes_20' }) })
+      const data = await res.json()
+      if (data?.url) { window.location.href = data.url; return }
+      setErr(data?.error || 'Could not start checkout — are you signed in?')
+    } catch { setErr('Could not start checkout. Please try again.') }
+    finally { setBuying(false) }
+  }
+
   async function startScene(opts: { daily?: boolean; genre?: string }) {
+    if (!canPlay) { setShowPaywall(true); return }
     setErr(''); setLoading(true); setIsDaily(!!opts.daily)
     setLoadMsg(opts.daily ? 'Casting today’s audition…' : 'Finding you a scene…')
     try {
@@ -93,6 +137,8 @@ export default function AListPage() {
       setScene(scene)
       setHistory([{ who: 'partner', text: scene.partnerOpensWith, beat: 'opening' }])
       setResult(null); setDraft(''); setScreen('scene')
+      // a scene is "used" the moment it's generated (that's the costly call)
+      setSave(s => ({ ...s, scenesUsed: s.scenesUsed + 1 }))
     } catch (e: any) { setErr(e.message || 'Could not start the scene.') }
     finally { setLoading(false); setPickGenre(null) }
   }
@@ -155,13 +201,16 @@ export default function AListPage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
           <Link href="/dashboard" style={{ color: MUTE, fontSize: 13, textDecoration: 'none', fontWeight: 600 }}>← Dashboard</Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <button onClick={() => setShowTutorial(true)} style={{ background: 'none', border: `1px solid ${LINE}`, color: MUTE, borderRadius: 8, padding: '5px 10px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>How to play</button>
             <div style={{ textAlign: 'right' }}>
               <div className="alist-display" style={{ fontSize: 22, color: AMBER }}>{save.buzz.toLocaleString()}<span style={{ fontSize: 12, color: MUTE, marginLeft: 4, letterSpacing: '.1em' }}>BUZZ</span></div>
+              <div style={{ fontSize: 11, color: scenesLeft > 0 ? MUTE : '#ff9b9b' }}>{scenesLeft > 0 ? `${scenesLeft} scene${scenesLeft === 1 ? '' : 's'} left` : 'No scenes left'}</div>
             </div>
           </div>
         </div>
 
         {screen === 'stage' && <Stage save={save} rank={rank} dailyAvailable={dailyAvailable} loading={loading} loadMsg={loadMsg} err={err}
+          scenesLeft={scenesLeft} onBuy={() => setShowPaywall(true)}
           onDaily={() => startScene({ daily: true })} onAudition={() => startScene({})} pickGenre={pickGenre} setPickGenre={setPickGenre}
           onGenre={(g: string) => startScene({ genre: g })} />}
 
@@ -169,20 +218,25 @@ export default function AListPage() {
           loading={loading} loadMsg={loadMsg} err={err} onDeliver={deliver} onCut={callCut} scrollRef={scrollRef} isDaily={isDaily} />}
 
         {screen === 'result' && result && <ResultView result={result} scene={scene} save={save} rank={rankFor(save.buzz)} isDaily={isDaily}
+          scenesLeft={scenesLeft} onBuy={() => setShowPaywall(true)}
           onAgain={() => setScreen('stage')} />}
       </div>
+
+      {showTutorial && <Tutorial onClose={() => { setShowTutorial(false); setSave(s => ({ ...s, seenTutorial: true })) }} />}
+      {showPaywall && <Paywall buying={buying} err={err} scenesLeft={scenesLeft} onBuy={buyScenes} onClose={() => setShowPaywall(false)} />}
     </div>
   )
 }
 
 /* ───────────────────────── STAGE (home) ───────────────────────── */
-function Stage({ save, rank, dailyAvailable, loading, loadMsg, err, onDaily, onAudition, pickGenre, setPickGenre, onGenre }: any) {
+function Stage({ save, rank, dailyAvailable, loading, loadMsg, err, scenesLeft, onBuy, onDaily, onAudition, pickGenre, setPickGenre, onGenre }: any) {
   return (
     <div className="alist-in">
       <div style={{ textAlign: 'center', marginBottom: 26 }}>
         <div style={{ color: AMBER, letterSpacing: '.35em', fontSize: 12, fontWeight: 700, marginBottom: 8 }}>NOW CASTING</div>
-        <h1 className="alist-display" style={{ fontSize: 'clamp(56px,16vw,108px)', margin: 0, color: TEXT }}>A&#8209;LIST</h1>
-        <p style={{ color: MUTE, fontSize: 15, maxWidth: 440, margin: '8px auto 0', lineHeight: 1.5 }}>
+        <h1 className="alist-display" style={{ fontSize: 'clamp(52px,14vw,96px)', margin: 0, color: TEXT }}>A&#8209;LIST</h1>
+        <div className="alist-display" style={{ fontSize: 'clamp(20px,5vw,30px)', color: AMBER, letterSpacing: '.06em', marginTop: -4 }}>INTERACTIVE SCENES</div>
+        <p style={{ color: MUTE, fontSize: 15, maxWidth: 440, margin: '10px auto 0', lineHeight: 1.5 }}>
           Step into a scene. Act opposite a partner who reacts to your every choice. The Director is watching.
         </p>
       </div>
@@ -242,6 +296,15 @@ function Stage({ save, rank, dailyAvailable, loading, loadMsg, err, onDaily, onA
           ))}
         </div>
       )}
+
+      {/* scenes / buy */}
+      <div style={{ marginTop: 16, background: scenesLeft > 0 ? 'transparent' : PANEL, border: `1px solid ${LINE}`, borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 13, color: TEXT, fontWeight: 700 }}>{scenesLeft > 0 ? `${scenesLeft} scene${scenesLeft === 1 ? '' : 's'} remaining` : 'You’re out of scenes'}</div>
+          <div style={{ fontSize: 12, color: MUTE, marginTop: 2 }}>{scenesLeft > 0 ? 'Each audition uses one scene.' : 'Unlock 20 more to keep performing.'}</div>
+        </div>
+        <button className="alist-btn" onClick={onBuy} style={{ background: `linear-gradient(135deg,${AMBER_DEEP},${AMBER})`, color: INK, border: 'none', borderRadius: 10, padding: '10px 16px', fontWeight: 800, fontFamily: 'inherit', fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}>+20 · $4.98</button>
+      </div>
 
       {/* filmography */}
       {save.filmography.length > 0 && (
@@ -318,15 +381,8 @@ function SceneView({ scene, history, draft, setDraft, reacting, loading, loadMsg
             </div>
           )}
 
-          {/* free input */}
-          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-            <textarea value={draft} onChange={e => setDraft(e.target.value)} placeholder="Say your line…" rows={2}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onDeliver(draft) } }}
-              disabled={reacting}
-              style={{ flex: 1, background: PANEL, color: TEXT, border: `1px solid ${LINE}`, borderRadius: 12, padding: '11px 14px', fontSize: 14.5, fontFamily: 'inherit', resize: 'none', outline: 'none', lineHeight: 1.4 }} />
-            <button className="alist-btn" disabled={reacting || !draft.trim()} onClick={() => onDeliver(draft)}
-              style={{ background: draft.trim() ? `linear-gradient(135deg,${AMBER_DEEP},${AMBER})` : PANEL2, color: draft.trim() ? INK : MUTE, border: 'none', borderRadius: 12, padding: '12px 16px', cursor: draft.trim() ? 'pointer' : 'default', fontWeight: 800, fontFamily: 'inherit', fontSize: 14 }}>Deliver</button>
-          </div>
+          {/* free input — type or speak */}
+          <VoiceInput draft={draft} setDraft={setDraft} reacting={reacting} onDeliver={onDeliver} />
 
           {/* CUT */}
           {playerTurns >= 1 && (
@@ -343,7 +399,7 @@ function SceneView({ scene, history, draft, setDraft, reacting, loading, loadMsg
 }
 
 /* ───────────────────────── RESULT ───────────────────────── */
-function ResultView({ result, scene, save, rank, isDaily, onAgain }: any) {
+function ResultView({ result, scene, save, rank, isDaily, scenesLeft, onBuy, onAgain }: any) {
   const tone = VERDICT_TONE[result.verdict] || { c: AMBER, bg: 'rgba(232,163,61,0.14)' }
   const dailyBonus = isDaily ? Math.round(result.buzz * 0.5) : 0
   return (
@@ -391,6 +447,125 @@ function ResultView({ result, scene, save, rank, isDaily, onAgain }: any) {
         style={{ width: '100%', background: `linear-gradient(135deg,${AMBER_DEEP},${AMBER})`, color: INK, border: 'none', borderRadius: 14, padding: '15px', cursor: 'pointer', fontWeight: 800, fontFamily: 'inherit', fontSize: 16 }}>
         Back to the Stage
       </button>
+      {scenesLeft <= 0 && (
+        <button className="alist-btn" onClick={onBuy}
+          style={{ width: '100%', marginTop: 10, background: 'transparent', color: AMBER, border: `1px solid ${AMBER_DEEP}`, borderRadius: 14, padding: '13px', cursor: 'pointer', fontWeight: 700, fontFamily: 'inherit', fontSize: 14 }}>
+          That was your last scene — unlock 20 more for $4.98
+        </button>
+      )}
+    </div>
+  )
+}
+
+/* ───────────────────────── VOICE INPUT (type or speak) ───────────────────────── */
+function VoiceInput({ draft, setDraft, reacting, onDeliver }: any) {
+  const [listening, setListening] = useState(false)
+  const [supported, setSupported] = useState(false)
+  const recRef = useRef<any>(null)
+
+  useEffect(() => {
+    const SR = (typeof window !== 'undefined') && ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
+    setSupported(!!SR)
+  }, [])
+
+  function toggleMic() {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SR) return
+    if (listening) { try { recRef.current?.stop() } catch {}; setListening(false); return }
+    const rec = new SR()
+    rec.lang = 'en-US'; rec.interimResults = true; rec.continuous = false
+    let finalText = draft ? draft + ' ' : ''
+    rec.onresult = (e: any) => {
+      let interim = ''
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript
+        if (e.results[i].isFinal) finalText += t + ' '; else interim += t
+      }
+      setDraft((finalText + interim).trim())
+    }
+    rec.onend = () => setListening(false)
+    rec.onerror = () => setListening(false)
+    recRef.current = rec
+    try { rec.start(); setListening(true) } catch {}
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+        <textarea value={draft} onChange={e => setDraft(e.target.value)} placeholder={supported ? 'Type your line — or tap the mic to speak it…' : 'Say your line…'} rows={2}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onDeliver(draft) } }}
+          disabled={reacting}
+          style={{ flex: 1, background: PANEL, color: TEXT, border: `1px solid ${listening ? AMBER : LINE}`, borderRadius: 12, padding: '11px 14px', fontSize: 14.5, fontFamily: 'inherit', resize: 'none', outline: 'none', lineHeight: 1.4 }} />
+        {supported && (
+          <button className="alist-btn" disabled={reacting} onClick={toggleMic} title={listening ? 'Stop' : 'Speak your line'}
+            style={{ background: listening ? '#ff5a5a' : PANEL2, color: listening ? '#fff' : TEXT, border: `1px solid ${listening ? '#ff5a5a' : LINE}`, borderRadius: 12, padding: '12px 14px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 18, lineHeight: 1 }}>
+            {listening ? '◉' : '🎤'}
+          </button>
+        )}
+        <button className="alist-btn" disabled={reacting || !draft.trim()} onClick={() => onDeliver(draft)}
+          style={{ background: draft.trim() ? `linear-gradient(135deg,${AMBER_DEEP},${AMBER})` : PANEL2, color: draft.trim() ? INK : MUTE, border: 'none', borderRadius: 12, padding: '12px 16px', cursor: draft.trim() ? 'pointer' : 'default', fontWeight: 800, fontFamily: 'inherit', fontSize: 14 }}>Deliver</button>
+      </div>
+      {listening && <div style={{ fontSize: 11, color: AMBER, marginTop: 6, textAlign: 'center' }}>🎙️ Listening… speak your line, then tap ◉ to stop.</div>}
+    </div>
+  )
+}
+
+/* ───────────────────────── TUTORIAL ───────────────────────── */
+function Tutorial({ onClose }: any) {
+  const steps = [
+    { icon: '🎬', t: 'Step into a scene', d: 'Each audition drops you into a fresh, AI-generated scene — a setting, a character to play opposite, and an objective your character wants. No two are ever the same.' },
+    { icon: '💬', t: 'Perform your lines', d: 'Pick a suggested opening line, or write your own. Your scene partner reacts in character to exactly what you say — play it honest, surprising, committed.' },
+    { icon: '🎤', t: 'Type or speak', d: 'When you write your own line, tap the mic to speak it instead — your words are transcribed live (works best in Chrome). It’s acting, after all.' },
+    { icon: '✂️', t: 'Call “CUT”', d: 'Play a few exchanges, then end the take. The Director scores your performance on Truth, Presence, and Originality — with real, personal notes.' },
+    { icon: '⭐', t: 'Build your career', d: 'Every take earns Buzz. Climb from Extra to Legend, keep a daily streak, and grow your filmography. Your first scene is free.' },
+  ]
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: PANEL, border: `1px solid ${LINE}`, borderRadius: 18, maxWidth: 460, width: '100%', maxHeight: '88vh', overflowY: 'auto', padding: '24px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 18 }}>
+          <div className="alist-display" style={{ fontSize: 34, color: TEXT }}>HOW IT WORKS</div>
+          <div style={{ color: AMBER, fontSize: 12, letterSpacing: '.2em', fontWeight: 700 }}>A-LIST: INTERACTIVE SCENES</div>
+        </div>
+        {steps.map((s, i) => (
+          <div key={i} style={{ display: 'flex', gap: 14, marginBottom: 16 }}>
+            <div style={{ fontSize: 26, flexShrink: 0 }}>{s.icon}</div>
+            <div>
+              <div style={{ fontWeight: 700, color: TEXT, fontSize: 15, marginBottom: 2 }}>{s.t}</div>
+              <div style={{ color: MUTE, fontSize: 13, lineHeight: 1.5 }}>{s.d}</div>
+            </div>
+          </div>
+        ))}
+        <button onClick={onClose} style={{ width: '100%', marginTop: 8, background: `linear-gradient(135deg,${AMBER_DEEP},${AMBER})`, color: INK, border: 'none', borderRadius: 12, padding: '14px', fontWeight: 800, fontFamily: 'inherit', fontSize: 15, cursor: 'pointer' }}>
+          Got it — let’s audition
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/* ───────────────────────── PAYWALL ───────────────────────── */
+function Paywall({ buying, err, scenesLeft, onBuy, onClose }: any) {
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: PANEL, border: `1px solid ${AMBER_DEEP}`, borderRadius: 18, maxWidth: 420, width: '100%', padding: '28px', textAlign: 'center' }}>
+        <div style={{ fontSize: 40, marginBottom: 8 }}>🎬</div>
+        <div className="alist-display" style={{ fontSize: 30, color: TEXT }}>KEEP PERFORMING</div>
+        <p style={{ color: MUTE, fontSize: 14, lineHeight: 1.55, margin: '10px 0 18px' }}>
+          {scenesLeft > 0 ? 'Stock up on scenes so the cameras never stop rolling.' : 'You’ve used your scenes. Unlock a fresh pass and pick up where you left off — your buzz and career carry over.'}
+        </p>
+        <div style={{ background: PANEL2, border: `1px solid ${LINE}`, borderRadius: 14, padding: '18px', marginBottom: 16 }}>
+          <div className="alist-display" style={{ fontSize: 44, color: AMBER }}>20 SCENES</div>
+          <div style={{ color: TEXT, fontSize: 15, fontWeight: 700 }}>$4.98</div>
+          <div style={{ color: MUTE, fontSize: 12, marginTop: 4 }}>One-time. ~25¢ a scene. Type or speak your lines.</div>
+        </div>
+        {err && <div style={{ color: '#ff9b9b', fontSize: 12.5, marginBottom: 10 }}>{err}</div>}
+        <button disabled={buying} onClick={onBuy} style={{ width: '100%', background: `linear-gradient(135deg,${AMBER_DEEP},${AMBER})`, color: INK, border: 'none', borderRadius: 12, padding: '15px', fontWeight: 800, fontFamily: 'inherit', fontSize: 16, cursor: buying ? 'wait' : 'pointer' }}>
+          {buying ? 'Opening checkout…' : 'Unlock 20 Scenes — $4.98'}
+        </button>
+        <button onClick={onClose} style={{ width: '100%', marginTop: 10, background: 'transparent', color: MUTE, border: `1px solid ${LINE}`, borderRadius: 12, padding: '12px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13 }}>
+          Maybe later
+        </button>
+      </div>
     </div>
   )
 }

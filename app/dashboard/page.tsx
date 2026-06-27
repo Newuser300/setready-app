@@ -86,7 +86,7 @@ const quickActions = [
   { icon: '🎫', label: 'Voucher Wallet', action: 'link' as const, href: '/voucher-wallet' },
   { icon: '🤳', label: 'Headshot AI', action: 'link' as const, href: '/headshot-analyzer' },
   { icon: '🎮', label: 'Games', action: 'link' as const, href: '/games' },
-  { icon: '🌟', label: 'A-List', action: 'link' as const, href: '/a-list' },
+  { icon: '🌟', label: 'A-List Scenes', action: 'link' as const, href: '/a-list' },
   { icon: '📬', label: 'Messages', action: 'link' as const, href: '/messages' },
   { icon: '☕', label: 'Support SetReady', action: 'link' as const, href: '/donate' },
 ];
