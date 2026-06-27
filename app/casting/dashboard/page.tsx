@@ -323,7 +323,7 @@ export default function CastingDashboardPage() {
       setCdName(d.name || d.email)
       setNameInput(d.name || '')
     })
-    fetch('/api/casting/pro-status').then(r => r.ok ? r.json() : null).then(d => { if (d) setIsCastingPro(d.isPro) })
+    setIsCastingPro(true) // all features free for casting directors
   }, [router])
 
   // ── Load data by tab ─────────────────────────────────────────────────────
@@ -839,7 +839,7 @@ export default function CastingDashboardPage() {
                   <label style={lbl}>Age Max</label>
                   <input type="number" placeholder="65" value={browseAgeMax} onChange={e => setBrowseAgeMax(e.target.value)} style={inp} />
                 </div>
-                {isCastingPro && (
+                {true && (
                   <>
                     <div>
                       <label style={lbl}>Hair Color</label>

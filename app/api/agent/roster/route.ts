@@ -129,26 +129,6 @@ export async function POST(req: Request) {
     )
   }
 
-  // Enforce roster limit for non-Pro agencies (Pro = unlimited).
-  const { data: agencyPlan } = await supabaseAdmin
-    .from('agencies')
-    .select('is_pro, pro_expires_at')
-    .eq('id', agent.agency_id)
-    .maybeSingle()
-  const isPro = !!(agencyPlan?.is_pro && (!agencyPlan.pro_expires_at || new Date(agencyPlan.pro_expires_at) > new Date()))
-  if (!isPro) {
-    const { count } = await supabaseAdmin
-      .from('agency_roster')
-      .select('id', { count: 'exact', head: true })
-      .eq('agency_id', agent.agency_id)
-      .neq('status', 'inactive')
-    if ((count ?? 0) >= 25) {
-      return NextResponse.json(
-        { error: 'Roster limit reached (25). Upgrade to Pro for an unlimited roster.', limitReached: true },
-        { status: 403 }
-      )
-    }
-  }
 
   const { data: entry, error } = await supabaseAdmin
     .from('agency_roster')

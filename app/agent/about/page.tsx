@@ -13,24 +13,13 @@ const FEATURES = [
 
 const PLANS = [
   {
-    name: 'Basic',
+    name: 'Free for agencies',
     price: 'Free',
-    sub: 'Forever',
-    color: '#e5e7eb',
-    textColor: '#374151',
-    features: ['Up to 20 roster members', 'Submit to all casting requests', 'Availability calendar', 'Status notifications'],
-    cta: 'Get Started Free',
-    href: '/agent/register',
-    highlight: false,
-  },
-  {
-    name: 'Pro',
-    price: '$49',
-    sub: '/month',
+    sub: 'Always',
     color: '#F59E0B',
     textColor: '#1a1a2e',
-    features: ['Unlimited roster', 'Priority placement in search', 'Advanced analytics', 'Bulk CSV import', 'Dedicated support', 'Early access to new features'],
-    cta: 'Start Free Trial',
+    features: ['Unlimited roster', 'Submit to all casting requests', 'Availability calendar at a glance', 'Bulk submissions', 'Status notifications', 'Direct with casting directors'],
+    cta: 'Register Your Agency',
     href: '/agent/register',
     highlight: true,
   },
@@ -119,7 +108,7 @@ export default function AgentAboutPage() {
       {/* Pricing */}
       <div style={{ maxWidth: '700px', margin: '0 auto', padding: '64px 24px' }}>
         <h2 style={{ textAlign: 'center', fontSize: '28px', fontWeight: '800', color: '#1a1a2e', marginBottom: '8px' }}>Simple pricing</h2>
-        <p style={{ textAlign: 'center', color: '#6b7280', marginBottom: '40px' }}>Start free. Upgrade when you need more.</p>
+        <p style={{ textAlign: 'center', color: '#6b7280', marginBottom: '40px' }}>Always free for agencies.</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
           {PLANS.map(plan => (
             <div key={plan.name} style={{ backgroundColor: plan.highlight ? '#1a1a2e' : 'white', borderRadius: '20px', padding: '32px 24px', boxShadow: plan.highlight ? '0 8px 32px rgba(0,0,0,0.2)' : '0 1px 8px rgba(0,0,0,0.07)', position: 'relative', overflow: 'hidden', border: plan.highlight ? 'none' : '1px solid #f3f4f6' }}>

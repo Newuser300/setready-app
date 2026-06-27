@@ -231,53 +231,11 @@ export default function AgentSettingsPage() {
 
         {/* Plan Status */}
         <div style={sectionStyle}>
-          <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#1a1a2e', margin: '0 0 12px' }}>Plan Status</h2>
-          {isPro ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ padding: '4px 12px', backgroundColor: '#fef3c7', color: '#92400e', fontWeight: '700', borderRadius: '20px', fontSize: '13px' }}>
-                PRO
-              </span>
-              <span style={{ color: '#6b7280', fontSize: '13px' }}>
-                {proExpiresAt
-                  ? `Active until ${new Date(proExpiresAt).toLocaleDateString('en-CA')}`
-                  : 'Active'}
-              </span>
-            </div>
-          ) : (
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                <span style={{ padding: '4px 12px', backgroundColor: '#f3f4f6', color: '#6b7280', fontWeight: '700', borderRadius: '20px', fontSize: '13px' }}>
-                  FREE
-                </span>
-                <span style={{ color: '#6b7280', fontSize: '13px' }}>Roster limit: {rosterLimit} performers</span>
-              </div>
-              <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 12px' }}>
-                Upgrade to Pro for unlimited roster, CSV export, advanced analytics, and priority placement.
-              </p>
-              {!promoMsg?.ok && (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    value={promoCode}
-                    onChange={e => setPromoCode(e.target.value.toUpperCase())}
-                    placeholder="Enter access code"
-                    style={{ flex: 1, padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }}
-                  />
-                  <button
-                    onClick={applyPromoCode}
-                    disabled={promoLoading}
-                    style={{ padding: '9px 16px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', whiteSpace: 'nowrap' }}
-                  >
-                    {promoLoading ? '...' : 'Apply'}
-                  </button>
-                </div>
-              )}
-              {promoMsg && (
-                <p style={{ margin: '8px 0 0', fontSize: '13px', color: promoMsg.ok ? '#16a34a' : '#dc2626' }}>
-                  {promoMsg.ok ? '✓ ' : '✗ '}{promoMsg.text}
-                </p>
-              )}
-            </div>
-          )}
+          <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#1a1a2e', margin: '0 0 12px' }}>Plan</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ padding: '4px 12px', backgroundColor: '#f0fdf4', color: '#16a34a', fontWeight: '700', borderRadius: '20px', fontSize: '13px' }}>Free</span>
+            <span style={{ color: '#6b7280', fontSize: '13px' }}>SetReady is free for agencies — no subscription required.</span>
+          </div>
         </div>
 
         {/* Team Members */}
