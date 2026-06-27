@@ -19,6 +19,11 @@ const ITEMS: Record<string, { priceEnv: string }> = {
   bundle_mega:    { priceEnv: 'STRIPE_SETCRASHERS_BUNDLE_MEGA_PRICE_ID' },
   hints_5:        { priceEnv: 'STRIPE_SETCRASHERS_HINTS5_PRICE_ID' },
   skips_3:        { priceEnv: 'STRIPE_SETCRASHERS_SKIPS3_PRICE_ID' },
+  proj_bombstunt: { priceEnv: 'STRIPE_SETCRASHERS_BOMBSTUNT_PRICE_ID' },
+  proj_skystrike: { priceEnv: 'STRIPE_SETCRASHERS_SKYSTRIKE_PRICE_ID' },
+  buff_strength:  { priceEnv: 'STRIPE_SETCRASHERS_BUFF_STRENGTH_PRICE_ID' },
+  buff_size:      { priceEnv: 'STRIPE_SETCRASHERS_BUFF_SIZE_PRICE_ID' },
+  buff_aimer:     { priceEnv: 'STRIPE_SETCRASHERS_BUFF_AIMER_PRICE_ID' },
 };
 
 export async function POST(request: Request) {
