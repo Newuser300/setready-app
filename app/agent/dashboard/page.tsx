@@ -213,6 +213,7 @@ export default function AgentDashboardPage() {
   const [addEmail, setAddEmail] = useState('')
   const [addLoading, setAddLoading] = useState(false)
   const [addError, setAddError] = useState('')
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
   const [selectedPerformer, setSelectedPerformer] = useState<RosterPerformer | null>(null)
   const [noteText, setNoteText] = useState('')
   const [noteLoading, setNoteLoading] = useState(false)
@@ -386,7 +387,11 @@ export default function AgentDashboardPage() {
     const res = await fetch('/api/agent/roster', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: addEmail }) })
     setAddLoading(false)
     if (res.ok) { setAddEmail(''); loadRoster() }
-    else { const d = await res.json(); setAddError(d.error || 'Failed to add') }
+    else {
+      const d = await res.json()
+      setAddError(d.error || 'Failed to add')
+      if (d.limitReached) setShowUpgradePrompt(true)
+    }
   }
 
   async function removeFromRoster(userId: string) {
@@ -670,6 +675,13 @@ export default function AgentDashboardPage() {
                 </button>
               </div>
               {addError && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '6px' }}>{addError}</div>}
+              {showUpgradePrompt && (
+                <div style={{ marginTop: '8px', padding: '12px 14px', backgroundColor: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                  <span style={{ fontSize: '12px', color: '#92400e', fontWeight: '600' }}>You've reached the 25-performer limit on the free plan.</span>
+                  <button onClick={() => router.push('/agent/settings')} style={{ backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: '8px', padding: '7px 14px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' }}>Upgrade to Pro →</button>
+                </div>
+              )}
+
             </div>
 
             {/* Filters */}
