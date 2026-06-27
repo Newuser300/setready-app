@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await supabaseAdmin
     .from('agency_roster')
     .select('id, agency_id, status, agencies(name)')
-    .eq('user_id', user.id)
+    .eq('performer_user_id', user.id)
     .neq('status', 'inactive');
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
   const { data: existing } = await supabaseAdmin
     .from('agency_roster')
     .select('id, status')
-    .eq('user_id', user.id)
+    .eq('performer_user_id', user.id)
     .eq('agency_id', agencyId)
     .neq('status', 'inactive')
     .maybeSingle();
@@ -78,7 +78,7 @@ export async function DELETE(req: NextRequest) {
     .from('agency_roster')
     .update({ status: 'inactive' })
     .eq('id', id)
-    .eq('user_id', user.id);
+    .eq('performer_user_id', user.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
