@@ -29,6 +29,8 @@ const PROJECTILES: Record<string, ProjDef> = {
   boomerang: { emoji: '🪃', name: 'Boomerang',     r: 22, density: 0.004, power: 'boomerang', desc: 'Curves back mid-flight — hit targets behind cover.', color: '#a16207', free: true },
   bomb:      { emoji: '💣', name: 'Bomb',          r: 22, density: 0.005, power: 'bomb',      desc: 'Explodes on impact with a huge blast. (Or tap to detonate early.)', color: '#111827', free: true },
   stunt:     { emoji: '🎭', name: 'Stunt Doubles', r: 24, density: 0.004, power: 'multi',     desc: 'Tap mid-flight — splits into a wide 5-way spread.', color: '#4b5563', free: true },
+  bombstunt: { emoji: '💥', name: 'Stunt Bomb Squad', r: 24, density: 0.005, power: 'bombstunt', desc: 'SUPER: tap mid-flight — splits into 2 giant stunt doubles that each blow up huge.', color: '#b91c1c' },
+  skystrike: { emoji: '☄️', name: 'Sky Strike',    r: 24, density: 0.006, power: 'skystrike', desc: 'SUPER: rockets up, then slams straight down at huge speed for a gigantic blast.', color: '#4338ca' },
 };
 const FREE_PROJECTILE = 'clapper';
 // ── Stackable buff power-ups (modifiers applied on top of any base projectile) ──
@@ -63,6 +65,8 @@ const STORE = [
   { id: 'buff_strength', emoji: '💪', name: 'Power Sling (3 uses)', desc: '+75% slingshot strength and a bigger sling. Stacks with other shot buffs.', price: '$1.99', kind: 'proj' },
   { id: 'buff_size',     emoji: '🔎', name: 'Big Shot (3 uses)',    desc: 'Launch a much larger item for a wider hit. Stacks with other shot buffs.',  price: '$1.99', kind: 'proj' },
   { id: 'buff_aimer',    emoji: '🎯', name: 'Long Sight (3 uses)',  desc: 'Dotted aimer reaches the ground every shot. Stacks with other shot buffs.',  price: '$1.99', kind: 'proj' },
+  { id: 'proj_bombstunt', emoji: '💥', name: 'Stunt Bomb Squad (3 uses)', desc: 'SUPER: splits into 2 giant stunt doubles that each blow up huge.', price: '$5.99', kind: 'proj' },
+  { id: 'proj_skystrike', emoji: '☄️', name: 'Sky Strike (3 uses)',       desc: 'SUPER: rockets up, then slams down for a gigantic blast.',         price: '$5.99', kind: 'proj' },
 ];
 // what each bundle unlocks, used to mark them owned + to grant on purchase reconcile
 const BUNDLE_GRANTS: Record<string, string[]> = {
@@ -310,7 +314,7 @@ export default function SetCrashers() {
     aiming: boolean; aimX: number; aimY: number; particles: Particle[]; shake: number;
     ammo: number; armed: boolean; loadGuard: number; ended: boolean; powerUsed: boolean;
     settleT: number; flightT: number; last: number; launchDir: number; projKind: string; detonate: boolean;
-    comboCount?: number; comboLast?: number; shotTargets?: number; maxComboThisLevel?: number; settleLossT?: number;
+    comboCount?: number; comboLast?: number; shotTargets?: number; maxComboThisLevel?: number; settleLossT?: number; skyStrikeActive?: boolean;
     drops: Drop[]; dropTimer: number; bonusT: number; bonusCaught: Record<string, number>; bonusEnded: boolean;
   }>({ engine: null, raf: 0, mode: 'level', bodies: [], targets: [], projectile: null, flying: false, extra: [], aiming: false, aimX: 0, aimY: 0, particles: [], shake: 0, ammo: 0, armed: false, loadGuard: 0, ended: false, powerUsed: false, settleT: 0, flightT: 0, last: 0, launchDir: 1, projKind: 'clapper', detonate: false, drops: [], dropTimer: 6, bonusT: 15, bonusCaught: {}, bonusEnded: false });
 
@@ -365,6 +369,7 @@ export default function SetCrashers() {
                 else if (g.startsWith('proj_')) addProj(g.slice(5), PURCHASE_USES);
               }
             } else if (item.startsWith('proj_')) { addProj(item.slice(5), PURCHASE_USES); } // single: +3 uses
+            else if (item.startsWith('buff_')) { addProj(item, PURCHASE_USES); }            // buff: +3 uses (keyed by full id)
             else { owned.add(item); }
             claimed.push(p.id);
           }
@@ -510,6 +515,16 @@ export default function SetCrashers() {
         if (G.flying && !G.powerUsed && (G.projKind === 'coffee' || G.projKind === 'bomb') && G.projectile && (a === G.projectile || b === G.projectile)) {
           G.detonate = true;
         }
+        // Sky Strike: the slamming projectile detonates a GIGANTIC blast on contact.
+        if (G.flying && G.projectile && (a === G.projectile || b === G.projectile) && (G.projectile as any).crasherSkySlam && !G.powerUsed) {
+          const sp = G.projectile;
+          G.powerUsed = true; (sp as any).crasherSkySlam = false; G.skyStrikeActive = false;
+          explodeAt(sp.position.x, sp.position.y, 360, 1.2); // huge radius + force
+          spawnParticles(sp.position.x, sp.position.y, 60, '#fbbf24', 600); G.shake = 40;
+          try { Matter.Composite.remove(G.engine.world, sp); } catch {}
+          G.projectile = null; G.flying = false;
+          if (G.mode === 'level') setTimeout(() => settleCheck(), 500);
+        }
         // impact thud when the live projectile strikes something hard
         if (G.flying && impact > 4 && G.projectile && (a === G.projectile || b === G.projectile)) SFX.impact();
         for (const [t, other] of [[a, b], [b, a]] as [Mat, Mat][]) {
@@ -637,6 +652,45 @@ export default function SetCrashers() {
       // remove the original so the player sees distinct split pieces, not one overlapping blob
       Matter.Composite.remove(G.engine.world, p); G.projectile = null; G.flying = false;
       if (G.mode === 'level') setTimeout(() => settleCheck(), 700);
+    }
+    else if (def.power === 'bombstunt') {
+      // SUPER: split into 2 GIANT stunt doubles; each one detonates a big explosion shortly after.
+      spawnParticles(p.position.x, p.position.y, 26, '#fca5a5', 260); G.shake = Math.min(G.shake + 12, 40);
+      const baseAngle = Math.atan2(p.velocity.y, p.velocity.x);
+      const speed = Math.max(Math.hypot(p.velocity.x, p.velocity.y), 6);
+      const bigR = def.r * 2; // stunt doubles are twice as big
+      for (let i = 0; i < 2; i++) {
+        const a = baseAngle + (i === 0 ? -0.22 : 0.22);
+        const c = Matter.Bodies.circle(p.position.x, p.position.y, bigR, { density: def.density * 0.8, restitution: 0.3, friction: 0.4, frictionAir: 0.001, label: 'proj' });
+        c.crasherProjKind = 'stunt'; c.crasherR = bigR; c.crasherBombStunt = true;
+        Matter.Body.setVelocity(c, { x: Math.cos(a) * speed, y: Math.sin(a) * speed });
+        Matter.Composite.add(G.engine.world, c); G.extra.push(c);
+        // each giant double explodes big after a short flight, wherever it is
+        const ref = c;
+        setTimeout(() => {
+          if (!ref.position) return;
+          explodeAt(ref.position.x, ref.position.y, 240, 0.9);
+          try { Matter.Composite.remove(G.engine.world, ref); } catch {}
+          G.extra = G.extra.filter(e => e !== ref);
+          if (G.mode === 'level') setTimeout(() => settleCheck(), 400);
+        }, 650 + i * 120);
+      }
+      Matter.Composite.remove(G.engine.world, p); G.projectile = null; G.flying = false;
+      if (G.mode === 'level') setTimeout(() => settleCheck(), 1600);
+    }
+    else if (def.power === 'skystrike') {
+      // SUPER: rocket straight up at huge speed, then after a split second slam straight
+      // down at huge speed; a gigantic explosion fires on impact.
+      spawnParticles(p.position.x, p.position.y, 22, '#a5b4fc', 240); G.shake = Math.min(G.shake + 10, 40);
+      const launchX = p.position.x;
+      Matter.Body.setVelocity(p, { x: 0, y: -46 }); // up, tremendous speed
+      G.skyStrikeActive = true;
+      setTimeout(() => {
+        if (!p.position) return;
+        Matter.Body.setPosition(p, { x: launchX, y: Math.max(40, p.position.y) });
+        Matter.Body.setVelocity(p, { x: 0, y: 52 }); // slam down, tremendous speed
+        p.crasherSkySlam = true;
+      }, 360);
     }
   };
 
