@@ -199,12 +199,12 @@ export default function AListPage() {
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 760, margin: '0 auto', padding: '20px 18px 80px' }}>
         {/* header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-          <Link href="/dashboard" style={{ color: MUTE, fontSize: 13, textDecoration: 'none', fontWeight: 600 }}>← Dashboard</Link>
+          <Link href="/dashboard" style={{ color: MUTE, fontSize: 15, textDecoration: 'none', fontWeight: 600 }}>← Dashboard</Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <button onClick={() => setShowTutorial(true)} style={{ background: 'none', border: `1px solid ${LINE}`, color: MUTE, borderRadius: 8, padding: '5px 10px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>How to play</button>
+            <button onClick={() => setShowTutorial(true)} style={{ background: 'none', border: `1px solid ${LINE}`, color: MUTE, borderRadius: 8, padding: '5px 10px', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>How to play</button>
             <div style={{ textAlign: 'right' }}>
-              <div className="alist-display" style={{ fontSize: 22, color: AMBER }}>{save.buzz.toLocaleString()}<span style={{ fontSize: 12, color: MUTE, marginLeft: 4, letterSpacing: '.1em' }}>BUZZ</span></div>
-              <div style={{ fontSize: 11, color: scenesLeft > 0 ? MUTE : '#ff9b9b' }}>{scenesLeft > 0 ? `${scenesLeft} scene${scenesLeft === 1 ? '' : 's'} left` : 'No scenes left'}</div>
+              <div className="alist-display" style={{ fontSize: 22, color: AMBER }}>{save.buzz.toLocaleString()}<span style={{ fontSize: 14, color: MUTE, marginLeft: 4, letterSpacing: '.1em' }}>BUZZ</span></div>
+              <div style={{ fontSize: 13, color: scenesLeft > 0 ? MUTE : '#ff9b9b' }}>{scenesLeft > 0 ? `${scenesLeft} scene${scenesLeft === 1 ? '' : 's'} left` : 'No scenes left'}</div>
             </div>
           </div>
         </div>
@@ -233,10 +233,10 @@ function Stage({ save, rank, dailyAvailable, loading, loadMsg, err, scenesLeft, 
   return (
     <div className="alist-in">
       <div style={{ textAlign: 'center', marginBottom: 26 }}>
-        <div style={{ color: AMBER, letterSpacing: '.35em', fontSize: 12, fontWeight: 700, marginBottom: 8 }}>NOW CASTING</div>
+        <div style={{ color: AMBER, letterSpacing: '.35em', fontSize: 14, fontWeight: 700, marginBottom: 8 }}>NOW CASTING</div>
         <h1 className="alist-display" style={{ fontSize: 'clamp(52px,14vw,96px)', margin: 0, color: TEXT }}>A&#8209;LIST</h1>
         <div className="alist-display" style={{ fontSize: 'clamp(20px,5vw,30px)', color: AMBER, letterSpacing: '.06em', marginTop: -4 }}>INTERACTIVE SCENES</div>
-        <p style={{ color: MUTE, fontSize: 15, maxWidth: 440, margin: '10px auto 0', lineHeight: 1.5 }}>
+        <p style={{ color: MUTE, fontSize: 17, maxWidth: 440, margin: '10px auto 0', lineHeight: 1.5 }}>
           Step into a scene. Act opposite a partner who reacts to your every choice. The Director is watching.
         </p>
       </div>
@@ -245,32 +245,32 @@ function Stage({ save, rank, dailyAvailable, loading, loadMsg, err, scenesLeft, 
       <div style={{ background: PANEL, border: `1px solid ${LINE}`, borderRadius: 16, padding: '18px 20px', marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
           <div>
-            <div style={{ fontSize: 11, color: MUTE, letterSpacing: '.18em', fontWeight: 700 }}>YOUR STANDING</div>
+            <div style={{ fontSize: 13, color: MUTE, letterSpacing: '.18em', fontWeight: 700 }}>YOUR STANDING</div>
             <div className="alist-display" style={{ fontSize: 38, color: TEXT }}>{rank.name}</div>
           </div>
-          <div style={{ textAlign: 'right', color: MUTE, fontSize: 12 }}>
+          <div style={{ textAlign: 'right', color: MUTE, fontSize: 14 }}>
             {rank.next ? <>Next: <span style={{ color: AMBER }}>{RANKS[rank.idx + 1]}</span><br />{(rank.next - save.buzz).toLocaleString()} buzz to go</> : <span style={{ color: AMBER }}>Top of the call sheet ★</span>}
           </div>
         </div>
         <div style={{ height: 7, background: PANEL2, borderRadius: 99, overflow: 'hidden' }}>
           <div style={{ width: `${Math.round(rank.into * 100)}%`, height: '100%', background: `linear-gradient(90deg,${AMBER_DEEP},${AMBER})`, borderRadius: 99, transition: 'width .5s ease' }} />
         </div>
-        <div style={{ display: 'flex', gap: 18, marginTop: 14, fontSize: 12, color: MUTE }}>
+        <div style={{ display: 'flex', gap: 18, marginTop: 14, fontSize: 14, color: MUTE }}>
           <span>{save.auditions} auditions</span>
           <span>Best take: <span style={{ color: TEXT }}>{save.bestOverall}</span></span>
           {save.dailyStreak > 0 && <span>🔥 {save.dailyStreak}-day streak</span>}
         </div>
       </div>
 
-      {err && <div style={{ background: 'rgba(255,107,107,0.1)', border: '1px solid rgba(255,107,107,0.3)', color: '#ff9b9b', padding: '10px 14px', borderRadius: 10, fontSize: 13, marginBottom: 14 }}>{err}</div>}
+      {err && <div style={{ background: 'rgba(255,107,107,0.1)', border: '1px solid rgba(255,107,107,0.3)', color: '#ff9b9b', padding: '10px 14px', borderRadius: 10, fontSize: 15, marginBottom: 14 }}>{err}</div>}
 
       {/* daily */}
       <button className="alist-btn" disabled={loading || !dailyAvailable} onClick={onDaily}
         style={{ width: '100%', textAlign: 'left', background: dailyAvailable ? `linear-gradient(135deg, ${AMBER_DEEP}, ${AMBER})` : PANEL, color: dailyAvailable ? INK : MUTE, border: dailyAvailable ? 'none' : `1px solid ${LINE}`, borderRadius: 14, padding: '16px 18px', cursor: loading || !dailyAvailable ? 'default' : 'pointer', marginBottom: 12, fontFamily: 'inherit' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 16 }}>🎬 Daily Audition</div>
-            <div style={{ fontSize: 12, opacity: .85, marginTop: 2 }}>{dailyAvailable ? 'A fresh scene, once a day. Bonus buzz + keep your streak.' : 'Done for today — come back tomorrow.'}</div>
+            <div style={{ fontWeight: 800, fontSize: 18 }}>🎬 Daily Audition</div>
+            <div style={{ fontSize: 14, opacity: .85, marginTop: 2 }}>{dailyAvailable ? 'A fresh scene, once a day. Bonus buzz + keep your streak.' : 'Done for today — come back tomorrow.'}</div>
           </div>
           {dailyAvailable && <span style={{ fontSize: 22 }}>→</span>}
         </div>
@@ -279,20 +279,20 @@ function Stage({ save, rank, dailyAvailable, loading, loadMsg, err, scenesLeft, 
       {/* audition */}
       <button className="alist-btn" disabled={loading} onClick={onAudition}
         style={{ width: '100%', background: PANEL2, color: TEXT, border: `1px solid ${LINE}`, borderRadius: 14, padding: '16px 18px', cursor: loading ? 'wait' : 'pointer', marginBottom: 12, fontFamily: 'inherit', textAlign: 'left' }}>
-        <div style={{ fontWeight: 800, fontSize: 16 }}>{loading ? loadMsg : '🎭 New Audition'}</div>
-        <div style={{ fontSize: 12, color: MUTE, marginTop: 2 }}>A surprise scene, scaled to your standing.</div>
+        <div style={{ fontWeight: 800, fontSize: 18 }}>{loading ? loadMsg : '🎭 New Audition'}</div>
+        <div style={{ fontSize: 14, color: MUTE, marginTop: 2 }}>A surprise scene, scaled to your standing.</div>
       </button>
 
       {/* genre picker */}
       <button className="alist-btn" disabled={loading} onClick={() => setPickGenre(pickGenre ? null : 'open')}
-        style={{ width: '100%', background: 'transparent', color: MUTE, border: `1px dashed ${LINE}`, borderRadius: 14, padding: '12px 18px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}>
+        style={{ width: '100%', background: 'transparent', color: MUTE, border: `1px dashed ${LINE}`, borderRadius: 14, padding: '12px 18px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 15, fontWeight: 600 }}>
         🎞️ Choose a genre instead
       </button>
       {pickGenre && (
         <div className="alist-in" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
           {GENRES.map(g => (
             <button key={g} className="alist-btn" disabled={loading} onClick={() => onGenre(g)}
-              style={{ background: PANEL, color: TEXT, border: `1px solid ${LINE}`, borderRadius: 99, padding: '8px 14px', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }}>{g}</button>
+              style={{ background: PANEL, color: TEXT, border: `1px solid ${LINE}`, borderRadius: 99, padding: '8px 14px', cursor: 'pointer', fontSize: 15, fontFamily: 'inherit' }}>{g}</button>
           ))}
         </div>
       )}
@@ -300,22 +300,22 @@ function Stage({ save, rank, dailyAvailable, loading, loadMsg, err, scenesLeft, 
       {/* scenes / buy */}
       <div style={{ marginTop: 16, background: scenesLeft > 0 ? 'transparent' : PANEL, border: `1px solid ${LINE}`, borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <div>
-          <div style={{ fontSize: 13, color: TEXT, fontWeight: 700 }}>{scenesLeft > 0 ? `${scenesLeft} scene${scenesLeft === 1 ? '' : 's'} remaining` : 'You’re out of scenes'}</div>
-          <div style={{ fontSize: 12, color: MUTE, marginTop: 2 }}>{scenesLeft > 0 ? 'Each audition uses one scene.' : 'Unlock 20 more to keep performing.'}</div>
+          <div style={{ fontSize: 15, color: TEXT, fontWeight: 700 }}>{scenesLeft > 0 ? `${scenesLeft} scene${scenesLeft === 1 ? '' : 's'} remaining` : 'You’re out of scenes'}</div>
+          <div style={{ fontSize: 14, color: MUTE, marginTop: 2 }}>{scenesLeft > 0 ? 'Each audition uses one scene.' : 'Unlock 20 more to keep performing.'}</div>
         </div>
-        <button className="alist-btn" onClick={onBuy} style={{ background: `linear-gradient(135deg,${AMBER_DEEP},${AMBER})`, color: INK, border: 'none', borderRadius: 10, padding: '10px 16px', fontWeight: 800, fontFamily: 'inherit', fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}>+20 · $4.98</button>
+        <button className="alist-btn" onClick={onBuy} style={{ background: `linear-gradient(135deg,${AMBER_DEEP},${AMBER})`, color: INK, border: 'none', borderRadius: 10, padding: '10px 16px', fontWeight: 800, fontFamily: 'inherit', fontSize: 15, cursor: 'pointer', whiteSpace: 'nowrap' }}>+20 · $4.98</button>
       </div>
 
       {/* filmography */}
       {save.filmography.length > 0 && (
         <div style={{ marginTop: 26 }}>
-          <div style={{ fontSize: 11, color: MUTE, letterSpacing: '.18em', fontWeight: 700, marginBottom: 10 }}>YOUR FILMOGRAPHY</div>
+          <div style={{ fontSize: 13, color: MUTE, letterSpacing: '.18em', fontWeight: 700, marginBottom: 10 }}>YOUR FILMOGRAPHY</div>
           {save.filmography.slice(0, 6).map((f: any, i: number) => {
             const tone = VERDICT_TONE[f.verdict] || { c: MUTE, bg: 'transparent' }
             return (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: `1px solid ${LINE}` }}>
-                <div><span style={{ color: TEXT, fontWeight: 600, fontSize: 14 }}>{f.title}</span> <span style={{ color: MUTE, fontSize: 12 }}>· {f.genre}</span></div>
-                <span style={{ color: tone.c, background: tone.bg, fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 99, letterSpacing: '.04em' }}>{f.verdict}</span>
+                <div><span style={{ color: TEXT, fontWeight: 600, fontSize: 16 }}>{f.title}</span> <span style={{ color: MUTE, fontSize: 14 }}>· {f.genre}</span></div>
+                <span style={{ color: tone.c, background: tone.bg, fontSize: 13, fontWeight: 700, padding: '3px 9px', borderRadius: 99, letterSpacing: '.04em' }}>{f.verdict}</span>
               </div>
             )
           })}
@@ -335,12 +335,12 @@ function SceneView({ scene, history, draft, setDraft, reacting, loading, loadMsg
         <div style={{ background: `repeating-linear-gradient(45deg, ${INK} 0 18px, ${PANEL2} 18px 36px)`, height: 14 }} />
         <div style={{ padding: '16px 18px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ color: AMBER, fontSize: 11, letterSpacing: '.2em', fontWeight: 700 }}>{isDaily ? 'DAILY · ' : ''}{scene.genre?.toUpperCase()}</span>
-            <span style={{ color: MUTE, fontSize: 11, letterSpacing: '.08em' }}>{scene.slug}</span>
+            <span style={{ color: AMBER, fontSize: 13, letterSpacing: '.2em', fontWeight: 700 }}>{isDaily ? 'DAILY · ' : ''}{scene.genre?.toUpperCase()}</span>
+            <span style={{ color: MUTE, fontSize: 13, letterSpacing: '.08em' }}>{scene.slug}</span>
           </div>
           <h2 className="alist-display" style={{ fontSize: 30, margin: '2px 0 8px', color: TEXT }}>{scene.title}</h2>
-          <p style={{ color: TEXT, fontSize: 14, lineHeight: 1.55, margin: '0 0 8px' }}>{scene.setup}</p>
-          <p style={{ color: MUTE, fontSize: 12.5, margin: 0 }}><span style={{ color: AMBER }}>Your objective:</span> {scene.objective}</p>
+          <p style={{ color: TEXT, fontSize: 16, lineHeight: 1.55, margin: '0 0 8px' }}>{scene.setup}</p>
+          <p style={{ color: MUTE, fontSize: 17, margin: 0 }}><span style={{ color: AMBER }}>Your objective:</span> {scene.objective}</p>
         </div>
       </div>
 
@@ -349,23 +349,23 @@ function SceneView({ scene, history, draft, setDraft, reacting, loading, loadMsg
         {history.map((h: Line, i: number) => (
           h.who === 'partner' ? (
             <div key={i} className="alist-in" style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 11, color: AMBER, fontWeight: 700, letterSpacing: '.08em', marginBottom: 3 }}>{scene.partnerName?.toUpperCase()}{h.beat ? <span style={{ color: MUTE, fontWeight: 500 }}> · {h.beat}</span> : ''}</div>
-              <div style={{ background: PANEL2, border: `1px solid ${LINE}`, borderRadius: '4px 14px 14px 14px', padding: '11px 14px', fontSize: 14.5, lineHeight: 1.5, color: TEXT }}>{h.text}</div>
+              <div style={{ fontSize: 13, color: AMBER, fontWeight: 700, letterSpacing: '.08em', marginBottom: 3 }}>{scene.partnerName?.toUpperCase()}{h.beat ? <span style={{ color: MUTE, fontWeight: 500 }}> · {h.beat}</span> : ''}</div>
+              <div style={{ background: PANEL2, border: `1px solid ${LINE}`, borderRadius: '4px 14px 14px 14px', padding: '11px 14px', fontSize: 17, lineHeight: 1.5, color: TEXT }}>{h.text}</div>
             </div>
           ) : (
             <div key={i} className="alist-in" style={{ marginBottom: 12, textAlign: 'right' }}>
-              <div style={{ fontSize: 11, color: MUTE, fontWeight: 700, letterSpacing: '.08em', marginBottom: 3 }}>YOU</div>
-              <div style={{ display: 'inline-block', background: `linear-gradient(135deg,${AMBER_DEEP},${AMBER})`, color: INK, borderRadius: '14px 4px 14px 14px', padding: '11px 14px', fontSize: 14.5, lineHeight: 1.5, fontWeight: 500, maxWidth: '85%', textAlign: 'left' }}>{h.text}</div>
+              <div style={{ fontSize: 13, color: MUTE, fontWeight: 700, letterSpacing: '.08em', marginBottom: 3 }}>YOU</div>
+              <div style={{ display: 'inline-block', background: `linear-gradient(135deg,${AMBER_DEEP},${AMBER})`, color: INK, borderRadius: '14px 4px 14px 14px', padding: '11px 14px', fontSize: 17, lineHeight: 1.5, fontWeight: 500, maxWidth: '85%', textAlign: 'left' }}>{h.text}</div>
             </div>
           )
         ))}
-        {reacting && <div style={{ fontSize: 12, color: MUTE, fontStyle: 'italic' }}>{scene.partnerName} reacts…</div>}
+        {reacting && <div style={{ fontSize: 14, color: MUTE, fontStyle: 'italic' }}>{scene.partnerName} reacts…</div>}
       </div>
 
-      {err && <div style={{ color: '#ff9b9b', fontSize: 12.5, marginBottom: 10 }}>{err}</div>}
+      {err && <div style={{ color: '#ff9b9b', fontSize: 17, marginBottom: 10 }}>{err}</div>}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '18px', color: AMBER, fontSize: 14, fontWeight: 600 }}>{loadMsg}</div>
+        <div style={{ textAlign: 'center', padding: '18px', color: AMBER, fontSize: 16, fontWeight: 600 }}>{loadMsg}</div>
       ) : (
         <>
           {/* suggested lines (first turn only, as scaffolding) */}
@@ -373,11 +373,11 @@ function SceneView({ scene, history, draft, setDraft, reacting, loading, loadMsg
             <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 12 }}>
               {scene.lines.map((l: string, i: number) => (
                 <button key={i} className="alist-btn" disabled={reacting} onClick={() => onDeliver(l)}
-                  style={{ textAlign: 'left', background: PANEL, color: TEXT, border: `1px solid ${LINE}`, borderRadius: 11, padding: '11px 14px', cursor: 'pointer', fontSize: 14, fontFamily: 'inherit', lineHeight: 1.4 }}>
+                  style={{ textAlign: 'left', background: PANEL, color: TEXT, border: `1px solid ${LINE}`, borderRadius: 11, padding: '11px 14px', cursor: 'pointer', fontSize: 16, fontFamily: 'inherit', lineHeight: 1.4 }}>
                   <span style={{ color: AMBER, marginRight: 6 }}>“</span>{l}<span style={{ color: AMBER }}>”</span>
                 </button>
               ))}
-              <div style={{ textAlign: 'center', color: MUTE, fontSize: 11, marginTop: 2 }}>— or write your own line below —</div>
+              <div style={{ textAlign: 'center', color: MUTE, fontSize: 13, marginTop: 2 }}>— or write your own line below —</div>
             </div>
           )}
 
@@ -387,11 +387,11 @@ function SceneView({ scene, history, draft, setDraft, reacting, loading, loadMsg
           {/* CUT */}
           {playerTurns >= 1 && (
             <button className="alist-btn" disabled={reacting} onClick={onCut}
-              style={{ width: '100%', marginTop: 12, background: 'transparent', color: AMBER, border: `1px solid ${AMBER_DEEP}`, borderRadius: 12, padding: '12px', cursor: 'pointer', fontWeight: 800, fontFamily: 'inherit', fontSize: 14, letterSpacing: '.05em' }}>
+              style={{ width: '100%', marginTop: 12, background: 'transparent', color: AMBER, border: `1px solid ${AMBER_DEEP}`, borderRadius: 12, padding: '12px', cursor: 'pointer', fontWeight: 800, fontFamily: 'inherit', fontSize: 16, letterSpacing: '.05em' }}>
               ✂ CUT — end the take &amp; get the Director’s notes
             </button>
           )}
-          <div style={{ textAlign: 'center', color: MUTE, fontSize: 11, marginTop: 8 }}>Play 1–4 exchanges, then call CUT when your scene lands.</div>
+          <div style={{ textAlign: 'center', color: MUTE, fontSize: 13, marginTop: 8 }}>Play 1–4 exchanges, then call CUT when your scene lands.</div>
         </>
       )}
     </div>
@@ -404,7 +404,7 @@ function ResultView({ result, scene, save, rank, isDaily, scenesLeft, onBuy, onA
   const dailyBonus = isDaily ? Math.round(result.buzz * 0.5) : 0
   return (
     <div className="alist-in" style={{ textAlign: 'center' }}>
-      <div style={{ color: MUTE, letterSpacing: '.3em', fontSize: 11, fontWeight: 700, marginBottom: 14 }}>THE DIRECTOR’S VERDICT</div>
+      <div style={{ color: MUTE, letterSpacing: '.3em', fontSize: 13, fontWeight: 700, marginBottom: 14 }}>THE DIRECTOR’S VERDICT</div>
 
       {/* stamped verdict */}
       <div style={{ display: 'inline-block', border: `2.5px solid ${tone.c}`, color: tone.c, background: tone.bg, borderRadius: 12, padding: '12px 26px', transform: 'rotate(-2.5deg)', marginBottom: 22 }}>
@@ -415,41 +415,41 @@ function ResultView({ result, scene, save, rank, isDaily, scenesLeft, onBuy, onA
       <div style={{ background: PANEL, border: `1px solid ${LINE}`, borderRadius: 16, padding: '18px 20px', marginBottom: 16, textAlign: 'left' }}>
         {[['Truth', result.scores?.truth], ['Presence', result.scores?.presence], ['Originality', result.scores?.originality]].map(([label, v]: any) => (
           <div key={label} style={{ marginBottom: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 5 }}><span style={{ color: MUTE }}>{label}</span><span style={{ color: TEXT, fontWeight: 700 }}>{v ?? 0}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 17, marginBottom: 5 }}><span style={{ color: MUTE }}>{label}</span><span style={{ color: TEXT, fontWeight: 700 }}>{v ?? 0}</span></div>
             <div style={{ height: 6, background: PANEL2, borderRadius: 99 }}><div style={{ width: `${v ?? 0}%`, height: '100%', background: `linear-gradient(90deg,${AMBER_DEEP},${AMBER})`, borderRadius: 99 }} /></div>
           </div>
         ))}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, paddingTop: 14, borderTop: `1px solid ${LINE}` }}>
-          <span style={{ color: MUTE, fontSize: 13 }}>Overall</span>
+          <span style={{ color: MUTE, fontSize: 15 }}>Overall</span>
           <span className="alist-display" style={{ fontSize: 34, color: AMBER }}>{result.overall}</span>
         </div>
       </div>
 
       {/* note */}
       <div style={{ background: PANEL2, border: `1px solid ${LINE}`, borderRadius: 14, padding: '16px 18px', marginBottom: 10, textAlign: 'left' }}>
-        <div style={{ fontSize: 11, color: AMBER, letterSpacing: '.15em', fontWeight: 700, marginBottom: 6 }}>NOTES</div>
-        <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55, color: TEXT, fontStyle: 'italic' }}>“{result.note}”</p>
-        {result.highlight && <p style={{ margin: '10px 0 0', fontSize: 13, color: MUTE }}><span style={{ color: AMBER }}>Best moment:</span> {result.highlight}</p>}
+        <div style={{ fontSize: 13, color: AMBER, letterSpacing: '.15em', fontWeight: 700, marginBottom: 6 }}>NOTES</div>
+        <p style={{ margin: 0, fontSize: 17, lineHeight: 1.55, color: TEXT, fontStyle: 'italic' }}>“{result.note}”</p>
+        {result.highlight && <p style={{ margin: '10px 0 0', fontSize: 15, color: MUTE }}><span style={{ color: AMBER }}>Best moment:</span> {result.highlight}</p>}
       </div>
 
       {/* buzz */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, margin: '18px 0' }}>
         <span className="alist-display" style={{ fontSize: 44, color: AMBER }}>+{result.buzz + dailyBonus}</span>
         <div style={{ textAlign: 'left' }}>
-          <div style={{ fontSize: 12, color: MUTE, letterSpacing: '.1em' }}>BUZZ EARNED</div>
-          {dailyBonus > 0 && <div style={{ fontSize: 11, color: AMBER }}>incl. +{dailyBonus} daily bonus 🔥</div>}
+          <div style={{ fontSize: 14, color: MUTE, letterSpacing: '.1em' }}>BUZZ EARNED</div>
+          {dailyBonus > 0 && <div style={{ fontSize: 13, color: AMBER }}>incl. +{dailyBonus} daily bonus 🔥</div>}
         </div>
       </div>
 
       {rank.next && save.buzz >= rank.next - result.buzz && save.buzz < rank.next ? null : null}
 
       <button className="alist-btn" onClick={onAgain}
-        style={{ width: '100%', background: `linear-gradient(135deg,${AMBER_DEEP},${AMBER})`, color: INK, border: 'none', borderRadius: 14, padding: '15px', cursor: 'pointer', fontWeight: 800, fontFamily: 'inherit', fontSize: 16 }}>
+        style={{ width: '100%', background: `linear-gradient(135deg,${AMBER_DEEP},${AMBER})`, color: INK, border: 'none', borderRadius: 14, padding: '15px', cursor: 'pointer', fontWeight: 800, fontFamily: 'inherit', fontSize: 18 }}>
         Back to the Stage
       </button>
       {scenesLeft <= 0 && (
         <button className="alist-btn" onClick={onBuy}
-          style={{ width: '100%', marginTop: 10, background: 'transparent', color: AMBER, border: `1px solid ${AMBER_DEEP}`, borderRadius: 14, padding: '13px', cursor: 'pointer', fontWeight: 700, fontFamily: 'inherit', fontSize: 14 }}>
+          style={{ width: '100%', marginTop: 10, background: 'transparent', color: AMBER, border: `1px solid ${AMBER_DEEP}`, borderRadius: 14, padding: '13px', cursor: 'pointer', fontWeight: 700, fontFamily: 'inherit', fontSize: 16 }}>
           That was your last scene — unlock 20 more for $4.98
         </button>
       )}
@@ -462,31 +462,61 @@ function VoiceInput({ draft, setDraft, reacting, onDeliver }: any) {
   const [listening, setListening] = useState(false)
   const [supported, setSupported] = useState(false)
   const recRef = useRef<any>(null)
+  const silenceTimer = useRef<any>(null)
+  const manualStop = useRef(false)
+  const finalRef = useRef('')
 
   useEffect(() => {
     const SR = (typeof window !== 'undefined') && ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
     setSupported(!!SR)
+    return () => { if (silenceTimer.current) clearTimeout(silenceTimer.current) }
   }, [])
 
-  function toggleMic() {
+  function clearSilence() { if (silenceTimer.current) { clearTimeout(silenceTimer.current); silenceTimer.current = null } }
+
+  function armSilence() {
+    // Stop only after 2 full seconds of silence.
+    clearSilence()
+    silenceTimer.current = setTimeout(() => {
+      manualStop.current = true
+      try { recRef.current?.stop() } catch {}
+    }, 2000)
+  }
+
+  function startMic() {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SR) return
-    if (listening) { try { recRef.current?.stop() } catch {}; setListening(false); return }
     const rec = new SR()
-    rec.lang = 'en-US'; rec.interimResults = true; rec.continuous = false
-    let finalText = draft ? draft + ' ' : ''
+    rec.lang = 'en-US'; rec.interimResults = true; rec.continuous = true
+    manualStop.current = false
+    finalRef.current = draft ? draft + ' ' : ''
     rec.onresult = (e: any) => {
       let interim = ''
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const t = e.results[i][0].transcript
-        if (e.results[i].isFinal) finalText += t + ' '; else interim += t
+        if (e.results[i].isFinal) finalRef.current += t + ' '; else interim += t
       }
-      setDraft((finalText + interim).trim())
+      setDraft((finalRef.current + interim).trim())
+      armSilence() // reset the 2s countdown every time speech is heard
     }
-    rec.onend = () => setListening(false)
-    rec.onerror = () => setListening(false)
+    rec.onaudiostart = () => armSilence()
+    rec.onend = () => {
+      clearSilence()
+      // If it ended on its own (not a real stop) and the user hasn't tapped stop, keep going.
+      if (!manualStop.current) {
+        try { rec.start(); return } catch {}
+      }
+      setListening(false)
+    }
+    rec.onerror = () => { clearSilence(); setListening(false) }
     recRef.current = rec
-    try { rec.start(); setListening(true) } catch {}
+    try { rec.start(); setListening(true); armSilence() } catch {}
+  }
+
+  function toggleMic() {
+    if (!supported) return
+    if (listening) { manualStop.current = true; clearSilence(); try { recRef.current?.stop() } catch {}; setListening(false); return }
+    startMic()
   }
 
   return (
@@ -495,7 +525,7 @@ function VoiceInput({ draft, setDraft, reacting, onDeliver }: any) {
         <textarea value={draft} onChange={e => setDraft(e.target.value)} placeholder={supported ? 'Type your line — or tap the mic to speak it…' : 'Say your line…'} rows={2}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onDeliver(draft) } }}
           disabled={reacting}
-          style={{ flex: 1, background: PANEL, color: TEXT, border: `1px solid ${listening ? AMBER : LINE}`, borderRadius: 12, padding: '11px 14px', fontSize: 14.5, fontFamily: 'inherit', resize: 'none', outline: 'none', lineHeight: 1.4 }} />
+          style={{ flex: 1, background: PANEL, color: TEXT, border: `1px solid ${listening ? AMBER : LINE}`, borderRadius: 12, padding: '11px 14px', fontSize: 17, fontFamily: 'inherit', resize: 'none', outline: 'none', lineHeight: 1.4 }} />
         {supported && (
           <button className="alist-btn" disabled={reacting} onClick={toggleMic} title={listening ? 'Stop' : 'Speak your line'}
             style={{ background: listening ? '#ff5a5a' : PANEL2, color: listening ? '#fff' : TEXT, border: `1px solid ${listening ? '#ff5a5a' : LINE}`, borderRadius: 12, padding: '12px 14px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 18, lineHeight: 1 }}>
@@ -503,9 +533,9 @@ function VoiceInput({ draft, setDraft, reacting, onDeliver }: any) {
           </button>
         )}
         <button className="alist-btn" disabled={reacting || !draft.trim()} onClick={() => onDeliver(draft)}
-          style={{ background: draft.trim() ? `linear-gradient(135deg,${AMBER_DEEP},${AMBER})` : PANEL2, color: draft.trim() ? INK : MUTE, border: 'none', borderRadius: 12, padding: '12px 16px', cursor: draft.trim() ? 'pointer' : 'default', fontWeight: 800, fontFamily: 'inherit', fontSize: 14 }}>Deliver</button>
+          style={{ background: draft.trim() ? `linear-gradient(135deg,${AMBER_DEEP},${AMBER})` : PANEL2, color: draft.trim() ? INK : MUTE, border: 'none', borderRadius: 12, padding: '12px 16px', cursor: draft.trim() ? 'pointer' : 'default', fontWeight: 800, fontFamily: 'inherit', fontSize: 16 }}>Deliver</button>
       </div>
-      {listening && <div style={{ fontSize: 11, color: AMBER, marginTop: 6, textAlign: 'center' }}>🎙️ Listening… speak your line, then tap ◉ to stop.</div>}
+      {listening && <div style={{ fontSize: 13, color: AMBER, marginTop: 6, textAlign: 'center' }}>🎙️ Listening… speak your line, then tap ◉ to stop.</div>}
     </div>
   )
 }
@@ -524,18 +554,18 @@ function Tutorial({ onClose }: any) {
       <div onClick={e => e.stopPropagation()} style={{ background: PANEL, border: `1px solid ${LINE}`, borderRadius: 18, maxWidth: 460, width: '100%', maxHeight: '88vh', overflowY: 'auto', padding: '24px' }}>
         <div style={{ textAlign: 'center', marginBottom: 18 }}>
           <div className="alist-display" style={{ fontSize: 34, color: TEXT }}>HOW IT WORKS</div>
-          <div style={{ color: AMBER, fontSize: 12, letterSpacing: '.2em', fontWeight: 700 }}>A-LIST: INTERACTIVE SCENES</div>
+          <div style={{ color: AMBER, fontSize: 14, letterSpacing: '.2em', fontWeight: 700 }}>A-LIST: INTERACTIVE SCENES</div>
         </div>
         {steps.map((s, i) => (
           <div key={i} style={{ display: 'flex', gap: 14, marginBottom: 16 }}>
             <div style={{ fontSize: 26, flexShrink: 0 }}>{s.icon}</div>
             <div>
-              <div style={{ fontWeight: 700, color: TEXT, fontSize: 15, marginBottom: 2 }}>{s.t}</div>
-              <div style={{ color: MUTE, fontSize: 13, lineHeight: 1.5 }}>{s.d}</div>
+              <div style={{ fontWeight: 700, color: TEXT, fontSize: 17, marginBottom: 2 }}>{s.t}</div>
+              <div style={{ color: MUTE, fontSize: 15, lineHeight: 1.5 }}>{s.d}</div>
             </div>
           </div>
         ))}
-        <button onClick={onClose} style={{ width: '100%', marginTop: 8, background: `linear-gradient(135deg,${AMBER_DEEP},${AMBER})`, color: INK, border: 'none', borderRadius: 12, padding: '14px', fontWeight: 800, fontFamily: 'inherit', fontSize: 15, cursor: 'pointer' }}>
+        <button onClick={onClose} style={{ width: '100%', marginTop: 8, background: `linear-gradient(135deg,${AMBER_DEEP},${AMBER})`, color: INK, border: 'none', borderRadius: 12, padding: '14px', fontWeight: 800, fontFamily: 'inherit', fontSize: 17, cursor: 'pointer' }}>
           Got it — let’s audition
         </button>
       </div>
@@ -550,19 +580,19 @@ function Paywall({ buying, err, scenesLeft, onBuy, onClose }: any) {
       <div onClick={e => e.stopPropagation()} style={{ background: PANEL, border: `1px solid ${AMBER_DEEP}`, borderRadius: 18, maxWidth: 420, width: '100%', padding: '28px', textAlign: 'center' }}>
         <div style={{ fontSize: 40, marginBottom: 8 }}>🎬</div>
         <div className="alist-display" style={{ fontSize: 30, color: TEXT }}>KEEP PERFORMING</div>
-        <p style={{ color: MUTE, fontSize: 14, lineHeight: 1.55, margin: '10px 0 18px' }}>
+        <p style={{ color: MUTE, fontSize: 16, lineHeight: 1.55, margin: '10px 0 18px' }}>
           {scenesLeft > 0 ? 'Stock up on scenes so the cameras never stop rolling.' : 'You’ve used your scenes. Unlock a fresh pass and pick up where you left off — your buzz and career carry over.'}
         </p>
         <div style={{ background: PANEL2, border: `1px solid ${LINE}`, borderRadius: 14, padding: '18px', marginBottom: 16 }}>
           <div className="alist-display" style={{ fontSize: 44, color: AMBER }}>20 SCENES</div>
-          <div style={{ color: TEXT, fontSize: 15, fontWeight: 700 }}>$4.98</div>
-          <div style={{ color: MUTE, fontSize: 12, marginTop: 4 }}>One-time. ~25¢ a scene. Type or speak your lines.</div>
+          <div style={{ color: TEXT, fontSize: 17, fontWeight: 700 }}>$4.98</div>
+          <div style={{ color: MUTE, fontSize: 14, marginTop: 4 }}>One-time. ~25¢ a scene. Type or speak your lines.</div>
         </div>
-        {err && <div style={{ color: '#ff9b9b', fontSize: 12.5, marginBottom: 10 }}>{err}</div>}
-        <button disabled={buying} onClick={onBuy} style={{ width: '100%', background: `linear-gradient(135deg,${AMBER_DEEP},${AMBER})`, color: INK, border: 'none', borderRadius: 12, padding: '15px', fontWeight: 800, fontFamily: 'inherit', fontSize: 16, cursor: buying ? 'wait' : 'pointer' }}>
+        {err && <div style={{ color: '#ff9b9b', fontSize: 17, marginBottom: 10 }}>{err}</div>}
+        <button disabled={buying} onClick={onBuy} style={{ width: '100%', background: `linear-gradient(135deg,${AMBER_DEEP},${AMBER})`, color: INK, border: 'none', borderRadius: 12, padding: '15px', fontWeight: 800, fontFamily: 'inherit', fontSize: 18, cursor: buying ? 'wait' : 'pointer' }}>
           {buying ? 'Opening checkout…' : 'Unlock 20 Scenes — $4.98'}
         </button>
-        <button onClick={onClose} style={{ width: '100%', marginTop: 10, background: 'transparent', color: MUTE, border: `1px solid ${LINE}`, borderRadius: 12, padding: '12px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13 }}>
+        <button onClick={onClose} style={{ width: '100%', marginTop: 10, background: 'transparent', color: MUTE, border: `1px solid ${LINE}`, borderRadius: 12, padding: '12px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 15 }}>
           Maybe later
         </button>
       </div>
