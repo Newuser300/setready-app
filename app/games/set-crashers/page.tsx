@@ -528,6 +528,11 @@ export default function SetCrashers() {
         spawnParticles(t.position.x, t.position.y, 18 + G.comboCount * 4, '#fbbf24', 400);
         SFX.combo(G.comboCount);
         setComboFx({ label, n: G.comboCount, x: t.position.x, y: t.position.y, t: Date.now() });
+        // Reward bombs: one bomb per target in this multi-knockdown. At combo 2 grant 2,
+        // then +1 for each additional target, so cumulative bombs == targets destroyed this shot.
+        const grant = G.comboCount === 2 ? 2 : 1;
+        setSave(prev => { const counts = { ...(prev.ammoCounts || {}) }; counts['bomb'] = (counts['bomb'] || 0) + grant; const n = { ...prev, ammoCounts: counts }; persist(n); return n; });
+        setTimeout(() => toast(`💥 ${G.comboCount}-target combo! +${grant} Bomb${grant > 1 ? 's' : ''}!`), 100);
       }
     }
     // win the instant the last target is gone — from ANY cause (smashed, fell off, knocked down)
@@ -736,12 +741,12 @@ export default function SetCrashers() {
           n.claimedRewards = rewarded;
         }
 
-        // ── Perfect clear bonus: 1-shot win grants a bonus, once per level ──
+        // ── Perfect clear bonus: 1-shot win grants a Bomb power-up, once per level ──
         if (isPerfect) {
           n.perfectClears = (n.perfectClears || 0) + 1;
           const pdone = [...(n.claimedRewards || [])].includes(-lvlRef.current - 1);
           if (!pdone) {
-            n.hints = (n.hints || 0) + 1;
+            n.ammoCounts = { ...(n.ammoCounts || {}), bomb: ((n.ammoCounts || {}).bomb || 0) + 1 };
             n.claimedRewards = [...(n.claimedRewards || []), -lvlRef.current - 1]; // negative key = perfect claimed
           }
         }
@@ -935,8 +940,27 @@ export default function SetCrashers() {
   };
   const drawProj = (ctx: CanvasRenderingContext2D, x: number, y: number, angle: number, kind?: string, radius?: number) => {
     const def = PROJECTILES[kind || selRef.current] || PROJECTILES[selRef.current]; const r = radius || def.r;
+    const k = kind || selRef.current;
     ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
     ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+    if (k === 'boomerang') {
+      // Hand-drawn boomerang: a bent V/L shape with rounded arms (no emoji-font reliance).
+      ctx.rotate(-0.5);
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.85, r * 0.35);
+      ctx.quadraticCurveTo(0, -r * 0.95, r * 0.85, r * 0.35); // outer curve (the bend at top)
+      ctx.lineWidth = r * 0.5;
+      ctx.strokeStyle = '#b45309'; ctx.stroke(); // dark wood edge
+      ctx.lineWidth = r * 0.30;
+      ctx.strokeStyle = '#f59e0b'; ctx.stroke(); // bright wood face
+      // small accent notches near each tip
+      ctx.shadowBlur = 0; ctx.fillStyle = '#fde68a';
+      ctx.beginPath(); ctx.arc(-r * 0.78, r * 0.32, r * 0.10, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(r * 0.78, r * 0.32, r * 0.10, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      return;
+    }
     const grad = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.2, 0, 0, r);
     grad.addColorStop(0, '#fff'); grad.addColorStop(0.35, def.color); grad.addColorStop(1, '#000');
     ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
@@ -1212,7 +1236,7 @@ export default function SetCrashers() {
             {result && (
               <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(15,15,26,0.82)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
                 <div style={{ fontSize: '26px', fontWeight: 900 }}>{result.won ? (perfectFx ? '🌟 PERFECT!' : 'Nailed it!') : 'Cut! Try again'}</div>
-                {result.won && perfectFx && <div style={{ fontSize: '13px', color: '#fcd34d', fontWeight: 700, marginTop: '2px' }}>One-shot clear — bonus hint earned!</div>}
+                {result.won && perfectFx && <div style={{ fontSize: '13px', color: '#fcd34d', fontWeight: 700, marginTop: '2px' }}>One-shot clear — 💣 Bomb earned!</div>}
                 {result.won && <div style={{ fontSize: '44px', marginTop: '8px', letterSpacing: '6px' }}>{[0, 1, 2].map(n => <span key={n} style={{ color: n < result.stars ? '#fbbf24' : 'rgba(255,255,255,0.25)' }}>★</span>)}</div>}
                 {result.won && dailyFx && (
                   <div style={{ marginTop: '12px', padding: '10px 18px', background: 'linear-gradient(135deg,#0ea5e9,#22d3ee)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 6px 24px rgba(14,165,233,0.5)', maxWidth: '300px' }}>
