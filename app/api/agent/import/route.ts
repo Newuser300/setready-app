@@ -66,11 +66,11 @@ export async function POST(req: Request) {
   // Existing agency_roster entries for this agency (any status, to block re-import of existing rows)
   const { data: rosterRows } = await supabaseAdmin
     .from('agency_roster')
-    .select('user_id')
+    .select('performer_user_id')
     .eq('agency_id', agencyId)
 
   const alreadyOnRoster = new Set<string>(
-    (rosterRows || []).map((r: { user_id: string }) => r.user_id)
+    (rosterRows || []).map((r: { performer_user_id: string }) => r.performer_user_id)
   )
 
   // Existing pending performer_claims for this agency (not yet used/expired)
@@ -113,8 +113,8 @@ export async function POST(req: Request) {
         .from('agency_roster')
         .insert({
           agency_id: agencyId,
-          user_id: existingUserId,         // canonical column name confirmed
-          status: 'pending',               // existing status column
+          performer_user_id: existingUserId, // canonical column name confirmed
+          status: 'active',                // agent-added performers are active immediately
           invite_status: 'invited',        // new column from migration
           invited_email: email,
           added_by: session.accountId,

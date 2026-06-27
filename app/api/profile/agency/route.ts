@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/utils/supabase/server';
 import { supabaseAdmin } from '@/utils/supabase/admin';
 
 async function getUser(req: NextRequest) {
+  // Primary: cookie session (how the profile page calls this — fetch with no auth header)
+  const supabase = await createClient();
+  const { data: { user: cookieUser } } = await supabase.auth.getUser();
+  if (cookieUser) return cookieUser;
+  // Fallback: Bearer token (for any token-based callers)
   const auth = req.headers.get('authorization');
-  if (!auth?.startsWith('Bearer ')) return null;
-  const token = auth.slice(7);
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-  if (error || !user) return null;
-  return user;
+  if (auth?.startsWith('Bearer ')) {
+    const token = auth.slice(7);
+    const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+    if (user) return user;
+  }
+  return null;
 }
 
 // GET — return the current user's agency links

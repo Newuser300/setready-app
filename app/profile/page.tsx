@@ -1116,11 +1116,11 @@ export default function ProfilePage() {
           {agencyLinks.filter(l => l.status !== 'inactive').length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {agencyLinks.filter(l => l.status !== 'inactive').map(link => (
-                <div key={link.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', backgroundColor: link.status === 'approved' ? '#f0fdf4' : '#f9fafb', border: `1px solid ${link.status === 'approved' ? '#86efac' : '#e5e7eb'}`, borderRadius: '8px' }}>
+                <div key={link.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', backgroundColor: (link.status === 'approved' || link.status === 'active') ? '#f0fdf4' : '#f9fafb', border: `1px solid ${(link.status === 'approved' || link.status === 'active') ? '#86efac' : '#e5e7eb'}`, borderRadius: '8px' }}>
                   <div>
                     <p style={{ fontWeight: '600', fontSize: '14px', color: '#1a1a2e', margin: '0 0 2px' }}>{link.agency_name}</p>
-                    <span style={{ fontSize: '11px', fontWeight: '700', color: link.status === 'approved' ? '#16a34a' : '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      {link.status === 'approved' ? '✅ On Roster' : '⏳ Pending Approval'}
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: (link.status === 'approved' || link.status === 'active') ? '#16a34a' : '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      {(link.status === 'approved' || link.status === 'active') ? '✅ On Roster' : '⏳ Pending Approval'}
                     </span>
                   </div>
                 </div>
