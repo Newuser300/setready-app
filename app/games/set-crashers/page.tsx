@@ -294,12 +294,16 @@ export default function SetCrashers() {
   const projUnlocked = (k: string) => k === FREE_PROJECTILE || ammoOf(k) > 0;
   const studioUnlocked = () => owns('pack_studio');
   const packOwned = (packId: string) => packId === 'free' || owns(packId);
-  const highestCleared = () => { let h = -1; for (const k of Object.keys(saveRef.current.stars)) { if ((saveRef.current.stars as any)[k] > 0) h = Math.max(h, +k); } return h; };
-  // A location is playable if: its pack is owned AND (it's already cleared (replay) OR it's the next one in sequence).
+  // A location is playable if its pack is OWNED, and within that pack it is either the first
+  // location, already cleared (replay), or the immediately-previous location IN THE SAME PACK
+  // has been cleared. Pack access is governed by purchase — NOT by finishing the previous
+  // pack — so a newly-bought pack opens its first location right away, then unlocks one at a time.
   const isPlayable = (idx: number) => {
     const p = packOfIndex(idx); if (!p || !packOwned(p.id)) return false;
     if ((saveRef.current.stars[idx] || 0) > 0) return true;     // cleared → replayable
-    return idx <= highestCleared() + 1;                          // strictly the next one
+    const r = packRange(p.id); if (!r) return false;
+    if (idx === r.from) return true;                            // first location of an owned pack → open
+    return (saveRef.current.stars[idx - 1] || 0) > 0;          // previous location in SAME pack cleared
   };
 
   // add uses to a power-up. earned through play = +1, purchased = +3.
