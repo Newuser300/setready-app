@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Copyright from '@/components/Copyright';
 import { Leaderboard, LeaderboardRail } from './Leaderboard';
+import { LEVELS } from './levels';
+import type { Block, Level } from './levels';
 
 /* ============================================================================
    SET CRASHERS — slingshot physics game (Angry Birds genre), film-set themed.
@@ -87,163 +89,9 @@ const BUNDLE_GRANTS: Record<string, string[]> = {
   bundle_mega: ['proj_coffee', 'proj_boom', 'proj_reel', 'proj_boomerang', 'proj_bomb', 'proj_stunt', 'pack_studio'],
 };
 
-type Block = { x: number; y: number; w: number; h: number; kind: 'crate' | 'rig' | 'plank' | 'target'; angle?: number };
-type Level = { name: string; pack: 'free' | 'studio' | 'pack_studio' | 'pack_noir' | 'pack_scifi' | 'pack_chaos'; ammo: number; par: number; blocks: Block[]; edges?: boolean };
-// `edges: true` → ball ricochets off the left/right walls and ceiling (bounce-shot levels).
-// Falling obstacles = heavy 'rig' blocks placed high in `blocks` (they crash down when dislodged).
+// Block and Level types are imported from ./levels (see import above).
 
-const LEVELS: Level[] = [
-  // ===== ON LOCATION (free) — all targets ELEVATED; complexity & domino effects ramp up =====
-  { name: 'First Take', pack: 'free', ammo: 5, par: 1, blocks: [
-    // single elevated target on a simple table — gentle intro
-    { x: 850, y: 600, w: 38, h: 92, kind: 'plank' },
-    { x: 970, y: 600, w: 38, h: 92, kind: 'plank' },
-    { x: 910, y: 540, w: 180, h: 26, kind: 'plank' },
-    { x: 910, y: 500, w: 46, h: 46, kind: 'target' },
-  ]},
-  { name: 'Stack Attack', pack: 'free', ammo: 5, par: 2, blocks: [
-    // two separate stacks, targets perched on top
-    { x: 860, y: 628, w: 52, h: 52, kind: 'crate' },
-    { x: 860, y: 576, w: 52, h: 52, kind: 'crate' },
-    { x: 860, y: 524, w: 46, h: 46, kind: 'target' },
-    { x: 1010, y: 628, w: 52, h: 52, kind: 'crate' },
-    { x: 1010, y: 576, w: 46, h: 46, kind: 'target' },
-  ]},
-  { name: 'Top Heavy', pack: 'free', ammo: 5, par: 2, blocks: [
-    // wide platform on legs, target crowning a mini-stack on top
-    { x: 800, y: 604, w: 38, h: 96, kind: 'plank' },
-    { x: 1000, y: 604, w: 38, h: 96, kind: 'plank' },
-    { x: 900, y: 540, w: 250, h: 26, kind: 'plank' },
-    { x: 860, y: 502, w: 50, h: 50, kind: 'crate' },
-    { x: 940, y: 502, w: 50, h: 50, kind: 'crate' },
-    { x: 900, y: 470, w: 46, h: 46, kind: 'target' },
-  ]},
-  { name: 'The Tower', pack: 'free', ammo: 5, par: 2, blocks: [
-    // tall single tower + a second target on its OWN raised plinth (no ground target)
-    { x: 900, y: 624, w: 62, h: 62, kind: 'rig' },
-    { x: 900, y: 564, w: 52, h: 52, kind: 'crate' },
-    { x: 900, y: 514, w: 52, h: 52, kind: 'crate' },
-    { x: 900, y: 466, w: 46, h: 46, kind: 'target' },
-    { x: 1090, y: 600, w: 46, h: 120, kind: 'rig' },
-    { x: 1090, y: 530, w: 46, h: 46, kind: 'target' },
-  ]},
-  { name: 'Chain Start', pack: 'free', ammo: 4, par: 2, blocks: [
-    // FIRST DOMINO LEVEL: three tall planks close together — topple the first into the next,
-    // each carries a target. Tight ammo nudges you toward the chain.
-    { x: 840, y: 566, w: 24, h: 188, kind: 'plank' },
-    { x: 840, y: 458, w: 42, h: 42, kind: 'target' },
-    { x: 898, y: 566, w: 24, h: 188, kind: 'plank' },
-    { x: 898, y: 458, w: 42, h: 42, kind: 'target' },
-    { x: 956, y: 566, w: 24, h: 188, kind: 'plank' },
-    { x: 956, y: 458, w: 42, h: 42, kind: 'target' },
-  ]},
-  { name: 'Double Trouble', pack: 'free', ammo: 5, par: 3, blocks: [
-    // two tables, each with an elevated target
-    { x: 760, y: 600, w: 38, h: 96, kind: 'plank' },
-    { x: 860, y: 600, w: 38, h: 96, kind: 'plank' },
-    { x: 810, y: 540, w: 150, h: 24, kind: 'plank' },
-    { x: 810, y: 504, w: 46, h: 46, kind: 'target' },
-    { x: 1010, y: 600, w: 38, h: 96, kind: 'plank' },
-    { x: 1110, y: 600, w: 38, h: 96, kind: 'plank' },
-    { x: 1060, y: 540, w: 150, h: 24, kind: 'plank' },
-    { x: 1060, y: 504, w: 46, h: 46, kind: 'target' },
-  ]},
-  { name: 'Fortress', pack: 'free', ammo: 5, par: 3, blocks: [
-    // walled platform; two stacked targets up top, all elevated
-    { x: 850, y: 600, w: 56, h: 120, kind: 'rig' },
-    { x: 1010, y: 600, w: 56, h: 120, kind: 'rig' },
-    { x: 930, y: 540, w: 250, h: 28, kind: 'plank' },
-    { x: 870, y: 498, w: 50, h: 50, kind: 'crate' },
-    { x: 990, y: 498, w: 50, h: 50, kind: 'crate' },
-    { x: 930, y: 500, w: 46, h: 46, kind: 'target' },
-    { x: 930, y: 454, w: 46, h: 46, kind: 'target' },
-  ]},
-  { name: 'Domino Row', pack: 'free', ammo: 3, par: 2, blocks: [
-    // STRONGER DOMINO: four tall planks in a tight row, each topped with a target.
-    // Knock the near end and they cascade into each other. Only 3 ammo — chain it.
-    { x: 830, y: 566, w: 22, h: 188, kind: 'plank' },
-    { x: 830, y: 458, w: 40, h: 40, kind: 'target' },
-    { x: 884, y: 566, w: 22, h: 188, kind: 'plank' },
-    { x: 884, y: 458, w: 40, h: 40, kind: 'target' },
-    { x: 938, y: 566, w: 22, h: 188, kind: 'plank' },
-    { x: 938, y: 458, w: 40, h: 40, kind: 'target' },
-    { x: 992, y: 566, w: 22, h: 188, kind: 'plank' },
-    { x: 992, y: 458, w: 40, h: 40, kind: 'target' },
-  ]},
-  { name: 'Pyramid', pack: 'free', ammo: 5, par: 3, blocks: [
-    // pyramid of crates with targets nested up off the ground
-    { x: 840, y: 628, w: 52, h: 52, kind: 'crate' },
-    { x: 898, y: 628, w: 52, h: 52, kind: 'crate' },
-    { x: 956, y: 628, w: 52, h: 52, kind: 'crate' },
-    { x: 1014, y: 628, w: 52, h: 52, kind: 'crate' },
-    { x: 869, y: 576, w: 52, h: 52, kind: 'crate' },
-    { x: 927, y: 574, w: 46, h: 46, kind: 'target' },
-    { x: 985, y: 576, w: 52, h: 52, kind: 'crate' },
-    { x: 927, y: 524, w: 46, h: 46, kind: 'target' },
-  ]},
-  { name: 'Watchtower', pack: 'free', ammo: 5, par: 3, blocks: [
-    // tall tower with crowning target + a second target on a raised post
-    { x: 950, y: 624, w: 62, h: 62, kind: 'rig' },
-    { x: 950, y: 564, w: 56, h: 56, kind: 'crate' },
-    { x: 950, y: 510, w: 52, h: 52, kind: 'crate' },
-    { x: 950, y: 460, w: 48, h: 48, kind: 'crate' },
-    { x: 950, y: 414, w: 46, h: 46, kind: 'target' },
-    { x: 800, y: 590, w: 44, h: 140, kind: 'rig' },
-    { x: 800, y: 514, w: 46, h: 46, kind: 'target' },
-  ]},
-  { name: 'Crossfire', pack: 'free', ammo: 5, par: 3, blocks: [
-    // mixed: a raised target left, a table-mounted target right with a rig topper
-    { x: 780, y: 588, w: 50, h: 144, kind: 'rig' },
-    { x: 780, y: 512, w: 46, h: 46, kind: 'target' },
-    { x: 960, y: 600, w: 38, h: 100, kind: 'plank' },
-    { x: 1080, y: 600, w: 38, h: 100, kind: 'plank' },
-    { x: 1020, y: 540, w: 150, h: 24, kind: 'plank' },
-    { x: 1020, y: 504, w: 46, h: 46, kind: 'target' },
-    { x: 1020, y: 458, w: 50, h: 50, kind: 'rig' },
-  ]},
-  { name: "That's a Wrap", pack: 'free', ammo: 5, par: 3, blocks: [
-    // finale of the free pack: a table target, a tower target, and a high-shelf target.
-    // Toppling the tower can knock the shelf target too (light domino).
-    { x: 780, y: 600, w: 38, h: 100, kind: 'plank' },
-    { x: 880, y: 600, w: 38, h: 100, kind: 'plank' },
-    { x: 830, y: 540, w: 150, h: 24, kind: 'plank' },
-    { x: 830, y: 504, w: 46, h: 46, kind: 'target' },
-    { x: 1000, y: 624, w: 62, h: 62, kind: 'rig' },
-    { x: 1000, y: 564, w: 52, h: 52, kind: 'crate' },
-    { x: 1000, y: 514, w: 46, h: 46, kind: 'target' },
-    { x: 1130, y: 560, w: 30, h: 200, kind: 'rig' },
-    { x: 1130, y: 448, w: 44, h: 44, kind: 'target' },
-  ]},
-  // ===== STUDIO LOT PACK (paid) — 12 harder levels with escalating domino chains =====
-  ...Array.from({ length: 12 }, (_, i): Level => {
-    const tier = Math.floor(i / 4); // 0,1,2 — difficulty/complexity tiers
-    const base: Block[] = [
-      { x: 830, y: 600, w: 56, h: 120, kind: 'rig' },
-      { x: 990, y: 600, w: 56, h: 120, kind: 'rig' },
-      { x: 910, y: 540, w: 240, h: 28, kind: 'plank' },
-      { x: 870, y: 498, w: 50, h: 50, kind: 'crate' },
-      { x: 950, y: 498, w: 50, h: 50, kind: 'crate' },
-      { x: 910, y: 500, w: 46, h: 46, kind: 'target' },
-      { x: 910, y: 454, w: 46, h: 46, kind: 'target' },
-    ];
-    // tier 1+: add a domino tower on the right that can topple onto the platform
-    const dominoes: Block[] = tier >= 1 ? [
-      { x: 1140, y: 560, w: 28, h: 200, kind: 'rig' },
-      { x: 1140, y: 448, w: 44, h: 44, kind: 'target' },
-    ] : [];
-    // tier 2: add a left chain of leaning planks, each topped with a target
-    const chain: Block[] = tier >= 2 ? [
-      { x: 700, y: 570, w: 24, h: 180, kind: 'plank' },
-      { x: 700, y: 466, w: 40, h: 40, kind: 'target' },
-      { x: 770, y: 570, w: 24, h: 180, kind: 'plank' },
-      { x: 770, y: 466, w: 40, h: 40, kind: 'target' },
-    ] : [];
-    return {
-      name: `Studio Lot ${i + 1}`, pack: 'studio', ammo: tier >= 2 ? 4 : 5, par: 3,
-      blocks: [...base, ...dominoes, ...chain],
-    };
-  }),
-];
+// LEVELS is imported from ./levels
 
 // ── PACK REGISTRY — each pack is a contiguous slice of LEVELS by index ──
 // from/count are filled to match the real LEVELS array as packs are added in later phases.
