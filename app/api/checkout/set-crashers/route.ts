@@ -9,6 +9,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 const ITEMS: Record<string, { priceEnv: string }> = {
   pack_studio:    { priceEnv: 'STRIPE_SETCRASHERS_PACK_PRICE_ID' },
+  pack_noir:      { priceEnv: 'STRIPE_SETCRASHERS_NOIR_PRICE_ID' },
+  pack_scifi:     { priceEnv: 'STRIPE_SETCRASHERS_SCIFI_PRICE_ID' },
+  pack_chaos:     { priceEnv: 'STRIPE_SETCRASHERS_CHAOS_PRICE_ID' },
   proj_coffee:    { priceEnv: 'STRIPE_SETCRASHERS_COFFEE_PRICE_ID' },
   proj_boom:      { priceEnv: 'STRIPE_SETCRASHERS_BOOM_PRICE_ID' },
   proj_reel:      { priceEnv: 'STRIPE_SETCRASHERS_REEL_PRICE_ID' },
