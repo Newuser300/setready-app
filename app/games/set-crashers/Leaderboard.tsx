@@ -135,3 +135,44 @@ export function Leaderboard({ getAccessToken, onClose, myHandle, onSetHandle }: 
     </div>
   )
 }
+
+// ── Right-rail Top-3: a slim always-visible panel on wide screens; opens the full board ──
+export function LeaderboardRail({ getAccessToken, onOpen }: {
+  getAccessToken: () => Promise<string | null>
+  onOpen: () => void
+}) {
+  const [top, setTop] = useState<Row[]>([])
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      try {
+        const token = await getAccessToken()
+        const res = await fetch('/api/games/set-crashers/leaderboard?mode=all', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+        const data = await res.json()
+        if (alive && res.ok) setTop((data.top || []).slice(0, 3))
+      } catch {}
+    })()
+    return () => { alive = false }
+  }, [getAccessToken])
+
+  const GOLD = '#F5C542', INK = '#12121a', PANEL = '#1c1c28', LINE = '#2c2c3a', TEXT = '#ECE6DA', MUTE = '#8a8597'
+  const medal = (r: number) => r === 1 ? '🥇' : r === 2 ? '🥈' : '🥉'
+  return (
+    <button onClick={onOpen} style={{
+      background: PANEL, border: `1px solid ${LINE}`, borderRadius: 14, padding: '12px 12px 10px', width: 200,
+      cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', display: 'block',
+    }}>
+      <div style={{ fontSize: 13, fontWeight: 900, color: GOLD, letterSpacing: '.04em', marginBottom: 8 }}>🏆 TOP DIRECTORS</div>
+      {top.length === 0 ? (
+        <div style={{ color: MUTE, fontSize: 12, padding: '6px 0' }}>No scores yet — be the first!</div>
+      ) : top.map(r => (
+        <div key={r.userId} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0' }}>
+          <span style={{ fontSize: 16 }}>{medal(r.rank)}</span>
+          <span style={{ flex: 1, color: TEXT, fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.handle}</span>
+          <span style={{ color: GOLD, fontSize: 12, fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>{r.score.toLocaleString()}</span>
+        </div>
+      ))}
+      <div style={{ marginTop: 8, textAlign: 'center', color: MUTE, fontSize: 11, fontWeight: 700 }}>Tap for full board →</div>
+    </button>
+  )
+}

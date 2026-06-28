@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Copyright from '@/components/Copyright';
-import { Leaderboard } from './Leaderboard';
+import { Leaderboard, LeaderboardRail } from './Leaderboard';
 
 /* ============================================================================
    SET CRASHERS — slingshot physics game (Angry Birds genre), film-set themed.
@@ -59,7 +59,10 @@ const STAR_MILESTONES: { stars: number; key: string }[] = [
 ];
 
 const STORE = [
-  { id: 'pack_studio', emoji: '🎟️', name: 'Studio Lot Pack', desc: '12 extra levels — trickier stacks, new targets.', price: '$2.99', kind: 'pack' },
+  { id: 'pack_studio', emoji: '🎟️', name: 'Studio Lot Pack', desc: '30 unique studio locations — falling obstacles & trick shots.', price: '$2.99', kind: 'pack' },
+  { id: 'pack_noir',  emoji: '🕵️', name: 'Film Noir Pack',      desc: '30 brand-new noir locations — bounce-shots & shadows. Very hard.', price: '$3.99', kind: 'pack' },
+  { id: 'pack_scifi', emoji: '🛸', name: 'Sci-Fi Backlot Pack',  desc: '30 sci-fi locations — falling debris, ricochet walls. Extremely hard.', price: '$3.99', kind: 'pack' },
+  { id: 'pack_chaos', emoji: '🧨', name: 'Demolition Pack',      desc: '30 chaos locations — every mechanic at once. Brutal.', price: '$3.99', kind: 'pack' },
   { id: 'proj_coffee', emoji: '☕', name: 'Hot Coffee Ammo',  desc: 'Unlock the exploding coffee projectile.',       price: '$1.99', kind: 'proj' },
   { id: 'proj_boom',   emoji: '🎤', name: 'Boom Mic Ammo',    desc: 'Unlock the heavy smashing boom mic.',           price: '$1.99', kind: 'proj' },
   { id: 'proj_reel',   emoji: '🎞️', name: 'Film Reel Ammo',  desc: 'Unlock the splitting film reel.',               price: '$1.99', kind: 'proj' },
@@ -85,7 +88,9 @@ const BUNDLE_GRANTS: Record<string, string[]> = {
 };
 
 type Block = { x: number; y: number; w: number; h: number; kind: 'crate' | 'rig' | 'plank' | 'target'; angle?: number };
-type Level = { name: string; pack: 'free' | 'studio'; ammo: number; par: number; blocks: Block[] };
+type Level = { name: string; pack: 'free' | 'studio' | 'pack_studio' | 'pack_noir' | 'pack_scifi' | 'pack_chaos'; ammo: number; par: number; blocks: Block[]; edges?: boolean };
+// `edges: true` → ball ricochets off the left/right walls and ceiling (bounce-shot levels).
+// Falling obstacles = heavy 'rig' blocks placed high in `blocks` (they crash down when dislodged).
 
 const LEVELS: Level[] = [
   // ===== ON LOCATION (free) — all targets ELEVATED; complexity & domino effects ramp up =====
@@ -239,6 +244,28 @@ const LEVELS: Level[] = [
     };
   }),
 ];
+
+// ── PACK REGISTRY — each pack is a contiguous slice of LEVELS by index ──
+// from/count are filled to match the real LEVELS array as packs are added in later phases.
+type PackDef = { id: string; label: string; emoji: string; price?: string; storeId?: string };
+const PACK_ORDER: PackDef[] = [
+  { id: 'free',        label: 'On Location (Free)', emoji: '🎬' },
+  { id: 'pack_studio', label: 'Studio Lot Pack',    emoji: '🎟️', price: '$2.99', storeId: 'pack_studio' },
+  { id: 'pack_noir',   label: 'Film Noir Pack',     emoji: '🕵️', price: '$3.99', storeId: 'pack_noir' },
+  { id: 'pack_scifi',  label: 'Sci-Fi Backlot Pack',emoji: '🛸', price: '$3.99', storeId: 'pack_scifi' },
+  { id: 'pack_chaos',  label: 'Demolition Pack',    emoji: '🧨', price: '$3.99', storeId: 'pack_chaos' },
+];
+// derive each pack's index range from the LEVELS array (pack field on each level)
+function packRange(packId: string) {
+  const from = LEVELS.findIndex(l => (l.pack as string) === packId);
+  if (from < 0) return null;
+  let count = 0; for (let i = from; i < LEVELS.length && (LEVELS[i].pack as string) === packId; i++) count++;
+  return { from, count };
+}
+const packOfIndex = (idx: number): PackDef | undefined => {
+  for (const p of PACK_ORDER) { const r = packRange(p.id); if (r && idx >= r.from && idx < r.from + r.count) return p; }
+  return undefined;
+};
 
 type SaveData = { stars: Record<number, number>; owned: string[]; ammoCounts: Record<string, number>; claimedMilestones: string[]; claimedRewards: number[]; claimedPurchases: string[]; hints: number; skips: number; lastUnlocked: number; bonusBest: number; lastPlayDate: string; dailyStreak: number; badges: string[]; perfectClears: number; bestCombo: number; bestStreak: number; bossClears: number; lastBonusAt: number; welcomeGift: boolean; levelScores: Record<number, number>; careerBest: number; handle: string };
 const DEFAULT_SAVE: SaveData = { stars: {}, owned: [], ammoCounts: {}, claimedMilestones: [], claimedRewards: [], claimedPurchases: [], hints: 1, skips: 0, lastUnlocked: 0, bonusBest: 0, lastPlayDate: '', dailyStreak: 0, badges: [], perfectClears: 0, bestCombo: 0, bestStreak: 0, bossClears: 0, lastBonusAt: 0, welcomeGift: false, levelScores: {}, careerBest: 0, handle: '' };
@@ -418,6 +445,14 @@ export default function SetCrashers() {
   // a power-up is usable if it's the free basic ammo OR you have uses left
   const projUnlocked = (k: string) => k === FREE_PROJECTILE || ammoOf(k) > 0;
   const studioUnlocked = () => owns('pack_studio');
+  const packOwned = (packId: string) => packId === 'free' || owns(packId);
+  const highestCleared = () => { let h = -1; for (const k of Object.keys(saveRef.current.stars)) { if ((saveRef.current.stars as any)[k] > 0) h = Math.max(h, +k); } return h; };
+  // A location is playable if: its pack is owned AND (it's already cleared (replay) OR it's the next one in sequence).
+  const isPlayable = (idx: number) => {
+    const p = packOfIndex(idx); if (!p || !packOwned(p.id)) return false;
+    if ((saveRef.current.stars[idx] || 0) > 0) return true;     // cleared → replayable
+    return idx <= highestCleared() + 1;                          // strictly the next one
+  };
 
   // add uses to a power-up. earned through play = +1, purchased = +3.
   const grantProjectile = (key: string, amount = 1) => {
@@ -509,8 +544,15 @@ export default function SetCrashers() {
 
     const bodies: Mat[] = []; const targets: Mat[] = [];
     const ground = Bodies.rectangle(WORLD_W / 2, GROUND_Y + 60, WORLD_W + 600, 120, { isStatic: true, friction: 0.9, label: 'ground' });
-    const lwall = Bodies.rectangle(-80, WORLD_H / 2, 120, WORLD_H * 2, { isStatic: true });
+    const wantEdges = m === 'level' && !!LEVELS[idx]?.edges;
+    const wallOpts = { isStatic: true, restitution: wantEdges ? 0.9 : 0, friction: 0.2 };
+    const lwall = Bodies.rectangle(-40, WORLD_H / 2, 80, WORLD_H * 3, wallOpts);
     Composite.add(engine.world, [ground, lwall]);
+    if (wantEdges) {
+      const rwall = Bodies.rectangle(WORLD_W + 40, WORLD_H / 2, 80, WORLD_H * 3, wallOpts);
+      const ceil  = Bodies.rectangle(WORLD_W / 2, -40, WORLD_W * 3, 80, wallOpts);
+      Composite.add(engine.world, [rwall, ceil]);
+    }
 
     if (m === 'level') {
       const lvl = LEVELS[idx];
@@ -951,7 +993,8 @@ export default function SetCrashers() {
         if (p && G.flying) {
           G.flightT = (G.flightT || 0) + dt;
           const sp = Math.hypot(p.velocity.x, p.velocity.y);
-          const off = p.position.x > WORLD_W + 140 || p.position.x < -140 || p.position.y > WORLD_H + 140;
+          const edgeLvl = G.mode === 'level' && !!LEVELS[lvlRef.current]?.edges;
+          const off = edgeLvl ? (p.position.y > WORLD_H + 140) : (p.position.x > WORLD_W + 140 || p.position.x < -140 || p.position.y > WORLD_H + 140);
           const restThresh = G.mode === 'bonus' ? 4 : 2.5;
           const restHold = G.mode === 'bonus' ? 0.05 : 0.35;
           const maxFlight = G.mode === 'bonus' ? 0.8 : 2.6;
@@ -1153,7 +1196,8 @@ export default function SetCrashers() {
     // Size buff enlarges the projectile; strength buff boosts launch velocity. Both stack.
     const sizeMult = B.size ? SIZE_MULT : 1;
     const r = def.r * sizeMult;
-    const proj = Matter.Bodies.circle(G.aimX, G.aimY, r, { density: def.density, restitution: 0.3, friction: 0.4, frictionAir: 0.001, label: 'proj' });
+    const edgeLevel = G.mode === 'level' && !!LEVELS[lvlRef.current]?.edges;
+    const proj = Matter.Bodies.circle(G.aimX, G.aimY, r, { density: def.density, restitution: edgeLevel ? 0.86 : 0.3, friction: 0.4, frictionAir: 0.0008, label: 'proj' });
     Matter.Composite.add(G.engine.world, proj);
     const boost = (key === 'boomerang' ? 1.5 : 1) * (B.strength ? STRENGTH_MULT : 1);   // boomerang needs more power; strength buff adds +75%
     let vx = dx * LAUNCH_SCALE * boost, vy = dy * LAUNCH_SCALE * boost;
@@ -1197,19 +1241,11 @@ export default function SetCrashers() {
   const retry = () => { setResult(null); setHintActive(false); buildArena(lvlRef.current, 'level'); };
   const nextLevel = () => {
     const ni = lvlRef.current + 1;
-    // Finished every level → back to the games dashboard with a wrap message.
-    if (ni >= LEVELS.length) {
-      try { localStorage.setItem('sr-set-crashers-flash', "🎬 That's a wrap — you cleared every level!"); } catch {}
-      window.location.href = '/games';
-      return;
-    }
-    // Hit the paid Studio Lot wall (the "few levels in" dead-end on the free pack):
-    // send the player to the games dashboard instead of the internal menu.
-    if (LEVELS[ni].pack === 'studio' && !studioUnlocked()) {
-      try { localStorage.setItem('sr-set-crashers-flash', '🎟️ You finished the free levels! Unlock the Studio Lot Pack to keep going.'); } catch {}
-      window.location.href = '/games';
-      return;
-    }
+    // Finished every location → back to the Set Crashers menu (its own dashboard).
+    if (ni >= LEVELS.length) { toast("🎬 That's a wrap — you cleared every location!"); setScreen('menu'); return; }
+    // Next location is in a pack you don't own → Set Crashers menu (store is right there).
+    const np = packOfIndex(ni);
+    if (np && !packOwned(np.id)) { toast(`${np.emoji} Unlock the ${np.label} to keep going!`); setScreen('menu'); return; }
     startLevel(ni);
   };
   const buyItem = async (id: string) => {
@@ -1222,6 +1258,7 @@ export default function SetCrashers() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f0f1a', fontFamily: '-apple-system, Arial, sans-serif' }}>
+      <style>{`@media (max-width: 820px){ .sc-rail{ display:none !important; } }`}</style>
       <div style={{ backgroundColor: '#1a1a2e', color: 'white' }}>
         <div style={{ maxWidth: '760px', margin: '0 auto', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1238,7 +1275,8 @@ export default function SetCrashers() {
       </div>
 
       {screen === 'menu' && ready && (
-        <div style={{ maxWidth: '760px', margin: '0 auto', padding: '20px 16px 48px' }}>
+        <div style={{ maxWidth: '980px', margin: '0 auto', padding: '20px 16px 48px', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ ...card, background: 'linear-gradient(135deg,#1a1a2e,#3d3460)', border: 'none', textAlign: 'center', padding: '26px 18px', color: 'white' }}>
             <div style={{ fontSize: '46px' }}>🎬💥</div>
             <div style={{ fontSize: '22px', fontWeight: 900, marginTop: '6px' }}>Set Crashers</div>
@@ -1324,22 +1362,34 @@ export default function SetCrashers() {
           </div>
           <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '6px' }}>Buffs are toggled on during a level (below the slingshot) and stack with each other and your chosen power-up.</div>
 
-          {(['free', 'studio'] as const).map(pack => {
-            const levels = LEVELS.map((l, i) => ({ l, i })).filter(x => x.l.pack === pack);
-            const locked = pack === 'studio' && !studioUnlocked(); const base = LEVELS.findIndex(x => x.pack === pack);
+          {PACK_ORDER.map(packDef => {
+            const r = packRange(packDef.id); if (!r) return null;
+            const levels = Array.from({ length: r.count }, (_, k) => ({ l: LEVELS[r.from + k], i: r.from + k }));
+            const owned = packOwned(packDef.id);
+            const clearedInPack = levels.filter(({ i }) => (save.stars[i] || 0) > 0).length;
             return (
-              <div key={pack} style={{ marginTop: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontWeight: 800, fontSize: '14px', color: '#e5e7eb' }}>{pack === 'free' ? '🎬 On Location (Free)' : '🎟️ Studio Lot Pack'}</span>
-                  {locked && <button onClick={() => buyItem('pack_studio')} style={{ fontSize: '12px', fontWeight: 800, color: '#1a1a2e', backgroundColor: '#F59E0B', border: 'none', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer' }}>Unlock $2.99</button>}
+              <div key={packDef.id} style={{ marginTop: '18px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '14px', color: '#e5e7eb' }}>{packDef.emoji} {packDef.label} <span style={{ fontSize: '11px', color: '#6b7280', fontWeight: 600 }}>· {clearedInPack}/{r.count}</span></span>
+                  {!owned && packDef.storeId && <button onClick={() => buyItem(packDef.storeId!)} style={{ fontSize: '12px', fontWeight: 800, color: '#1a1a2e', backgroundColor: '#F59E0B', border: 'none', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer' }}>Unlock {packDef.price}</button>}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px', marginTop: '8px' }}>
-                  {levels.map(({ l, i }) => { const stars = save.stars[i] || 0; const playable = !locked && i <= save.lastUnlocked; const boss = isBossLevel(i); return (
-                    <button key={i} disabled={!playable && !locked} onClick={() => locked ? buyItem('pack_studio') : playable ? startLevel(i) : null} style={{ ...card, padding: '10px 4px', textAlign: 'center', cursor: (playable || locked) ? 'pointer' : 'not-allowed', opacity: (playable || locked) ? 1 : 0.45, ...(boss && !locked ? { background: 'linear-gradient(135deg,#fef3c7,#fde68a)', border: '2px solid #f59e0b' } : {}) }}>
-                      <div style={{ fontSize: '13px', fontWeight: 800, color: '#1a1a2e' }}>{locked ? '🔒' : boss ? '🎦' : i - base + 1}</div>
-                      <div style={{ fontSize: '9px', color: boss ? '#92400e' : '#9ca3af', height: '12px', overflow: 'hidden', fontWeight: boss ? 800 : 400 }}>{boss ? "Director's Cut" : l.name}</div>
-                      <div style={{ fontSize: '11px', marginTop: '2px', letterSpacing: '1px' }}>{[0, 1, 2].map(n => <span key={n} style={{ color: n < stars ? '#fbbf24' : '#d1d5db' }}>★</span>)}</div>
-                    </button>); })}
+                {/* COMPACT GRID: small square tiles, 8 across, number + tiny stars; ✗ over cleared, 🔒 on locked */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '5px' }}>
+                  {levels.map(({ l, i }) => {
+                    const stars = save.stars[i] || 0; const done = stars > 0;
+                    const playable = isPlayable(i); const boss = isBossLevel(i); const num = i - r.from + 1;
+                    const locked = !owned;
+                    return (
+                      <button key={i} disabled={!playable && !locked} onClick={() => locked ? (packDef.storeId && buyItem(packDef.storeId)) : playable ? startLevel(i) : null}
+                        title={l.name}
+                        style={{ position: 'relative', aspectRatio: '1', borderRadius: '9px', border: boss && playable ? '2px solid #f59e0b' : done ? '1px solid #16a34a' : '1px solid #e5e7eb',
+                          background: locked ? '#f3f4f6' : done ? '#ecfdf5' : boss ? 'linear-gradient(135deg,#fef3c7,#fde68a)' : 'white',
+                          cursor: (playable || locked) ? 'pointer' : 'not-allowed', opacity: (playable || locked) ? 1 : 0.4, padding: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 800, color: done ? '#16a34a' : '#1a1a2e', lineHeight: 1 }}>{locked ? '🔒' : boss ? '🎦' : num}</span>
+                        {!locked && <span style={{ fontSize: '7px', letterSpacing: '0px', lineHeight: 1 }}>{[0,1,2].map(n => <span key={n} style={{ color: n < stars ? '#fbbf24' : '#e5e7eb' }}>★</span>)}</span>}
+                        {done && <span style={{ position: 'absolute', top: '-4px', right: '-4px', fontSize: '12px', fontWeight: 900, color: '#16a34a', background: 'white', borderRadius: '50%', width: '15px', height: '15px', lineHeight: '15px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>✗</span>}
+                      </button>);
+                  })}
                 </div>
               </div>);
           })}
@@ -1363,6 +1413,11 @@ export default function SetCrashers() {
               </div>); })}
           </div>
           <Copyright />
+          </div>
+          {/* right-rail Top-3 — hidden on narrow screens via CSS below */}
+          <div className="sc-rail" style={{ width: 200, flexShrink: 0, position: 'sticky', top: 16 }}>
+            <LeaderboardRail getAccessToken={getToken} onOpen={() => setShowBoard(true)} />
+          </div>
         </div>
       )}
 
