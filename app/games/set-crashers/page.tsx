@@ -1059,7 +1059,18 @@ export default function SetCrashers() {
     const sp = Math.hypot(vx, vy);
     if (sp > VMAX) { const k = VMAX / sp; vx *= k; vy *= k; }
     Matter.Body.setVelocity(proj, { x: vx, y: vy });
+    const firstArm = !G.armed;
     G.projectile = proj; proj.crasherProjKind = key; proj.crasherR = r; G.flying = true; G.powerUsed = false; G.settleT = 0; G.flightT = 0; G.detonate = false; G.armed = true; G.launchDir = vx >= 0 ? 1 : -1; G.projKind = key;
+    if (G.mode === 'level' && firstArm) {
+      for (const t of G.targets) {
+        if (!t.crasherAlive) continue;
+        t.crasherStartX = t.position.x;
+        t.crasherStartY = t.position.y;
+        t.crasherDownT = 0;
+        Matter.Body.setVelocity(t, { x: 0, y: 0 });
+        Matter.Body.setAngularVelocity(t, 0);
+      }
+    }
     if (G.mode === 'level') {
       G.ammo--; setAmmoLeft(G.ammo);
       // power-ups are limited-use ammo (clapper is unlimited). Spend one use; re-lock + fall back when depleted.
