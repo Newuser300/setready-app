@@ -293,21 +293,20 @@ export default function AvailabilityPage() {
     setSaving(true)
     setSaveStatus('')
     try {
-      if (status === null) {
-        await fetch('/api/availability', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ date }),
-        })
-      } else {
-        await fetch('/api/availability', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ date, status, notes: note ?? null }),
-        })
-      }
+      const res = status === null
+        ? await fetch('/api/availability', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ date }),
+          })
+        : await fetch('/api/availability', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ date, status, notes: note ?? null }),
+          })
+      if (!res.ok) { setSaveStatus('error'); return }
       setSaveStatus('saved')
       setTimeout(() => setSaveStatus(''), 2000)
     } catch {
@@ -562,15 +561,31 @@ export default function AvailabilityPage() {
   const savePopup = async () => {
     if (!selectedDay) return
     setSavingPopup(true)
+
+    const note = popupNote.trim()
+    // A note can't be stored without a status (row is keyed by user_id+date with a NOT NULL
+    // status), so a note-only day keeps its existing status or defaults to 'available' instead
+    // of being DELETEd — which is what silently dropped notes before.
+    let statusToSave: string | null
+    if (popupStatus === 'clear') statusToSave = null
+    else if (popupStatus) statusToSave = popupStatus
+    else if (note) statusToSave = availability[selectedDay] || 'available'
+    else statusToSave = null
+
     const newAvail = { ...availability }
     const newNotes = { ...notes }
-    const statusToSave = popupStatus === 'clear' ? null : popupStatus || null
-    if (!statusToSave) { delete newAvail[selectedDay] } else { newAvail[selectedDay] = statusToSave }
-    if (popupNote.trim()) newNotes[selectedDay] = popupNote.trim()
-    else delete newNotes[selectedDay]
+    if (!statusToSave) {
+      delete newAvail[selectedDay]
+      delete newNotes[selectedDay]
+    } else {
+      newAvail[selectedDay] = statusToSave
+      if (note) newNotes[selectedDay] = note
+      else delete newNotes[selectedDay]
+    }
     setAvailability(newAvail)
     setNotes(newNotes)
-    await saveOne(selectedDay, statusToSave, popupNote.trim() || undefined)
+
+    await saveOne(selectedDay, statusToSave, note || undefined)
     setSavingPopup(false)
     setSelectedDay(null)
   }
