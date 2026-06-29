@@ -15,7 +15,6 @@ interface Agency {
   email?: string;
   phone?: string;
   address?: string;
-  licenceNumber?: string;
 }
 
 const agencies: Agency[] = [
@@ -31,7 +30,6 @@ const agencies: Agency[] = [
     website: 'https://bossmanagement.com',
     email: 'extras@bossmanagement.com',
     address: '#500-224 Esplanade West, North Vancouver BC',
-    licenceNumber: '#467579',
     notes: 'Background, principal, commercial — Est. 1992',
   },
   {
@@ -660,18 +658,13 @@ function AgencyCard({ agency }: { agency: Agency }) {
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col overflow-hidden">
       {/* Card body */}
       <div className="p-6 flex-1">
-        {/* Top row: province badge + licence + city */}
+        {/* Top row: province badge + city */}
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${badge.bg} ${badge.text}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
               {abbr(agency.province)}
             </span>
-            {agency.licenceNumber && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                🪪 {agency.licenceNumber}
-              </span>
-            )}
           </div>
           <span className="text-xs text-gray-400 text-right shrink-0">{agency.city}</span>
         </div>
