@@ -20,10 +20,16 @@ const fmt = (n: number) => `$${n.toFixed(2)}`;
 export default function RateCalculator() {
   const [isUnion, setIsUnion]         = useState(true);
   const [role, setRole]               = useState<RoleKey>('General Background Performer');
-  const [hours, setHours]             = useState(8);
+  // Hours Worked is held as the raw typed string so the field stays freely editable
+  // (it can be cleared and retyped). The numeric value used for the math is derived below.
+  const [hoursInput, setHoursInput]   = useState('8');
   const [useCustom, setUseCustom]     = useState(false);
   const [customRate, setCustomRate]   = useState('');
   const [province, setProvince]       = useState('BC');
+
+  // Numeric hours for calculations only — clamped to a sane 1–24 range. The input itself
+  // keeps the raw string, so typing no longer snaps the field to 24 or refuses input.
+  const hours = Math.min(24, Math.max(1, parseInt(hoursInput, 10) || 0));
 
   useEffect(() => { localStorage.setItem('sr-rate-calc-visited', '1') }, [])
 
@@ -75,7 +81,6 @@ export default function RateCalculator() {
           </div>
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-900 transition">← Dashboard</Link>
-            <a href="/glossary" className="text-sm text-gray-500 hover:text-gray-900 transition">Glossary →</a>
           </div>
         </div>
       </div>
@@ -180,8 +185,9 @@ export default function RateCalculator() {
           <div className="mb-4">
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">Hours Worked</label>
             <input
-              type="number" min={1} max={24} value={hours}
-              onChange={e => setHours(Math.max(1, Math.min(24, parseInt(e.target.value) || 8)))}
+              type="number" min={1} max={24} value={hoursInput}
+              onChange={e => setHoursInput(e.target.value)}
+              onBlur={() => setHoursInput(String(Math.min(24, Math.max(1, parseInt(hoursInput, 10) || 8))))}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none"
             />
           </div>
