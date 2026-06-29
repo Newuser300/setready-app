@@ -2162,6 +2162,27 @@ export default function QuizTestPage({ params }: TestPageProps) {
           </div>
         )}
 
+        {isLast && !allAnswered && (
+          <div className="mb-4 p-4 bg-amber-50 border border-amber-300 rounded-lg text-amber-800 text-sm">
+            <p className="font-semibold mb-1">⚠️ All {questions.length} questions must be answered before you can submit.</p>
+            <p>
+              You still have{' '}
+              <span className="font-bold">{questions.length - answeredCount}</span>{' '}
+              unanswered question{questions.length - answeredCount !== 1 ? 's' : ''}.{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  const firstUnanswered = questions.findIndex(q => answers[q.id] === undefined);
+                  if (firstUnanswered !== -1) setCurrentIndex(firstUnanswered);
+                }}
+                className="underline font-semibold hover:text-amber-900"
+              >
+                Go to the first unanswered question →
+              </button>
+            </p>
+          </div>
+        )}
+
         <div className="flex justify-between">
           <button
             onClick={() => setCurrentIndex(i => i - 1)}
@@ -2181,10 +2202,10 @@ export default function QuizTestPage({ params }: TestPageProps) {
           ) : (
             <button
               onClick={handleSubmit}
-              disabled={submitting || !allAnswered}
-              className={`px-6 py-2 rounded-lg font-semibold ${!allAnswered ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'}`}
+              disabled={submitting}
+              className={`px-6 py-2 rounded-lg font-semibold ${submitting ? 'bg-gray-300 cursor-not-allowed' : !allAnswered ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-green-600 text-white hover:bg-green-700'}`}
             >
-              {submitting ? 'Submitting...' : 'Submit Test'}
+              {submitting ? 'Submitting...' : !allAnswered ? 'Answer all questions to submit' : 'Submit Test'}
             </button>
           )}
         </div>
