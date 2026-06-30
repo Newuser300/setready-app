@@ -411,9 +411,10 @@ export default function AgentDashboardPage() {
     }
   }
 
-  async function removeFromRoster(userId: string) {
+  async function removeFromRoster(userId: string, rosterId: string) {
     if (!confirm('Remove this performer from your roster?')) return
-    await fetch('/api/agent/roster', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }) })
+    const res = await fetch('/api/agent/roster', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rosterId }) })
+    if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.error || 'Failed to remove performer'); return }
     setRoster(prev => prev.filter(r => r.user_id !== userId))
     setSelectedPerformer(null)
   }
@@ -1301,7 +1302,7 @@ export default function AgentDashboardPage() {
             )}
 
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={() => removeFromRoster(selectedPerformer.user_id)} style={{ flex: 1, padding: '10px', backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>Remove from Roster</button>
+              <button onClick={() => removeFromRoster(selectedPerformer.user_id, selectedPerformer.id)} style={{ flex: 1, padding: '10px', backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>Remove from Roster</button>
               <button onClick={() => { setSelectedPerformer(null); router.push(`/profile/${selectedPerformer.user_id}`) }} style={{ flex: 2, padding: '10px', backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', fontSize: '13px' }}>View Full Profile →</button>
             </div>
           </div>
