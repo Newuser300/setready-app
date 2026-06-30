@@ -87,6 +87,30 @@ export async function POST(request: Request) {
       const userId = session.client_reference_id ?? session.metadata?.userId ?? null;
       const stripeCustomerId = session.customer as string | null;
 
+      // Donation — no userId required; must be handled before the !userId guard
+      if (session.mode === 'payment' && session.metadata?.type === 'donation') {
+        const donorEmail =
+          session.customer_details?.email ??
+          (session as any).customer_email ??
+          null;
+        const donorUserId = session.metadata?.donor_user_id ?? null;
+        const { error: donationError } = await supabaseAdmin
+          .from('donations')
+          .upsert(
+            {
+              stripe_session_id: session.id,
+              amount_cents: session.amount_total,
+              currency: session.currency,
+              donor_email: donorEmail,
+              donor_user_id: donorUserId || null,
+              status: 'completed',
+            },
+            { onConflict: 'stripe_session_id' }
+          );
+        if (donationError) console.error('❌ Failed to record donation:', donationError);
+        break;
+      }
+
       if (!userId) {
         console.error('❌ No userId — client_reference_id and metadata.userId are both missing. Skipping.');
         break;

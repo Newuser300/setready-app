@@ -72,7 +72,7 @@ type AdminRecord = {
   added_at: string;
 };
 
-type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools' | 'casting' | 'promos' | 'messages' | 'tester_codes' | 'photo_promo' | 'verified_badges' | 'oversight';
+type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools' | 'casting' | 'promos' | 'messages' | 'tester_codes' | 'photo_promo' | 'verified_badges' | 'oversight' | 'donations';
 
 interface TesterCode {
   id: string;
@@ -199,6 +199,23 @@ export default function AdminPage() {
     }
     setBadgesLoading(false);
   }
+
+  // Donations
+  const [donations, setDonations] = useState<{ id: string; stripe_session_id: string; amount_cents: number; currency: string; donor_email: string | null; status: string; created_at: string }[]>([]);
+  const [donationsTotalCents, setDonationsTotalCents] = useState(0);
+  const [donationsLoading, setDonationsLoading] = useState(false);
+
+  async function loadDonations() {
+    setDonationsLoading(true);
+    const res = await fetch('/api/admin/donations', { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (res.ok) {
+      const data = await res.json();
+      setDonations(data.donations || []);
+      setDonationsTotalCents(data.totalCents || 0);
+    }
+    setDonationsLoading(false);
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [castingData, setCastingData] = useState<any>(null);
   const [castingLoading, setCastingLoading] = useState(false);
@@ -1150,6 +1167,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
     { key: 'messages',     label: 'Messages',      icon: '📬' },
     { key: 'verified_badges', label: 'Verified Badges', icon: '✓' },
     { key: 'oversight',       label: 'Oversight',       icon: '🔍' },
+    { key: 'donations',       label: 'Donations',       icon: '❤️' },
   ];
 
   return (
@@ -1204,6 +1222,9 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                 }
                 if (item.key === 'verified_badges') {
                   loadVerifiedBadges();
+                }
+                if (item.key === 'donations') {
+                  loadDonations();
                 }
               }}
               className={`px-4 py-3 text-sm font-medium transition border-b-2 whitespace-nowrap ${
@@ -4053,6 +4074,69 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════
+          DONATIONS
+      ══════════════════════════════════════ */}
+      {activeSection === 'donations' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-800">❤️ Donations</h2>
+            <button
+              onClick={loadDonations}
+              className="text-xs text-blue-600 font-semibold hover:underline"
+            >
+              {donationsLoading ? 'Loading...' : 'Refresh'}
+            </button>
+          </div>
+
+          {/* Running total */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6 flex items-center gap-4">
+            <div className="text-4xl">💰</div>
+            <div>
+              <p className="text-sm text-gray-500 uppercase tracking-wide font-semibold">Total Received</p>
+              <p className="text-3xl font-bold text-gray-900">
+                ${(donationsTotalCents / 100).toFixed(2)} CAD
+              </p>
+              <p className="text-sm text-gray-400 mt-1">{donations.length} donation{donations.length !== 1 ? 's' : ''}</p>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            {donationsLoading ? (
+              <p className="p-6 text-sm text-gray-500">Loading...</p>
+            ) : donations.length === 0 ? (
+              <p className="p-6 text-sm text-gray-500">No donations recorded yet.</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Donor</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {donations.map(d => (
+                    <tr key={d.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-gray-600">
+                        {new Date(d.created_at).toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-gray-900">
+                        ${(d.amount_cents / 100).toFixed(2)} {d.currency?.toUpperCase()}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {d.donor_email || <span className="text-gray-400 italic">Anonymous</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       )}
