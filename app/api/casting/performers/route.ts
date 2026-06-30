@@ -20,6 +20,7 @@ export async function GET(req: Request) {
   const limit = parseInt(searchParams.get('limit') || '100')
   const shootRegionCode = searchParams.get('region') || ''
   const unionTier = searchParams.get('unionTier') || '' // 'full','apprentice','bg','nonunion'
+  const representation = searchParams.get('representation') || '' // '', 'represented', 'unrepresented'
   const hairLength = searchParams.get('hairLength') || ''
   const hairTexture = searchParams.get('hairTexture') || ''
   const bodyType = searchParams.get('bodyType') || ''
@@ -81,6 +82,8 @@ export async function GET(req: Request) {
   if (eyeColor) query = query.eq('eye_color', eyeColor)
   if (unionStatus) query = query.eq('union_status', unionStatus)
   if (agencyId) query = query.eq('agency_id', agencyId)
+  if (representation === 'unrepresented') query = query.is('agency_id', null)
+  else if (representation === 'represented') query = query.not('agency_id', 'is', null)
 
   // Filter by union tier
   if (unionTier === 'full') query = query.eq('union_priority', 1)

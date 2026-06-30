@@ -249,6 +249,7 @@ export default function CastingDashboardPage() {
   const [browseUnion, setBrowseUnion] = useState('')
   const [browseSkills, setBrowseSkills] = useState('')
   const [browseUnionTier, setBrowseUnionTier] = useState('')
+  const [browseRepresentation, setBrowseRepresentation] = useState('')
   const [browseHairLength, setBrowseHairLength] = useState('')
   const [browseHairTexture, setBrowseHairTexture] = useState('')
   const [browseBodyType, setBrowseBodyType] = useState('')
@@ -404,6 +405,7 @@ export default function CastingDashboardPage() {
     if (browseSkills) params.set('skills', browseSkills)
     if (browseRegion) params.set('region', browseRegion)
     if (browseUnionTier) params.set('unionTier', browseUnionTier)
+    if (browseRepresentation) params.set('representation', browseRepresentation)
     if (browseHairLength) params.set('hairLength', browseHairLength)
     if (browseHairTexture) params.set('hairTexture', browseHairTexture)
     if (browseBodyType) params.set('bodyType', browseBodyType)
@@ -433,7 +435,7 @@ export default function CastingDashboardPage() {
       setBrowseRegionName(data.shootRegionName || '')
       setAiInterpretation('')
     }
-  }, [browseDate, browseGender, browseAgeMin, browseAgeMax, browseHair, browseEye, browseUnion, browseSkills, browseRegion, browseUnionTier, browseHairLength, browseHairTexture, browseBodyType, browseSkinTone, browseFacialHair, browseEthnicity, browseLanguage, browseDanceStyle, browseSport, browseAccent, browseDriving, browseSwimming, browseHeightMin, browseHeightMax])
+  }, [browseDate, browseGender, browseAgeMin, browseAgeMax, browseHair, browseEye, browseUnion, browseSkills, browseRegion, browseUnionTier, browseRepresentation, browseHairLength, browseHairTexture, browseBodyType, browseSkinTone, browseFacialHair, browseEthnicity, browseLanguage, browseDanceStyle, browseSport, browseAccent, browseDriving, browseSwimming, browseHeightMin, browseHeightMax])
 
   async function loadRequests() {
     setReqLoading(true)
@@ -869,6 +871,14 @@ export default function CastingDashboardPage() {
                     <option value="apprentice">⭐ Apprentice only</option>
                     <option value="bg">🟢 Extra Members only</option>
                     <option value="nonunion">⚫ Non-Union only</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={lbl}>Agent Representation</label>
+                  <select value={browseRepresentation} onChange={e => setBrowseRepresentation(e.target.value)} style={inp}>
+                    <option value="">Agent: All performers</option>
+                    <option value="represented">With an agent</option>
+                    <option value="unrepresented">Without an agent</option>
                   </select>
                 </div>
                 <div>
