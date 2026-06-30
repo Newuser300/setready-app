@@ -20,7 +20,7 @@ const WORLD_W = 1280, WORLD_H = 720;
 const GROUND_Y = 660;
 const SLING = { x: 200, y: 470 };
 const MAX_PULL = 150;          // max drag distance (px in world space)
-const LAUNCH_SCALE = 0.15;     // pull -> velocity (+25% power; VMAX cap scales from this, so shots stay on-world)
+const LAUNCH_SCALE = 0.18;     // pull -> velocity (+20% from 0.15; VMAX cap scales from this, so shots stay on-world)
 
 // ── "BOX OFFICE" SCORING — your score is your film's gross ──
 const SC = { KNOCKDOWN: 1000, UNDER_BUDGET: 5000, ONE_TAKE: 15000, CHAIN: 500, MULTI_CAP: 4 };
