@@ -360,7 +360,7 @@ export default function CastingDashboardPage() {
     if (activeTab === 'Requests') { loadRequests(); loadTemplates() }
     if (activeTab === 'Union') loadUnionPerformers()
     if (activeTab === 'Find') loadPerformers()
-  }, [activeTab, reqTab, unionTierFilter])
+  }, [activeTab, reqTab, unionTierFilter, browseRegion])
 
   useEffect(() => {
     if (!quickView) {
