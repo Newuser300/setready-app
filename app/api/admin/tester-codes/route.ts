@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await supabaseAdmin
     .from('tester_codes')
-    .insert({ code, created_by: admin.email, is_active: true, max_uses: 1, uses_count: 0 })
+    .insert({ code, created_by: admin.id, is_active: true, max_uses: 1, uses_count: 0 })
     .select()
     .single()
 

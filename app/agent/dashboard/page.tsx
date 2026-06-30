@@ -215,6 +215,13 @@ export default function AgentDashboardPage() {
   const [addLoading, setAddLoading] = useState(false)
   const [addError, setAddError] = useState('')
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
+  const [lookupResult, setLookupResult] = useState<{
+    user_id: string; name: string; email: string
+    headshot_url: string | null; union_status: string | null
+    film_region_code: string | null; city: string | null
+    already_represented: boolean; already_on_roster: boolean; roster_status: string | null
+  } | null>(null)
+  const [addingToRoster, setAddingToRoster] = useState(false)
   const [selectedPerformer, setSelectedPerformer] = useState<RosterPerformer | null>(null)
   const [noteText, setNoteText] = useState('')
   const [noteLoading, setNoteLoading] = useState(false)
@@ -382,12 +389,21 @@ export default function AgentDashboardPage() {
     if (activeTab === 'Calendar') { loadRoster(); loadSubmissions(); loadHolds() }
   }, [activeTab, loadStats, loadRoster, loadRequests, loadSubmissions, loadCommissions, loadHolds])
 
-  async function addToRoster() {
+  async function lookupPerformer() {
     if (!addEmail.trim()) return
-    setAddLoading(true); setAddError('')
-    const res = await fetch('/api/agent/roster', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: addEmail }) })
+    setAddLoading(true); setAddError(''); setLookupResult(null)
+    const res = await fetch(`/api/agent/roster?email=${encodeURIComponent(addEmail.trim())}`)
     setAddLoading(false)
-    if (res.ok) { setAddEmail(''); loadRoster() }
+    if (!res.ok) { const d = await res.json(); setAddError(d.error || 'No performer found with that email'); return }
+    setLookupResult(await res.json())
+  }
+
+  async function confirmAddToRoster() {
+    if (!lookupResult) return
+    setAddingToRoster(true); setAddError('')
+    const res = await fetch('/api/agent/roster', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: lookupResult.email }) })
+    setAddingToRoster(false)
+    if (res.ok) { setAddEmail(''); setLookupResult(null); loadRoster() }
     else {
       const d = await res.json()
       setAddError(d.error || 'Failed to add')
@@ -677,19 +693,39 @@ export default function AgentDashboardPage() {
             {/* Add performer */}
             <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '16px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '16px' }}>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <input value={addEmail} onChange={e => setAddEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && addToRoster()} placeholder="Add performer by email..." style={{ flex: 1, minWidth: '200px', padding: '10px 13px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '14px', color: 'white', backgroundColor: '#0f0f1a', outline: 'none' }} />
-                <button onClick={addToRoster} disabled={addLoading || !addEmail.trim()} style={{ padding: '10px 20px', backgroundColor: addEmail.trim() ? '#F59E0B' : '#374151', color: addEmail.trim() ? '#1a1a2e' : '#6b7280', fontWeight: '800', border: 'none', borderRadius: '8px', cursor: addEmail.trim() ? 'pointer' : 'not-allowed', fontSize: '14px', whiteSpace: 'nowrap' }}>
-                  {addLoading ? 'Adding...' : '+ Add'}
+                <input value={addEmail} onChange={e => { setAddEmail(e.target.value); setLookupResult(null); setAddError('') }} onKeyDown={e => e.key === 'Enter' && lookupPerformer()} placeholder="Look up performer by email..." style={{ flex: 1, minWidth: '200px', padding: '10px 13px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '14px', color: 'white', backgroundColor: '#0f0f1a', outline: 'none' }} />
+                <button onClick={lookupPerformer} disabled={addLoading || !addEmail.trim()} style={{ padding: '10px 20px', backgroundColor: addEmail.trim() ? '#F59E0B' : '#374151', color: addEmail.trim() ? '#1a1a2e' : '#6b7280', fontWeight: '800', border: 'none', borderRadius: '8px', cursor: addEmail.trim() ? 'pointer' : 'not-allowed', fontSize: '14px', whiteSpace: 'nowrap' }}>
+                  {addLoading ? 'Looking up…' : 'Look up'}
                 </button>
               </div>
-              {addError && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '6px' }}>{addError}</div>}
+              {addError && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '8px' }}>{addError}</div>}
+              {lookupResult && (
+                <div style={{ marginTop: '12px', padding: '14px', backgroundColor: '#0f0f1a', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  {lookupResult.headshot_url
+                    ? <img src={lookupResult.headshot_url} alt="" style={{ width: '52px', height: '52px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} />
+                    : <div style={{ width: '52px', height: '52px', borderRadius: '8px', backgroundColor: '#1e1e35', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>👤</div>
+                  }
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: '700', color: 'white', fontSize: '14px' }}>{lookupResult.name}</div>
+                    <div style={{ fontSize: '12px', color: '#9ca3af' }}>{lookupResult.email}</div>
+                    {lookupResult.union_status && <div style={{ fontSize: '11px', color: '#F59E0B', marginTop: '2px' }}>{lookupResult.union_status}</div>}
+                    {(lookupResult.city || lookupResult.film_region_code) && (
+                      <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{[lookupResult.city, lookupResult.film_region_code].filter(Boolean).join(' · ')}</div>
+                    )}
+                    {lookupResult.already_represented && <div style={{ fontSize: '11px', color: '#f97316', marginTop: '2px' }}>⚠ Already represented by an agency</div>}
+                  </div>
+                  {lookupResult.already_on_roster
+                    ? <div style={{ padding: '8px 14px', backgroundColor: '#1e1e35', color: '#9ca3af', borderRadius: '8px', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap', flexShrink: 0 }}>Already on roster</div>
+                    : <button onClick={confirmAddToRoster} disabled={addingToRoster} style={{ padding: '8px 16px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '800', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', whiteSpace: 'nowrap', flexShrink: 0 }}>{addingToRoster ? 'Adding…' : '+ Add to roster'}</button>
+                  }
+                </div>
+              )}
               {showUpgradePrompt && (
                 <div style={{ marginTop: '8px', padding: '12px 14px', backgroundColor: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                   <span style={{ fontSize: '12px', color: '#92400e', fontWeight: '600' }}>You've reached the 25-performer limit on the free plan.</span>
                   <button onClick={() => router.push('/agent/settings')} style={{ backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: '8px', padding: '7px 14px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' }}>Upgrade to Pro →</button>
                 </div>
               )}
-
             </div>
 
             {/* Filters */}

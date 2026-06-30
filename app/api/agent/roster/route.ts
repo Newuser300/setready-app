@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAgentSession, supabaseAdmin } from '@/lib/casting-auth'
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getAgentSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -12,6 +12,44 @@ export async function GET() {
     .single()
 
   if (!agent) return NextResponse.json({ error: 'Agent not found' }, { status: 404 })
+
+  // ── Email lookup mode — preview only, does NOT add to roster ─────────────
+  const lookupEmail = new URL(req.url).searchParams.get('email')?.trim().toLowerCase()
+  if (lookupEmail) {
+    const { data: user } = await supabaseAdmin
+      .from('users')
+      .select('id, email, name')
+      .eq('email', lookupEmail)
+      .maybeSingle()
+
+    if (!user) return NextResponse.json({ error: 'No performer found with that email' }, { status: 404 })
+
+    const [{ data: profile }, { data: onRoster }] = await Promise.all([
+      supabaseAdmin.from('performer_profiles')
+        .select('headshot_url, union_status, film_region_code, city, agency_id')
+        .eq('user_id', user.id)
+        .maybeSingle(),
+      supabaseAdmin.from('agency_roster')
+        .select('id, status')
+        .eq('agency_id', agent.agency_id)
+        .eq('performer_user_id', user.id)
+        .maybeSingle(),
+    ])
+
+    return NextResponse.json({
+      user_id: user.id,
+      name: user.name || user.email.split('@')[0],
+      email: user.email,
+      headshot_url: profile?.headshot_url || null,
+      union_status: profile?.union_status || null,
+      film_region_code: profile?.film_region_code || null,
+      city: profile?.city || null,
+      already_represented: !!(profile?.agency_id),
+      already_on_roster: !!onRoster,
+      roster_status: onRoster?.status || null,
+    })
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   const today = new Date()
   const weekStart = new Date(today)
