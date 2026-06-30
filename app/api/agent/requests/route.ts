@@ -60,21 +60,24 @@ export async function GET(req: Request) {
   // For each request, get submission count for THIS agency
   const requestIds = requests.map(r => r.id)
 
-  const { data: submissionCounts } = await supabaseAdmin
+  const { data: submissions } = await supabaseAdmin
     .from('casting_submissions')
-    .select('casting_request_id')
+    .select('casting_request_id, performer_user_id')
     .eq('agency_id', agent.agency_id)
     .in('casting_request_id', requestIds)
 
   const countMap: Record<string, number> = {}
-  ;(submissionCounts || []).forEach(s => {
+  const idsMap: Record<string, string[]> = {}
+  ;(submissions || []).forEach(s => {
     countMap[s.casting_request_id] = (countMap[s.casting_request_id] || 0) + 1
+    ;(idsMap[s.casting_request_id] ??= []).push(s.performer_user_id)
   })
 
   const result = requests.map(r => ({
     ...r,
     casting_directors: r.casting_director_id ? (directorsById[r.casting_director_id] || null) : null,
     mySubmissionCount: countMap[r.id] || 0,
+    submittedPerformerIds: idsMap[r.id] || [],
   }))
 
   return NextResponse.json(result)

@@ -51,6 +51,7 @@ interface CastingRequest {
   wardrobe_notes?: string | null
   status: string
   mySubmissionCount: number
+  submittedPerformerIds: string[]
   casting_directors?: { name: string; company: string } | null
 }
 
@@ -436,7 +437,14 @@ export default function AgentDashboardPage() {
   async function submitPerformer() {
     if (!submittingFor) return
     const res = await fetch('/api/agent/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(submittingFor) })
-    if (res.ok) { setSubmittingFor(null); loadRequests() }
+    if (res.ok) {
+      const { reqId, performerId } = submittingFor
+      setRequests(prev => prev.map(req =>
+        req.id === reqId
+          ? { ...req, submittedPerformerIds: [...(req.submittedPerformerIds || []), performerId] }
+          : req))
+      setSubmittingFor(null); loadRequests()
+    }
   }
 
   async function sendAvailCheck() {
@@ -801,7 +809,11 @@ export default function AgentDashboardPage() {
                                       <div style={{ fontSize: '11px', color: '#F59E0B' }}>{unionBadge(r.performer_profiles?.union_status)} {unionTierLabel(r.performer_profiles?.union_status)}</div>
                                     </div>
                                   </div>
-                                  <button onClick={() => setSubmittingFor({ reqId: req.id, performerId: r.user_id, notes: '' })} style={{ padding: '6px 12px', backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', whiteSpace: 'nowrap' }}>Submit</button>
+                                  {req.submittedPerformerIds?.includes(r.user_id) ? (
+                                    <button disabled style={{ padding: '6px 12px', backgroundColor: '#d1fae5', color: '#065f46', border: 'none', borderRadius: '6px', cursor: 'default', fontWeight: '700', fontSize: '12px', whiteSpace: 'nowrap' }}>✓ Submitted</button>
+                                  ) : (
+                                    <button onClick={() => setSubmittingFor({ reqId: req.id, performerId: r.user_id, notes: '' })} style={{ padding: '6px 12px', backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', whiteSpace: 'nowrap' }}>Submit</button>
+                                  )}
                                 </div>
                               ))}
                             </div>

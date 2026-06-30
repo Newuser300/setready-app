@@ -20,6 +20,20 @@ export async function GET(req: Request) {
   const limit = parseInt(searchParams.get('limit') || '100')
   const shootRegionCode = searchParams.get('region') || ''
   const unionTier = searchParams.get('unionTier') || '' // 'full','apprentice','bg','nonunion'
+  const hairLength = searchParams.get('hairLength') || ''
+  const hairTexture = searchParams.get('hairTexture') || ''
+  const bodyType = searchParams.get('bodyType') || ''
+  const skinTone = searchParams.get('skinTone') || ''
+  const facialHair = searchParams.get('facialHair') || ''
+  const ethnicity = searchParams.get('ethnicity') || ''
+  const language = searchParams.get('language') || ''
+  const danceStyle = searchParams.get('danceStyle') || ''
+  const sport = searchParams.get('sport') || ''
+  const accent = searchParams.get('accent') || ''
+  const driving = searchParams.get('driving') || ''
+  const swimming = searchParams.get('swimming') || ''
+  const heightMin = searchParams.get('heightMin') || ''
+  const heightMax = searchParams.get('heightMax') || ''
 
   let query = supabaseAdmin
     .from('performer_profiles')
@@ -58,6 +72,8 @@ export async function GET(req: Request) {
       )
     `)
     .eq('is_public', true)
+    .order('union_priority', { ascending: true, nullsFirst: false })
+    .order('updated_at', { ascending: false })
     .limit(limit)
 
   if (gender && gender !== 'Any') query = query.eq('gender', gender)
@@ -71,6 +87,26 @@ export async function GET(req: Request) {
   else if (unionTier === 'apprentice') query = query.eq('union_priority', 2)
   else if (unionTier === 'bg') query = query.eq('union_priority', 3)
   else if (unionTier === 'nonunion') query = query.eq('union_priority', 4)
+
+  // Text filters — exact match
+  if (hairLength) query = query.eq('hair_length', hairLength)
+  if (hairTexture) query = query.eq('hair_texture', hairTexture)
+  if (bodyType) query = query.eq('body_type', bodyType)
+  if (skinTone) query = query.eq('skin_tone', skinTone)
+  if (facialHair) query = query.eq('facial_hair', facialHair)
+  if (swimming) query = query.eq('swimming_level', swimming)
+
+  // Array filters — row must contain the selected value
+  if (ethnicity) query = query.contains('ethnicity', [ethnicity])
+  if (language) query = query.contains('languages', [language])
+  if (danceStyle) query = query.contains('dance_styles', [danceStyle])
+  if (sport) query = query.contains('sports', [sport])
+  if (accent) query = query.contains('accents', [accent])
+  if (driving) query = query.contains('driving_licence', [driving])
+
+  // Height range
+  if (heightMin) query = query.gte('height_cm', parseInt(heightMin))
+  if (heightMax) query = query.lte('height_cm', parseInt(heightMax))
 
   const { data: profiles, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

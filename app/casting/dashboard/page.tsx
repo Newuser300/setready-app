@@ -89,7 +89,7 @@ interface Booking {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const TABS = ['Overview','Find','Requests','Kanban','Union','Sign-In','Analytics','Settings'] as const
+const TABS = ['Overview','Find','Requests','Kanban','Union','Analytics','Settings'] as const
 type Tab = typeof TABS[number]
 
 const TAB_LABELS: Record<Tab, string> = {
@@ -98,7 +98,6 @@ const TAB_LABELS: Record<Tab, string> = {
   Requests: '📋 Casting Requests',
   Kanban: '👥 Submissions',
   Union: '🏆 Union Members',
-  'Sign-In': '📅 Sign-In QR',
   Analytics: '📊 Analytics',
   Settings: '⚙️ Settings',
 }
@@ -117,6 +116,20 @@ const HAIR_OPTIONS = ['','Black','Brown','Blonde','Red','Grey','White','Bald','O
 const EYE_OPTIONS = ['','Brown','Blue','Green','Hazel','Grey','Other']
 const PROJECT_TYPES = ['Feature Film','TV Series','Commercial','Music Video','Short Film','Documentary','Web Series','Other']
 const ROLE_TYPES = ['Background','Featured Extra','Day Player','Principal','Stunt','Specialty']
+
+// ─── Filter option lists — kept in sync with app/profile/page.tsx constants ──
+const HAIR_LENGTHS = ['Bald / Shaved','Very Short (< 1 inch)','Short (1–3 inches)','Medium Short (3–5 inches)','Medium (chin length)','Medium Long (shoulder length)','Long (below shoulder)','Very Long (past mid-back)']
+const HAIR_TEXTURES = ['Straight','Wavy','Curly','Coily / Kinky','Locs / Dreadlocks']
+const BODY_TYPES = ['Slim / Lean','Athletic / Fit','Average / Medium','Stocky / Muscular','Heavyset / Large','Plus Size','Petite']
+const SKIN_TONES = ['Very Fair','Fair','Light','Light Medium','Medium','Medium Dark (olive)','Dark','Very Dark']
+const FACIAL_HAIR_OPTS = ['None / Clean Shaven','Stubble (1–3 days)','Short Beard','Full Beard','Long Beard','Moustache','Goatee','Sideburns','Not applicable']
+const ETHNICITY_OPTS = ['Indigenous / First Nations','Black / African Canadian','East Asian','South Asian','Southeast Asian','Middle Eastern','Latin / Hispanic','White / Caucasian','Mixed / Multiracial','Other']
+const SWIMMING_LEVELS = ['Non-swimmer','Basic (can float, basic strokes)','Intermediate (comfortable in water)','Strong swimmer','Competitive swimmer / Lifeguard']
+const LANG_PRESETS = ['English','French','Mandarin','Cantonese','Punjabi','Hindi','Spanish','Portuguese','German','Italian','Japanese','Korean','Arabic','Ukrainian','Tagalog / Filipino','Vietnamese']
+const ACCENT_PRESETS = ['Canadian (neutral)','British (RP)','British (regional)','American (neutral)','American (Southern)','American (New York)','Australian','Irish','Scottish','French','French Canadian','Spanish','Italian','German','Russian','Indian','Jamaican / Caribbean']
+const SPORTS_OPTS = ['Hockey','Football (Canadian)','Basketball','Baseball','Soccer / Football','Tennis','Golf','Swimming','Skiing / Snowboarding','Skateboarding','Surfing','Martial Arts','Boxing / Wrestling','Cycling','Running / Track','Gymnastics','Cheerleading','Volleyball','Rugby','Lacrosse','Rock Climbing','Equestrian / Horse Riding']
+const DANCE_OPTS = ['Ballet','Jazz','Contemporary / Modern','Hip Hop','Ballroom','Latin (Salsa, Tango, etc.)','Tap','Swing / Lindy Hop','Pole Dancing','Aerial / Acrobatics','Belly Dancing','Folk / Cultural']
+const DRIVING_OPTS = ["Standard BC Driver's Licence",'Motorcycle Licence (Class 6)','Commercial Vehicle (Class 1–5)','ATV / Off-Road Vehicle','Boat / Watercraft','Forklift','Farm Equipment']
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -236,6 +249,20 @@ export default function CastingDashboardPage() {
   const [browseUnion, setBrowseUnion] = useState('')
   const [browseSkills, setBrowseSkills] = useState('')
   const [browseUnionTier, setBrowseUnionTier] = useState('')
+  const [browseHairLength, setBrowseHairLength] = useState('')
+  const [browseHairTexture, setBrowseHairTexture] = useState('')
+  const [browseBodyType, setBrowseBodyType] = useState('')
+  const [browseSkinTone, setBrowseSkinTone] = useState('')
+  const [browseFacialHair, setBrowseFacialHair] = useState('')
+  const [browseEthnicity, setBrowseEthnicity] = useState('')
+  const [browseLanguage, setBrowseLanguage] = useState('')
+  const [browseDanceStyle, setBrowseDanceStyle] = useState('')
+  const [browseSport, setBrowseSport] = useState('')
+  const [browseAccent, setBrowseAccent] = useState('')
+  const [browseDriving, setBrowseDriving] = useState('')
+  const [browseSwimming, setBrowseSwimming] = useState('')
+  const [browseHeightMin, setBrowseHeightMin] = useState('')
+  const [browseHeightMax, setBrowseHeightMax] = useState('')
   const [performers, setPerformers] = useState<Performer[]>([])
   const [adjacentPerformers, setAdjacentPerformers] = useState<Performer[]>([])
   const [browseRegionName, setBrowseRegionName] = useState('')
@@ -275,7 +302,7 @@ export default function CastingDashboardPage() {
   const [kanbanLoading, setKanbanLoading] = useState(false)
 
   // Union members tab
-  const [unionTierFilter, setUnionTierFilter] = useState<'full'|'apprentice'>('full')
+  const [unionTierFilter, setUnionTierFilter] = useState<'full'|'apprentice'|'bg'>('full')
   const [unionPerformers, setUnionPerformers] = useState<Performer[]>([])
   const [unionLoading, setUnionLoading] = useState(false)
 
@@ -332,7 +359,6 @@ export default function CastingDashboardPage() {
     if (activeTab === 'Overview') loadStats()
     if (activeTab === 'Requests') { loadRequests(); loadTemplates() }
     if (activeTab === 'Union') loadUnionPerformers()
-    if (activeTab === 'Sign-In') loadSigninSessions()
     if (activeTab === 'Find') loadPerformers()
   }, [activeTab, reqTab, unionTierFilter])
 
@@ -378,6 +404,20 @@ export default function CastingDashboardPage() {
     if (browseSkills) params.set('skills', browseSkills)
     if (browseRegion) params.set('region', browseRegion)
     if (browseUnionTier) params.set('unionTier', browseUnionTier)
+    if (browseHairLength) params.set('hairLength', browseHairLength)
+    if (browseHairTexture) params.set('hairTexture', browseHairTexture)
+    if (browseBodyType) params.set('bodyType', browseBodyType)
+    if (browseSkinTone) params.set('skinTone', browseSkinTone)
+    if (browseFacialHair) params.set('facialHair', browseFacialHair)
+    if (browseEthnicity) params.set('ethnicity', browseEthnicity)
+    if (browseLanguage) params.set('language', browseLanguage)
+    if (browseDanceStyle) params.set('danceStyle', browseDanceStyle)
+    if (browseSport) params.set('sport', browseSport)
+    if (browseAccent) params.set('accent', browseAccent)
+    if (browseDriving) params.set('driving', browseDriving)
+    if (browseSwimming) params.set('swimming', browseSwimming)
+    if (browseHeightMin) params.set('heightMin', browseHeightMin)
+    if (browseHeightMax) params.set('heightMax', browseHeightMax)
 
     const res = await fetch(`/api/casting/performers?${params}`)
     setBrowseLoading(false)
@@ -393,7 +433,7 @@ export default function CastingDashboardPage() {
       setBrowseRegionName(data.shootRegionName || '')
       setAiInterpretation('')
     }
-  }, [browseDate, browseGender, browseAgeMin, browseAgeMax, browseHair, browseEye, browseUnion, browseSkills, browseRegion, browseUnionTier])
+  }, [browseDate, browseGender, browseAgeMin, browseAgeMax, browseHair, browseEye, browseUnion, browseSkills, browseRegion, browseUnionTier, browseHairLength, browseHairTexture, browseBodyType, browseSkinTone, browseFacialHair, browseEthnicity, browseLanguage, browseDanceStyle, browseSport, browseAccent, browseDriving, browseSwimming, browseHeightMin, browseHeightMax])
 
   async function loadRequests() {
     setReqLoading(true)
@@ -827,7 +867,7 @@ export default function CastingDashboardPage() {
                     <option value="">All tiers</option>
                     <option value="full">👑 Full Members only</option>
                     <option value="apprentice">⭐ Apprentice only</option>
-                    <option value="bg">🟢 BG Members only</option>
+                    <option value="bg">🟢 Extra Members only</option>
                     <option value="nonunion">⚫ Non-Union only</option>
                   </select>
                 </div>
@@ -856,6 +896,98 @@ export default function CastingDashboardPage() {
                     <div>
                       <label style={lbl}>Special Skills</label>
                       <input placeholder="driving, dance..." value={browseSkills} onChange={e => setBrowseSkills(e.target.value)} style={inp} />
+                    </div>
+                    <div>
+                      <label style={lbl}>Hair Length</label>
+                      <select value={browseHairLength} onChange={e => setBrowseHairLength(e.target.value)} style={inp}>
+                        <option value="">Any</option>
+                        {HAIR_LENGTHS.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={lbl}>Hair Texture</label>
+                      <select value={browseHairTexture} onChange={e => setBrowseHairTexture(e.target.value)} style={inp}>
+                        <option value="">Any</option>
+                        {HAIR_TEXTURES.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={lbl}>Body Type</label>
+                      <select value={browseBodyType} onChange={e => setBrowseBodyType(e.target.value)} style={inp}>
+                        <option value="">Any</option>
+                        {BODY_TYPES.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={lbl}>Skin Tone</label>
+                      <select value={browseSkinTone} onChange={e => setBrowseSkinTone(e.target.value)} style={inp}>
+                        <option value="">Any</option>
+                        {SKIN_TONES.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={lbl}>Facial Hair</label>
+                      <select value={browseFacialHair} onChange={e => setBrowseFacialHair(e.target.value)} style={inp}>
+                        <option value="">Any</option>
+                        {FACIAL_HAIR_OPTS.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={lbl}>Ethnicity</label>
+                      <select value={browseEthnicity} onChange={e => setBrowseEthnicity(e.target.value)} style={inp}>
+                        <option value="">Any</option>
+                        {ETHNICITY_OPTS.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={lbl}>Language</label>
+                      <select value={browseLanguage} onChange={e => setBrowseLanguage(e.target.value)} style={inp}>
+                        <option value="">Any</option>
+                        {LANG_PRESETS.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={lbl}>Dance Style</label>
+                      <select value={browseDanceStyle} onChange={e => setBrowseDanceStyle(e.target.value)} style={inp}>
+                        <option value="">Any</option>
+                        {DANCE_OPTS.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={lbl}>Sport</label>
+                      <select value={browseSport} onChange={e => setBrowseSport(e.target.value)} style={inp}>
+                        <option value="">Any</option>
+                        {SPORTS_OPTS.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={lbl}>Accent</label>
+                      <select value={browseAccent} onChange={e => setBrowseAccent(e.target.value)} style={inp}>
+                        <option value="">Any</option>
+                        {ACCENT_PRESETS.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={lbl}>Driving</label>
+                      <select value={browseDriving} onChange={e => setBrowseDriving(e.target.value)} style={inp}>
+                        <option value="">Any</option>
+                        {DRIVING_OPTS.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={lbl}>Swimming</label>
+                      <select value={browseSwimming} onChange={e => setBrowseSwimming(e.target.value)} style={inp}>
+                        <option value="">Any</option>
+                        {SWIMMING_LEVELS.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={lbl}>Height Min (cm)</label>
+                      <input type="number" placeholder="150" value={browseHeightMin} onChange={e => setBrowseHeightMin(e.target.value)} style={inp} />
+                    </div>
+                    <div>
+                      <label style={lbl}>Height Max (cm)</label>
+                      <input type="number" placeholder="200" value={browseHeightMax} onChange={e => setBrowseHeightMax(e.target.value)} style={inp} />
                     </div>
                   </>
                 )}
@@ -1156,6 +1288,7 @@ export default function CastingDashboardPage() {
             <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
               <button onClick={() => setUnionTierFilter('full')} style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px', backgroundColor: unionTierFilter === 'full' ? '#F59E0B' : '#1e1e35', color: unionTierFilter === 'full' ? '#1a1a2e' : '#9ca3af' }}>👑 Full Members</button>
               <button onClick={() => setUnionTierFilter('apprentice')} style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px', backgroundColor: unionTierFilter === 'apprentice' ? '#F59E0B' : '#1e1e35', color: unionTierFilter === 'apprentice' ? '#1a1a2e' : '#9ca3af' }}>⭐ Apprentice Members</button>
+              <button onClick={() => setUnionTierFilter('bg')} style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px', backgroundColor: unionTierFilter === 'bg' ? '#F59E0B' : '#1e1e35', color: unionTierFilter === 'bg' ? '#1a1a2e' : '#9ca3af' }}>🟢 Extra Members</button>
               <select value={browseRegion} onChange={e => { setBrowseRegion(e.target.value) }} style={{ ...inp, marginLeft: 'auto', minWidth: '200px' }}>
                 <option value="">All regions</option>
                 {FILM_REGION_LIST.map(r => <option key={r.code} value={r.code}>{r.provinceCode} — {r.name}</option>)}
@@ -1166,7 +1299,7 @@ export default function CastingDashboardPage() {
               ? <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>Loading...</div>
               : (
                 <>
-                  <div style={{ color: '#9ca3af', fontSize: '13px', marginBottom: '12px' }}>{unionPerformers.length} {unionTierFilter === 'full' ? 'Full Members' : 'Apprentice Members'} in system</div>
+                  <div style={{ color: '#9ca3af', fontSize: '13px', marginBottom: '12px' }}>{unionPerformers.length} {unionTierFilter === 'full' ? 'Full Members' : unionTierFilter === 'apprentice' ? 'Apprentice Members' : 'Extra Members'} in system</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px' }}>
                     {unionPerformers.map(p => <PerformerCard key={p.user_id} p={p} onClick={() => setQuickView(p)} />)}
                   </div>
@@ -1178,7 +1311,7 @@ export default function CastingDashboardPage() {
         )}
 
         {/* ── DIGITAL SIGN-IN ───────────────────────────────────────────── */}
-        {activeTab === 'Sign-In' && (
+        {(activeTab as string) === 'Sign-In' && (
           <div>
             <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white', margin: '0 0 20px' }}>Digital Sign-In QR</h1>
 
