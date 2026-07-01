@@ -38,7 +38,7 @@ const PROJECTILES: Record<string, ProjDef> = {
   boom:      { emoji: '🎤', name: 'Boom Mic',      r: 20, density: 0.012, power: 'heavy',     desc: 'Heavy. Tap to dive down and smash through stacks.', color: '#374151' },
   reel:      { emoji: '🎞️', name: 'Film Reel',     r: 26, density: 0.003, power: 'split',     desc: 'Tap mid-flight — splits into 3.', color: '#4b5563' },
   // ---- free unlock (earned by catching prize drops or by star milestones) ----
-  boomerang: { emoji: '↩️', name: 'Boomerang',     r: 22, density: 0.004, power: 'boomerang', desc: 'Curves back mid-flight — hit targets behind cover.', color: '#a16207', free: true },
+  boomerang: { emoji: '↩️', name: 'Boomerang',     r: 30, density: 0.008, power: 'boomerang', desc: 'Curves back mid-flight then bounces hard — wrecks targets on the way out AND the way back.', color: '#a16207', free: true },
   bomb:      { emoji: '💣', name: 'Bomb',          r: 22, density: 0.005, power: 'bomb',      desc: 'Explodes on impact with a huge blast. (Or tap to detonate early.)', color: '#111827', free: true },
   stunt:     { emoji: '🎭', name: 'Stunt Doubles', r: 24, density: 0.004, power: 'multi',     desc: 'Tap mid-flight — splits into a wide 5-way spread.', color: '#4b5563', free: true },
   bombstunt: { emoji: '💥', name: 'Stunt Bomb Squad', r: 24, density: 0.005, power: 'bombstunt', desc: 'SUPER: tap mid-flight to split into a squad of giant stunt doubles — each blows up on contact with anything.', color: '#b91c1c' },
@@ -835,11 +835,17 @@ export default function SetCrashers() {
         // auto-detonate (coffee/bomb hit something): trigger its blast immediately
         if (G.detonate && G.flying && !G.powerUsed) { G.detonate = false; triggerPower(); }
 
-        // boomerang: fly straight out first, THEN curve back (delay the reverse-thrust)
+        // boomerang: fly straight out, then arc back with a dt-scaled force so the curve
+        // is frame-rate independent. A lift component keeps it airborne through the arc.
         if (G.flying && G.projectile && G.projKind === 'boomerang') {
-          if ((G.flightT || 0) > 0.55) {   // ~0.55s of free flight before it starts curving
-            const p = G.projectile; const v = p.velocity;
-            Matter.Body.setVelocity(p, { x: v.x - G.launchDir * 0.45, y: v.y });
+          const p = G.projectile; const t = G.flightT || 0;
+          if (t > 0.32) {
+            const ramp = Math.min((t - 0.32) / 0.28, 1.0); // smooth 0→1 ramp over 0.28s
+            const v = p.velocity;
+            Matter.Body.setVelocity(p, {
+              x: v.x - G.launchDir * ramp * 1.4 * dt * 60,  // dt*60 normalises to 60fps
+              y: v.y - ramp * 0.22 * dt * 60,               // upward lift so it stays in play
+            });
           }
         }
 
@@ -858,8 +864,11 @@ export default function SetCrashers() {
           const off = edgeLvl ? (p.position.y > WORLD_H + 140) : (p.position.x > WORLD_W + 140 || p.position.x < -140 || p.position.y > WORLD_H + 140);
           const restThresh = G.mode === 'bonus' ? 4 : 2.5;
           const restHold = G.mode === 'bonus' ? 0.05 : 0.35;
-          const maxFlight = G.mode === 'bonus' ? 0.8 : 2.6;
-          if (off || sp < restThresh) { G.settleT += dt; } else G.settleT = 0;
+          const maxFlight = G.mode === 'bonus' ? 0.8 : G.projKind === 'boomerang' ? 3.4 : 2.6;
+          // Boomerang: don't let the rest-threshold terminate the shot while it's still arcing —
+          // the return force temporarily kills x-speed which would otherwise trip the check.
+          const boomerangArcing = G.projKind === 'boomerang' && (G.flightT || 0) < 2.8;
+          if (off || (!boomerangArcing && sp < restThresh)) { G.settleT += dt; } else G.settleT = 0;
           if (off || G.settleT > restHold || G.flightT > maxFlight) {
             if (!off && G.projKind === 'bomb' && !G.powerUsed) { G.powerUsed = true; explodeAt(p.position.x, p.position.y, 260, 0.85); Matter.Composite.remove(G.engine.world, p); }
             else { p.crasherSpent = true; G.extra.push(p); }   // keep it in the world, still moving
@@ -1058,7 +1067,8 @@ export default function SetCrashers() {
     const sizeMult = B.size ? SIZE_MULT : 1;
     const r = def.r * sizeMult;
     const edgeLevel = G.mode === 'level' && !!LEVELS[lvlRef.current]?.edges;
-    const proj = Matter.Bodies.circle(G.aimX, G.aimY, r, { density: def.density, restitution: edgeLevel ? 0.86 : 0.3, friction: 0.4, frictionAir: 0.0008, label: 'proj' });
+    const isBoomerang = key === 'boomerang';
+    const proj = Matter.Bodies.circle(G.aimX, G.aimY, r, { density: def.density, restitution: isBoomerang ? 0.88 : (edgeLevel ? 0.86 : 0.3), friction: isBoomerang ? 0.04 : 0.4, frictionAir: 0.0008, label: 'proj' });
     Matter.Composite.add(G.engine.world, proj);
     const boost = (key === 'boomerang' ? 1.5 : 1) * (B.strength ? STRENGTH_MULT : 1);   // boomerang needs more power; strength buff adds +75%
     let vx = dx * LAUNCH_SCALE * boost, vy = dy * LAUNCH_SCALE * boost;
