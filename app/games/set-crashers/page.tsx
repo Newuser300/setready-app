@@ -836,7 +836,7 @@ export default function SetCrashers() {
             const v = p.velocity;
             Matter.Body.setVelocity(p, {
               x: v.x - G.launchDir * ramp * 1.4 * dt * 60,  // dt*60 normalises to 60fps
-              y: v.y - ramp * 0.22 * dt * 60,               // upward lift so it stays in play
+              y: v.y,                                         // leave y to gravity
             });
           }
         }
