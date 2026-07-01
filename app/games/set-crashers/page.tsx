@@ -21,7 +21,7 @@ const GROUND_Y = 660;
 const SLING = { x: 200, y: 470 };
 const MAX_PULL = 150;          // max drag distance (px in world space)
 const LAUNCH_SCALE = 0.18;     // pull -> velocity (+20% from 0.15; VMAX cap scales from this, so shots stay on-world)
-const DIFFICULTY = 2;          // 1 = original spare ammo. Higher = harder (removes more spare shots). Try 3 for much harder.
+const DIFFICULTY = 2;          // 1 = original. Higher = heavier, tougher targets & sturdier structures. Try 2.5–3 for much harder.
 
 // ── "BOX OFFICE" SCORING — your score is your film's gross ──
 const SC = { KNOCKDOWN: 1000, UNDER_BUDGET: 5000, ONE_TAKE: 15000, CHAIN: 500, MULTI_CAP: 4 };
@@ -413,16 +413,14 @@ export default function SetCrashers() {
         const isT = b.kind === 'target'; const heavy = b.kind === 'rig';
         const body = Bodies.rectangle(b.x, b.y, b.w, b.h, {
           angle: b.angle ?? 0, friction: b.kind === 'plank' ? 0.85 : 0.75, frictionStatic: 1.2,
-          restitution: 0.02, density: isT ? 0.0018 : heavy ? 0.006 : 0.0028, label: isT ? 'target' : b.kind,
+          restitution: 0.02, density: (isT ? 0.0018 : heavy ? 0.006 : 0.0028) * (1 + (DIFFICULTY - 1) * 0.6), label: isT ? 'target' : b.kind,
         });
-        body.crasherKind = b.kind; body.crasherHP = isT ? 100 : 0; body.crasherAlive = true; body.crasherStartY = b.y; body.crasherStartX = b.x;
+        body.crasherKind = b.kind; body.crasherHP = isT ? Math.round(100 * DIFFICULTY) : 0; body.crasherAlive = true; body.crasherStartY = b.y; body.crasherStartX = b.x;
         Composite.add(engine.world, body); bodies.push(body); if (isT) targets.push(body);
       }
       for (let i = 0; i < 90; i++) Engine.update(engine, 1000 / 60);
       for (const b of bodies) { Matter.Body.setVelocity(b, { x: 0, y: 0 }); Matter.Body.setAngularVelocity(b, 0); }
-      const spare = Math.max(0, lvl.ammo - lvl.par);
-      const effAmmo = Math.max(lvl.par, lvl.ammo - Math.round(spare * (1 - 1 / DIFFICULTY)));
-      G.ammo = effAmmo; setAmmoLeft(effAmmo); setTargetsLeft(targets.length);
+      G.ammo = lvl.ammo; setAmmoLeft(lvl.ammo); setTargetsLeft(targets.length);
     } else {
       G.ammo = 9999; setAmmoLeft(9999); setTargetsLeft(0);
       G.bonusT = 15; setBonusTime(15); G.bonusCaught = {}; G.bonusEnded = false;
