@@ -241,6 +241,14 @@ export default function SetCrashers() {
   }, []);
 
   useEffect(() => {
+    const check = () => setShowRotateHint(window.innerWidth < 768 && window.innerHeight > window.innerWidth);
+    check();
+    window.addEventListener('resize', check);
+    window.addEventListener('orientationchange', check);
+    return () => { window.removeEventListener('resize', check); window.removeEventListener('orientationchange', check); };
+  }, []);
+
+  useEffect(() => {
     const s = loadSave(); setReady(true);
     // ── One-time welcome gift: 3 uses of every power-up (and every buff) for new players ──
     if (!s.welcomeGift) {
@@ -344,6 +352,7 @@ export default function SetCrashers() {
   const audioRef = useRef<AudioContext | null>(null);
   const mutedRef = useRef(false);
   const [muted, setMuted] = useState(false);
+  const [showRotateHint, setShowRotateHint] = useState(false);
   const ac = () => {
     if (typeof window === 'undefined') return null;
     if (!audioRef.current) { try { audioRef.current = new (window.AudioContext || (window as any).webkitAudioContext)(); } catch { return null; } }
@@ -1295,6 +1304,12 @@ export default function SetCrashers() {
               <button onClick={() => { const m = !muted; setMuted(m); mutedRef.current = m; }} title={muted ? 'Unmute' : 'Mute'} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', padding: 0, lineHeight: 1, opacity: 0.85 }}>{muted ? '🔇' : '🔊'}</button>
             </div>
           </div>
+          {showRotateHint && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', margin: '0 0 8px', padding: '6px 12px', fontSize: '12px', color: '#9ca3af', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
+              <span>📱 Rotate your phone for a bigger play area</span>
+              <button onClick={() => setShowRotateHint(false)} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: '14px', lineHeight: 1, padding: 0 }}>✕</button>
+            </div>
+          )}
           <div style={{ position: 'relative', borderRadius: '14px', overflow: 'hidden', border: '2px solid #2d2d52', touchAction: 'none' }}>
             <canvas ref={canvasRef} width={WORLD_W} height={WORLD_H} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} style={{ width: '100%', display: 'block', cursor: 'grab', background: '#1a1a2e' }} />
             {bossCard && (
@@ -1310,7 +1325,7 @@ export default function SetCrashers() {
               </div>
             )}
             {result && (
-              <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(15,15,26,0.82)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+              <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15,15,26,0.82)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', zIndex: 200, overflowY: 'auto', padding: '24px 16px' }}>
                 <div style={{ fontSize: '26px', fontWeight: 900 }}>{result.won ? (perfectFx ? '🌟 PERFECT!' : 'Nailed it!') : 'Cut! Try again'}</div>
                 {result.won && perfectFx && <div style={{ fontSize: '13px', color: '#fcd34d', fontWeight: 700, marginTop: '2px' }}>One-shot clear — 💣 Bomb earned!</div>}
                 {result.won && <div style={{ fontSize: '44px', marginTop: '8px', letterSpacing: '6px' }}>{[0, 1, 2].map(n => <span key={n} style={{ color: n < result.stars ? '#fbbf24' : 'rgba(255,255,255,0.25)' }}>★</span>)}</div>}
@@ -1347,7 +1362,7 @@ export default function SetCrashers() {
               </div>
             )}
             {bonusResult && (
-              <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(15,15,26,0.88)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', padding: '20px' }}>
+              <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15,15,26,0.88)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', zIndex: 200, overflowY: 'auto', padding: '24px 16px' }}>
                 <div style={{ fontSize: '26px', fontWeight: 900 }}>Time! 🎁</div>
                 <div style={{ fontSize: '15px', marginTop: '6px', color: 'rgba(255,255,255,0.8)' }}>You caught {bonusResult.total} prize{bonusResult.total === 1 ? '' : 's'}{bonusResult.total > save.bonusBest ? ' — new best!' : ''}</div>
                 <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '14px' }}>
