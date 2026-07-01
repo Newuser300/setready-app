@@ -237,6 +237,7 @@ export default function CastingDashboardPage() {
 
   // Overview stats
   const [stats, setStats] = useState({ activeRequests: 0, pendingSubmissions: 0, confirmedToday: 0 })
+  const [hoveredStat, setHoveredStat] = useState<string | null>(null)
 
   // Find performers
   const [browseRegion, setBrowseRegion] = useState('')
@@ -264,6 +265,7 @@ export default function CastingDashboardPage() {
   const [browseSwimming, setBrowseSwimming] = useState('')
   const [browseHeightMin, setBrowseHeightMin] = useState('')
   const [browseHeightMax, setBrowseHeightMax] = useState('')
+  const [browseQuery, setBrowseQuery] = useState('')
   const [performers, setPerformers] = useState<Performer[]>([])
   const [adjacentPerformers, setAdjacentPerformers] = useState<Performer[]>([])
   const [browseRegionName, setBrowseRegionName] = useState('')
@@ -359,6 +361,7 @@ export default function CastingDashboardPage() {
   useEffect(() => {
     if (activeTab === 'Overview') loadStats()
     if (activeTab === 'Requests') { loadRequests(); loadTemplates() }
+    if (activeTab === 'Kanban') loadRequests()
     if (activeTab === 'Union') loadUnionPerformers()
     if (activeTab === 'Find') loadPerformers()
   }, [activeTab, reqTab, unionTierFilter, browseRegion])
@@ -394,7 +397,8 @@ export default function CastingDashboardPage() {
 
   const loadPerformers = useCallback(async () => {
     setBrowseLoading(true)
-    const params = new URLSearchParams({ sort: 'priority' })
+    const params = new URLSearchParams({ sort: 'name' })
+    if (browseQuery) params.set('q', browseQuery)
     if (browseDate) params.set('date', browseDate)
     if (browseGender !== 'Any') params.set('gender', browseGender)
     if (browseAgeMin) params.set('ageMin', browseAgeMin)
@@ -435,7 +439,7 @@ export default function CastingDashboardPage() {
       setBrowseRegionName(data.shootRegionName || '')
       setAiInterpretation('')
     }
-  }, [browseDate, browseGender, browseAgeMin, browseAgeMax, browseHair, browseEye, browseUnion, browseSkills, browseRegion, browseUnionTier, browseRepresentation, browseHairLength, browseHairTexture, browseBodyType, browseSkinTone, browseFacialHair, browseEthnicity, browseLanguage, browseDanceStyle, browseSport, browseAccent, browseDriving, browseSwimming, browseHeightMin, browseHeightMax])
+  }, [browseQuery, browseDate, browseGender, browseAgeMin, browseAgeMax, browseHair, browseEye, browseUnion, browseSkills, browseRegion, browseUnionTier, browseRepresentation, browseHairLength, browseHairTexture, browseBodyType, browseSkinTone, browseFacialHair, browseEthnicity, browseLanguage, browseDanceStyle, browseSport, browseAccent, browseDriving, browseSwimming, browseHeightMin, browseHeightMax])
 
   async function loadRequests() {
     setReqLoading(true)
@@ -712,11 +716,11 @@ export default function CastingDashboardPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px', marginBottom: '28px' }}>
               {[
-                { label: 'Active Requests', value: stats.activeRequests, icon: '🎬', color: '#F59E0B' },
-                { label: 'Total Submissions', value: stats.pendingSubmissions, icon: '📥', color: '#3b82f6' },
-                { label: 'Confirmed Performers', value: stats.confirmedToday, icon: '✅', color: '#22c55e' },
+                { label: 'Active Requests', value: stats.activeRequests, icon: '🎬', color: '#F59E0B', tab: 'Requests' as Tab },
+                { label: 'Total Submissions', value: stats.pendingSubmissions, icon: '📥', color: '#3b82f6', tab: 'Kanban' as Tab },
+                { label: 'Confirmed Performers', value: stats.confirmedToday, icon: '✅', color: '#22c55e', tab: 'Kanban' as Tab },
               ].map(s => (
-                <div key={s.label} style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '20px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div key={s.label} onClick={() => setActiveTab(s.tab)} onMouseEnter={() => setHoveredStat(s.label)} onMouseLeave={() => setHoveredStat(null)} style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '20px', border: `1px solid ${hoveredStat === s.label ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.06)'}`, cursor: 'pointer', transition: 'border-color 0.15s' }}>
                   <div style={{ fontSize: '24px', marginBottom: '8px' }}>{s.icon}</div>
                   <div style={{ fontSize: '30px', fontWeight: '900', color: s.color }}>{s.value}</div>
                   <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>{s.label}</div>
@@ -843,6 +847,12 @@ export default function CastingDashboardPage() {
 
             {/* Filter panel */}
             <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '16px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '16px' }}>
+              {/* Name / city text search */}
+              <div style={{ marginBottom: '14px' }}>
+                <label style={lbl}>Search by name or city</label>
+                <input value={browseQuery} onChange={e => setBrowseQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && loadPerformers()} placeholder="e.g. Smith, Vancouver..." style={inp} />
+              </div>
+
               {/* Location — most important */}
               <div style={{ marginBottom: '14px', padding: '12px 14px', backgroundColor: '#1a1a2e', borderRadius: '10px', border: '1px solid rgba(245,158,11,0.2)' }}>
                 <label style={lbl}>📍 Shoot Location (filters performers by region)</label>
@@ -1024,7 +1034,7 @@ export default function CastingDashboardPage() {
                     <>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: '13px', color: '#9ca3af' }}>{performers.length} performer{performers.length !== 1 ? 's' : ''}{browseRegionName ? ` in ${browseRegionName}` : ''}</span>
-                        <span style={{ fontSize: '11px', color: '#F59E0B', padding: '2px 8px', backgroundColor: 'rgba(245,158,11,0.1)', borderRadius: '20px' }}>👑 Full Members shown first</span>
+                        <span style={{ fontSize: '11px', color: '#F59E0B', padding: '2px 8px', backgroundColor: 'rgba(245,158,11,0.1)', borderRadius: '20px' }}>Boosted profiles shown first</span>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px' }}>
                         {performers.map(p => <PerformerCard key={p.user_id} p={p} onClick={() => setQuickView(p)} />)}
@@ -1217,9 +1227,9 @@ export default function CastingDashboardPage() {
                           </div>
                           <div style={{ fontSize: '13px', color: '#9ca3af' }}>{req.role_type} · {fmtDate(req.shoot_date)}</div>
                           <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '12px', padding: '2px 8px', borderRadius: '20px', backgroundColor: '#374151', color: '#9ca3af' }}>{req.submissionCount} submitted</span>
-                            {req.shortlistedCount > 0 && <span style={{ fontSize: '12px', padding: '2px 8px', borderRadius: '20px', backgroundColor: 'rgba(245,158,11,0.15)', color: '#F59E0B' }}>⭐ {req.shortlistedCount}</span>}
-                            {req.confirmedCount > 0 && <span style={{ fontSize: '12px', padding: '2px 8px', borderRadius: '20px', backgroundColor: 'rgba(34,197,94,0.15)', color: '#22c55e' }}>✅ {req.confirmedCount}</span>}
+                            <span onClick={() => { setKanbanRequest(req); openKanban(req); setActiveTab('Kanban') }} style={{ fontSize: '12px', padding: '2px 8px', borderRadius: '20px', backgroundColor: '#374151', color: '#9ca3af', cursor: 'pointer' }}>{req.submissionCount} submitted</span>
+                            {req.shortlistedCount > 0 && <span onClick={() => { setKanbanRequest(req); openKanban(req); setActiveTab('Kanban') }} style={{ fontSize: '12px', padding: '2px 8px', borderRadius: '20px', backgroundColor: 'rgba(245,158,11,0.15)', color: '#F59E0B', cursor: 'pointer' }}>⭐ {req.shortlistedCount}</span>}
+                            {req.confirmedCount > 0 && <span onClick={() => { setKanbanRequest(req); openKanban(req); setActiveTab('Kanban') }} style={{ fontSize: '12px', padding: '2px 8px', borderRadius: '20px', backgroundColor: 'rgba(34,197,94,0.15)', color: '#22c55e', cursor: 'pointer' }}>✅ {req.confirmedCount}</span>}
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: '6px' }}>

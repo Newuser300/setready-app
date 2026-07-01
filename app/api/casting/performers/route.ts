@@ -35,6 +35,7 @@ export async function GET(req: Request) {
   const swimming = searchParams.get('swimming') || ''
   const heightMin = searchParams.get('heightMin') || ''
   const heightMax = searchParams.get('heightMax') || ''
+  const q = searchParams.get('q') || ''
 
   let query = supabaseAdmin
     .from('performer_profiles')
@@ -61,16 +62,7 @@ export async function GET(req: Request) {
       travel_radius_km,
       travel_costs_required,
       is_public,
-      updated_at,
-      users:user_id (
-        id,
-        email,
-        raw_user_meta_data
-      ),
-      agencies:agency_id (
-        id,
-        name
-      )
+      updated_at
     `)
     .eq('is_public', true)
     .order('union_priority', { ascending: true, nullsFirst: false })
@@ -114,7 +106,43 @@ export async function GET(req: Request) {
   const { data: profiles, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  let result: any[] = profiles || []
+  // Stitch users and agencies separately — no FK relationships on performer_profiles
+  const profileList = profiles || []
+  let usersMap: Record<string, any> = {}
+  let agenciesMap: Record<string, any> = {}
+
+  if (profileList.length > 0) {
+    const uids = profileList.map((p: any) => p.user_id)
+    const agencyIds = [...new Set(profileList.map((p: any) => p.agency_id).filter(Boolean))]
+
+    const [{ data: userRows }, { data: agencyRows }] = await Promise.all([
+      supabaseAdmin.from('users').select('id, email, name').in('id', uids),
+      agencyIds.length > 0
+        ? supabaseAdmin.from('agencies').select('id, name').in('id', agencyIds)
+        : Promise.resolve({ data: [] }),
+    ])
+
+    ;(userRows || []).forEach((u: any) => {
+      usersMap[u.id] = { id: u.id, email: u.email, raw_user_meta_data: { full_name: u.name || '' } }
+    })
+    ;(agencyRows || []).forEach((a: any) => { agenciesMap[a.id] = a })
+  }
+
+  let result: any[] = profileList.map((p: any) => ({
+    ...p,
+    users: usersMap[p.user_id] || null,
+    agencies: p.agency_id ? (agenciesMap[p.agency_id] || null) : null,
+  }))
+
+  // Name / city text filter — applied in JS because name comes from stitched public.users
+  if (q) {
+    const ql = q.toLowerCase()
+    result = result.filter(p => {
+      const name = (p.users?.raw_user_meta_data?.full_name || p.users?.email || '').toLowerCase()
+      const city = (p.city || '').toLowerCase()
+      return name.includes(ql) || city.includes(ql)
+    })
+  }
 
   // Age filter
   if (ageMin || ageMax) {
@@ -212,7 +240,12 @@ export async function GET(req: Request) {
   }
 
   if (sort === 'name') {
+    const nowMs = Date.now()
+    const isBoosted = (p: any) => p.boost_expires_at ? new Date(p.boost_expires_at).getTime() > nowMs : false
     result.sort((a, b) => {
+      const aB = isBoosted(a) ? 0 : 1
+      const bB = isBoosted(b) ? 0 : 1
+      if (aB !== bB) return aB - bB
       const aName = a.users?.raw_user_meta_data?.full_name || a.users?.email || ''
       const bName = b.users?.raw_user_meta_data?.full_name || b.users?.email || ''
       return aName.localeCompare(bName)

@@ -41,15 +41,7 @@ export async function POST(req: Request) {
       travel_willingness,
       travel_radius_km,
       is_public,
-      users:user_id (
-        id,
-        email,
-        raw_user_meta_data
-      ),
-      agencies:agency_id (
-        id,
-        name
-      )
+      agency_id
     `, { count: 'exact' })
     .eq('is_public', true)
     .order('user_id', { ascending: true })
@@ -57,14 +49,38 @@ export async function POST(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Stitch users and agencies separately — no FK relationships on performer_profiles
+  const profileList = profiles || []
+  let usersMap: Record<string, any> = {}
+  let agenciesMap: Record<string, any> = {}
+
+  if (profileList.length > 0) {
+    const uids = profileList.map((p: any) => p.user_id)
+    const agencyIds = [...new Set(profileList.map((p: any) => p.agency_id).filter(Boolean))]
+
+    const [{ data: userRows }, { data: agencyRows }] = await Promise.all([
+      supabaseAdmin.from('users').select('id, email, name').in('id', uids),
+      agencyIds.length > 0
+        ? supabaseAdmin.from('agencies').select('id, name').in('id', agencyIds)
+        : Promise.resolve({ data: [] }),
+    ])
+
+    ;(userRows || []).forEach((u: any) => {
+      usersMap[u.id] = { id: u.id, email: u.email, raw_user_meta_data: { full_name: u.name || '' } }
+    })
+    ;(agencyRows || []).forEach((a: any) => { agenciesMap[a.id] = a })
+  }
+
   if ((count ?? 0) > PROFILE_CAP) {
     console.warn(`[ai-search] ${count} public profiles exceed the ${PROFILE_CAP} in-memory cap — search is dropping performers. Time to move filtering into the query (audit #11).`)
   }
 
   // Compute age from date_of_birth
   const now = new Date()
-  const performers = (profiles || []).map((p: any) => ({
+  const performers = profileList.map((p: any) => ({
     ...p,
+    users: usersMap[p.user_id] || null,
+    agencies: p.agency_id ? (agenciesMap[p.agency_id] || null) : null,
     age: p.date_of_birth
       ? Math.floor((now.getTime() - new Date(p.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
       : null,
@@ -103,7 +119,7 @@ export async function POST(req: Request) {
   // Boost: pin boosted profiles to the top of the matched results. Boost data is
   // read from the original profiles (not the AI passthrough) so it's always present.
   const boostMap: Record<string, string | null> = {}
-  ;(profiles || []).forEach((p: any) => { boostMap[p.user_id] = p.boost_expires_at || null })
+  profileList.forEach((p: any) => { boostMap[p.user_id] = p.boost_expires_at || null })
   const nowMs = Date.now()
   const isBoosted = (uid: string) => {
     const exp = boostMap[uid]

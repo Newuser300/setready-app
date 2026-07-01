@@ -496,7 +496,7 @@ export function unionTierLabel(unionStatus: string | null | undefined): string {
   if (s.includes('full')) return 'Full Member'
   if (s.includes('apprentice')) return 'Apprentice'
   if (s.includes('background') || s.includes('aabp') || s.includes('additional-bg')) return 'BG Member'
-  if (s.includes('permit')) return 'Permit'
+  if (s.includes('permit')) return 'Extra Member'
   return 'Non-Union'
 }
 
