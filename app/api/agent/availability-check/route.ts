@@ -85,18 +85,34 @@ export async function GET(req: Request) {
   const checkId = searchParams.get('checkId')
   if (!checkId) return NextResponse.json({ error: 'checkId required' }, { status: 400 })
 
-  const { data, error } = await supabaseAdmin
+  const { data: responses, error } = await supabaseAdmin
     .from('availability_check_responses')
-    .select(`
-      id,
-      performer_id,
-      response,
-      responded_at,
-      users:performer_id (email, raw_user_meta_data),
-      performer_profiles:performer_id (headshot_url, union_status, union_priority)
-    `)
+    .select('id, performer_id, response, responded_at')
     .eq('check_id', checkId)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data || [])
+
+  let result: any[] = []
+  if (responses && responses.length > 0) {
+    const perfIds = [...new Set(responses.map((r: any) => r.performer_id))]
+    const [{ data: userRows }, { data: profileRows }] = await Promise.all([
+      supabaseAdmin.from('users').select('id, email, name').in('id', perfIds as string[]),
+      supabaseAdmin.from('performer_profiles').select('user_id, headshot_url, union_status, union_priority').in('user_id', perfIds as string[]),
+    ])
+    const usersMap: Record<string, any> = {}
+    const profilesMap: Record<string, any> = {}
+    ;(userRows || []).forEach((u: any) => {
+      usersMap[u.id] = { id: u.id, email: u.email, raw_user_meta_data: { full_name: u.name || '' } }
+    })
+    ;(profileRows || []).forEach((pr: any) => { profilesMap[pr.user_id] = pr })
+    result = responses.map((r: any) => ({
+      ...r,
+      users: usersMap[r.performer_id] || null,
+      performer_profiles: profilesMap[r.performer_id] || null,
+    }))
+  } else {
+    result = responses || []
+  }
+
+  return NextResponse.json(result)
 }

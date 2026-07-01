@@ -135,8 +135,8 @@ export async function GET(req: Request) {
   }))
 
   // Name / city text filter — applied in JS because name comes from stitched public.users
-  if (q) {
-    const ql = q.toLowerCase()
+  const ql = q.trim().toLowerCase()
+  if (ql && ql !== 'all') {
     result = result.filter(p => {
       const name = (p.users?.raw_user_meta_data?.full_name || p.users?.email || '').toLowerCase()
       const city = (p.city || '').toLowerCase()

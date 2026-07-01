@@ -52,15 +52,28 @@ export async function GET(req: Request) {
   if (signinSession.request_id) {
     const { data: subs } = await supabaseAdmin
       .from('casting_submissions')
-      .select(`
-        performer_id,
-        users:performer_id (email, raw_user_meta_data),
-        performer_profiles:performer_id (headshot_url, union_status)
-      `)
+      .select('performer_id')
       .eq('casting_request_id', signinSession.request_id)
       .eq('status', 'confirmed')
 
-    confirmedPerformers = subs || []
+    if (subs && subs.length > 0) {
+      const perfIds = subs.map((s: any) => s.performer_id)
+      const [{ data: userRows }, { data: profileRows }] = await Promise.all([
+        supabaseAdmin.from('users').select('id, email, name').in('id', perfIds),
+        supabaseAdmin.from('performer_profiles').select('user_id, headshot_url, union_status').in('user_id', perfIds),
+      ])
+      const usersMap: Record<string, any> = {}
+      const profilesMap: Record<string, any> = {}
+      ;(userRows || []).forEach((u: any) => {
+        usersMap[u.id] = { id: u.id, email: u.email, raw_user_meta_data: { full_name: u.name || '' } }
+      })
+      ;(profileRows || []).forEach((pr: any) => { profilesMap[pr.user_id] = pr })
+      confirmedPerformers = subs.map((s: any) => ({
+        ...s,
+        users: usersMap[s.performer_id] || null,
+        performer_profiles: profilesMap[s.performer_id] || null,
+      }))
+    }
   }
 
   // Who has signed in

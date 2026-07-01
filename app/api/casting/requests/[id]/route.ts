@@ -16,40 +16,50 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   if (error || !request) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  // Fetch all submissions with performer data
-  const { data: submissions } = await supabaseAdmin
+  // Fetch submissions — bare columns only; no FK embeds on casting_submissions
+  const { data: submissions, error: subError } = await supabaseAdmin
     .from('casting_submissions')
-    .select(`
-      id,
-      status,
-      notes,
-      submitted_at,
-      performer_id,
-      agency_id,
-      performer_profiles:performer_id (
-        headshot_url,
-        union_status,
-        height_cm,
-        hair_color,
-        eye_color,
-        gender,
-        age_min,
-        special_skills
-      ),
-      users:performer_id (
-        id,
-        email,
-        raw_user_meta_data
-      ),
-      agencies:agency_id (
-        id,
-        name
-      )
-    `)
+    .select('id, status, notes, submitted_at, performer_id, agency_id')
     .eq('casting_request_id', id)
     .order('submitted_at', { ascending: true })
 
-  return NextResponse.json({ ...request, submissions: submissions || [] })
+  if (subError) console.error('submissions fetch error:', subError.message)
+
+  // Stitch performer_profiles, users, agencies separately (same pattern as performers route)
+  let stitchedSubs: any[] = []
+  if (submissions && submissions.length > 0) {
+    const perfIds = [...new Set(submissions.map((s: any) => s.performer_id).filter(Boolean))]
+    const agIds   = [...new Set(submissions.map((s: any) => s.agency_id).filter(Boolean))]
+
+    const [{ data: profiles }, { data: userRows }, { data: agencyRows }] = await Promise.all([
+      supabaseAdmin.from('performer_profiles')
+        .select('user_id, headshot_url, union_status, union_priority, height_cm, hair_color, eye_color, gender, special_skills')
+        .in('user_id', perfIds),
+      supabaseAdmin.from('users').select('id, email, name').in('id', perfIds),
+      agIds.length > 0
+        ? supabaseAdmin.from('agencies').select('id, name').in('id', agIds)
+        : Promise.resolve({ data: [] }),
+    ])
+
+    const profilesMap: Record<string, any> = {}
+    const usersMap:    Record<string, any> = {}
+    const agenciesMap: Record<string, any> = {}
+
+    ;(profiles   || []).forEach((p: any) => { profilesMap[p.user_id] = p })
+    ;(userRows   || []).forEach((u: any) => {
+      usersMap[u.id] = { id: u.id, email: u.email, raw_user_meta_data: { full_name: u.name || '' } }
+    })
+    ;(agencyRows || []).forEach((a: any) => { agenciesMap[a.id] = a })
+
+    stitchedSubs = submissions.map((s: any) => ({
+      ...s,
+      performer_profiles: s.performer_id ? (profilesMap[s.performer_id] || null) : null,
+      users:              s.performer_id ? (usersMap[s.performer_id]    || null) : null,
+      agencies:           s.agency_id    ? (agenciesMap[s.agency_id]   || null) : null,
+    }))
+  }
+
+  return NextResponse.json({ ...request, submissions: stitchedSubs })
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {

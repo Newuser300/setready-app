@@ -18,14 +18,26 @@ export async function GET(request: NextRequest) {
 
   const { data: roster } = await supabaseAdmin
     .from('agency_roster')
-    .select('user_id, users:user_id (id, email, raw_user_meta_data)')
+    .select('user_id')
     .eq('agency_id', agent.agency_id)
     .eq('status', 'active')
     .limit(50)
 
+  const rosterList = roster || []
+  let stitchedRoster: any[] = []
+  if (rosterList.length > 0) {
+    const uids = rosterList.map((r: any) => r.user_id)
+    const { data: userRows } = await supabaseAdmin.from('users').select('id, email, name').in('id', uids)
+    const usersMap: Record<string, any> = {}
+    ;(userRows || []).forEach((u: any) => {
+      usersMap[u.id] = { id: u.id, email: u.email, raw_user_meta_data: { full_name: u.name || '' } }
+    })
+    stitchedRoster = rosterList.map((r: any) => ({ ...r, users: usersMap[r.user_id] || null }))
+  }
+
   const qLower = q.toLowerCase()
 
-  const results = (roster || [])
+  const results = stitchedRoster
     .map((r: any) => {
       const user = r.users
       const name: string = user?.raw_user_meta_data?.full_name || user?.email?.split('@')[0] || ''

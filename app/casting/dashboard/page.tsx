@@ -266,6 +266,7 @@ export default function CastingDashboardPage() {
   const [browseHeightMin, setBrowseHeightMin] = useState('')
   const [browseHeightMax, setBrowseHeightMax] = useState('')
   const [browseQuery, setBrowseQuery] = useState('')
+  const browseQueryRef = useRef('')
   const [performers, setPerformers] = useState<Performer[]>([])
   const [adjacentPerformers, setAdjacentPerformers] = useState<Performer[]>([])
   const [browseRegionName, setBrowseRegionName] = useState('')
@@ -395,10 +396,15 @@ export default function CastingDashboardPage() {
     })
   }
 
+  // Keep the ref in sync so loadPerformers always reads the latest value even
+  // when the useCallback was created with a stale browseQuery closure.
+  browseQueryRef.current = browseQuery
+
   const loadPerformers = useCallback(async () => {
     setBrowseLoading(true)
     const params = new URLSearchParams({ sort: 'name' })
-    if (browseQuery) params.set('q', browseQuery)
+    const currentQ = browseQueryRef.current.trim()
+    if (currentQ) params.set('q', currentQ)
     if (browseDate) params.set('date', browseDate)
     if (browseGender !== 'Any') params.set('gender', browseGender)
     if (browseAgeMin) params.set('ageMin', browseAgeMin)
@@ -439,7 +445,7 @@ export default function CastingDashboardPage() {
       setBrowseRegionName(data.shootRegionName || '')
       setAiInterpretation('')
     }
-  }, [browseQuery, browseDate, browseGender, browseAgeMin, browseAgeMax, browseHair, browseEye, browseUnion, browseSkills, browseRegion, browseUnionTier, browseRepresentation, browseHairLength, browseHairTexture, browseBodyType, browseSkinTone, browseFacialHair, browseEthnicity, browseLanguage, browseDanceStyle, browseSport, browseAccent, browseDriving, browseSwimming, browseHeightMin, browseHeightMax])
+  }, [browseDate, browseGender, browseAgeMin, browseAgeMax, browseHair, browseEye, browseUnion, browseSkills, browseRegion, browseUnionTier, browseRepresentation, browseHairLength, browseHairTexture, browseBodyType, browseSkinTone, browseFacialHair, browseEthnicity, browseLanguage, browseDanceStyle, browseSport, browseAccent, browseDriving, browseSwimming, browseHeightMin, browseHeightMax])
 
   async function loadRequests() {
     setReqLoading(true)

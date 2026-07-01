@@ -9,26 +9,38 @@ export async function GET(req: Request) {
   const requestId = searchParams.get('requestId')
   if (!requestId) return NextResponse.json({ error: 'requestId required' }, { status: 400 })
 
-  const { data, error } = await supabaseAdmin
+  const { data: rows, error } = await supabaseAdmin
     .from('casting_shortlists')
-    .select(`
-      id,
-      performer_id,
-      notes,
-      created_at,
-      performer_profiles:performer_id (
-        headshot_url, union_status, union_priority, gender, height_cm
-      ),
-      users:performer_id (
-        email, raw_user_meta_data
-      )
-    `)
+    .select('id, performer_id, notes, created_at')
     .eq('request_id', requestId)
     .eq('casting_director_id', session.accountId)
     .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data || [])
+
+  let result: any[] = []
+  if (rows && rows.length > 0) {
+    const perfIds = [...new Set(rows.map((r: any) => r.performer_id))]
+    const [{ data: userRows }, { data: profileRows }] = await Promise.all([
+      supabaseAdmin.from('users').select('id, email, name').in('id', perfIds as string[]),
+      supabaseAdmin.from('performer_profiles').select('user_id, headshot_url, union_status, union_priority, gender, height_cm').in('user_id', perfIds as string[]),
+    ])
+    const usersMap: Record<string, any> = {}
+    const profilesMap: Record<string, any> = {}
+    ;(userRows || []).forEach((u: any) => {
+      usersMap[u.id] = { id: u.id, email: u.email, raw_user_meta_data: { full_name: u.name || '' } }
+    })
+    ;(profileRows || []).forEach((pr: any) => { profilesMap[pr.user_id] = pr })
+    result = rows.map((r: any) => ({
+      ...r,
+      users: usersMap[r.performer_id] || null,
+      performer_profiles: profilesMap[r.performer_id] || null,
+    }))
+  } else {
+    result = rows || []
+  }
+
+  return NextResponse.json(result)
 }
 
 export async function POST(req: Request) {
