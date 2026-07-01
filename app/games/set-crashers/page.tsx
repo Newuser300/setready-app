@@ -1325,7 +1325,8 @@ export default function SetCrashers() {
               </div>
             )}
             {result && (
-              <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15,15,26,0.82)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', zIndex: 200, overflowY: 'auto', padding: '24px 16px' }}>
+              <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15,15,26,0.82)', overflowY: 'auto', zIndex: 200 }}>
+                <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px', color: 'white', boxSizing: 'border-box' }}>
                 <div style={{ fontSize: '26px', fontWeight: 900 }}>{result.won ? (perfectFx ? '🌟 PERFECT!' : 'Nailed it!') : 'Cut! Try again'}</div>
                 {result.won && perfectFx && <div style={{ fontSize: '13px', color: '#fcd34d', fontWeight: 700, marginTop: '2px' }}>One-shot clear — 💣 Bomb earned!</div>}
                 {result.won && <div style={{ fontSize: '44px', marginTop: '8px', letterSpacing: '6px' }}>{[0, 1, 2].map(n => <span key={n} style={{ color: n < result.stars ? '#fbbf24' : 'rgba(255,255,255,0.25)' }}>★</span>)}</div>}
@@ -1359,10 +1360,12 @@ export default function SetCrashers() {
                   {result.won ? <button onClick={nextLevel} style={resBtn('#F59E0B', '#1a1a2e')}>Next →</button> : saveRef.current.skips > 0 ? <button onClick={useSkip} style={resBtn('#7c3aed')}>⏭️ Skip ({saveRef.current.skips})</button> : <button onClick={() => buyItem('skips_3')} style={resBtn('#7c3aed')}>Get Skips</button>}
                   <button onClick={() => setShowBoard(true)} style={resBtn('#1d4ed8')}>🏆 Leaderboard</button>
                 </div>
+                </div>
               </div>
             )}
             {bonusResult && (
-              <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15,15,26,0.88)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', zIndex: 200, overflowY: 'auto', padding: '24px 16px' }}>
+              <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15,15,26,0.88)', overflowY: 'auto', zIndex: 200 }}>
+                <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px', color: 'white', boxSizing: 'border-box' }}>
                 <div style={{ fontSize: '26px', fontWeight: 900 }}>Time! 🎁</div>
                 <div style={{ fontSize: '15px', marginTop: '6px', color: 'rgba(255,255,255,0.8)' }}>You caught {bonusResult.total} prize{bonusResult.total === 1 ? '' : 's'}{bonusResult.total > save.bonusBest ? ' — new best!' : ''}</div>
                 <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '14px' }}>
@@ -1371,6 +1374,7 @@ export default function SetCrashers() {
                 <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
                   <button onClick={() => startBonus()} style={resBtn('#7c3aed')}>↻ Again</button>
                   <button onClick={() => setScreen('menu')} style={resBtn('#F59E0B', '#1a1a2e')}>Menu</button>
+                </div>
                 </div>
               </div>
             )}
