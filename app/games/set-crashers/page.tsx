@@ -21,6 +21,7 @@ const GROUND_Y = 660;
 const SLING = { x: 200, y: 470 };
 const MAX_PULL = 150;          // max drag distance (px in world space)
 const LAUNCH_SCALE = 0.18;     // pull -> velocity (+20% from 0.15; VMAX cap scales from this, so shots stay on-world)
+const DIFFICULTY = 2;          // 1 = original spare ammo. Higher = harder (removes more spare shots). Try 3 for much harder.
 
 // ── "BOX OFFICE" SCORING — your score is your film's gross ──
 const SC = { KNOCKDOWN: 1000, UNDER_BUDGET: 5000, ONE_TAKE: 15000, CHAIN: 500, MULTI_CAP: 4 };
@@ -47,7 +48,7 @@ const PROJECTILES: Record<string, ProjDef> = {
 const FREE_PROJECTILE = 'clapper';
 // ── Stackable buff power-ups (modifiers applied on top of any base projectile) ──
 const STRENGTH_MULT = 1.75;   // +75% launch power
-const SIZE_MULT = 1.6;        // bigger projectile
+const SIZE_MULT = 1.9;        // bigger projectile
 const BUFFS: Record<string, { emoji: string; name: string; desc: string; color: string }> = {
   buff_strength: { emoji: '💪', name: 'Power Sling', desc: 'Boosts slingshot strength by 75% and enlarges the sling. Stacks with other shot buffs.', color: '#dc2626' },
   buff_size:     { emoji: '🔎', name: 'Big Shot',    desc: 'Makes the launched item much larger for a wider hit. Stacks with other shot buffs.', color: '#0891b2' },
@@ -241,14 +242,6 @@ export default function SetCrashers() {
   }, []);
 
   useEffect(() => {
-    const check = () => setShowRotateHint(window.innerWidth < 768 && window.innerHeight > window.innerWidth);
-    check();
-    window.addEventListener('resize', check);
-    window.addEventListener('orientationchange', check);
-    return () => { window.removeEventListener('resize', check); window.removeEventListener('orientationchange', check); };
-  }, []);
-
-  useEffect(() => {
     const s = loadSave(); setReady(true);
     // ── One-time welcome gift: 3 uses of every power-up (and every buff) for new players ──
     if (!s.welcomeGift) {
@@ -352,7 +345,6 @@ export default function SetCrashers() {
   const audioRef = useRef<AudioContext | null>(null);
   const mutedRef = useRef(false);
   const [muted, setMuted] = useState(false);
-  const [showRotateHint, setShowRotateHint] = useState(false);
   const ac = () => {
     if (typeof window === 'undefined') return null;
     if (!audioRef.current) { try { audioRef.current = new (window.AudioContext || (window as any).webkitAudioContext)(); } catch { return null; } }
@@ -428,7 +420,9 @@ export default function SetCrashers() {
       }
       for (let i = 0; i < 90; i++) Engine.update(engine, 1000 / 60);
       for (const b of bodies) { Matter.Body.setVelocity(b, { x: 0, y: 0 }); Matter.Body.setAngularVelocity(b, 0); }
-      G.ammo = lvl.ammo; setAmmoLeft(lvl.ammo); setTargetsLeft(targets.length);
+      const spare = Math.max(0, lvl.ammo - lvl.par);
+      const effAmmo = Math.max(lvl.par, lvl.ammo - Math.round(spare * (1 - 1 / DIFFICULTY)));
+      G.ammo = effAmmo; setAmmoLeft(effAmmo); setTargetsLeft(targets.length);
     } else {
       G.ammo = 9999; setAmmoLeft(9999); setTargetsLeft(0);
       G.bonusT = 15; setBonusTime(15); G.bonusCaught = {}; G.bonusEnded = false;
@@ -1024,7 +1018,7 @@ export default function SetCrashers() {
     // strength buff boosts the preview too, so the dotted arc stays accurate to the actual shot.
     const boost = B.strength ? STRENGTH_MULT : 1;
     let vx = dx * LAUNCH_SCALE * boost, vy = dy * LAUNCH_SCALE * boost;
-    const VMAX = MAX_PULL * LAUNCH_SCALE * 1.1; // buff adds reach but stays on-world at full pull
+    const VMAX = MAX_PULL * LAUNCH_SCALE * (B.strength ? STRENGTH_MULT + 0.15 : 1.1);
     const sp0 = Math.hypot(vx, vy);
     if (sp0 > VMAX) { const kk = VMAX / sp0; vx *= kk; vy *= kk; }
     let x = G.aimX, y = G.aimY;
@@ -1072,9 +1066,7 @@ export default function SetCrashers() {
     Matter.Composite.add(G.engine.world, proj);
     const boost = (key === 'boomerang' ? 1.5 : 1) * (B.strength ? STRENGTH_MULT : 1);   // boomerang needs more power; strength buff adds +75%
     let vx = dx * LAUNCH_SCALE * boost, vy = dy * LAUNCH_SCALE * boost;
-    // Cap total launch speed so a +75% buff on an already-full pull can't sail off-world;
-    // the buff still gives real extra reach from weak/medium pulls (its intended use).
-    const VMAX = MAX_PULL * LAUNCH_SCALE * 1.1; // buff adds reach but stays on-world at full pull
+    const VMAX = MAX_PULL * LAUNCH_SCALE * (B.strength ? STRENGTH_MULT + 0.15 : 1.1);
     const sp = Math.hypot(vx, vy);
     if (sp > VMAX) { const k = VMAX / sp; vx *= k; vy *= k; }
     Matter.Body.setVelocity(proj, { x: vx, y: vy });
@@ -1314,12 +1306,6 @@ export default function SetCrashers() {
               <button onClick={() => { const m = !muted; setMuted(m); mutedRef.current = m; }} title={muted ? 'Unmute' : 'Mute'} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', padding: 0, lineHeight: 1, opacity: 0.85 }}>{muted ? '🔇' : '🔊'}</button>
             </div>
           </div>
-          {showRotateHint && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', margin: '0 0 8px', padding: '6px 12px', fontSize: '12px', color: '#9ca3af', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
-              <span>📱 Rotate your phone for a bigger play area</span>
-              <button onClick={() => setShowRotateHint(false)} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: '14px', lineHeight: 1, padding: 0 }}>✕</button>
-            </div>
-          )}
           <div style={{ position: 'relative', borderRadius: '14px', overflow: 'hidden', border: '2px solid #2d2d52', touchAction: 'none' }}>
             <canvas ref={canvasRef} width={WORLD_W} height={WORLD_H} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} style={{ width: '100%', display: 'block', cursor: 'grab', background: '#1a1a2e' }} />
             {bossCard && (
