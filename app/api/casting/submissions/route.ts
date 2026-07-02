@@ -24,7 +24,7 @@ export async function PATCH(req: Request) {
     .select(`
       id,
       status,
-      performer_id,
+      performer_user_id,
       agency_id,
       casting_request_id,
       casting_requests:casting_request_id (
@@ -32,7 +32,7 @@ export async function PATCH(req: Request) {
         shoot_date,
         role_type,
         casting_director_id,
-        performers_needed,
+        number_needed,
         filled_count
       )
     `)
@@ -47,7 +47,7 @@ export async function PATCH(req: Request) {
   }
 
   const update: Record<string, unknown> = { status, updated_at: new Date().toISOString() }
-  if (notes !== undefined) update.notes = notes
+  if (notes !== undefined) update.agent_notes = notes
 
   const { data: updated, error } = await supabaseAdmin
     .from('casting_submissions')
@@ -80,10 +80,10 @@ export async function PATCH(req: Request) {
     }
 
     // Notify performer
-    if (submission.performer_id) {
+    if (submission.performer_user_id) {
       await notify({
         recipientType: 'performer',
-        recipientId: submission.performer_id,
+        recipientId: submission.performer_user_id,
         type: 'submission_confirmed',
         title: `You've been confirmed!`,
         message: `You've been confirmed for ${request.role_type} on ${request.production_name} (${request.shoot_date}).`,

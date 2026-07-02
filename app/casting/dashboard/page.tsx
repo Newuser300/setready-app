@@ -210,17 +210,27 @@ function KanbanCard({ sub, onMove }: { sub: Submission; onMove: (id: string, sta
         </div>
       </div>
       {sub.notes && <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '6px', fontStyle: 'italic' }}>"{sub.notes}"</div>}
-      {/* Quick actions */}
+      {/* Quick actions — one button per column the card isn't already in */}
       <div style={{ display: 'flex', gap: '4px', marginTop: '8px', flexWrap: 'wrap' }}>
-        {sub.status !== 'confirmed' && (
-          <button onClick={() => onMove(sub.id, 'confirmed')} style={{ fontSize: '10px', padding: '2px 7px', backgroundColor: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '6px', cursor: 'pointer', fontWeight: '700' }}>✓</button>
-        )}
-        {sub.status !== 'shortlisted' && (
-          <button onClick={() => onMove(sub.id, 'shortlisted')} style={{ fontSize: '10px', padding: '2px 7px', backgroundColor: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '6px', cursor: 'pointer', fontWeight: '700' }}>⭐</button>
-        )}
-        {sub.status !== 'rejected' && (
-          <button onClick={() => onMove(sub.id, 'rejected')} style={{ fontSize: '10px', padding: '2px 7px', backgroundColor: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', cursor: 'pointer', fontWeight: '700' }}>✗</button>
-        )}
+        {KANBAN_COLS.filter(col => col.key !== sub.status).map(col => (
+          <button
+            key={col.key}
+            onClick={() => onMove(sub.id, col.key)}
+            title={col.label}
+            style={{
+              fontSize: '10px',
+              padding: '2px 7px',
+              backgroundColor: `${col.color}26`,
+              color: col.color,
+              border: `1px solid ${col.color}4d`,
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: '700',
+            }}
+          >
+            {col.label.split(' ')[0]}
+          </button>
+        ))}
       </div>
     </div>
   )
@@ -329,6 +339,10 @@ export default function CastingDashboardPage() {
   const [pwSaving, setPwSaving] = useState(false)
   const [pwMsg, setPwMsg] = useState<{ text: string; ok: boolean } | null>(null)
 
+  // Analytics
+  const [analytics, setAnalytics] = useState({ totalRequests: 0, avgSubmissions: 0, confirmationRate: 0, mostActiveRegion: '—' })
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
+
   // Holds (performer quick-view modal)
   const [holds, setHolds] = useState<Booking[]>([])
   const [holdsLoading, setHoldsLoading] = useState(false)
@@ -365,6 +379,7 @@ export default function CastingDashboardPage() {
     if (activeTab === 'Kanban') loadRequests()
     if (activeTab === 'Union') loadUnionPerformers()
     if (activeTab === 'Find') loadPerformers()
+    if (activeTab === 'Analytics') loadAnalytics()
   }, [activeTab, reqTab, unionTierFilter, browseRegion])
 
   useEffect(() => {
@@ -394,6 +409,7 @@ export default function CastingDashboardPage() {
       pendingSubmissions: data.reduce((a, r) => a + r.submissionCount, 0),
       confirmedToday: data.reduce((a, r) => a + r.confirmedCount, 0),
     })
+    setRequests(data)
   }
 
   // Keep the ref in sync so loadPerformers always reads the latest value even
@@ -459,6 +475,13 @@ export default function CastingDashboardPage() {
     if (res.ok) setTemplates(await res.json())
   }
 
+  async function loadAnalytics() {
+    setAnalyticsLoading(true)
+    const res = await fetch('/api/casting/analytics')
+    setAnalyticsLoading(false)
+    if (res.ok) setAnalytics(await res.json())
+  }
+
   async function loadUnionPerformers() {
     setUnionLoading(true)
     const params = new URLSearchParams({ unionTier: unionTierFilter, sort: 'priority', limit: '100' })
@@ -486,16 +509,22 @@ export default function CastingDashboardPage() {
     if (res.ok) {
       const data = await res.json()
       setKanbanSubs(data.submissions || [])
+    } else {
+      toast.error('Failed to load submissions')
     }
   }
 
   async function moveKanban(submissionId: string, status: string) {
-    await fetch('/api/casting/kanban', {
+    const res = await fetch('/api/casting/kanban', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ submissionId, status }),
     })
-    setKanbanSubs(prev => prev.map(s => s.id === submissionId ? { ...s, status } : s))
+    if (res.ok) {
+      setKanbanSubs(prev => prev.map(s => s.id === submissionId ? { ...s, status } : s))
+    } else {
+      toast.error('Failed to move submission')
+    }
   }
 
   function handleKanbanDrop(e: React.DragEvent, toStatus: string) {
@@ -539,6 +568,7 @@ export default function CastingDashboardPage() {
         setStep(0)
         setReqForm({ productionName: '', projectType: '', shootDate: '', callTime: '', location: '', shootRegionCode: '', roleType: 'Background', performersNeeded: '1', genderNeeded: 'Any', ageMin: '', ageMax: '', unionStatus: '', rate: '', rateNotes: '', description: '', wardrobeNotes: '', notifyAll: true, travelCostsCovered: false })
         setActiveTab('Requests')
+        loadRequests()
       }, 2500)
     }
   }
@@ -546,12 +576,16 @@ export default function CastingDashboardPage() {
   async function saveTemplate() {
     const name = prompt('Template name?')
     if (!name) return
-    await fetch('/api/casting/templates', {
+    const res = await fetch('/api/casting/templates', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, template_data: reqForm }),
     })
-    loadTemplates()
+    if (res.ok) {
+      loadTemplates()
+    } else {
+      toast.error('Failed to save template')
+    }
   }
 
   // ── Sign-in QR ──────────────────────────────────────────────────────────
@@ -1209,7 +1243,7 @@ export default function CastingDashboardPage() {
             {/* Request list */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
               {(['open','closed'] as const).map(t => (
-                <button key={t} onClick={() => { setReqTab(t); loadRequests() }} style={{ padding: '7px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px', backgroundColor: reqTab === t ? '#F59E0B' : '#1e1e35', color: reqTab === t ? '#1a1a2e' : '#9ca3af' }}>
+                <button key={t} onClick={() => setReqTab(t)} style={{ padding: '7px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px', backgroundColor: reqTab === t ? '#F59E0B' : '#1e1e35', color: reqTab === t ? '#1a1a2e' : '#9ca3af' }}>
                   {t.charAt(0).toUpperCase() + t.slice(1)}
                 </button>
               ))}
@@ -1259,6 +1293,9 @@ export default function CastingDashboardPage() {
         {activeTab === 'Kanban' && (
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+              {kanbanRequest && (
+                <button onClick={() => { setKanbanRequest(null); setKanbanSubs([]) }} style={{ padding: '4px 12px', backgroundColor: 'transparent', color: '#9ca3af', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>← Back</button>
+              )}
               <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white', margin: 0 }}>Submissions</h1>
               {kanbanRequest && <span style={{ fontSize: '14px', color: '#F59E0B', fontWeight: '600' }}>— {kanbanRequest.production_name}</span>}
             </div>
@@ -1404,10 +1441,10 @@ export default function CastingDashboardPage() {
             <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white', margin: '0 0 20px' }}>Analytics</h1>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
               {[
-                { title: 'Total Requests Created', value: '—', sub: 'All time' },
-                { title: 'Avg. Submissions per Request', value: '—', sub: 'Based on open requests' },
-                { title: 'Confirmation Rate', value: '—', sub: 'Confirmed / Submitted' },
-                { title: 'Most Active Region', value: '—', sub: 'By performer count' },
+                { title: 'Total Requests Created', value: analyticsLoading ? '—' : String(analytics.totalRequests), sub: 'All time' },
+                { title: 'Avg. Submissions per Request', value: analyticsLoading ? '—' : analytics.avgSubmissions.toFixed(1), sub: 'Across all your requests' },
+                { title: 'Confirmation Rate', value: analyticsLoading ? '—' : `${analytics.confirmationRate}%`, sub: 'Confirmed / Submitted' },
+                { title: 'Most Active Region', value: analyticsLoading ? '—' : analytics.mostActiveRegion, sub: 'By performer count' },
               ].map(card => (
                 <div key={card.title} style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '20px', border: '1px solid rgba(255,255,255,0.06)' }}>
                   <div style={{ fontSize: '13px', color: '#9ca3af', marginBottom: '6px' }}>{card.title}</div>
@@ -1416,9 +1453,8 @@ export default function CastingDashboardPage() {
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: '20px', backgroundColor: '#1e1e35', borderRadius: '14px', padding: '20px', border: '1px solid rgba(255,255,255,0.06)', textAlign: 'center', color: '#6b7280' }}>
-              <div style={{ fontSize: '32px', marginBottom: '8px' }}>📊</div>
-              <div style={{ fontSize: '14px' }}>Detailed analytics coming soon — charts for bookings per month, submission rates, and regional performance.</div>
+            <div style={{ marginTop: '16px', fontSize: '12px', color: '#6b7280', textAlign: 'center' }}>
+              Figures update each time this tab is opened.
             </div>
           </div>
         )}

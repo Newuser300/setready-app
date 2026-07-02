@@ -52,12 +52,12 @@ export async function GET(req: Request) {
   if (signinSession.request_id) {
     const { data: subs } = await supabaseAdmin
       .from('casting_submissions')
-      .select('performer_id')
+      .select('performer_user_id')
       .eq('casting_request_id', signinSession.request_id)
       .eq('status', 'confirmed')
 
     if (subs && subs.length > 0) {
-      const perfIds = subs.map((s: any) => s.performer_id)
+      const perfIds = subs.map((s: any) => s.performer_user_id)
       const [{ data: userRows }, { data: profileRows }] = await Promise.all([
         supabaseAdmin.from('users').select('id, email, name').in('id', perfIds),
         supabaseAdmin.from('performer_profiles').select('user_id, headshot_url, union_status').in('user_id', perfIds),
@@ -70,8 +70,8 @@ export async function GET(req: Request) {
       ;(profileRows || []).forEach((pr: any) => { profilesMap[pr.user_id] = pr })
       confirmedPerformers = subs.map((s: any) => ({
         ...s,
-        users: usersMap[s.performer_id] || null,
-        performer_profiles: profilesMap[s.performer_id] || null,
+        users: usersMap[s.performer_user_id] || null,
+        performer_profiles: profilesMap[s.performer_user_id] || null,
       }))
     }
   }
@@ -87,13 +87,13 @@ export async function GET(req: Request) {
   ;(signins || []).forEach((s: any) => { signedInMap[s.performer_user_id] = s })
 
   const list = confirmedPerformers.map((p: any) => ({
-    performer_id: p.performer_id,
+    performer_id: p.performer_user_id,
     name: (p.users as any)?.raw_user_meta_data?.full_name || (p.users as any)?.email?.split('@')[0] || 'Performer',
     email: (p.users as any)?.email,
     headshot_url: (p.performer_profiles as any)?.headshot_url,
     union_status: (p.performer_profiles as any)?.union_status,
-    signed_in: signedInIds.has(p.performer_id),
-    signed_in_at: signedInMap[p.performer_id]?.signed_in_at || null,
+    signed_in: signedInIds.has(p.performer_user_id),
+    signed_in_at: signedInMap[p.performer_user_id]?.signed_in_at || null,
   }))
 
   return NextResponse.json({

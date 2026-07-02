@@ -107,6 +107,8 @@ export async function GET(req: Request) {
     ;(profileRows || []).forEach((pr: any) => { profilesMap[pr.user_id] = pr })
     result = responses.map((r: any) => ({
       ...r,
+      responded: !!r.responded_at,
+      available: r.response === 'available',
       users: usersMap[r.performer_id] || null,
       performer_profiles: profilesMap[r.performer_id] || null,
     }))

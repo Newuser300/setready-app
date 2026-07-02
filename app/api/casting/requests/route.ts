@@ -19,6 +19,7 @@ export async function GET(req: Request) {
       shoot_date,
       call_time,
       location,
+      shoot_region_code,
       role_type,
       performers_needed:number_needed,
       filled_count,

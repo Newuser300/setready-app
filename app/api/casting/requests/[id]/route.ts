@@ -16,10 +16,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   if (error || !request) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  // Fetch submissions — bare columns only; no FK embeds on casting_submissions
+  // Fetch submissions — bare columns only; no FK embeds on casting_submissions.
+  // Agent submissions store performer_user_id (not performer_id) and agent_notes (not notes).
   const { data: submissions, error: subError } = await supabaseAdmin
     .from('casting_submissions')
-    .select('id, status, notes, submitted_at, performer_id, agency_id')
+    .select('id, status, agent_notes, submitted_at, performer_user_id, agency_id')
     .eq('casting_request_id', id)
     .order('submitted_at', { ascending: true })
 
@@ -28,14 +29,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   // Stitch performer_profiles, users, agencies separately (same pattern as performers route)
   let stitchedSubs: any[] = []
   if (submissions && submissions.length > 0) {
-    const perfIds = [...new Set(submissions.map((s: any) => s.performer_id).filter(Boolean))]
+    const perfIds = [...new Set(submissions.map((s: any) => s.performer_user_id).filter(Boolean))]
     const agIds   = [...new Set(submissions.map((s: any) => s.agency_id).filter(Boolean))]
 
     const [{ data: profiles }, { data: userRows }, { data: agencyRows }] = await Promise.all([
-      supabaseAdmin.from('performer_profiles')
-        .select('user_id, headshot_url, union_status, union_priority, height_cm, hair_color, eye_color, gender, special_skills')
-        .in('user_id', perfIds),
-      supabaseAdmin.from('users').select('id, email, name').in('id', perfIds),
+      perfIds.length > 0
+        ? supabaseAdmin.from('performer_profiles')
+            .select('user_id, headshot_url, union_status, union_priority, height_cm, hair_color, eye_color, gender, special_skills')
+            .in('user_id', perfIds)
+        : Promise.resolve({ data: [] }),
+      perfIds.length > 0
+        ? supabaseAdmin.from('users').select('id, email, name').in('id', perfIds)
+        : Promise.resolve({ data: [] }),
       agIds.length > 0
         ? supabaseAdmin.from('agencies').select('id, name').in('id', agIds)
         : Promise.resolve({ data: [] }),
@@ -53,9 +58,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
     stitchedSubs = submissions.map((s: any) => ({
       ...s,
-      performer_profiles: s.performer_id ? (profilesMap[s.performer_id] || null) : null,
-      users:              s.performer_id ? (usersMap[s.performer_id]    || null) : null,
-      agencies:           s.agency_id    ? (agenciesMap[s.agency_id]   || null) : null,
+      // Alias to the shape the Submission type and KanbanCard expect
+      performer_id: s.performer_user_id,
+      notes: s.agent_notes,
+      performer_profiles: s.performer_user_id ? (profilesMap[s.performer_user_id] || null) : null,
+      users:              s.performer_user_id ? (usersMap[s.performer_user_id]    || null) : null,
+      agencies:           s.agency_id         ? (agenciesMap[s.agency_id]        || null) : null,
     }))
   }
 
@@ -79,7 +87,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const allowed = ['status', 'description', 'rate', 'wardrobe_notes', 'performers_needed', 'filled_count']
+  const allowed = ['status', 'description', 'rate', 'wardrobe_notes', 'number_needed', 'filled_count']
   const update: Record<string, unknown> = {}
   allowed.forEach(k => { if (body[k] !== undefined) update[k] = body[k] })
   update.updated_at = new Date().toISOString()

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import toast, { Toaster } from 'react-hot-toast'
 import Logo from '@/components/Logo'
 import { FILM_REGION_LIST, getRegionName, unionBadge, unionTierLabel } from '@/lib/film-regions'
 
@@ -383,9 +384,10 @@ export default function AgentDashboardPage() {
     if (activeTab === 'Overview') loadStats()
     if (activeTab === 'Roster') loadRoster()
     if (activeTab === 'Union') loadRoster()
-    if (activeTab === 'Requests') loadRequests()
+    if (activeTab === 'Requests') { loadRoster(); loadRequests() }
     if (activeTab === 'Submissions') loadSubmissions()
     if (activeTab === 'Financials') loadCommissions()
+    if (activeTab === 'Avail') loadRoster()
     if (activeTab === 'Calendar') { loadRoster(); loadSubmissions(); loadHolds() }
   }, [activeTab, loadStats, loadRoster, loadRequests, loadSubmissions, loadCommissions, loadHolds])
 
@@ -430,25 +432,34 @@ export default function AgentDashboardPage() {
   async function saveNote() {
     if (!selectedPerformer) return
     setNoteLoading(true)
-    await fetch('/api/agent/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ performerId: selectedPerformer.user_id, note: noteText }) })
+    const res = await fetch('/api/agent/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ performerId: selectedPerformer.user_id, note: noteText }) })
     setNoteLoading(false)
+    if (!res.ok) toast.error('Failed to save note')
   }
 
   async function addTag(performerId: string) {
     const tag = tagInput.trim()
     if (!tag) return
-    await fetch('/api/agent/tags', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ performerId, tag }) })
-    setTagInput('')
-    setAllTags(prev => ({ ...prev, [performerId]: [...(prev[performerId] || []), tag] }))
-    setSelectedPerformer(prev => prev ? { ...prev, tags: [...(prev.tags || []), tag] } : prev)
-    setRoster(prev => prev.map(r => r.user_id === performerId ? { ...r, tags: [...(r.tags || []), tag] } : r))
+    const res = await fetch('/api/agent/tags', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ performerId, tag }) })
+    if (res.ok) {
+      setTagInput('')
+      setAllTags(prev => ({ ...prev, [performerId]: [...(prev[performerId] || []), tag] }))
+      setSelectedPerformer(prev => prev ? { ...prev, tags: [...(prev.tags || []), tag] } : prev)
+      setRoster(prev => prev.map(r => r.user_id === performerId ? { ...r, tags: [...(r.tags || []), tag] } : r))
+    } else {
+      toast.error('Failed to add tag')
+    }
   }
 
   async function removeTag(performerId: string, tag: string) {
-    await fetch('/api/agent/tags', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ performerId, tag }) })
-    setAllTags(prev => ({ ...prev, [performerId]: (prev[performerId] || []).filter(t => t !== tag) }))
-    setSelectedPerformer(prev => prev ? { ...prev, tags: (prev.tags || []).filter(t => t !== tag) } : prev)
-    setRoster(prev => prev.map(r => r.user_id === performerId ? { ...r, tags: (r.tags || []).filter(t => t !== tag) } : r))
+    const res = await fetch('/api/agent/tags', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ performerId, tag }) })
+    if (res.ok) {
+      setAllTags(prev => ({ ...prev, [performerId]: (prev[performerId] || []).filter(t => t !== tag) }))
+      setSelectedPerformer(prev => prev ? { ...prev, tags: (prev.tags || []).filter(t => t !== tag) } : prev)
+      setRoster(prev => prev.map(r => r.user_id === performerId ? { ...r, tags: (r.tags || []).filter(t => t !== tag) } : r))
+    } else {
+      toast.error('Failed to remove tag')
+    }
   }
 
   async function submitPerformer() {
@@ -461,6 +472,8 @@ export default function AgentDashboardPage() {
           ? { ...req, submittedPerformerIds: [...(req.submittedPerformerIds || []), performerId] }
           : req))
       setSubmittingFor(null); loadRequests()
+    } else {
+      toast.error('Failed to submit performer')
     }
   }
 
@@ -470,7 +483,7 @@ export default function AgentDashboardPage() {
     const res = await fetch('/api/agent/availability-check', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ performerIds: availPerformerIds, dateNeeded: availDate, message: availMessage }),
+      body: JSON.stringify({ performerIds: availPerformerIds, date: availDate, message: availMessage }),
     })
     setAvailSending(false)
     if (res.ok) {
@@ -491,7 +504,14 @@ export default function AgentDashboardPage() {
     const res = await fetch('/api/agent/commissions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...newComm, grossPay: parseFloat(newComm.gross_pay), commissionRate: parseFloat(newComm.commission_rate) }),
+      body: JSON.stringify({
+        performerName: newComm.performer_name,
+        productionName: newComm.production_name,
+        bookingDate: newComm.booking_date,
+        grossPay: parseFloat(newComm.gross_pay),
+        commissionRate: parseFloat(newComm.commission_rate),
+        notes: newComm.notes || null,
+      }),
     })
     if (res.ok) {
       setNewComm({ booking_date: '', production_name: '', performer_name: '', gross_pay: '', commission_rate: '15', notes: '' })
@@ -501,8 +521,12 @@ export default function AgentDashboardPage() {
   }
 
   async function markCommPaid(id: string) {
-    await fetch('/api/agent/commissions', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, paid: true }) })
-    setCommissions(prev => prev.map(c => c.id === id ? { ...c, paid: true } : c))
+    const res = await fetch('/api/agent/commissions', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, paid: true }) })
+    if (res.ok) {
+      setCommissions(prev => prev.map(c => c.id === id ? { ...c, paid: true } : c))
+    } else {
+      toast.error('Failed to mark commission as paid')
+    }
   }
 
   async function placeHold() {
@@ -547,14 +571,18 @@ export default function AgentDashboardPage() {
   }
 
   async function saveEmailPref(value: boolean) {
-    setEmailPref(value)
     setEmailPrefSaving(true)
-    await fetch('/api/agent/auth', {
+    const res = await fetch('/api/agent/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'update_email_pref', emailOnRequest: value }),
     })
     setEmailPrefSaving(false)
+    if (res.ok) {
+      setEmailPref(value)
+    } else {
+      toast.error('Failed to save email preference')
+    }
   }
 
   async function saveName() {
@@ -609,6 +637,7 @@ export default function AgentDashboardPage() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f0f1a', display: 'flex', flexDirection: 'column' }}>
+      <Toaster position="top-center" toastOptions={{ style: { background: '#1e1e35', color: 'white', border: '1px solid rgba(245,158,11,0.3)' } }} />
 
       {/* Top bar */}
       <div style={{ backgroundColor: '#1a1a2e', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50, borderBottom: '1px solid rgba(245,158,11,0.15)' }}>

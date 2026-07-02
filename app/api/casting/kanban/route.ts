@@ -14,7 +14,7 @@ export async function PATCH(req: Request) {
 
   const { data: sub, error: fetchErr } = await supabaseAdmin
     .from('casting_submissions')
-    .select('id, performer_id, casting_request_id, casting_requests(production_name, shoot_date, casting_director_id)')
+    .select('id, performer_user_id, casting_request_id, casting_requests(production_name, shoot_date, casting_director_id)')
     .eq('id', submissionId)
     .single()
 
@@ -32,7 +32,7 @@ export async function PATCH(req: Request) {
     const req_data = sub.casting_requests as any
     await notify({
       recipientType: 'performer',
-      recipientId: sub.performer_id,
+      recipientId: sub.performer_user_id,
       type: 'booking_confirmed',
       title: `You've been confirmed!`,
       message: `You are confirmed for "${req_data?.production_name || 'a production'}" on ${req_data?.shoot_date || 'the shoot date'}.`,

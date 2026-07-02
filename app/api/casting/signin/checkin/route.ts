@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     .from('casting_submissions')
     .select('id')
     .eq('casting_request_id', session.request_id)
-    .eq('performer_id', resolvedPerformerId)
+    .eq('performer_user_id', resolvedPerformerId)
     .eq('status', 'confirmed')
     .maybeSingle()
 
