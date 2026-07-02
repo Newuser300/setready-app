@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAgentSession, supabaseAdmin } from '@/lib/casting-auth'
-import { sendMessage } from '@/lib/messages'
+import { sendMessage, buildMessageEmailHtml } from '@/lib/messages'
+import { sendEmail } from '@/lib/email'
 
 export async function GET(request: NextRequest) {
   const session = await getAgentSession()
@@ -91,6 +92,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Subject and message are required' }, { status: 400 })
   }
 
+  // Auto-look-up performer email when not provided by client
+  let resolvedEmail: string | undefined = recipientEmail || undefined
+  if (!resolvedEmail && recipientType === 'performer' && recipientId) {
+    const { data: user } = await supabaseAdmin.from('users').select('email').eq('id', recipientId).single()
+    resolvedEmail = user?.email ?? undefined
+  }
+
   const message = await sendMessage({
     senderType: 'agent',
     senderId: session.accountId,
@@ -100,11 +108,27 @@ export async function POST(request: NextRequest) {
     subject: subject.trim(),
     body: messageBody.trim(),
     messageType: 'general',
-    recipientEmail: recipientEmail || undefined,
-    sendEmailNotification: !!recipientEmail,
+    sendEmailNotification: false, // handled below with custom body
   })
 
   if (!message) return NextResponse.json({ error: 'Failed to send message' }, { status: 500 })
+
+  // Email notification with "reply in SetReady" instruction — fire and forget
+  if (resolvedEmail) {
+    const emailBody = `${messageBody.trim()}\n\n---\nPlease reply to this message through SetReady, not by replying to this email.`
+    sendEmail({
+      to: resolvedEmail,
+      subject: subject.trim(),
+      html: buildMessageEmailHtml({
+        subject: subject.trim(),
+        body: emailBody,
+        senderName: session.name,
+        actionUrl: 'https://www.setready.site/messages',
+        actionLabel: 'Reply in SetReady →',
+      }),
+    }).catch((e: Error) => console.error('[agent/messages] email notification failed:', e))
+  }
+
   return NextResponse.json({ success: true, message })
 }
 

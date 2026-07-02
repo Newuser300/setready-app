@@ -113,9 +113,28 @@ interface Booking {
   note: string | null
 }
 
+interface AgentThread {
+  threadId: string
+  performerId: string
+  performer: { id: string; email: string; name: string; headshot_url?: string | null } | null
+  subject: string
+  lastMessage: { id: string; body: string; created_at: string; sender_type: string }
+  unread: boolean
+}
+
+interface AgentMsg {
+  id: string
+  sender_type: string
+  sender_name: string
+  body: string
+  subject: string
+  created_at: string
+  is_read: boolean
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const TABS = ['Overview','Roster','Union','Requests','Submissions','Calendar','Financials','Avail','Settings'] as const
+const TABS = ['Overview','Roster','Union','Requests','Submissions','Calendar','Financials','Avail','Messages','Settings'] as const
 type Tab = typeof TABS[number]
 
 const TAB_LABELS: Record<Tab, string> = {
@@ -127,6 +146,7 @@ const TAB_LABELS: Record<Tab, string> = {
   Calendar: '📅 Booking Calendar',
   Financials: '💰 Financials',
   Avail: '✅ Avail Check',
+  Messages: '✉️ Messages',
   Settings: '⚙️ Settings',
 }
 
@@ -162,6 +182,13 @@ function fmtMoney(n: number) {
 }
 function daysUntil(d: string) {
   return Math.ceil((new Date(d + 'T00:00:00').getTime() - new Date().setHours(0,0,0,0)) / 86400000)
+}
+function fmtRelTime(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime()
+  if (diff < 60000) return 'just now'
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`
+  return new Date(iso).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })
 }
 
 // ─── Roster Performer Card ────────────────────────────────────────────────────
@@ -295,6 +322,20 @@ export default function AgentDashboardPage() {
   const [holdSubmitting, setHoldSubmitting] = useState(false)
   const [holdMsg, setHoldMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
 
+  // Messages tab
+  const [agentThreads, setAgentThreads] = useState<AgentThread[]>([])
+  const [threadsLoading, setThreadsLoading] = useState(false)
+  const [activeThread, setActiveThread] = useState<AgentThread | null>(null)
+  const [threadMsgs, setThreadMsgs] = useState<AgentMsg[]>([])
+  const [threadMsgsLoading, setThreadMsgsLoading] = useState(false)
+  const [threadReply, setThreadReply] = useState('')
+  const [threadReplying, setThreadReplying] = useState(false)
+  // Compose from performer modal
+  const [composingMsg, setComposingMsg] = useState(false)
+  const [composeSubject, setComposeSubject] = useState('')
+  const [composeBody, setComposeBody] = useState('')
+  const [composeSending, setComposeSending] = useState(false)
+
   // ── Auth ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -393,6 +434,16 @@ export default function AgentDashboardPage() {
     if (res.ok) setHolds(await res.json())
   }, [])
 
+  const loadThreads = useCallback(async () => {
+    setThreadsLoading(true)
+    try {
+      const res = await fetch('/api/agent/threads')
+      if (res.ok) setAgentThreads((await res.json()).threads || [])
+    } finally {
+      setThreadsLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (activeTab === 'Overview') loadStats()
     if (activeTab === 'Roster') loadRoster()
@@ -402,7 +453,8 @@ export default function AgentDashboardPage() {
     if (activeTab === 'Financials') loadCommissions()
     if (activeTab === 'Avail') loadRoster()
     if (activeTab === 'Calendar') { loadRoster(); loadSubmissions(); loadHolds() }
-  }, [activeTab, loadStats, loadRoster, loadRequests, loadSubmissions, loadCommissions, loadHolds])
+    if (activeTab === 'Messages') loadThreads()
+  }, [activeTab, loadStats, loadRoster, loadRequests, loadSubmissions, loadCommissions, loadHolds, loadThreads])
 
   async function lookupPerformer() {
     if (!addEmail.trim()) return
@@ -448,6 +500,63 @@ export default function AgentDashboardPage() {
     const res = await fetch('/api/agent/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ performerId: selectedPerformer.user_id, note: noteText }) })
     setNoteLoading(false)
     if (!res.ok) toast.error('Failed to save note')
+  }
+
+  async function openThread(t: AgentThread) {
+    setActiveThread(t)
+    setThreadMsgsLoading(true)
+    const res = await fetch(`/api/agent/threads?threadId=${t.threadId}`)
+    if (res.ok) {
+      setThreadMsgs((await res.json()).messages || [])
+      setAgentThreads(prev => prev.map(th => th.threadId === t.threadId ? { ...th, unread: false } : th))
+    }
+    setThreadMsgsLoading(false)
+    setThreadReply('')
+  }
+
+  async function sendThreadReply() {
+    if (!activeThread || !threadReply.trim() || threadReplying) return
+    setThreadReplying(true)
+    const res = await fetch('/api/agent/reply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ parentMessageId: activeThread.threadId, body: threadReply, performerId: activeThread.performerId }),
+    })
+    setThreadReplying(false)
+    if (res.ok) {
+      const { reply } = await res.json()
+      setThreadMsgs(prev => [...prev, reply])
+      setThreadReply('')
+    } else {
+      toast.error('Failed to send reply')
+    }
+  }
+
+  async function sendCompose() {
+    if (!selectedPerformer || !composeSubject.trim() || !composeBody.trim() || composeSending) return
+    setComposeSending(true)
+    const res = await fetch('/api/agent/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recipientType: 'performer',
+        recipientId: selectedPerformer.user_id,
+        subject: composeSubject.trim(),
+        messageBody: composeBody.trim(),
+      }),
+    })
+    setComposeSending(false)
+    if (res.ok) {
+      toast.success(`Message sent to ${pName(selectedPerformer)}`)
+      setComposingMsg(false)
+      setComposeSubject('')
+      setComposeBody('')
+      setSelectedPerformer(null)
+      loadThreads()
+    } else {
+      const d = await res.json().catch(() => ({}))
+      toast.error(d.error || 'Failed to send message')
+    }
   }
 
   async function addTag(performerId: string) {
@@ -871,9 +980,18 @@ export default function AgentDashboardPage() {
                             {/* Detail grid */}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', margin: '14px 0 12px' }}>
                               {[
+                                { label: 'Project Type', value: req.project_type },
+                                { label: 'Role', value: req.role_type },
+                                { label: 'Shoot Date', value: fmtDate(req.shoot_date) },
                                 { label: 'Call Time', value: req.call_time },
-                                { label: 'Spots', value: req.performers_needed != null ? String(req.performers_needed) : null },
+                                { label: 'Region', value: req.shoot_region_code ? getRegionName(req.shoot_region_code) : null },
+                                { label: 'Location', value: req.location },
+                                { label: 'Spots Needed', value: req.performers_needed != null ? String(req.performers_needed) : null },
+                                { label: 'Gender', value: req.gender_needed },
+                                { label: 'Age Range', value: (req.age_min || req.age_max) ? `${req.age_min ?? '?'} – ${req.age_max ?? '?'}` : null },
+                                { label: 'Union', value: req.union_status },
                                 { label: 'Rate', value: req.rate },
+                                { label: 'Rate Notes', value: req.rate_notes },
                                 { label: 'Posted by', value: req.casting_directors ? `${req.casting_directors.name}${req.casting_directors.company ? ` · ${req.casting_directors.company}` : ''}` : null },
                               ].filter(f => f.value).map(({ label, value }) => (
                                 <div key={label}>
@@ -1239,6 +1357,117 @@ export default function AgentDashboardPage() {
           </div>
         )}
 
+        {/* ── MESSAGES ──────────────────────────────────────────────────── */}
+        {activeTab === 'Messages' && (
+          <div>
+            {activeThread ? (
+              <>
+                {/* Thread view header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                  <button
+                    onClick={() => { setActiveThread(null); setThreadMsgs([]) }}
+                    style={{ padding: '6px 12px', backgroundColor: '#1e1e35', color: '#9ca3af', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}
+                  >
+                    ← Back
+                  </button>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '16px', color: 'white' }}>{activeThread.performer?.name || 'Performer'}</div>
+                    <div style={{ fontSize: '12px', color: '#9ca3af' }}>{activeThread.subject}</div>
+                  </div>
+                </div>
+
+                {/* Message bubbles */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', maxHeight: '55vh', overflowY: 'auto', padding: '4px 2px' }}>
+                  {threadMsgsLoading
+                    ? <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>Loading...</div>
+                    : threadMsgs.map(m => {
+                        const fromAgent = m.sender_type === 'agent'
+                        return (
+                          <div key={m.id} style={{ display: 'flex', flexDirection: fromAgent ? 'row-reverse' : 'row', gap: '10px', alignItems: 'flex-start' }}>
+                            <div style={{ width: '30px', height: '30px', borderRadius: '50%', backgroundColor: fromAgent ? '#F59E0B' : '#374151', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '800', color: fromAgent ? '#1a1a2e' : 'white', flexShrink: 0 }}>
+                              {fromAgent ? 'A' : (activeThread.performer?.name?.[0] || 'P')}
+                            </div>
+                            <div style={{ maxWidth: '75%' }}>
+                              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px', textAlign: fromAgent ? 'right' : 'left' }}>
+                                {m.sender_name} · {fmtRelTime(m.created_at)}
+                              </div>
+                              <div style={{ backgroundColor: fromAgent ? '#1e3a5f' : '#1e1e35', border: fromAgent ? '1px solid rgba(59,130,246,0.3)' : '1px solid rgba(255,255,255,0.06)', borderRadius: fromAgent ? '14px 14px 4px 14px' : '14px 14px 14px 4px', padding: '10px 14px', fontSize: '14px', color: '#e5e7eb', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+                                {m.body}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })
+                  }
+                </div>
+
+                {/* Reply box */}
+                <div style={{ backgroundColor: '#1e1e35', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', padding: '14px' }}>
+                  <textarea
+                    value={threadReply}
+                    onChange={e => setThreadReply(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) sendThreadReply() }}
+                    rows={3}
+                    placeholder="Type your reply… (Cmd+Enter to send)"
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '13px', color: 'white', backgroundColor: '#0f0f1a', outline: 'none', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: '8px' }}
+                  />
+                  <button
+                    onClick={sendThreadReply}
+                    disabled={threadReplying || !threadReply.trim()}
+                    style={{ padding: '9px 20px', backgroundColor: threadReplying || !threadReply.trim() ? '#374151' : '#3b82f6', color: threadReplying || !threadReply.trim() ? '#6b7280' : 'white', border: 'none', borderRadius: '8px', cursor: threadReplying ? 'not-allowed' : 'pointer', fontWeight: '700', fontSize: '13px' }}
+                  >
+                    {threadReplying ? 'Sending...' : '✉️ Send Reply'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white', margin: 0 }}>Messages</h1>
+                  <div style={{ fontSize: '12px', color: '#9ca3af' }}>Start a conversation from a performer's profile card</div>
+                </div>
+
+                {threadsLoading
+                  ? <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>Loading...</div>
+                  : agentThreads.length === 0
+                    ? <div style={{ textAlign: 'center', padding: '60px', color: '#9ca3af', backgroundColor: '#1e1e35', borderRadius: '14px' }}>
+                        <div style={{ fontSize: '32px', marginBottom: '12px' }}>✉️</div>
+                        <div style={{ fontWeight: '700', marginBottom: '6px' }}>No conversations yet</div>
+                        <div style={{ fontSize: '13px' }}>Open a performer's profile in My Roster and click "Message" to start a thread.</div>
+                      </div>
+                    : agentThreads.map(t => (
+                        <div
+                          key={t.threadId}
+                          onClick={() => openThread(t)}
+                          style={{ backgroundColor: '#1e1e35', borderRadius: '12px', border: t.unread ? '1px solid rgba(59,130,246,0.4)' : '1px solid rgba(255,255,255,0.06)', padding: '14px 16px', marginBottom: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.15s' }}
+                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#252542')}
+                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#1e1e35')}
+                        >
+                          {/* Avatar */}
+                          <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#374151', overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
+                            {t.performer?.headshot_url
+                              ? <Image src={t.performer.headshot_url} alt="" fill sizes="40px" style={{ objectFit: 'cover' }} />
+                              : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>👤</div>
+                            }
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
+                              <div style={{ fontWeight: t.unread ? '800' : '600', color: 'white', fontSize: '14px' }}>{t.performer?.name || 'Performer'}</div>
+                              <div style={{ fontSize: '11px', color: '#6b7280', flexShrink: 0, marginLeft: '8px' }}>{fmtRelTime(t.lastMessage.created_at)}</div>
+                            </div>
+                            <div style={{ fontSize: '12px', color: t.unread ? '#e5e7eb' : '#6b7280', fontWeight: t.unread ? '600' : '400', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {t.lastMessage.sender_type === 'agent' ? 'You: ' : ''}{t.lastMessage.body}
+                            </div>
+                          </div>
+                          {t.unread && <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#3b82f6', flexShrink: 0 }} />}
+                        </div>
+                      ))
+                }
+              </>
+            )}
+          </div>
+        )}
+
         {/* ── SETTINGS ──────────────────────────────────────────────────── */}
         {activeTab === 'Settings' && (
           <div>
@@ -1302,7 +1531,7 @@ export default function AgentDashboardPage() {
 
       {/* ── PERFORMER DETAIL MODAL ──────────────────────────────────────────── */}
       {selectedPerformer && (
-        <div onClick={() => setSelectedPerformer(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.75)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+        <div onClick={() => { setSelectedPerformer(null); setComposingMsg(false) }} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.75)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div onClick={e => e.stopPropagation()} style={{ backgroundColor: '#1e1e35', borderRadius: '20px', padding: '24px', maxWidth: '420px', width: '100%', maxHeight: '85vh', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.08)' }}>
             <div style={{ display: 'flex', gap: '14px', marginBottom: '16px' }}>
               <div style={{ width: '72px', height: '90px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, backgroundColor: '#374151', position: 'relative' }}>
@@ -1317,7 +1546,7 @@ export default function AgentDashboardPage() {
                 <div style={{ fontSize: '13px', color: '#F59E0B', fontWeight: '600' }}>{unionTierLabel(selectedPerformer.performer_profiles?.union_status)}</div>
                 {selectedPerformer.performer_profiles?.film_region_code && <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '3px' }}>📍 {getRegionName(selectedPerformer.performer_profiles.film_region_code)}</div>}
               </div>
-              <button onClick={() => setSelectedPerformer(null)} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#6b7280' }}>×</button>
+              <button onClick={() => { setSelectedPerformer(null); setComposingMsg(false) }} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#6b7280' }}>×</button>
             </div>
 
             {/* Stats */}
@@ -1373,6 +1602,43 @@ export default function AgentDashboardPage() {
                       <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: d.status ? (AVAIL_COLOR[d.status] || '#6b7280') : '#374151', margin: '0 auto' }} />
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Message compose */}
+            {!composingMsg ? (
+              <button
+                onClick={() => { setComposingMsg(true); setComposeSubject(''); setComposeBody('') }}
+                style={{ width: '100%', padding: '10px', backgroundColor: 'rgba(59,130,246,0.1)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', marginBottom: '8px' }}
+              >
+                ✉️ Message {pName(selectedPerformer)}
+              </button>
+            ) : (
+              <div style={{ marginBottom: '12px', padding: '14px', backgroundColor: '#0f0f1a', borderRadius: '12px', border: '1px solid rgba(59,130,246,0.2)' }}>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#60a5fa', marginBottom: '10px' }}>New message to {pName(selectedPerformer)}</div>
+                <input
+                  value={composeSubject}
+                  onChange={e => setComposeSubject(e.target.value)}
+                  placeholder="Subject"
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '7px', fontSize: '13px', color: 'white', backgroundColor: '#1e1e35', outline: 'none', boxSizing: 'border-box', marginBottom: '8px' }}
+                />
+                <textarea
+                  value={composeBody}
+                  onChange={e => setComposeBody(e.target.value)}
+                  rows={4}
+                  placeholder="Your message..."
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '7px', fontSize: '13px', color: 'white', backgroundColor: '#1e1e35', outline: 'none', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: '8px' }}
+                />
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button onClick={() => setComposingMsg(false)} style={{ flex: 1, padding: '8px', backgroundColor: '#374151', color: '#9ca3af', border: 'none', borderRadius: '7px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}>Cancel</button>
+                  <button
+                    onClick={sendCompose}
+                    disabled={composeSending || !composeSubject.trim() || !composeBody.trim()}
+                    style={{ flex: 2, padding: '8px', backgroundColor: composeSending || !composeSubject.trim() || !composeBody.trim() ? '#374151' : '#3b82f6', color: composeSending || !composeSubject.trim() || !composeBody.trim() ? '#6b7280' : 'white', border: 'none', borderRadius: '7px', cursor: composeSending ? 'not-allowed' : 'pointer', fontWeight: '700', fontSize: '13px' }}
+                  >
+                    {composeSending ? 'Sending...' : '✉️ Send Message'}
+                  </button>
                 </div>
               </div>
             )}

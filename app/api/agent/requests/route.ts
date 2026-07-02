@@ -22,6 +22,7 @@ export async function GET(req: Request) {
     .select(`
       id,
       production_name,
+      project_type,
       shoot_date,
       location,
       role_type,
