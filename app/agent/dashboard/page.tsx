@@ -61,7 +61,17 @@ interface Submission {
   status: string
   submitted_at: string
   notes?: string | null
-  casting_requests: { production_name: string; shoot_date: string; location?: string | null; role_type: string } | null
+  casting_requests: {
+    production_name: string
+    shoot_date: string
+    location?: string | null
+    role_type: string
+    call_time?: string | null
+    rate?: string | null
+    description?: string | null
+    wardrobe_notes?: string | null
+    number_needed?: number | null
+  } | null
   performer_profiles: { headshot_url?: string | null; union_status?: string | null; union_priority?: number | null } | null
   users: { id: string; email: string; raw_user_meta_data: { full_name?: string } } | null
 }
@@ -208,6 +218,7 @@ export default function AgentDashboardPage() {
 
   // Overview stats
   const [stats, setStats] = useState({ rosterCount: 0, pendingRequests: 0, pendingSubmissions: 0, monthCommissions: 0 })
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null)
 
   // Roster
   const [roster, setRoster] = useState<RosterPerformer[]>([])
@@ -241,6 +252,7 @@ export default function AgentDashboardPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [subLoading, setSubLoading] = useState(false)
   const [subFilter, setSubFilter] = useState<'all'|'submitted'|'shortlisted'|'confirmed'|'rejected'>('all')
+  const [selectedSub, setSelectedSub] = useState<Submission | null>(null)
 
   // Commissions
   const [commissions, setCommissions] = useState<Commission[]>([])
@@ -629,6 +641,12 @@ export default function AgentDashboardPage() {
     const email = (r.users?.email || '').toLowerCase()
     const q = rosterFilter.toLowerCase()
     return name.includes(q) || email.includes(q) || (r.tags || []).some(t => t.toLowerCase().includes(q))
+  }).sort((a, b) => {
+    const now = Date.now()
+    const aBoost = !!( a.performer_profiles as any)?.boost_expires_at && new Date((a.performer_profiles as any).boost_expires_at).getTime() > now
+    const bBoost = !!(b.performer_profiles as any)?.boost_expires_at && new Date((b.performer_profiles as any).boost_expires_at).getTime() > now
+    if (aBoost === bBoost) return 0
+    return aBoost ? -1 : 1
   })
 
   const unionRoster = roster.filter(r => (r.performer_profiles?.union_priority ?? 5) <= 2)
@@ -673,11 +691,24 @@ export default function AgentDashboardPage() {
             <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white', margin: '0 0 20px' }}>Agency Dashboard</h1>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px', marginBottom: '28px' }}>
               {[
-                { label: 'Roster Size', value: stats.rosterCount, icon: '👥', color: '#F59E0B' },
-                { label: 'Active Submissions', value: stats.pendingSubmissions, icon: '📤', color: '#3b82f6' },
-                { label: 'Monthly Commissions', value: fmtMoney(stats.monthCommissions), icon: '💰', color: '#22c55e' },
+                { label: 'Roster Size', value: stats.rosterCount, icon: '👥', color: '#F59E0B', tab: 'Roster' as Tab },
+                { label: 'Active Submissions', value: stats.pendingSubmissions, icon: '📤', color: '#3b82f6', tab: 'Submissions' as Tab },
+                { label: 'Monthly Commissions', value: fmtMoney(stats.monthCommissions), icon: '💰', color: '#22c55e', tab: 'Financials' as Tab },
               ].map(s => (
-                <div key={s.label} style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '20px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div
+                  key={s.label}
+                  onClick={() => setActiveTab(s.tab)}
+                  onMouseEnter={() => setHoveredCard(s.label)}
+                  onMouseLeave={() => setHoveredCard(null)}
+                  style={{
+                    backgroundColor: '#1e1e35',
+                    borderRadius: '14px',
+                    padding: '20px',
+                    border: `1px solid ${hoveredCard === s.label ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.06)'}`,
+                    cursor: 'pointer',
+                    transition: 'border-color 0.15s',
+                  }}
+                >
                   <div style={{ fontSize: '24px', marginBottom: '8px' }}>{s.icon}</div>
                   <div style={{ fontSize: '26px', fontWeight: '900', color: s.color }}>{s.value}</div>
                   <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>{s.label}</div>
@@ -913,7 +944,7 @@ export default function AgentDashboardPage() {
                         const pill = STATUS_PILL[sub.status] || STATUS_PILL.submitted
                         const days = sub.casting_requests ? daysUntil(sub.casting_requests.shoot_date) : 0
                         return (
-                          <div key={sub.id} style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div key={sub.id} onClick={() => setSelectedSub(sub)} style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
                             <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#374151', overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
                               {sub.performer_profiles?.headshot_url
                                 ? <Image src={sub.performer_profiles.headshot_url} alt="" fill sizes="40px" style={{ objectFit: 'cover' }} />
@@ -969,11 +1000,11 @@ export default function AgentDashboardPage() {
                 </div>
                 <div>
                   <label style={lbl}>Start date *</label>
-                  <input type="date" value={holdStart} onChange={e => setHoldStart(e.target.value)} style={inp} />
+                  <input type="date" value={holdStart} onChange={e => setHoldStart(e.target.value)} style={{ ...inp, colorScheme: 'dark' }} />
                 </div>
                 <div>
                   <label style={lbl}>End date *</label>
-                  <input type="date" value={holdEnd} onChange={e => setHoldEnd(e.target.value)} style={inp} />
+                  <input type="date" value={holdEnd} onChange={e => setHoldEnd(e.target.value)} style={{ ...inp, colorScheme: 'dark' }} />
                 </div>
                 <div style={{ gridColumn: isMobile ? '1' : '1 / -1' }}>
                   <label style={lbl}>Note (optional)</label>
@@ -1043,13 +1074,14 @@ export default function AgentDashboardPage() {
                     const db = b.casting_requests?.shoot_date || ''
                     return da < db ? -1 : 1
                   }).map(sub => (
-                    <div key={sub.id} style={{ backgroundColor: '#1a1a2e', borderRadius: '10px', padding: '12px 14px', marginBottom: '8px', display: 'flex', gap: '12px', alignItems: 'center', border: '1px solid rgba(34,197,94,0.2)' }}>
+                    <div key={sub.id} onClick={() => setSelectedSub(sub)} style={{ backgroundColor: '#1a1a2e', borderRadius: '10px', padding: '12px 14px', marginBottom: '8px', display: 'flex', gap: '12px', alignItems: 'center', border: '1px solid rgba(34,197,94,0.2)', cursor: 'pointer' }}>
                       <div style={{ fontSize: '24px' }}>✅</div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: '700', color: 'white', fontSize: '14px' }}>{sName(sub)}</div>
                         <div style={{ fontSize: '12px', color: '#22c55e', fontWeight: '600' }}>{sub.casting_requests?.production_name}</div>
                         <div style={{ fontSize: '11px', color: '#9ca3af' }}>{sub.casting_requests?.shoot_date ? fmtDate(sub.casting_requests.shoot_date) : ''} · {sub.casting_requests?.role_type}</div>
                       </div>
+                      <div style={{ fontSize: '16px', color: '#6b7280' }}>›</div>
                     </div>
                   ))
               }
@@ -1334,6 +1366,91 @@ export default function AgentDashboardPage() {
               <button onClick={() => removeFromRoster(selectedPerformer.user_id, selectedPerformer.id)} style={{ flex: 1, padding: '10px', backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>Remove from Roster</button>
               <button onClick={() => { setSelectedPerformer(null); router.push(`/profile/${selectedPerformer.user_id}`) }} style={{ flex: 2, padding: '10px', backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', fontSize: '13px' }}>View Full Profile →</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── SUBMISSION DETAIL MODAL ─────────────────────────────────────────── */}
+      {selectedSub && (
+        <div
+          onClick={() => setSelectedSub(null)}
+          style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.75)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ backgroundColor: '#1a1a2e', borderRadius: '16px', padding: '28px', maxWidth: '540px', width: '100%', maxHeight: '85vh', overflowY: 'auto', position: 'relative', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            <button onClick={() => setSelectedSub(null)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '20px', lineHeight: 1 }}>✕</button>
+
+            {/* Performer header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
+              <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#374151', overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
+                {selectedSub.performer_profiles?.headshot_url
+                  ? <Image src={selectedSub.performer_profiles.headshot_url} alt="" fill sizes="56px" style={{ objectFit: 'cover' }} />
+                  : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>👤</div>
+                }
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '18px', fontWeight: '800', color: 'white' }}>{sName(selectedSub)}</div>
+                {selectedSub.performer_profiles?.union_status && (
+                  <div style={{ fontSize: '12px', color: '#F59E0B', marginTop: '2px' }}>
+                    {unionBadge(selectedSub.performer_profiles.union_status)} {unionTierLabel(selectedSub.performer_profiles.union_status)}
+                  </div>
+                )}
+              </div>
+              {(() => { const pill = STATUS_PILL[selectedSub.status] || STATUS_PILL.submitted; return (
+                <span style={{ padding: '5px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', backgroundColor: pill.bg, color: pill.color, flexShrink: 0 }}>
+                  {selectedSub.status.replace('_', ' ')}
+                </span>
+              )})()}
+            </div>
+
+            {/* Casting request details */}
+            {selectedSub.casting_requests ? (
+              <div>
+                <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Casting Request</div>
+                <div style={{ backgroundColor: '#1e1e35', borderRadius: '12px', padding: '16px', marginBottom: '14px' }}>
+                  <div style={{ fontSize: '17px', fontWeight: '800', color: 'white', marginBottom: '12px' }}>{selectedSub.casting_requests.production_name}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 16px' }}>
+                    {[
+                      { label: 'Role', value: selectedSub.casting_requests.role_type },
+                      { label: 'Shoot Date', value: selectedSub.casting_requests.shoot_date ? fmtDate(selectedSub.casting_requests.shoot_date) : '—' },
+                      { label: 'Location', value: selectedSub.casting_requests.location || '—' },
+                      { label: 'Call Time', value: selectedSub.casting_requests.call_time || '—' },
+                      { label: 'Rate', value: selectedSub.casting_requests.rate || '—' },
+                      { label: 'Spots', value: selectedSub.casting_requests.number_needed != null ? String(selectedSub.casting_requests.number_needed) : '—' },
+                    ].map(({ label, value }) => (
+                      <div key={label}>
+                        <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase' }}>{label}</div>
+                        <div style={{ fontSize: '13px', color: '#e5e7eb', marginTop: '2px' }}>{value}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {selectedSub.casting_requests.description && (
+                    <div style={{ marginTop: '14px' }}>
+                      <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase', marginBottom: '4px' }}>Description</div>
+                      <div style={{ fontSize: '13px', color: '#e5e7eb', lineHeight: '1.6' }}>{selectedSub.casting_requests.description}</div>
+                    </div>
+                  )}
+                  {selectedSub.casting_requests.wardrobe_notes && (
+                    <div style={{ marginTop: '12px' }}>
+                      <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase', marginBottom: '4px' }}>Wardrobe Notes</div>
+                      <div style={{ fontSize: '13px', color: '#e5e7eb', lineHeight: '1.6' }}>{selectedSub.casting_requests.wardrobe_notes}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div style={{ color: '#6b7280', fontSize: '13px', marginBottom: '14px' }}>No casting request details available.</div>
+            )}
+
+            {/* Agent notes */}
+            {selectedSub.notes && (
+              <div>
+                <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Agent Notes</div>
+                <div style={{ backgroundColor: '#1e1e35', borderRadius: '10px', padding: '12px', fontSize: '13px', color: '#e5e7eb', lineHeight: '1.6' }}>{selectedSub.notes}</div>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAgentSession, supabaseAdmin } from '@/lib/casting-auth'
+import { sendEmail } from '@/lib/email'
 
 export async function GET(req: Request) {
   const session = await getAgentSession()
@@ -239,6 +240,53 @@ export async function DELETE(req: Request) {
       .update({ agency_id: null })
       .eq('user_id', rosterRow.performer_user_id)
       .eq('agency_id', agent.agency_id)
+
+    // Notify the performer — wrapped so a failure here cannot fail the removal.
+    try {
+      const [{ data: agency }, { data: user }] = await Promise.all([
+        supabaseAdmin.from('agencies').select('name').eq('id', agent.agency_id).single(),
+        supabaseAdmin.from('users').select('email, name').eq('id', rosterRow.performer_user_id).single(),
+      ])
+
+      const agencyName = agency?.name || 'an agency'
+
+      await supabaseAdmin.from('casting_notifications').insert({
+        recipient_type: 'performer',
+        recipient_id: rosterRow.performer_user_id,
+        type: 'roster_removed',
+        title: 'Removed from agency roster',
+        message: `You've been removed from ${agencyName}'s roster.`,
+        action_url: '/profile',
+      })
+
+      if (user?.email) {
+        await sendEmail({
+          to: user.email,
+          subject: `You've been removed from ${agencyName}'s roster`,
+          html: `<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td align="center" style="padding:40px 20px;">
+      <table width="600" style="background:white;border-radius:16px;overflow:hidden;">
+        <tr><td style="background:#1a1a2e;padding:24px 32px;"><span style="color:white;font-size:20px;font-weight:700;">🎬 SetReady</span></td></tr>
+        <tr><td style="background:#F59E0B;height:4px;"></td></tr>
+        <tr><td style="padding:32px;">
+          <h1 style="color:#1a1a2e;font-family:Georgia,serif;margin:0 0 16px;">Roster Update</h1>
+          <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 16px;">Hi ${user.name || 'there'},</p>
+          <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 24px;">You've been removed from <strong>${agencyName}'s</strong> roster on SetReady.</p>
+          <p style="color:#6b7280;font-size:13px;">If you believe this was a mistake, please contact your agent directly.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+        })
+      }
+    } catch {
+      // notify/email failure must not fail the removal
+    }
   }
 
   return NextResponse.json({ success: true })

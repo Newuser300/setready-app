@@ -44,7 +44,7 @@ export async function GET(req: Request) {
       ? supabaseAdmin.from('performer_profiles').select('user_id, headshot_url, union_status, union_priority').in('user_id', userIds)
       : Promise.resolve({ data: [] as any[] }),
     requestIds.length
-      ? supabaseAdmin.from('casting_requests').select('id, production_name, shoot_date, location, role_type').in('id', requestIds)
+      ? supabaseAdmin.from('casting_requests').select('id, production_name, shoot_date, location, role_type, call_time, rate, description, wardrobe_notes, number_needed').in('id', requestIds)
       : Promise.resolve({ data: [] as any[] }),
   ])
 
