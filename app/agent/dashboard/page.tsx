@@ -335,6 +335,7 @@ export default function AgentDashboardPage() {
   const [composeSubject, setComposeSubject] = useState('')
   const [composeBody, setComposeBody] = useState('')
   const [composeSending, setComposeSending] = useState(false)
+  const [canMessage, setCanMessage] = useState<boolean | null>(null)
 
   // ── Auth ──────────────────────────────────────────────────────────────────
 
@@ -353,6 +354,10 @@ export default function AgentDashboardPage() {
       setEmailPref(d.emailOnRequest !== false)
       setAgencyId(d.agencyId || '')
     })
+    fetch('/api/agent/can-message')
+      .then(r => r.ok ? r.json() : { canMessage: false })
+      .then(d => setCanMessage(d.canMessage !== false))
+      .catch(() => setCanMessage(false))
   }, [router])
 
   // ── Load by tab ─────────────────────────────────────────────────────────
@@ -535,27 +540,32 @@ export default function AgentDashboardPage() {
   async function sendCompose() {
     if (!selectedPerformer || !composeSubject.trim() || !composeBody.trim() || composeSending) return
     setComposeSending(true)
-    const res = await fetch('/api/agent/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipientType: 'performer',
-        recipientId: selectedPerformer.user_id,
-        subject: composeSubject.trim(),
-        messageBody: composeBody.trim(),
-      }),
-    })
-    setComposeSending(false)
-    if (res.ok) {
-      toast.success(`Message sent to ${pName(selectedPerformer)}`)
-      setComposingMsg(false)
-      setComposeSubject('')
-      setComposeBody('')
-      setSelectedPerformer(null)
-      loadThreads()
-    } else {
-      const d = await res.json().catch(() => ({}))
-      toast.error(d.error || 'Failed to send message')
+    try {
+      const res = await fetch('/api/agent/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientType: 'performer',
+          recipientId: selectedPerformer.user_id,
+          subject: composeSubject.trim(),
+          messageBody: composeBody.trim(),
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok) {
+        toast.success(`Message sent to ${pName(selectedPerformer)}`)
+        setComposingMsg(false)
+        setComposeSubject('')
+        setComposeBody('')
+        setSelectedPerformer(null)
+        loadThreads()
+      } else {
+        toast.error(data.error || 'Failed to send message')
+      }
+    } catch {
+      toast.error('Network error — please try again')
+    } finally {
+      setComposeSending(false)
     }
   }
 
@@ -1608,12 +1618,16 @@ export default function AgentDashboardPage() {
 
             {/* Message compose */}
             {!composingMsg ? (
-              <button
-                onClick={() => { setComposingMsg(true); setComposeSubject(''); setComposeBody('') }}
-                style={{ width: '100%', padding: '10px', backgroundColor: 'rgba(59,130,246,0.1)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', marginBottom: '8px' }}
-              >
-                ✉️ Message {pName(selectedPerformer)}
-              </button>
+              canMessage === false
+                ? <div style={{ width: '100%', padding: '10px', backgroundColor: 'rgba(107,114,128,0.1)', color: '#6b7280', border: '1px solid rgba(107,114,128,0.2)', borderRadius: '10px', fontSize: '12px', textAlign: 'center', marginBottom: '8px' }}>
+                    ✉️ Messaging disabled — enable in Admin Settings
+                  </div>
+                : <button
+                    onClick={() => { setComposingMsg(true); setComposeSubject(''); setComposeBody('') }}
+                    style={{ width: '100%', padding: '10px', backgroundColor: 'rgba(59,130,246,0.1)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', marginBottom: '8px' }}
+                  >
+                    ✉️ Message {pName(selectedPerformer)}
+                  </button>
             ) : (
               <div style={{ marginBottom: '12px', padding: '14px', backgroundColor: '#0f0f1a', borderRadius: '12px', border: '1px solid rgba(59,130,246,0.2)' }}>
                 <div style={{ fontSize: '12px', fontWeight: '700', color: '#60a5fa', marginBottom: '10px' }}>New message to {pName(selectedPerformer)}</div>
