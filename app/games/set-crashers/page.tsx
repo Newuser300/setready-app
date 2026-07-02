@@ -832,17 +832,25 @@ export default function SetCrashers() {
         // auto-detonate (coffee/bomb hit something): trigger its blast immediately
         if (G.detonate && G.flying && !G.powerUsed) { G.detonate = false; triggerPower(); }
 
-        // boomerang: fly straight out, then arc back with a dt-scaled force so the curve
-        // is frame-rate independent. A lift component keeps it airborne through the arc.
+        // boomerang: partial gravity compensation during the outward phase keeps it airborne;
+        // the return force kicks in at 0.38 s while it's still on-screen; gravity then
+        // pulls it downward on the return to create the "curves back downward" arc.
         if (G.flying && G.projectile && G.projKind === 'boomerang') {
           const p = G.projectile; const t = G.flightT || 0;
-          if (t > 1.3 && !(p as any).crasherBounced) {
-            const ramp = Math.min((t - 1.3) / 0.28, 1.0); // smooth 0→1 ramp over 0.28s
-            const v = p.velocity;
-            Matter.Body.setVelocity(p, {
-              x: v.x - G.launchDir * ramp * 3.25 * dt * 60,  // dt*60 normalises to 60fps
-              y: v.y,                                          // leave y to gravity
-            });
+          const v = p.velocity;
+          if (!(p as any).crasherBounced) {
+            if (t < 0.38) {
+              // Outward: counteract ~55 % of gravity so the boomerang stays high enough
+              // for the return to have a visible downward curve.
+              Matter.Body.setVelocity(p, { x: v.x, y: v.y - 0.65 * dt * 60 });
+            } else {
+              // Return: reverse horizontal direction; gravity creates the downward arc.
+              const ramp = Math.min((t - 0.38) / 0.3, 1.0);
+              Matter.Body.setVelocity(p, {
+                x: v.x - G.launchDir * ramp * 5.0 * dt * 60,
+                y: v.y,
+              });
+            }
           }
         }
 
@@ -864,7 +872,7 @@ export default function SetCrashers() {
           const maxFlight = G.mode === 'bonus' ? 0.8 : G.projKind === 'boomerang' ? 3.4 : 2.6;
           // Boomerang: don't let the rest-threshold terminate the shot while it's still arcing —
           // the return force temporarily kills x-speed which would otherwise trip the check.
-          const boomerangArcing = G.projKind === 'boomerang' && (G.flightT || 0) < 2.8;
+          const boomerangArcing = G.projKind === 'boomerang' && (G.flightT || 0) < 1.5;
           if (off || (!boomerangArcing && sp < restThresh)) { G.settleT += dt; } else G.settleT = 0;
           if (off || G.settleT > restHold || G.flightT > maxFlight) {
             if (!off && G.projKind === 'bomb' && !G.powerUsed) { G.powerUsed = true; explodeAt(p.position.x, p.position.y, 260, 0.85); Matter.Composite.remove(G.engine.world, p); }
