@@ -1257,7 +1257,7 @@ export default function CastingDashboardPage() {
             <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
               {(['open','closed','archived'] as const).map(t => (
                 <button key={t} onClick={() => setReqTab(t)} style={{ padding: '7px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px', backgroundColor: reqTab === t ? '#F59E0B' : '#1e1e35', color: reqTab === t ? '#1a1a2e' : '#9ca3af' }}>
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                  {t === 'archived' ? 'Archived/Deleted' : t.charAt(0).toUpperCase() + t.slice(1)}
                 </button>
               ))}
             </div>
@@ -1288,7 +1288,7 @@ export default function CastingDashboardPage() {
                         </div>
                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                           {reqTab !== 'archived' && (
-                            <button onClick={() => { setKanbanRequest(req); openKanban(req); setActiveTab('Kanban') }} style={{ padding: '7px 14px', backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>Manage</button>
+                            <button onClick={() => { setKanbanRequest(req); openKanban(req); setActiveTab('Kanban') }} style={{ padding: '7px 14px', backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>Manage Submissions</button>
                           )}
                           {reqTab === 'open' && (
                             req.status === 'paused'
