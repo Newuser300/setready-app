@@ -832,27 +832,28 @@ export default function SetCrashers() {
         // auto-detonate (coffee/bomb hit something): trigger its blast immediately
         if (G.detonate && G.flying && !G.powerUsed) { G.detonate = false; triggerPower(); }
 
-        // boomerang three-phase arc. Engine gravity ≈ 0.34 px/frame² (preview constant).
-        //  1. Outward  (t < 0.38): cancel gravity → boomerang tracks the aimed direction.
-        //  2. Plunge   (0.38–0.52): drive it sharply downward before the curve starts.
-        //  3. Curve    (t ≥ 0.52): reverse x; the plunge-built vy creates a steep arc back.
+        // boomerang arc — all forces are smooth functions with no hard phase edges.
+        // Engine gravity ≈ 0.34 px/frame² (matches the aiming-arc preview constant).
+        //  • Outward (t < 0.38 s): exact gravity cancel so it tracks the aimed line.
+        //  • Arc     (t ≥ 0.38 s): two overlapping smooth forces:
+        //      – Y bell  sin(π·p) over 0.35 s — peaks then fades, creating the plunge.
+        //      – X ramp  delayed 0.08 s then ramps to full over 0.30 s — curve follows.
+        //    Gravity carries the downward momentum after the bell fades.
         if (G.flying && G.projectile && G.projKind === 'boomerang') {
           const p = G.projectile; const t = G.flightT || 0;
           const v = p.velocity;
           if (!(p as any).crasherBounced) {
-            if (t < 0.38) {
+            if (t < 0.46) {
               Matter.Body.setVelocity(p, { x: v.x, y: v.y - 0.34 * dt * 60 });
-            } else if (t < 0.52) {
-              // Plunge: push hard downward; x stays unchanged so the dive is visible
-              // before the horizontal direction changes.
-              Matter.Body.setVelocity(p, { x: v.x, y: v.y + 2.5 * dt * 60 });
             } else {
-              // Curve: reverse x with a smooth ramp; gravity + plunge-built vy keep
-              // the trajectory angled steeply downward throughout the return.
-              const ramp = Math.min((t - 0.52) / 0.35, 1.0);
+              const arc = t - 0.46;
+              // Bell: 0 → peak (arc = 0.175 s) → 0 (arc = 0.35 s) — smooth plunge with no step.
+              const yBell = Math.sin(Math.PI * Math.min(arc / 0.35, 1.0));
+              // X-ramp: 0.08 s delayed start, ramps to 1 over 0.30 s — curve follows the plunge.
+              const xRamp = Math.min(Math.max(arc - 0.08, 0) / 0.30, 1.0);
               Matter.Body.setVelocity(p, {
-                x: v.x - G.launchDir * ramp * 5.0 * dt * 60,
-                y: v.y,
+                x: v.x - G.launchDir * xRamp * 5.0 * dt * 60,
+                y: v.y + yBell * 2.8 * dt * 60,
               });
             }
           }
