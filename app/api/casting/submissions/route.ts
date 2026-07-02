@@ -87,7 +87,7 @@ export async function PATCH(req: Request) {
         type: 'submission_confirmed',
         title: `You've been confirmed!`,
         message: `You've been confirmed for ${request.role_type} on ${request.production_name} (${request.shoot_date}).`,
-        actionUrl: `/dashboard`,
+        actionUrl: `/availability`,
         relatedRequestId: submission.casting_request_id,
         relatedSubmissionId: submissionId,
       })

@@ -278,7 +278,7 @@ export async function notifyPerformerOfConfirmation(
     type: 'booking_confirmed',
     title: "🎉 You've been confirmed!",
     message: `You have been confirmed for ${castingRequestData.production_name} on ${castingRequestData.shoot_date}. Your agency will be in touch.`,
-    action_url: '/dashboard',
+    action_url: '/availability',
     related_request_id: castingRequestData.id,
   })
 
@@ -291,8 +291,8 @@ export async function notifyPerformerOfConfirmation(
     subject: `🎉 You've been confirmed for ${castingRequestData.production_name}!`,
     body: `Congratulations! You have been confirmed for ${castingRequestData.production_name} on ${castingRequestData.shoot_date}. Your agency will be in touch with further details.`,
     message_type: 'booking_confirmed',
-    action_url: '/dashboard',
-    action_label: 'View Dashboard',
+    action_url: '/availability',
+    action_label: 'View Calendar',
     related_id: castingRequestData.id,
   }])
 

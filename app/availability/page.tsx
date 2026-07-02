@@ -201,19 +201,13 @@ export default function AvailabilityPage() {
     setLoading(false)
   }
 
-  const fetchBookings = async (uid: string) => {
+  const fetchBookings = async (_uid?: string) => {
     try {
-      const { createBrowserClient } = await import('@supabase/ssr')
-      const bc = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
-      const { data, error } = await bc
-        .from('bookings')
-        .select('*')
-        .eq('performer_id', uid)
-        .in('status', ['pending', 'confirmed'])
-      if (!error && data) setBookings(data as Booking[])
+      const res = await fetch('/api/bookings', { credentials: 'include' })
+      if (res.ok) {
+        const data = await res.json()
+        setBookings(Array.isArray(data) ? (data as Booking[]) : [])
+      }
     } catch { /* non-fatal */ }
   }
 

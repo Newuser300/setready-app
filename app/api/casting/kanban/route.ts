@@ -139,6 +139,19 @@ export async function PATCH(req: Request) {
         actionUrl: '/availability',
         relatedRequestId: sub.casting_request_id,
       })
+      // Mirror to messages table so the performer's message centre shows the confirmation.
+      await supabaseAdmin.from('messages').insert({
+        sender_type: 'system',
+        sender_name: 'SetReady Casting',
+        recipient_type: 'performer',
+        recipient_id: performerId,
+        subject: `🎉 You've been confirmed for ${productionName}!`,
+        body: `You've been confirmed for "${productionName}" on ${shootDate || 'the shoot date'}. Check your availability calendar for details.`,
+        message_type: 'booking_confirmed',
+        action_url: '/availability',
+        action_label: 'View Calendar',
+        related_id: sub.casting_request_id,
+      })
     } else if (status === 'shortlisted') {
       await notify({
         recipientType: 'performer',

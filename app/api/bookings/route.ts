@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAgentSession, getCastingSession, supabaseAdmin } from '@/lib/casting-auth'
+import { createClient } from '@/utils/supabase/server'
 
 // Identify whether the caller is a logged-in agent or casting director.
 async function getCastingCaller() {
@@ -11,10 +12,28 @@ async function getCastingCaller() {
 }
 
 // GET /api/bookings
-// Agent  -> bookings for performers their agency actively represents.
-// Casting -> bookings they created.
-// Optional ?performerId=... narrows to a single performer.
+// Performer -> their own pending/confirmed bookings (uses Supabase auth session).
+// Agent     -> bookings for performers their agency actively represents.
+// Casting   -> bookings they created.
+// Optional ?performerId=... narrows agent/casting results to a single performer.
 export async function GET(req: Request) {
+  // Performer path: authenticated via Supabase (anon key / cookies)
+  try {
+    const supa = await createClient()
+    const { data: { user } } = await supa.auth.getUser()
+    if (user) {
+      const { data, error } = await supabaseAdmin
+        .from('bookings')
+        .select('*')
+        .eq('performer_id', user.id)
+        .in('status', ['pending', 'confirmed'])
+        .order('start_date')
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json(data || [])
+    }
+  } catch { /* no Supabase session — fall through */ }
+
+  // Agent / casting director path
   const caller = await getCastingCaller()
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
