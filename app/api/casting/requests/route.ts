@@ -10,7 +10,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const status = searchParams.get('status') || 'open'
 
-  const { data: requests, error } = await supabaseAdmin
+  const base = supabaseAdmin
     .from('casting_requests')
     .select(`
       id,
@@ -35,8 +35,14 @@ export async function GET(req: Request) {
       created_at
     `)
     .eq('casting_director_id', session.accountId)
-    .eq('status', status)
     .order('shoot_date', { ascending: true })
+
+  // open tab shows both active and paused requests
+  const { data: requests, error } = await (
+    status === 'open'
+      ? base.in('status', ['open', 'paused'])
+      : base.eq('status', status)
+  )
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

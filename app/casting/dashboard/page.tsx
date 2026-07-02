@@ -293,7 +293,7 @@ export default function CastingDashboardPage() {
   // Requests
   const [requests, setRequests] = useState<CastingRequest[]>([])
   const [reqLoading, setReqLoading] = useState(false)
-  const [reqTab, setReqTab] = useState<'open'|'closed'>('open')
+  const [reqTab, setReqTab] = useState<'open'|'closed'|'archived'>('open')
   const [templates, setTemplates] = useState<any[]>([])
 
   // New request form
@@ -307,6 +307,7 @@ export default function CastingDashboardPage() {
   })
   const [submitting, setSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
+  const [showNewForm, setShowNewForm] = useState(false)
 
   // Kanban
   const [kanbanRequest, setKanbanRequest] = useState<CastingRequest | null>(null)
@@ -468,6 +469,15 @@ export default function CastingDashboardPage() {
     if (res.ok) setRequests(await res.json())
   }
 
+  async function patchRequest(id: string, body: Record<string, unknown>, errorMsg: string) {
+    const res = await fetch(`/api/casting/requests/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (res.ok) { loadRequests() } else { toast.error(errorMsg) }
+  }
+
   async function loadTemplates() {
     const res = await fetch('/api/casting/templates')
     if (res.ok) setTemplates(await res.json())
@@ -564,6 +574,7 @@ export default function CastingDashboardPage() {
       setTimeout(() => {
         setSubmitSuccess(false)
         setStep(0)
+        setShowNewForm(false)
         setReqForm({ productionName: '', projectType: '', shootDate: '', callTime: '', location: '', shootRegionCode: '', roleType: 'Background', performersNeeded: '1', genderNeeded: 'Any', ageMin: '', ageMax: '', unionStatus: '', rate: '', rateNotes: '', description: '', wardrobeNotes: '', notifyAll: true, travelCostsCovered: false })
         setActiveTab('Requests')
         loadRequests()
@@ -1109,15 +1120,19 @@ export default function CastingDashboardPage() {
         {/* ── CASTING REQUESTS ─────────────────────────────────────────── */}
         {activeTab === 'Requests' && (
           <div>
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white', margin: 0, flex: 1 }}>Casting Requests</h1>
-              <button onClick={() => { setStep(0); setActiveTab('Requests') }} style={{ padding: '9px 18px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '800', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }}>+ New Request</button>
-            </div>
+            <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white', margin: '0 0 20px' }}>Casting Requests</h1>
+
+            {!showNewForm && (
+              <button onClick={() => { setStep(0); setShowNewForm(true) }} style={{ display: 'block', margin: '0 auto 24px', padding: '24px 64px', fontSize: '30px', fontWeight: 800, borderRadius: '16px', backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', cursor: 'pointer' }}>+ New Request</button>
+            )}
 
             {/* Inline new request form */}
-            {step >= 0 && !reqLoading && (
+            {showNewForm && !reqLoading && (
               <div style={{ backgroundColor: '#1e1e35', borderRadius: '14px', padding: '20px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '20px' }}>
-                <h2 style={{ fontSize: '16px', fontWeight: '800', color: 'white', margin: '0 0 16px' }}>New Casting Request</h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h2 style={{ fontSize: '16px', fontWeight: '800', color: 'white', margin: 0 }}>New Casting Request</h2>
+                  <button onClick={() => { setShowNewForm(false); setStep(0) }} style={{ background: 'none', border: 'none', color: '#9ca3af', fontSize: '20px', cursor: 'pointer', lineHeight: 1 }}>✕</button>
+                </div>
 
                 {submitSuccess ? (
                   <div style={{ textAlign: 'center', padding: '32px' }}>
@@ -1240,7 +1255,7 @@ export default function CastingDashboardPage() {
 
             {/* Request list */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
-              {(['open','closed'] as const).map(t => (
+              {(['open','closed','archived'] as const).map(t => (
                 <button key={t} onClick={() => setReqTab(t)} style={{ padding: '7px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px', backgroundColor: reqTab === t ? '#F59E0B' : '#1e1e35', color: reqTab === t ? '#1a1a2e' : '#9ca3af' }}>
                   {t.charAt(0).toUpperCase() + t.slice(1)}
                 </button>
@@ -1261,6 +1276,7 @@ export default function CastingDashboardPage() {
                             <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: '700', backgroundColor: days <= 2 ? 'rgba(239,68,68,0.15)' : days <= 7 ? 'rgba(245,158,11,0.15)' : 'rgba(34,197,94,0.15)', color: days <= 2 ? '#ef4444' : days <= 7 ? '#F59E0B' : '#22c55e' }}>
                               {days <= 0 ? 'TODAY' : `${days}d`}
                             </span>
+                            {req.status === 'paused' && <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: '700', backgroundColor: 'rgba(59,130,246,0.15)', color: '#3b82f6' }}>⏸ Paused</span>}
                             {req.shoot_region_code && <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '10px', backgroundColor: 'rgba(59,130,246,0.15)', color: '#3b82f6' }}>📍 {getRegionName(req.shoot_region_code)}</span>}
                           </div>
                           <div style={{ fontSize: '13px', color: '#9ca3af' }}>{req.role_type} · {fmtDate(req.shoot_date)}</div>
@@ -1270,8 +1286,21 @@ export default function CastingDashboardPage() {
                             {req.confirmedCount > 0 && <span onClick={() => { setKanbanRequest(req); openKanban(req); setActiveTab('Kanban') }} style={{ fontSize: '12px', padding: '2px 8px', borderRadius: '20px', backgroundColor: 'rgba(34,197,94,0.15)', color: '#22c55e', cursor: 'pointer' }}>✅ {req.confirmedCount}</span>}
                           </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <button onClick={() => { setKanbanRequest(req); openKanban(req); setActiveTab('Kanban') }} style={{ padding: '7px 14px', backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>Manage</button>
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                          {reqTab !== 'archived' && (
+                            <button onClick={() => { setKanbanRequest(req); openKanban(req); setActiveTab('Kanban') }} style={{ padding: '7px 14px', backgroundColor: '#F59E0B', color: '#1a1a2e', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>Manage</button>
+                          )}
+                          {reqTab === 'open' && (
+                            req.status === 'paused'
+                              ? <button onClick={() => patchRequest(req.id, { status: 'open' }, 'Failed to resume request')} style={{ padding: '7px 12px', backgroundColor: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '12px' }}>▶ Resume</button>
+                              : <button onClick={() => patchRequest(req.id, { status: 'paused' }, 'Failed to pause request')} style={{ padding: '7px 12px', backgroundColor: 'rgba(59,130,246,0.15)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '12px' }}>⏸ Pause</button>
+                          )}
+                          {reqTab === 'open' && (
+                            <button onClick={() => { if (confirm('Archive this request? It can be restored from the Archived tab.')) patchRequest(req.id, { status: 'archived' }, 'Failed to archive request') }} style={{ padding: '7px 12px', backgroundColor: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '12px' }}>🗑 Delete</button>
+                          )}
+                          {reqTab === 'archived' && (
+                            <button onClick={() => patchRequest(req.id, { status: 'open' }, 'Failed to restore request')} style={{ padding: '7px 12px', backgroundColor: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '12px' }}>♻ Restore</button>
+                          )}
                         </div>
                       </div>
                       <div style={{ marginTop: '10px' }}>
