@@ -104,11 +104,9 @@ const TAB_LABELS: Record<Tab, string> = {
 
 const KANBAN_COLS = [
   { key: 'submitted',  label: '📥 Submitted',   color: '#6b7280' },
-  { key: 'in_review',  label: '👁️ In Review',    color: '#3b82f6' },
   { key: 'shortlisted',label: '⭐ Shortlisted',  color: '#d97706' },
   { key: 'confirmed',  label: '✅ Confirmed',    color: '#22c55e' },
   { key: 'rejected',   label: '❌ Rejected',     color: '#ef4444' },
-  { key: 'waitlisted', label: '⏳ Waitlist',     color: '#8b5cf6' },
 ] as const
 
 const GENDER_OPTIONS = ['Any','Male','Female','Non-binary']
