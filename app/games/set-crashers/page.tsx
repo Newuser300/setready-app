@@ -836,11 +836,11 @@ export default function SetCrashers() {
         // is frame-rate independent. A lift component keeps it airborne through the arc.
         if (G.flying && G.projectile && G.projKind === 'boomerang') {
           const p = G.projectile; const t = G.flightT || 0;
-          if (t > 1.0 && !(p as any).crasherBounced) {
-            const ramp = Math.min((t - 1.0) / 0.28, 1.0); // smooth 0→1 ramp over 0.28s
+          if (t > 1.3 && !(p as any).crasherBounced) {
+            const ramp = Math.min((t - 1.3) / 0.28, 1.0); // smooth 0→1 ramp over 0.28s
             const v = p.velocity;
             Matter.Body.setVelocity(p, {
-              x: v.x - G.launchDir * ramp * 0.93 * dt * 60,  // dt*60 normalises to 60fps
+              x: v.x - G.launchDir * ramp * 3.25 * dt * 60,  // dt*60 normalises to 60fps
               y: v.y,                                          // leave y to gravity
             });
           }
