@@ -470,6 +470,11 @@ export default function SetCrashers() {
         }
         // impact thud when the live projectile strikes something hard
         if (G.flying && impact > 4 && G.projectile && (a === G.projectile || b === G.projectile)) SFX.impact();
+        // boomerang: stop curving after the first bounce off any non-projectile body
+        if (G.flying && G.projectile && G.projKind === 'boomerang' && !(G.projectile as any).crasherBounced) {
+          if (a === G.projectile && b.label !== 'proj') (G.projectile as any).crasherBounced = true;
+          if (b === G.projectile && a.label !== 'proj') (G.projectile as any).crasherBounced = true;
+        }
         for (const [t, other] of [[a, b], [b, a]] as [Mat, Mat][]) {
           if (t.label === 'target' && t.crasherAlive) {
             const force = (other.label === 'proj' || other.crasherKind || other.label === 'ground') ? impact : 0;
@@ -831,12 +836,12 @@ export default function SetCrashers() {
         // is frame-rate independent. A lift component keeps it airborne through the arc.
         if (G.flying && G.projectile && G.projKind === 'boomerang') {
           const p = G.projectile; const t = G.flightT || 0;
-          if (t > 0.32) {
-            const ramp = Math.min((t - 0.32) / 0.28, 1.0); // smooth 0→1 ramp over 0.28s
+          if (t > 1.0 && !(p as any).crasherBounced) {
+            const ramp = Math.min((t - 1.0) / 0.28, 1.0); // smooth 0→1 ramp over 0.28s
             const v = p.velocity;
             Matter.Body.setVelocity(p, {
-              x: v.x - G.launchDir * ramp * 1.4 * dt * 60,  // dt*60 normalises to 60fps
-              y: v.y,                                         // leave y to gravity
+              x: v.x - G.launchDir * ramp * 0.93 * dt * 60,  // dt*60 normalises to 60fps
+              y: v.y,                                          // leave y to gravity
             });
           }
         }

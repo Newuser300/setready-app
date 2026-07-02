@@ -39,23 +39,50 @@ export async function GET(req: Request) {
   const [usersRes, profilesRes, requestsRes] = await Promise.all([
     userIds.length
       ? supabaseAdmin.from('users').select('id, email, name').in('id', userIds)
-      : Promise.resolve({ data: [] as any[] }),
+      : Promise.resolve({ data: [] as any[], error: null }),
     userIds.length
       ? supabaseAdmin.from('performer_profiles').select('user_id, headshot_url, union_status, union_priority').in('user_id', userIds)
-      : Promise.resolve({ data: [] as any[] }),
+      : Promise.resolve({ data: [] as any[], error: null }),
     requestIds.length
-      ? supabaseAdmin.from('casting_requests').select('id, production_name, shoot_date, location, role_type, call_time, rate, description:scene_description, wardrobe_notes, number_needed').in('id', requestIds)
-      : Promise.resolve({ data: [] as any[] }),
+      ? supabaseAdmin.from('casting_requests').select('id, production_name, shoot_date, location, role_type, call_time, rate, scene_description, wardrobe_notes, number_needed, casting_director_id').in('id', requestIds)
+      : Promise.resolve({ data: [] as any[], error: null }),
   ])
 
-  const usersById = Object.fromEntries((usersRes.data || []).map(u => [u.id, u]))
-  const profilesById = Object.fromEntries((profilesRes.data || []).map(p => [p.user_id, p]))
-  const requestsById = Object.fromEntries((requestsRes.data || []).map(r => [r.id, r]))
+  if ((requestsRes as any).error) {
+    console.error('[submissions] casting_requests fetch error:', (requestsRes as any).error)
+  }
+
+  // Stitch casting director names (sequential — depends on requestsRes.data)
+  const directorIds = [...new Set((requestsRes.data || []).map((r: any) => r.casting_director_id).filter(Boolean))]
+  const directorsById: Record<string, { name: string; company: string }> = {}
+  if (directorIds.length > 0) {
+    const { data: directors } = await supabaseAdmin
+      .from('casting_directors')
+      .select('id, name, company')
+      .in('id', directorIds)
+    ;(directors || []).forEach((d: any) => { directorsById[d.id] = { name: d.name, company: d.company } })
+  }
+
+  const usersById = Object.fromEntries((usersRes.data || []).map((u: any) => [u.id, u]))
+  const profilesById = Object.fromEntries((profilesRes.data || []).map((p: any) => [p.user_id, p]))
+  const requestsById = Object.fromEntries((requestsRes.data || []).map((r: any) => [r.id, r]))
 
   const data = rows.map(r => {
     const u = r.performer_user_id ? usersById[r.performer_user_id] : null
     const p = r.performer_user_id ? profilesById[r.performer_user_id] : null
-    const req = r.casting_request_id ? requestsById[r.casting_request_id] : null
+    const raw = r.casting_request_id ? requestsById[r.casting_request_id] : null
+    const req = raw ? {
+      production_name: raw.production_name,
+      shoot_date: raw.shoot_date,
+      location: raw.location ?? null,
+      role_type: raw.role_type,
+      call_time: raw.call_time ?? null,
+      rate: raw.rate ?? null,
+      description: raw.scene_description ?? null,
+      wardrobe_notes: raw.wardrobe_notes ?? null,
+      number_needed: raw.number_needed ?? null,
+      casting_director: raw.casting_director_id ? (directorsById[raw.casting_director_id] || null) : null,
+    } : null
     return {
       id: r.id,
       status: r.status,
@@ -63,7 +90,7 @@ export async function GET(req: Request) {
       notes: r.agent_notes,
       performer_id: r.performer_user_id,
       agency_id: r.agency_id,
-      casting_requests: req || null,
+      casting_requests: req,
       performer_profiles: p ? { headshot_url: p.headshot_url, union_status: p.union_status, union_priority: p.union_priority } : null,
       users: u ? { id: u.id, email: u.email, raw_user_meta_data: { full_name: u.name } } : null,
     }

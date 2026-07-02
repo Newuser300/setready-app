@@ -71,6 +71,7 @@ interface Submission {
     description?: string | null
     wardrobe_notes?: string | null
     number_needed?: number | null
+    casting_director?: { name: string; company: string } | null
   } | null
   performer_profiles: { headshot_url?: string | null; union_status?: string | null; union_priority?: number | null } | null
   users: { id: string; email: string; raw_user_meta_data: { full_name?: string } } | null
@@ -867,6 +868,20 @@ export default function AgentDashboardPage() {
 
                         {isExpanded && (
                           <div style={{ padding: '0 18px 16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                            {/* Detail grid */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', margin: '14px 0 12px' }}>
+                              {[
+                                { label: 'Call Time', value: req.call_time },
+                                { label: 'Spots', value: req.performers_needed != null ? String(req.performers_needed) : null },
+                                { label: 'Rate', value: req.rate },
+                                { label: 'Posted by', value: req.casting_directors ? `${req.casting_directors.name}${req.casting_directors.company ? ` · ${req.casting_directors.company}` : ''}` : null },
+                              ].filter(f => f.value).map(({ label, value }) => (
+                                <div key={label}>
+                                  <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase' }}>{label}</div>
+                                  <div style={{ fontSize: '13px', color: '#e5e7eb', marginTop: '2px' }}>{value}</div>
+                                </div>
+                              ))}
+                            </div>
                             {req.description && <p style={{ fontSize: '13px', color: '#d1d5db', marginBottom: '12px', lineHeight: '1.6' }}>{req.description}</p>}
                             {req.wardrobe_notes && <p style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '12px' }}>👔 {req.wardrobe_notes}</p>}
                             <button
@@ -1410,7 +1425,13 @@ export default function AgentDashboardPage() {
               <div>
                 <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Casting Request</div>
                 <div style={{ backgroundColor: '#1e1e35', borderRadius: '12px', padding: '16px', marginBottom: '14px' }}>
-                  <div style={{ fontSize: '17px', fontWeight: '800', color: 'white', marginBottom: '12px' }}>{selectedSub.casting_requests.production_name}</div>
+                  <div style={{ fontSize: '17px', fontWeight: '800', color: 'white', marginBottom: '4px' }}>{selectedSub.casting_requests.production_name}</div>
+                  {selectedSub.casting_requests.casting_director && (
+                    <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '12px' }}>
+                      Posted by: <span style={{ color: '#e5e7eb' }}>{selectedSub.casting_requests.casting_director.name}</span>
+                      {selectedSub.casting_requests.casting_director.company ? <span> · {selectedSub.casting_requests.casting_director.company}</span> : null}
+                    </div>
+                  )}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 16px' }}>
                     {[
                       { label: 'Role', value: selectedSub.casting_requests.role_type },

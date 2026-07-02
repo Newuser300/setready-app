@@ -32,6 +32,8 @@ export async function GET(req: Request) {
       performers_needed:number_needed,
       rate,
       rate_notes,
+      call_time,
+      wardrobe_notes,
       description:scene_description,
       shoot_region_code,
       status,
