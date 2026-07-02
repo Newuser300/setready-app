@@ -832,20 +832,24 @@ export default function SetCrashers() {
         // auto-detonate (coffee/bomb hit something): trigger its blast immediately
         if (G.detonate && G.flying && !G.powerUsed) { G.detonate = false; triggerPower(); }
 
-        // boomerang: partial gravity compensation during the outward phase keeps it airborne;
-        // the return force kicks in at 0.38 s while it's still on-screen; gravity then
-        // pulls it downward on the return to create the "curves back downward" arc.
+        // boomerang three-phase arc. Engine gravity ≈ 0.34 px/frame² (preview constant).
+        //  1. Outward  (t < 0.38): cancel gravity → boomerang tracks the aimed direction.
+        //  2. Plunge   (0.38–0.52): drive it sharply downward before the curve starts.
+        //  3. Curve    (t ≥ 0.52): reverse x; the plunge-built vy creates a steep arc back.
         if (G.flying && G.projectile && G.projKind === 'boomerang') {
           const p = G.projectile; const t = G.flightT || 0;
           const v = p.velocity;
           if (!(p as any).crasherBounced) {
             if (t < 0.38) {
-              // Outward: counteract ~55 % of gravity so the boomerang stays high enough
-              // for the return to have a visible downward curve.
-              Matter.Body.setVelocity(p, { x: v.x, y: v.y - 0.65 * dt * 60 });
+              Matter.Body.setVelocity(p, { x: v.x, y: v.y - 0.34 * dt * 60 });
+            } else if (t < 0.52) {
+              // Plunge: push hard downward; x stays unchanged so the dive is visible
+              // before the horizontal direction changes.
+              Matter.Body.setVelocity(p, { x: v.x, y: v.y + 2.5 * dt * 60 });
             } else {
-              // Return: reverse horizontal direction; gravity creates the downward arc.
-              const ramp = Math.min((t - 0.38) / 0.3, 1.0);
+              // Curve: reverse x with a smooth ramp; gravity + plunge-built vy keep
+              // the trajectory angled steeply downward throughout the return.
+              const ramp = Math.min((t - 0.52) / 0.35, 1.0);
               Matter.Body.setVelocity(p, {
                 x: v.x - G.launchDir * ramp * 5.0 * dt * 60,
                 y: v.y,
