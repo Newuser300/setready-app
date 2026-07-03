@@ -78,7 +78,7 @@ export async function POST(request: Request) {
     }
   }
 
-  switch (event.type) {
+  try { switch (event.type) {
 
     // ─── STEP 2: Store stripe_customer_id when checkout completes ────────────
     case 'checkout.session.completed': {
@@ -251,134 +251,76 @@ export async function POST(request: Request) {
         null
       ) as string | null;
 
-      if (!stripeCustomerId) {
-        console.error('❌ No stripeCustomerId on invoice.paid event. Skipping.');
-        break;
-      }
+      if (!stripeCustomerId || !stripeSubscriptionId) break;
 
-      if (!stripeSubscriptionId) {
-        break;
-      }
-
-      // FIX B: Retry lookup once after a delay to handle the race where
-      // invoice.paid arrives before checkout.session.completed has written
-      // stripe_customer_id to public.users.
-      let findError: unknown = null;
-      let userData: { id: string; referred_by: string | null; subscription_started_at: string | null } | null = null;
-
-      const { data: firstAttempt, error: firstError } = await supabaseAdmin
+      const { data: userData, error: findError } = await supabaseAdmin
         .from('users')
         .select('id, referred_by, subscription_started_at')
         .eq('stripe_customer_id', stripeCustomerId)
         .maybeSingle();
 
-      if (firstError) {
-        console.error('❌ Error querying user by stripe_customer_id:', firstError);
-        break;
-      }
-
-      if (!firstAttempt) {
-        await new Promise(resolve => setTimeout(resolve, 3000));
-
-        const { data: secondAttempt, error: secondError } = await supabaseAdmin
-          .from('users')
-          .select('id, referred_by, subscription_started_at')
-          .eq('stripe_customer_id', stripeCustomerId)
-          .maybeSingle();
-
-        findError = secondError;
-        userData = secondAttempt;
-      } else {
-        userData = firstAttempt;
-      }
-
       if (findError) {
-        console.error('❌ Error on retry querying user by stripe_customer_id:', findError);
+        console.error('❌ Error querying user by stripe_customer_id:', findError);
         break;
       }
 
       if (!userData) {
-        console.error(`❌ User still not found after retry with stripe_customer_id = '${stripeCustomerId}'. Giving up.`);
+        // checkout.session.completed hasn't run yet (race). Stripe will retry
+        // this event; by then the customer_id will be on the user row.
+        console.warn(`⚠️ User not found for stripe_customer_id ${stripeCustomerId} — will be fulfilled on Stripe retry`);
         break;
       }
 
-      // Source the access-through date from Stripe's real billing period, not the
-      // wall clock. Retrieve the subscription and read the item-level period end.
-      // If the lookup fails, leave subscription_ends_at untouched rather than
-      // writing a fabricated now+30d date.
-      let subscriptionEndsAtISO: string | null = null;
-      try {
-        const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
-        subscriptionEndsAtISO = periodEndISO(subscription);
-        if (!subscriptionEndsAtISO) {
-          console.error(`⚠️ Could not resolve current_period_end for subscription ${stripeSubscriptionId}; leaving subscription_ends_at unchanged.`);
-        }
-      } catch (err) {
-        console.error('❌ Failed to retrieve subscription to resolve period end:', err);
+      // Period end lives on the invoice's own line items — no extra Stripe API call needed.
+      const periodEnd: number | null =
+        (invoice.lines?.data?.[0] as any)?.period?.end ?? null;
+      const subscriptionEndsAtISO = periodEnd
+        ? new Date(periodEnd * 1000).toISOString()
+        : null;
+      if (!subscriptionEndsAtISO) {
+        console.warn(`⚠️ Could not resolve period end from invoice lines for subscription ${stripeSubscriptionId}`);
       }
 
       const updatePayload: Record<string, unknown> = {
         subscription_status: 'active',
         stripe_subscription_id: stripeSubscriptionId,
       };
-      if (subscriptionEndsAtISO) {
-        updatePayload.subscription_ends_at = subscriptionEndsAtISO;
-      }
-      if (!userData.subscription_started_at) {
-        updatePayload.subscription_started_at = new Date().toISOString();
-      }
+      if (subscriptionEndsAtISO) updatePayload.subscription_ends_at = subscriptionEndsAtISO;
+      if (!userData.subscription_started_at) updatePayload.subscription_started_at = new Date().toISOString();
 
       const { error: updateError } = await supabaseAdmin
         .from('users')
         .update(updatePayload)
-        .eq('id', userData.id)
-        .select();
-
-      if (updateError) {
-        console.error('❌ Failed to activate subscription in invoice.paid:', updateError);
-      }
+        .eq('id', userData.id);
+      if (updateError) console.error('❌ Failed to activate subscription in invoice.paid:', updateError);
 
       // ── Commission tracking ──────────────────────────────────────────────────
+      // Guard against duplicates: invoice.paid fires on every renewal. Pay one
+      // commission per referred user, on their first payment only.
       if (userData.referred_by) {
-        const { data: referrer } = await supabaseAdmin
-          .from('users')
-          .select('id')
-          .eq('id', userData.referred_by)
-          .maybeSingle();
+        const { count: existingCommissions } = await supabaseAdmin
+          .from('referral_commissions')
+          .select('*', { count: 'exact', head: true })
+          .eq('referred_user_id', userData.id);
 
-        if (referrer) {
-          // Guard against duplicates: invoice.paid fires on every renewal, so without
-          // this check the referrer would be paid 20% again each billing cycle. Pay one
-          // commission per referred user, on their first payment only.
-          const { count: existingCommissions } = await supabaseAdmin
+        if (existingCommissions === 0) {
+          const invoiceAmount = ((invoice as any).amount_paid ?? 0) / 100;
+          const commissionPayableAfter = new Date();
+          commissionPayableAfter.setDate(commissionPayableAfter.getDate() + 30);
+
+          const { error: commissionError } = await supabaseAdmin
             .from('referral_commissions')
-            .select('*', { count: 'exact', head: true })
-            .eq('referred_user_id', userData.id);
-
-          if (existingCommissions === 0) {
-            const invoiceAmount = ((invoice as any).amount_paid ?? 0) / 100;
-            const commissionAmount = parseFloat((invoiceAmount * 0.20).toFixed(2));
-
-            const commissionPayableAfter = new Date();
-            commissionPayableAfter.setDate(commissionPayableAfter.getDate() + 30);
-
-            const { error: commissionError } = await supabaseAdmin
-              .from('referral_commissions')
-              .insert({
-                referrer_id: referrer.id,
-                referred_user_id: userData.id,
-                sale_amount: invoiceAmount,
-                commission_amount: commissionAmount,
-                commission_rate: 20.00,
-                status: 'pending_30_days',
-                payment_method: 'etransfer',
-                commission_payable_after: commissionPayableAfter.toISOString(),
-              });
-
-            if (commissionError) {
-              console.error('❌ Failed to insert referral commission:', commissionError);
-            }
-          }
+            .insert({
+              referrer_id: userData.referred_by,
+              referred_user_id: userData.id,
+              sale_amount: invoiceAmount,
+              commission_amount: parseFloat((invoiceAmount * 0.20).toFixed(2)),
+              commission_rate: 20.00,
+              status: 'pending_30_days',
+              payment_method: 'etransfer',
+              commission_payable_after: commissionPayableAfter.toISOString(),
+            });
+          if (commissionError) console.error('❌ Failed to insert referral commission:', commissionError);
         }
       }
       break;
@@ -465,6 +407,8 @@ export async function POST(request: Request) {
 
     default:
       break;
+  } } catch (err) {
+    console.error('❌ Unhandled webhook error (returning 200 so Stripe does not retry):', err);
   }
 
   return NextResponse.json({ received: true });
