@@ -16,8 +16,8 @@ export const metadata: Metadata = {
     title: 'SetReady',
   },
   icons: {
-    icon: '/favicon.svg',
-    apple: '/icons/icon-192.svg',
+    icon: '/setready-icon-192.png',
+    apple: '/setready-icon-180-apple.png',
   },
 };
 
@@ -30,13 +30,13 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/setready-icon-192.png" type="image/png" />
         <meta name="theme-color" content="#F59E0B" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="SetReady" />
-        <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+        <link rel="apple-touch-icon" href="/setready-icon-180-apple.png" />
       </head>
       <body className={inter.className}>
         {children}

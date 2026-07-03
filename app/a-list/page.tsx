@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { openCheckout } from '@/utils/isAndroidApp'
 
 /* ════════════════════════════════════════════════════════════════════
    A-LIST: INTERACTIVE SCENES — the AI scene-partner game
@@ -122,7 +123,7 @@ export default function AListPage() {
     try {
       const res = await fetch('/api/checkout/a-list', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item: 'scenes_20' }) })
       const data = await res.json()
-      if (data?.url) { window.location.href = data.url; return }
+      if (data?.url) { openCheckout(data.url); return }
       setErr(data?.error || 'Could not start checkout — are you signed in?')
     } catch { setErr('Could not start checkout. Please try again.') }
     finally { setBuying(false) }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import { openCheckout } from '@/utils/isAndroidApp';
 import Copyright from '@/components/Copyright';
 import { Leaderboard, LeaderboardRail } from './Leaderboard';
 import { LEVELS } from './levels';
@@ -1139,7 +1140,7 @@ export default function SetCrashers() {
     startLevel(ni);
   };
   const buyItem = async (id: string) => {
-    try { const res = await fetch('/api/checkout/set-crashers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item: id }) }); const data = await res.json(); if (data?.url) { window.location.href = data.url; return; } toast(data?.error || 'Could not start checkout — are you signed in?'); } catch { toast('Could not start checkout. Please try again.'); }
+    try { const res = await fetch('/api/checkout/set-crashers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item: id }) }); const data = await res.json(); if (data?.url) { openCheckout(data.url); return; } toast(data?.error || 'Could not start checkout — are you signed in?'); } catch { toast('Could not start checkout. Please try again.'); }
   };
 
   const totalStars = Object.values(save.stars).reduce((a, b) => a + b, 0);

@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { compressImage } from '@/lib/compress-image'
+import { openCheckout } from '@/utils/isAndroidApp'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1272,7 +1273,7 @@ export default function ProfilePage() {
                     const res = await fetch('/api/checkout/photo-slots', { method: 'POST', credentials: 'include' })
                     if (res.ok) {
                       const { url } = await res.json()
-                      if (url) window.location.href = url
+                      if (url) openCheckout(url)
                     } else {
                       setMessage('❌ Could not start checkout. Please try again.')
                     }
@@ -1387,7 +1388,7 @@ export default function ProfilePage() {
                     })
                     if (res.ok) {
                       const { url } = await res.json()
-                      if (url) { window.location.href = url; return }
+                      if (url) { openCheckout(url); return }
                     }
                     setMessage('❌ Could not start checkout. Please try again.')
                   } catch {
@@ -1451,7 +1452,7 @@ export default function ProfilePage() {
                   setInsightsLoading(true)
                   try {
                     const res = await fetch('/api/checkout/insights', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include' })
-                    if (res.ok) { const { url } = await res.json(); if (url) { window.location.href = url; return } }
+                    if (res.ok) { const { url } = await res.json(); if (url) { openCheckout(url); return } }
                     setMessage('❌ Could not start checkout. Please try again.')
                   } catch { setMessage('❌ Could not start checkout. Please try again.') }
                   setInsightsLoading(false)
@@ -1493,7 +1494,7 @@ export default function ProfilePage() {
                   setBadgeLoading(true)
                   try {
                     const res = await fetch('/api/checkout/verified-badge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include' })
-                    if (res.ok) { const { url } = await res.json(); if (url) { window.location.href = url; return } }
+                    if (res.ok) { const { url } = await res.json(); if (url) { openCheckout(url); return } }
                     setMessage('❌ Could not start checkout. Please try again.')
                   } catch { setMessage('❌ Could not start checkout. Please try again.') }
                   setBadgeLoading(false)

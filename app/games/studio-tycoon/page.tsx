@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Copyright from '@/components/Copyright';
+import { openCheckout } from '@/utils/isAndroidApp';
 
 const COST_GROWTH = 1.15;
 const OFFLINE_RATE = 0.5;
@@ -303,7 +304,7 @@ export default function StudioTycoon() {
         body: JSON.stringify({ item }),
       });
       const data = await res.json();
-      if (data?.url) { window.location.href = data.url as string; return; }
+      if (data?.url) { openCheckout(data.url as string); return; }
       toast(data?.error || 'Could not start checkout — are you signed in?');
     } catch { toast('Could not start checkout. Please try again.'); }
   };

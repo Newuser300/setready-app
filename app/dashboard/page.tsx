@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
+import { openCheckout } from '@/utils/isAndroidApp';
 const supabase = createClient()
 import Copyright from '@/components/Copyright';
 
@@ -298,7 +299,7 @@ export default function Dashboard() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
       });
       const result = await response.json();
-      if (result.url) { window.location.href = result.url; }
+      if (result.url) { openCheckout(result.url); }
       else if (result.error) { alert(result.error || 'Error starting checkout'); }
     } catch (error) {
       console.error('Checkout error:', error);
@@ -318,7 +319,7 @@ export default function Dashboard() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
       });
       const result = await response.json();
-      if (result.url) { window.location.href = result.url; }
+      if (result.url) { openCheckout(result.url); }
       else { alert(result.error || 'Error starting checkout'); }
     } catch (error) {
       console.error('Checkout error:', error);
@@ -408,7 +409,7 @@ export default function Dashboard() {
       const result = await response.json();
 
       if (result.url) {
-        window.location.href = result.url;
+        openCheckout(result.url);
       } else {
         alert(result.error || 'Error opening billing portal');
       }
@@ -429,7 +430,7 @@ export default function Dashboard() {
       })
       const data = await res.json()
       if (data.url) {
-        window.location.href = data.url
+        openCheckout(data.url)
       } else {
         alert('Unable to start checkout. Please try again.')
       }
@@ -781,9 +782,10 @@ export default function Dashboard() {
   const FULL_MEMBER_STATUSES = ['ubcp-full', 'actra-full']
   const isUnionMember = UNION_MEMBER_STATUSES.includes(dashUnionStatus)
   const isFullMember = FULL_MEMBER_STATUSES.includes(dashUnionStatus)
-  const visibleActions = isFullMember
+  const visibleActions = (isFullMember
     ? quickActions.filter(a => a.label !== 'Voucher Wallet')
     : quickActions
+  ).filter(a => a.label !== 'SetReady Casting' || isAdmin)
 
   const section1Modules = modules.filter(m => m.section === 1);
   const section2Modules = modules.filter(m => m.section === 2);

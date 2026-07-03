@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { openCheckout } from '@/utils/isAndroidApp';
 
 type CategoryScore = { score: number; feedback: string };
 type CharacterMatch = { role: string; matchPercent: number; why: string; wardrobe: string };
@@ -77,7 +78,7 @@ export default function HeadshotAnalyzer() {
         body: JSON.stringify({ quantity }),
       });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
+      if (data.url) openCheckout(data.url);
       else setError(data.error || 'Unable to start checkout.');
     } catch {
       setError('Something went wrong. Please try again.');

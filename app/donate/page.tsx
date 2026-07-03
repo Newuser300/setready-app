@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Logo from '@/components/Logo'
+import { openCheckout } from '@/utils/isAndroidApp'
 
 const PRESETS = [5, 10, 20, 50]
 
@@ -30,7 +31,7 @@ export default function DonatePage() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to start checkout'); setLoading(false); return }
-      window.location.href = data.url
+      openCheckout(data.url)
     } catch {
       setError('Something went wrong. Please try again.')
       setLoading(false)

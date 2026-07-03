@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Copyright from '@/components/Copyright';
+import { openCheckout } from '@/utils/isAndroidApp';
 
 const SIZE = 8;
 const TILES = ['🎬', '🎥', '💡', '🎤', '🎞️', '⭐'];
@@ -184,7 +185,7 @@ export default function SetMatch() {
     try {
       const res = await fetch('/api/checkout/set-match', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item }) });
       const d = await res.json();
-      if (d?.url) { window.location.href = d.url as string; return; }
+      if (d?.url) { openCheckout(d.url as string); return; }
       setNotice(d?.error || 'Could not start checkout — are you signed in?'); setTimeout(() => setNotice(''), 2600);
     } catch { setNotice('Could not start checkout.'); setTimeout(() => setNotice(''), 2600); }
   }
