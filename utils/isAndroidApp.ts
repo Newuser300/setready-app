@@ -1,16 +1,13 @@
 /**
- * Android wrapper detection
- *
- * The Android app wrapper must append the token below to its WebView user-agent,
- * e.g. via WebSettings.setUserAgentString(existing + " SetReadyApp/1.0").
- * TWA-style wrappers are also detected via the android-app:// referrer that
- * Chrome injects on the very first navigation.
+ * Median (formerly GoNative) native app detection.
+ * Median automatically appends "median" (or "gonative" for older builds)
+ * to the user agent on both iOS and Android. The android-app:// referrer
+ * is kept as an extra fallback for TWA-style builds.
  */
-const ANDROID_UA_TOKEN = 'SetReadyApp'
-
-export function isAndroidApp(): boolean {
+export function isNativeApp(): boolean {
   if (typeof window === 'undefined') return false
-  if (navigator.userAgent.includes(ANDROID_UA_TOKEN)) return true
+  const ua = navigator.userAgent.toLowerCase()
+  if (ua.includes('median') || ua.includes('gonative')) return true
   try {
     if (document.referrer.startsWith('android-app://')) return true
   } catch { /* ignore */ }
@@ -19,11 +16,11 @@ export function isAndroidApp(): boolean {
 
 /**
  * Open a Stripe Checkout URL.
- * Inside the Android wrapper → external browser (Google Play compliance).
- * Everywhere else          → same-tab redirect (existing behaviour).
+ * Inside the native app wrapper → external browser (store compliance).
+ * Everywhere else               → same-tab redirect (existing behaviour).
  */
 export function openCheckout(url: string): void {
-  if (isAndroidApp()) {
+  if (isNativeApp()) {
     window.open(url, '_blank', 'noopener,noreferrer')
   } else {
     window.location.href = url
