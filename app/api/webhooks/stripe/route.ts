@@ -1,7 +1,9 @@
+export const maxDuration = 60
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
 import { NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/utils/supabase/admin';
 
@@ -57,23 +59,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
+  // Kick off all fulfillment in the background so we return 200 immediately.
+  // waitUntil keeps the Vercel function alive until the promise settles.
+  waitUntil(fulfillEvent(event));
+
+  return NextResponse.json({ received: true });
+}
+
+async function fulfillEvent(event: Stripe.Event): Promise<void> {
   // ─── Idempotency: process each Stripe event id at most once ──────────────
-  // Stripe redelivers events (network timeouts, etc.). Recording the event id
-  // first and skipping duplicates makes the whole webhook replay-safe. Most
-  // handlers below set fixed values and are already idempotent, but the
-  // headshot-credits path does an arithmetic add that would otherwise double-count.
   {
     const { error: dedupeError } = await supabaseAdmin
       .from('stripe_webhook_events')
       .insert({ id: event.id, type: event.type });
 
     if (dedupeError) {
-      // 23505 = unique_violation → already processed. Ack so Stripe stops retrying.
+      // 23505 = unique_violation → already processed.
       if ((dedupeError as { code?: string }).code === '23505') {
-        return NextResponse.json({ received: true, duplicate: true });
+        return;
       }
-      // Any other error writing the dedupe row: log and continue rather than
-      // dropping a real event.
       console.error('⚠️ Stripe event dedupe insert failed (continuing):', dedupeError);
     }
   }
@@ -213,13 +217,11 @@ export async function POST(request: Request) {
         break;
       }
 
-      // Upsert: DB trigger guarantees the row exists, but upsert is safe if it doesn't.
       const upsertPayload: Record<string, unknown> = {
         id: userId,
         stripe_customer_id: stripeCustomerId,
       };
 
-      // For subscription sessions, activate immediately — don't rely solely on invoice.paid
       if (session.mode === 'subscription') {
         upsertPayload.subscription_status = 'active';
         upsertPayload.subscription_updated_at = new Date().toISOString();
@@ -244,7 +246,6 @@ export async function POST(request: Request) {
       const invoice = event.data.object as Stripe.Invoice;
       const invoiceAny = invoice as any;
       const stripeCustomerId = invoice.customer as string | null;
-      // In API version 2026-04-22.dahlia the subscription moved to parent.subscription_details.subscription
       const stripeSubscriptionId = (
         invoiceAny.parent?.subscription_details?.subscription ??
         invoiceAny.subscription ??
@@ -265,13 +266,10 @@ export async function POST(request: Request) {
       }
 
       if (!userData) {
-        // checkout.session.completed hasn't run yet (race). Stripe will retry
-        // this event; by then the customer_id will be on the user row.
         console.warn(`⚠️ User not found for stripe_customer_id ${stripeCustomerId} — will be fulfilled on Stripe retry`);
         break;
       }
 
-      // Period end lives on the invoice's own line items — no extra Stripe API call needed.
       const periodEnd: number | null =
         (invoice.lines?.data?.[0] as any)?.period?.end ?? null;
       const subscriptionEndsAtISO = periodEnd
@@ -295,8 +293,6 @@ export async function POST(request: Request) {
       if (updateError) console.error('❌ Failed to activate subscription in invoice.paid:', updateError);
 
       // ── Commission tracking ──────────────────────────────────────────────────
-      // Guard against duplicates: invoice.paid fires on every renewal. Pay one
-      // commission per referred user, on their first payment only.
       if (userData.referred_by) {
         const { count: existingCommissions } = await supabaseAdmin
           .from('referral_commissions')
@@ -346,16 +342,12 @@ export async function POST(request: Request) {
         subscription_updated_at: new Date().toISOString(),
       };
 
-      // Refresh the access-through date from Stripe on every update (renewals,
-      // plan changes, etc.) so it never goes stale. Only write it if we can
-      // resolve a real period end.
       const endsAtISO = periodEndISO(subscription);
       if (endsAtISO) {
         updatePayload.subscription_ends_at = endsAtISO;
       }
 
       await supabaseAdmin.from('users').update(updatePayload).eq('id', userData.id);
-
       break;
     }
 
@@ -385,10 +377,6 @@ export async function POST(request: Request) {
         break;
       }
 
-      // Stripe fires subscription.deleted at the actual end of the subscription
-      // (immediately for cancel-now, or at period end for cancel-at-period-end),
-      // so access ends now. Clear the stale future date so a cancelled user can't
-      // read as still active.
       const { error: updateError } = await supabaseAdmin
         .from('users')
         .update({
@@ -408,8 +396,6 @@ export async function POST(request: Request) {
     default:
       break;
   } } catch (err) {
-    console.error('❌ Unhandled webhook error (returning 200 so Stripe does not retry):', err);
+    console.error('❌ Unhandled webhook error:', err);
   }
-
-  return NextResponse.json({ received: true });
 }
