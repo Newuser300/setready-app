@@ -150,8 +150,8 @@ const MODULE_1_QUESTIONS: Question[] = [
       "The 2nd AD",
       "3rd AD or The Background Wrangler"
     ],
-    correctAnswer: 3,
-    explanation: "Lesson 1.2: 3rd AD or Background Wrangler"
+    correctAnswer: 2,
+    explanation: "Lesson 1.2: The 2nd AD is your primary contact and handles vouchers."
   },
   {
     id: 'm1-q12',
@@ -1516,7 +1516,7 @@ const MODULE_9_QUESTIONS: Question[] = [
       "A warm-up exercise"
     ],
     correctAnswer: 1,
-    explanation: "Lesson 9.1: The Repetition Exercise trains actors to respond to actual behavior in the moment."
+    explanation: "Lesson 9.2: The Repetition Exercise trains actors to respond to actual behavior in the moment."
   },
   {
     id: 'm9-q3',
@@ -1528,7 +1528,7 @@ const MODULE_9_QUESTIONS: Question[] = [
       "Only judge your partner"
     ],
     correctAnswer: 1,
-    explanation: "Lesson 9.1: No planning, no anticipating, no performing, no judging"
+    explanation: "Lesson 9.2: No planning, no anticipating, no performing, no judging"
   },
   {
     id: 'm9-q4',
@@ -1540,7 +1540,7 @@ const MODULE_9_QUESTIONS: Question[] = [
       "Individual performance"
     ],
     correctAnswer: 1,
-    explanation: "Lesson 9.2: An Independent Activity is a physical task with meaning and urgency."
+    explanation: "Lesson 9.3: An Independent Activity is a physical task with meaning and urgency."
   },
   {
     id: 'm9-q5',
@@ -1552,7 +1552,7 @@ const MODULE_9_QUESTIONS: Question[] = [
       "No obstacles needed"
     ],
     correctAnswer: 1,
-    explanation: "Lesson 9.2: Must be difficult enough to require concentration, have a clear objective, have a deadline (urgency), be important to you, have obstacles"
+    explanation: "Lesson 9.3: Must be difficult enough to require concentration, have a clear objective, have a deadline (urgency), be important to you, have obstacles"
   },
   {
     id: 'm9-q6',
@@ -1564,7 +1564,7 @@ const MODULE_9_QUESTIONS: Question[] = [
       "Practicing crying"
     ],
     correctAnswer: 1,
-    explanation: "Lesson 9.3: Emotional Preparation is generating the necessary emotional state before entering the scene."
+    explanation: "Lesson 9.4: Emotional Preparation is generating the necessary emotional state before entering the scene."
   },
   {
     id: 'm9-q7',
@@ -1576,7 +1576,7 @@ const MODULE_9_QUESTIONS: Question[] = [
       "Voice work"
     ],
     correctAnswer: 1,
-    explanation: "Lesson 9.4: Adler emphasizes imagination and script analysis."
+    explanation: "Lesson 9.5: Adler emphasizes imagination and script analysis."
   },
   {
     id: 'm9-q8',
@@ -1588,7 +1588,7 @@ const MODULE_9_QUESTIONS: Question[] = [
       "A dialogue cue"
     ],
     correctAnswer: 1,
-    explanation: "Lesson 9.5: Action verbs are playable verbs like to accuse, to console, or to seduce – actions you can actively do."
+    explanation: "Lesson 9.6: Action verbs are playable verbs like to accuse, to console, or to seduce – actions you can actively do."
   },
   {
     id: 'm9-q9',
@@ -1600,7 +1600,7 @@ const MODULE_9_QUESTIONS: Question[] = [
       "A line of dialogue"
     ],
     correctAnswer: 1,
-    explanation: "Lesson 9.6: A beat is a unit of action with a single objective."
+    explanation: "Lesson 9.7: A beat is a unit of action with a single objective."
   },
   {
     id: 'm9-q10',
@@ -1612,7 +1612,7 @@ const MODULE_9_QUESTIONS: Question[] = [
       "At the director's cue"
     ],
     correctAnswer: 1,
-    explanation: "Lesson 9.6: When the objective changes, the beat changes."
+    explanation: "Lesson 9.7: When the objective changes, the beat changes."
   },
   {
     id: 'm9-q11',
@@ -1624,7 +1624,7 @@ const MODULE_9_QUESTIONS: Question[] = [
       "Set size"
     ],
     correctAnswer: 1,
-    explanation: "Lesson 9.4: Size means being larger than life while remaining truthful."
+    explanation: "Lesson 9.8: Size means being larger than life while remaining truthful."
   },
   {
     id: 'm9-q12',
@@ -1636,7 +1636,7 @@ const MODULE_9_QUESTIONS: Question[] = [
       "Emotion is more important"
     ],
     correctAnswer: 1,
-    explanation: "Lesson 9.5: Play actions, not emotions – emotion follows action."
+    explanation: "Lesson 9.6: Play actions, not emotions – emotion follows action."
   },
   {
     id: 'm9-q13',
@@ -1648,7 +1648,7 @@ const MODULE_9_QUESTIONS: Question[] = [
       "Block the scene"
     ],
     correctAnswer: 1,
-    explanation: "Lesson 9.4: Adler taught to research the time period and given circumstances first."
+    explanation: "Lesson 9.9: Adler taught to research the time period and given circumstances first."
   },
   {
     id: 'm9-q14',
@@ -1660,14 +1660,14 @@ const MODULE_9_QUESTIONS: Question[] = [
       "Illusion"
     ],
     correctAnswer: 1,
-    explanation: "Lesson 9.4: Imagination creates the world of the play through 'the magic of as if.'"
+    explanation: "Lesson 9.10: Imagination creates the world of the play through 'the magic of as if.'"
   },
   {
     id: 'm9-q15',
     text: "How often should Meisner repetition be practiced?",
     options: ["Weekly", "Daily with a partner", "Monthly", "Only in class"],
     correctAnswer: 1,
-    explanation: "Lesson 9.1: Daily repetition practice with a partner is recommended."
+    explanation: "Lesson 9.11: Daily repetition practice with a partner is recommended."
   }
 ];
 

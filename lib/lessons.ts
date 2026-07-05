@@ -41,6 +41,15 @@ The Assistant Director (AD) department is your primary point of contact.
 • **Listen for AD instructions** – they may call your name or group
 • **Ask questions to 3rd AD or Background Wrangler** – they are your designated contacts
 
+**First Team vs. Second Team:**
+
+| Term | Who | Role |
+|------|-----|------|
+| **First Team** | The principal actors | Called to set for actual filming and rehearsal |
+| **Second Team** | Stand-ins | Substitute for the principals while the crew sets up lights and camera angles; First Team rests while Second Team works |
+
+> 🎬 **On Set**: When you hear *"First team in!"*, the principal actors are coming to set to shoot. *"Second team in!"* means the stand-ins are needed while lighting and camera are set up. As background, you keep taking direction from the AD department throughout both.
+
 ---
 
 **Lesson 1.3: Professional Background Cues and Commands**
