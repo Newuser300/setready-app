@@ -119,6 +119,34 @@ function ContactModal({ onClose }: { onClose: () => void }) {
   )
 }
 
+function SignUpGateModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      data-guest-allow
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ backgroundColor: 'white', borderRadius: '16px', maxWidth: '400px', width: '92%', padding: '28px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15)' }}
+      >
+        <div style={{ fontSize: '40px', marginBottom: '10px' }}>🎬</div>
+        <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#1a1a2e', margin: '0 0 8px' }}>Create your free account</h2>
+        <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 20px', lineHeight: 1.5 }}>Sign up to unlock the training modules, casting tools, games, and everything else on SetReady.</p>
+        <Link href="/auth/sign-up" style={{ display: 'block', fontSize: '16px', fontWeight: 700, color: '#1a1a2e', backgroundColor: '#F59E0B', padding: '13px', borderRadius: '10px', textDecoration: 'none', marginBottom: '10px' }}>
+          Sign Up Free
+        </Link>
+        <Link href="/auth/sign-in" style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#6b7280', textDecoration: 'none', marginBottom: '14px' }}>
+          Already have an account? Log in
+        </Link>
+        <button onClick={onClose} style={{ width: '100%', padding: '11px', backgroundColor: 'transparent', color: '#9ca3af', border: '1px solid #e5e7eb', borderRadius: '10px', fontSize: '13px', cursor: 'pointer' }}>
+          Keep looking around
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const [modules, setModules] = useState<Module[]>([]);
@@ -181,6 +209,8 @@ export default function Dashboard() {
   const [preCheckoutValidating, setPreCheckoutValidating] = useState(false);
   const [userHasReferral, setUserHasReferral] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
+  const [showGate, setShowGate] = useState(false);
 
   // Message center unread count
   const [unreadMessages, setUnreadMessages] = useState(0)
@@ -654,7 +684,10 @@ export default function Dashboard() {
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError || !session?.user) {
-        router.push('/auth/sign-in');
+        // No account yet — show the dashboard as a read-only PREVIEW. Every interactive
+        // control is intercepted by handleGuestGate() below, which opens the sign-up modal.
+        setIsGuest(true);
+        setLoading(false);
         return;
       }
       setUser(session.user);
@@ -761,6 +794,19 @@ export default function Dashboard() {
     }
   }
 
+  // Guest preview gate: for signed-out visitors, intercept every click in the dashboard
+  // (capture phase, before the target's own handler) and open the sign-up modal instead.
+  // Controls that should still work (sign-up / log-in buttons, the modal itself) opt out by
+  // carrying a data-guest-allow attribute.
+  function handleGuestGate(e: any) {
+    if (!isGuest) return;
+    const target = e.target as HTMLElement;
+    if (target?.closest?.('[data-guest-allow]')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setShowGate(true);
+  }
+
   const getActualScore = (percentageScore: number | undefined): number => {
     if (!percentageScore) return 0;
     return Math.round(percentageScore * 15 / 100);
@@ -819,14 +865,16 @@ export default function Dashboard() {
 
   return (
     <>
-      <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+      <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }} onClickCapture={handleGuestGate}>
         {/* Hero Header */}
         <div style={{ backgroundColor: '#1a1a2e', color: 'white' }}>
           <div className="max-w-4xl mx-auto px-4" style={{ paddingTop: isMobile ? '16px' : '24px', paddingBottom: isMobile ? '16px' : '24px' }}>
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="font-bold tracking-tight" style={{ fontSize: isMobile ? '20px' : '28px' }}>
-                  Welcome back, <span className="text-yellow-300">{displayName || user?.email?.split('@')[0]}</span>
+                  {isGuest
+                    ? <>Welcome to <span className="text-yellow-300">SetReady</span></>
+                    : <>Welcome back, <span className="text-yellow-300">{displayName || user?.email?.split('@')[0]}</span></>}
                   {verifiedBadge && (
                     <span title="Verified Pro" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#22c55e', color: '#06281a', fontSize: '13px', fontWeight: 700, padding: '4px 12px 4px 10px', borderRadius: '999px', marginLeft: '10px', verticalAlign: 'middle' }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#06281a', color: '#22c55e', fontSize: '11px', fontWeight: 900 }}>✓</span>
@@ -882,6 +930,18 @@ export default function Dashboard() {
                 <div className="hidden md:block text-6xl">🎭</div>
               </div>
             </div>
+
+            {/* Guest preview banner */}
+            {isGuest && (
+              <div data-guest-allow style={{ marginTop: isMobile ? '12px' : '16px', backgroundColor: '#F59E0B', borderRadius: '12px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ color: '#1a1a2e', fontSize: '13px', fontWeight: 700, minWidth: 0 }}>
+                  👀 You&apos;re previewing SetReady — create a free account to unlock every feature.
+                </div>
+                <Link href="/auth/sign-up" data-guest-allow style={{ flexShrink: 0, backgroundColor: '#1a1a2e', color: 'white', fontSize: '13px', fontWeight: 700, padding: '9px 18px', borderRadius: '9px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                  Sign Up Free →
+                </Link>
+              </div>
+            )}
 
             {/* Progress Card */}
             <div className="bg-white/10 rounded-2xl backdrop-blur-sm" style={{ marginTop: isMobile ? '12px' : '20px', padding: isMobile ? '12px' : '16px' }}>
@@ -1929,6 +1989,10 @@ export default function Dashboard() {
       {/* CONTACT MODAL */}
       {showContactModal && (
         <ContactModal onClose={() => setShowContactModal(false)} />
+      )}
+      {/* GUEST SIGN-UP GATE */}
+      {showGate && (
+        <SignUpGateModal onClose={() => setShowGate(false)} />
       )}
     </>
   );
