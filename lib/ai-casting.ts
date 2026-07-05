@@ -78,22 +78,51 @@ export async function getSubmissionSuggestions(
     .slice(0, 10)
 }
 
-export async function aiPerformerSearch(
+// Structured criteria extracted from a natural-language casting query.
+export interface SearchCriteria {
+  gender: string
+  age_min: number | null
+  age_max: number | null
+  hair_color: string | null
+  eye_color: string | null
+  body_type: string | null
+  ethnicity: string | null
+  height_min_cm: number | null
+  height_max_cm: number | null
+  special_skills: string[]
+  union_only: boolean
+  availability_date: string | null
+  location_text: string | null
+  interpretation: string
+}
+
+// Parse a natural-language casting query into structured criteria (single AI call).
+// Returns usedAi=false (criteria null) when there is no API key or the response can't be parsed,
+// so the caller can fall back to a keyword search.
+export async function extractSearchCriteria(
   query: string,
-  allPerformers: any[],
   shootRegionCode: string,
   today?: string
-): Promise<{ performers: any[]; interpretation: string; availability_date: string | null; resolved_region_code: string | null }> {
+): Promise<{
+  criteria: SearchCriteria | null
+  effectiveRegion: string
+  resolvedRegionCode: string | null
+  interpretation: string
+  availabilityDate: string | null
+  usedAi: boolean
+}> {
   const todayStr = today || new Date().toISOString().slice(0, 10)
   const apiKey = process.env.ANTHROPIC_API_KEY
 
   if (!apiKey) {
-    const q = query.toLowerCase()
-    const filtered = allPerformers.filter(p => {
-      const name = (p.users?.raw_user_meta_data?.full_name || '').toLowerCase()
-      return name.includes(q) || (p.union_status || '').toLowerCase().includes(q)
-    })
-    return { performers: filtered, interpretation: `Keyword search for: ${query}`, availability_date: null, resolved_region_code: null }
+    return {
+      criteria: null,
+      effectiveRegion: shootRegionCode || '',
+      resolvedRegionCode: null,
+      interpretation: `Keyword search for: ${query}`,
+      availabilityDate: null,
+      usedAi: false,
+    }
   }
 
   try {
@@ -136,7 +165,7 @@ Return this exact JSON structure:
 
     const data = await res.json()
     const text: string = data.content?.[0]?.text || '{}'
-    const criteria = JSON.parse(text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
+    const criteria: SearchCriteria = JSON.parse(text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
 
     // Resolve location_text to a region code if no shootRegionCode was passed in
     let resolvedRegionCode: string | null = null
@@ -149,45 +178,82 @@ Return this exact JSON structure:
       }
     }
 
-    // Filter performers by extracted criteria
-    let filtered = allPerformers.filter(p => {
-      if (criteria.gender && criteria.gender !== 'any') {
-        if (p.gender?.toLowerCase() !== criteria.gender.toLowerCase()) return false
-      }
-      if (criteria.age_min && p.age && p.age < criteria.age_min) return false
-      if (criteria.age_max && p.age && p.age > criteria.age_max) return false
-      if (criteria.hair_color && p.hair_color) {
-        if (!p.hair_color.toLowerCase().includes(criteria.hair_color.toLowerCase())) return false
-      }
-      if (criteria.union_only && (p.union_priority ?? 4) > 2) return false
-      if (criteria.height_min_cm && p.height_cm && p.height_cm < criteria.height_min_cm) return false
-      if (criteria.height_max_cm && p.height_cm && p.height_cm > criteria.height_max_cm) return false
-      return true
-    })
-
-    // Location filter
-    if (effectiveRegion) {
-      filtered = filtered.filter(p => {
-        if (!p.film_region_code) return true
-        return getMatchingRegions(effectiveRegion, p.film_region_code, p.travel_willingness || 'local', p.travel_radius_km || 100)
-      })
-    }
-
-    // Sort by union priority ASC (Full Members first)
-    filtered.sort((a, b) => (a.union_priority ?? 4) - (b.union_priority ?? 4))
-
     return {
-      performers: filtered,
+      criteria,
+      effectiveRegion,
+      resolvedRegionCode,
       interpretation: criteria.interpretation || `Search for: ${query}`,
-      availability_date: criteria.availability_date || null,
-      resolved_region_code: resolvedRegionCode,
+      availabilityDate: criteria.availability_date || null,
+      usedAi: true,
     }
   } catch {
     return {
-      performers: allPerformers.slice(0, 20),
+      criteria: null,
+      effectiveRegion: shootRegionCode || '',
+      resolvedRegionCode: null,
       interpretation: `Could not parse: "${query}" — showing all performers`,
-      availability_date: null,
-      resolved_region_code: null,
+      availabilityDate: null,
+      usedAi: false,
     }
   }
+}
+
+// The authoritative in-memory filter + region match + union sort.
+// The DB query in the route is only a (never-stricter) pre-filter to shrink the candidate set;
+// this function makes the exact final cut, so results are identical to the old load-everything approach.
+export function applyCriteriaFilter(
+  criteria: SearchCriteria,
+  allPerformers: any[],
+  effectiveRegion: string
+): any[] {
+  let filtered = allPerformers.filter(p => {
+    if (criteria.gender && criteria.gender !== 'any') {
+      if (p.gender?.toLowerCase() !== criteria.gender.toLowerCase()) return false
+    }
+    if (criteria.age_min && p.age && p.age < criteria.age_min) return false
+    if (criteria.age_max && p.age && p.age > criteria.age_max) return false
+    if (criteria.hair_color && p.hair_color) {
+      if (!p.hair_color.toLowerCase().includes(criteria.hair_color.toLowerCase())) return false
+    }
+    if (criteria.union_only && (p.union_priority ?? 4) > 2) return false
+    if (criteria.height_min_cm && p.height_cm && p.height_cm < criteria.height_min_cm) return false
+    if (criteria.height_max_cm && p.height_cm && p.height_cm > criteria.height_max_cm) return false
+    return true
+  })
+
+  // Location filter (depends on each performer's travel willingness/radius — stays in app logic)
+  if (effectiveRegion) {
+    filtered = filtered.filter(p => {
+      if (!p.film_region_code) return true
+      return getMatchingRegions(effectiveRegion, p.film_region_code, p.travel_willingness || 'local', p.travel_radius_km || 100)
+    })
+  }
+
+  // Sort by union priority ASC (Full Members first)
+  filtered.sort((a, b) => (a.union_priority ?? 4) - (b.union_priority ?? 4))
+  return filtered
+}
+
+// Backwards-compatible wrapper (kept for any external callers). The ai-search route no longer
+// uses this — it calls extractSearchCriteria + a DB pre-filter + applyCriteriaFilter directly.
+export async function aiPerformerSearch(
+  query: string,
+  allPerformers: any[],
+  shootRegionCode: string,
+  today?: string
+): Promise<{ performers: any[]; interpretation: string; availability_date: string | null; resolved_region_code: string | null }> {
+  const { criteria, effectiveRegion, resolvedRegionCode, interpretation, availabilityDate, usedAi } =
+    await extractSearchCriteria(query, shootRegionCode, today)
+
+  if (!usedAi || !criteria) {
+    const q = query.toLowerCase()
+    const filtered = allPerformers.filter(p => {
+      const name = (p.users?.raw_user_meta_data?.full_name || '').toLowerCase()
+      return name.includes(q) || (p.union_status || '').toLowerCase().includes(q)
+    })
+    return { performers: filtered, interpretation, availability_date: availabilityDate, resolved_region_code: resolvedRegionCode }
+  }
+
+  const filtered = applyCriteriaFilter(criteria, allPerformers, effectiveRegion)
+  return { performers: filtered, interpretation, availability_date: availabilityDate, resolved_region_code: resolvedRegionCode }
 }
