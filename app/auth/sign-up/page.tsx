@@ -24,9 +24,6 @@ export default function SignUp() {
   const [refFromUrl, setRefFromUrl] = useState(false);
   const [codeValidation, setCodeValidation] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
   const [referrerName, setReferrerName] = useState('');
-  const [promoCode, setPromoCode] = useState('');
-  const [promoValidation, setPromoValidation] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
-  const [promoDescription, setPromoDescription] = useState('');
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth < 768 : false
   );
@@ -50,23 +47,6 @@ export default function SignUp() {
       if (stored) setReferralCode(stored);
     }
   }, []);
-
-  async function validatePromoCode(code: string) {
-    if (!code || code.trim().length < 3) { setPromoValidation('idle'); return }
-    setPromoValidation('checking')
-    try {
-      const res = await fetch(`/api/promo/validate?code=${encodeURIComponent(code.trim().toUpperCase())}`)
-      const data = await res.json()
-      if (data.valid) {
-        setPromoValidation('valid')
-        setPromoDescription(data.description || '')
-      } else {
-        setPromoValidation('invalid')
-      }
-    } catch {
-      setPromoValidation('idle')
-    }
-  }
 
   async function validateReferralCode(code: string) {
     if (!code || code.trim().length < 4) {
@@ -159,14 +139,6 @@ export default function SignUp() {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ city: city.trim() }),
           }).catch(() => {})
-        }
-
-        if (promoCode.trim()) {
-          await fetch('/api/promo/apply', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ code: promoCode.trim(), userType: 'performer' }),
-          });
         }
 
         const browserClient = createClient();
@@ -493,37 +465,6 @@ export default function SignUp() {
                   <p style={{ fontSize: '12px', color: '#dc2626', margin: '4px 0 0' }}>✗ Code not found. Double-check and try again.</p>
                 )}
               </div>
-            )}
-          </div>
-
-          {/* Access Code (Promo) */}
-          <div>
-            <label style={labelStyle}>
-              Access Code{' '}
-              <span style={{ color: '#9ca3af', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. SETREADY2026"
-              value={promoCode}
-              onChange={(e) => {
-                const val = e.target.value.toUpperCase();
-                setPromoCode(val);
-                setPromoValidation('idle');
-              }}
-              onBlur={() => validatePromoCode(promoCode)}
-              style={inputStyle}
-            />
-            {promoValidation === 'checking' && (
-              <p style={{ fontSize: '12px', color: '#9ca3af', margin: '4px 0 0' }}>Checking code...</p>
-            )}
-            {promoValidation === 'valid' && (
-              <p style={{ fontSize: '12px', color: '#16a34a', margin: '4px 0 0' }}>
-                ✓ Valid access code{promoDescription ? ` — ${promoDescription}` : ''}
-              </p>
-            )}
-            {promoValidation === 'invalid' && (
-              <p style={{ fontSize: '12px', color: '#dc2626', margin: '4px 0 0' }}>✗ Code not found. Check and try again.</p>
             )}
           </div>
 
