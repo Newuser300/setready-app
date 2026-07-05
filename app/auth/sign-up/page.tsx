@@ -585,6 +585,33 @@ export default function SignUp() {
           <Link href="/auth/sign-in" style={{ color: '#F59E0B', fontWeight: 600, textDecoration: 'none' }}>Sign in</Link>
         </p>
 
+        {/* Preview without signing in */}
+        <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ flex: 1, height: '1px', backgroundColor: '#e5e7eb' }} />
+          <span style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em' }}>or</span>
+          <div style={{ flex: 1, height: '1px', backgroundColor: '#e5e7eb' }} />
+        </div>
+        <Link
+          href="/dashboard"
+          style={{
+            display: 'block',
+            marginTop: '16px',
+            width: '100%',
+            padding: '13px',
+            backgroundColor: 'white',
+            color: '#1a1a2e',
+            border: '1.5px solid #1a1a2e',
+            borderRadius: '8px',
+            fontSize: '15px',
+            fontWeight: 700,
+            textAlign: 'center',
+            textDecoration: 'none',
+            boxSizing: 'border-box',
+          }}
+        >
+          👀 Preview without signing in
+        </Link>
+
         <div style={{ marginTop: '16px', textAlign: 'center' }}>
           <p style={{ fontSize: '11px', color: '#9ca3af', margin: 0 }}>
             Need help? setready@mail.com

@@ -143,6 +143,12 @@ export default function Home() {
             >
               See What&apos;s Included
             </button>
+            <button
+              onClick={() => router.push('/dashboard')}
+              style={{ backgroundColor: 'transparent', color: '#6b7280', border: '1.5px solid #e5e7eb', borderRadius: '8px', padding: '0 28px', height: '48px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' }}
+            >
+              👀 Preview the App
+            </button>
           </div>
           <p style={{ fontSize: '13px', color: '#9ca3af', margin: 0 }}>
             Free account &nbsp;·&nbsp; No credit card
