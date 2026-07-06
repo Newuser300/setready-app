@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AgencyDetailPanel, CastingDirectorDetailPanel } from '@/components/AdminDetailPanels';
+import AdminVisitCounter from '@/components/AdminVisitCounter';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
@@ -1246,6 +1247,9 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
         ══════════════════════════════════════ */}
         {activeSection === 'overview' && stats && (
           <div className="space-y-8">
+
+            {/* Site visit counter */}
+            <AdminVisitCounter />
 
             {/* Stat cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

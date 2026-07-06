@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'react-hot-toast';
 import PWAInstaller from '@/components/PWAInstaller';
+import VisitTracker from '@/components/VisitTracker';
 import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -43,6 +44,7 @@ export default function RootLayout({
         {children}
         <Toaster position="top-right" />
         <PWAInstaller />
+        <VisitTracker />
         <Analytics />
       </body>
     </html>
