@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { AgencyDetailPanel, CastingDirectorDetailPanel } from '@/components/AdminDetailPanels';
 import AdminVisitCounter from '@/components/AdminVisitCounter';
+import AdminAnalytics from '@/components/AdminAnalytics';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
@@ -73,7 +74,7 @@ type AdminRecord = {
   added_at: string;
 };
 
-type NavSection = 'overview' | 'users' | 'referrals' | 'certificates' | 'tools' | 'casting' | 'promos' | 'messages' | 'tester_codes' | 'photo_promo' | 'verified_badges' | 'oversight' | 'donations';
+type NavSection = 'overview' | 'analytics' | 'users' | 'referrals' | 'certificates' | 'tools' | 'casting' | 'promos' | 'messages' | 'tester_codes' | 'photo_promo' | 'verified_badges' | 'oversight' | 'donations';
 
 interface TesterCode {
   id: string;
@@ -1157,6 +1158,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
 
   const navItems: { key: NavSection; label: string; icon: string }[] = [
     { key: 'overview',     label: 'Overview',      icon: '📊' },
+    { key: 'analytics',    label: 'Analytics',     icon: '📈' },
     { key: 'tools',        label: 'Tools',         icon: '🔧' },
     { key: 'users',        label: 'Users',         icon: '👥' },
     { key: 'casting',      label: 'Casting',       icon: '🎬' },
@@ -1241,6 +1243,11 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
+
+        {/* ══════════════════════════════════════
+            ANALYTICS (Vercel Web Analytics)
+        ══════════════════════════════════════ */}
+        {activeSection === 'analytics' && <AdminAnalytics />}
 
         {/* ══════════════════════════════════════
             OVERVIEW
