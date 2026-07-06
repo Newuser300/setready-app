@@ -265,7 +265,7 @@ export default function MembershipPage() {
 
             <button
               onClick={handleSubmit}
-              disabled={uploading || !tier || !selectedFile || (numberRequired && !memberNumber.trim())}
+              disabled={!!(uploading || !tier || !selectedFile || (numberRequired && !memberNumber.trim()))}
               className="w-full py-3.5 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {uploading ? 'Submitting...' : 'Submit for Verification'}
