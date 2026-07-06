@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Copyright from '@/components/Copyright';
 import { createClient } from '@/utils/supabase/client'
+import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 const supabase = createClient()
 
@@ -519,6 +520,26 @@ export default function SignUp() {
             {loading ? 'Creating account...' : 'Create My Free Account'}
           </button>
         </form>
+
+        {/* Google sign-up */}
+        <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ flex: 1, height: '1px', backgroundColor: '#e5e7eb' }} />
+          <span style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em' }}>or</span>
+          <div style={{ flex: 1, height: '1px', backgroundColor: '#e5e7eb' }} />
+        </div>
+        <div style={{ marginTop: '16px' }}>
+          <GoogleSignInButton
+            label="Sign up with Google"
+            disabled={!ageConfirmed}
+            onBlocked={() => setError('Please confirm you are 18+ and a resident of Canada (check the box above) before continuing with Google.')}
+            referralCode={referralCode || undefined}
+          />
+          {!ageConfirmed && (
+            <p style={{ fontSize: '11px', color: '#9ca3af', margin: '6px 0 0', textAlign: 'center' }}>
+              Check the 18+ / Canada box above to enable Google sign-up.
+            </p>
+          )}
+        </div>
 
         {/* Sign in link */}
         <p style={{ marginTop: '20px', fontSize: '13px', color: '#6b7280', textAlign: 'center' }}>

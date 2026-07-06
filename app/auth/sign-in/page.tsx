@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import Copyright from '@/components/Copyright';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 export default function SignIn() {
   const router = useRouter();
@@ -232,6 +233,16 @@ export default function SignIn() {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
+
+        {/* Google sign-in */}
+        <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ flex: 1, height: '1px', backgroundColor: '#e5e7eb' }} />
+          <span style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em' }}>or</span>
+          <div style={{ flex: 1, height: '1px', backgroundColor: '#e5e7eb' }} />
+        </div>
+        <div style={{ marginTop: '16px' }}>
+          <GoogleSignInButton label="Continue with Google" />
+        </div>
 
         {/* Create account link */}
         <p style={{ marginTop: '20px', fontSize: '13px', color: '#6b7280', textAlign: 'center' }}>
