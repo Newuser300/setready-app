@@ -1286,6 +1286,10 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                   <div className="text-2xl mb-1">💰</div>
                   <p className="text-sm font-semibold text-gray-700">Referral Payouts</p>
                 </Link>
+                <Link href="/admin/membership" className="bg-white border border-gray-200 rounded-xl p-4 text-center hover:border-blue-300 hover:shadow-sm transition cursor-pointer">
+                  <div className="text-2xl mb-1">🎭</div>
+                  <p className="text-sm font-semibold text-gray-700">Membership Verify</p>
+                </Link>
                 <button onClick={() => { openBackfill(); setActiveSection('tools'); }} className="bg-white border border-gray-200 rounded-xl p-4 text-center hover:border-blue-300 hover:shadow-sm transition">
                   <div className="text-2xl mb-1">🔧</div>
                   <p className="text-sm font-semibold text-gray-700">Certificate Backfill</p>
