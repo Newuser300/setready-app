@@ -73,6 +73,7 @@ const quickActions = [
   { icon: '📖', label: 'Film Set Terms', action: 'link' as const, href: '/glossary' },
   { icon: '👔', label: 'What to Wear', action: 'link' as const, href: '/clothing' },
   { icon: '📋', label: 'Residency Docs', action: 'link' as const, href: '/residency' },
+  { icon: '🎭', label: 'Verify ACTRA Membership', action: 'link' as const, href: '/membership' },
   { icon: '📋', label: 'Work Log', action: 'link' as const, href: '/work-log' },
   { icon: '👥', label: 'Contacts', action: 'link' as const, href: '/contacts' },
   { icon: '🎭', label: 'Set Etiquette Simulator', action: 'link' as const, href: '/simulator' },

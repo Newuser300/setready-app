@@ -7,6 +7,7 @@
 create table if not exists public.membership_verifications (
   id            uuid primary key default gen_random_uuid(),
   user_id       uuid not null references auth.users(id) on delete cascade,
+  union_org     text,                           -- 'ubcp' (BC) | 'actra' (rest of Canada)
   tier          text not null,                 -- 'full' | 'apprentice' | 'aabp' | 'permittee'
   member_number text,                           -- e.g. 05-12345, AM-12345, EX-054321 (null for permittee)
   file_url      text not null,                  -- storage path in the membership_docs bucket
@@ -27,6 +28,7 @@ create index if not exists idx_membership_verifications_user
 alter table public.membership_verifications enable row level security;
 
 -- 2) Denormalised result on the user profile (what the profile displays)
+alter table public.users add column if not exists membership_union       text;
 alter table public.users add column if not exists membership_tier        text;
 alter table public.users add column if not exists membership_number      text;
 alter table public.users add column if not exists membership_verified     boolean not null default false;

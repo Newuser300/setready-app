@@ -10,6 +10,11 @@ const TIER_LABELS: Record<string, string> = {
   permittee: 'Permittee',
 };
 
+const UNION_LABELS: Record<string, string> = {
+  ubcp: 'UBCP/ACTRA (BC)',
+  actra: 'ACTRA',
+};
+
 // List submissions (pending first), enriched with the member's name/email.
 export async function GET(req: NextRequest) {
   if (!(await verifyAdminRequest(req))) {
@@ -47,6 +52,7 @@ export async function GET(req: NextRequest) {
   const enriched = rows.map((r) => ({
     ...r,
     tier_label: TIER_LABELS[r.tier] || r.tier,
+    union_label: UNION_LABELS[r.union_org] || (r.union_org ?? ''),
     user_name: usersById[r.user_id]?.name || '',
     user_email: usersById[r.user_id]?.email || '',
   }));
@@ -97,6 +103,7 @@ export async function POST(req: NextRequest) {
     await supabaseAdmin
       .from('users')
       .update({
+        membership_union: sub.union_org ?? null,
         membership_tier: sub.tier,
         membership_number: sub.member_number,
         membership_verified: true,

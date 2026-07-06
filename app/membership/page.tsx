@@ -18,6 +18,11 @@ type Submission = {
   created_at: string;
 };
 
+const UNIONS = [
+  { value: 'ubcp', label: 'UBCP/ACTRA (British Columbia)' },
+  { value: 'actra', label: 'ACTRA (rest of Canada)' },
+];
+
 const TIERS = [
   { value: 'full', label: 'ACTRA Full Member', hint: 'Number looks like 05-12345', pattern: /^\d{2}-\d{3,6}$/ },
   { value: 'apprentice', label: 'ACTRA Apprentice', hint: 'Number looks like AM-12345', pattern: /^AM-\d{3,6}$/i },
@@ -38,6 +43,7 @@ export default function MembershipPage() {
   const [pageLoading, setPageLoading] = useState(true);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
 
+  const [union, setUnion] = useState('');
   const [tier, setTier] = useState('');
   const [memberNumber, setMemberNumber] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -91,6 +97,7 @@ export default function MembershipPage() {
   }
 
   async function handleSubmit() {
+    if (!union) { toast.error('Please select your union.'); return; }
     if (!tier) { toast.error('Please select your membership tier.'); return; }
     if (numberRequired && !memberNumber.trim()) { toast.error('Please enter your member number.'); return; }
     if (!selectedFile) { toast.error('Please attach a proof document.'); return; }
@@ -117,6 +124,7 @@ export default function MembershipPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
+          union_org: union,
           tier,
           member_number: numberRequired ? memberNumber.trim() : null,
           file_url: filePath,
@@ -193,9 +201,23 @@ export default function MembershipPage() {
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
             <h2 className="font-bold text-gray-800 text-lg">Submit for verification</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Upload a photo of your ACTRA card or a screenshot of your digital card in the ACTRA Online app.</p>
+            <p className="text-xs text-gray-500 mt-0.5">Upload a clear photo or screenshot of your <strong>UBCP or ACTRA membership card</strong> — the digital card in the ACTRA Online / AMS app works too. JPG, PNG, or PDF.</p>
           </div>
           <div className="p-6 space-y-5">
+
+            {/* Union */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Your Union <span className="text-red-500">*</span></label>
+              <select
+                value={union}
+                onChange={(e) => setUnion(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+              >
+                <option value="">— Select your union —</option>
+                {UNIONS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+              </select>
+              <p className="text-xs text-gray-400 mt-1">In BC, most performers are UBCP/ACTRA. Elsewhere in Canada, ACTRA.</p>
+            </div>
 
             {/* Tier */}
             <div>

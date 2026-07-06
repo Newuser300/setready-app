@@ -11,6 +11,7 @@ async function getUser(request: Request) {
 }
 
 const VALID_TIERS = ['full', 'apprentice', 'aabp', 'permittee'];
+const VALID_UNIONS = ['ubcp', 'actra'];
 
 // Own submissions
 export async function GET(request: Request) {
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { tier, member_number, file_url, filename, file_type } = body;
+  const { union_org, tier, member_number, file_url, filename, file_type } = body;
 
   if (!VALID_TIERS.includes(tier)) {
     return NextResponse.json({ error: 'Invalid membership tier' }, { status: 400 });
