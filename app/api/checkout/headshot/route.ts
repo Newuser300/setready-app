@@ -38,10 +38,14 @@ export async function POST(request: Request) {
       success_url: `${appUrl}/headshot-analyzer?purchased=true`,
       cancel_url: `${appUrl}/headshot-analyzer`,
       customer_email: user.email!,
+      expires_at: Math.floor(Date.now() / 1000) + 60 * 60,
+      after_expiration: { recovery: { enabled: true, allow_promotion_codes: true } },
       metadata: {
         user_id: user.id,
         type: 'headshot_credits',
         credits: quantity.toString(),
+        itemName: 'Headshot Analyzer credits',
+        returnPath: '/headshot-analyzer',
       },
     })
 

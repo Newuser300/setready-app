@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/utils/supabase/admin';
+import { sendAbandonedCartEmail } from '@/lib/email';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2026-04-22.dahlia',
@@ -390,6 +391,36 @@ async function fulfillEvent(event: Stripe.Event): Promise<void> {
       if (updateError) {
         console.error('❌ Failed to deactivate subscription:', updateError);
       }
+      break;
+    }
+
+    // ─── Abandoned cart: checkout session expired without completing ─────────
+    case 'checkout.session.expired': {
+      const session = event.data.object as Stripe.Checkout.Session;
+
+      // No recovery nudge for donations
+      if (session.metadata?.type === 'donation') break;
+
+      // We need an address to email. customer_email is set at session creation;
+      // customer_details.email is only present if they got far enough to enter it.
+      const email =
+        (session as { customer_email?: string | null }).customer_email ??
+        session.customer_details?.email ??
+        null;
+      if (!email) break;
+
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.setready.site';
+
+      // Prefer Stripe's one-click recovery link (when recovery was enabled on the
+      // session); otherwise fall back to the item's page so they can restart.
+      const recoveryUrl =
+        (session as any).after_expiration?.recovery?.url ??
+        (session as any).recovery_url ??
+        `${appUrl}${session.metadata?.returnPath || '/dashboard'}`;
+
+      const itemName = session.metadata?.itemName || 'your SetReady purchase';
+
+      await sendAbandonedCartEmail(email, itemName, recoveryUrl);
       break;
     }
 

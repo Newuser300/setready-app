@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@/utils/supabase/server';
 import { supabaseAdmin } from '@/utils/supabase/admin';
+import { abandonedCartOptions } from '@/lib/checkout-recovery';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2026-04-22.dahlia',
@@ -50,9 +51,12 @@ export async function POST(request: Request) {
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?section2_unlocked=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?canceled=true`,
       client_reference_id: user.id,
+      ...abandonedCartOptions({ email: user.email, mode: 'payment' }),
       metadata: {
         userId: user.id,
         type: 'section2',
+        itemName: 'Section 2 Unlock',
+        returnPath: '/dashboard',
       },
     });
     

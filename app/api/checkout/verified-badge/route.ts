@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@/utils/supabase/server';
 import { supabaseAdmin } from '@/utils/supabase/admin';
+import { abandonedCartOptions } from '@/lib/checkout-recovery';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-04-22.dahlia' as any });
 
@@ -29,7 +30,8 @@ export async function POST(request: Request) {
       success_url: `${appUrl}/profile?badge=success`,
       cancel_url: `${appUrl}/profile?badge=cancelled`,
       client_reference_id: user.id,
-      metadata: { userId: user.id, type: 'verified_badge' },
+      ...abandonedCartOptions({ email: user.email, mode: 'payment' }),
+      metadata: { userId: user.id, type: 'verified_badge', itemName: 'Verified Badge', returnPath: '/profile' },
     });
     return NextResponse.json({ url: session.url });
   } catch (error) {

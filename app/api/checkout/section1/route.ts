@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@/utils/supabase/server';
 import { supabaseAdmin } from '@/utils/supabase/admin';
+import { abandonedCartOptions } from '@/lib/checkout-recovery';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2026-04-22.dahlia' as any,
@@ -45,9 +46,12 @@ export async function POST(request: Request) {
       success_url: `${appUrl}/payment-processing?session_id={CHECKOUT_SESSION_ID}&plan=section1`,
       cancel_url: `${appUrl}/dashboard?canceled=true`,
       client_reference_id: user.id,
+      ...abandonedCartOptions({ email: user.email, mode: 'subscription' }),
       metadata: {
         userId: user.id,
         type: 'section1',
+        itemName: 'Section 1 Training',
+        returnPath: '/dashboard',
       },
       custom_text: {
         submit: {
