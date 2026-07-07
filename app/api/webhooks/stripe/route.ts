@@ -191,13 +191,41 @@ async function fulfillEvent(event: Stripe.Event): Promise<void> {
         break;
       }
 
-      // One-time Verified Badge — goes pending for admin approval, not instant
+      // One-time Verified Badge (bundle) — the badge itself goes pending for
+      // admin approval; the bundled extras unlock instantly:
+      //   • Pro Insights        (users.insights_unlocked)
+      //   • Profile Boost 1 mo. (performer_profiles.boost_expires_at)
+      //   • 4 extra photo slots (performer_profiles.photos_unlocked)
+      // Each mirrors the exact logic of its standalone purchase.
       if (session.mode === 'payment' && session.metadata?.type === 'verified_badge') {
+        // Extend Profile Boost by 1 month from whichever is later (now / current expiry)
+        const { data: prof } = await supabaseAdmin
+          .from('performer_profiles')
+          .select('boost_expires_at')
+          .eq('user_id', userId)
+          .maybeSingle();
+        const nowDate = new Date();
+        const current = prof?.boost_expires_at ? new Date(prof.boost_expires_at) : null;
+        const base = current && current > nowDate ? current : nowDate;
+        base.setMonth(base.getMonth() + 1);
+
         const { error: vbErr } = await supabaseAdmin
           .from('performer_profiles')
-          .update({ verified_badge_pending: true })
+          .update({
+            verified_badge_pending: true,
+            photos_unlocked: true,
+            boost_expires_at: base.toISOString(),
+          })
           .eq('user_id', userId);
-        if (vbErr) console.error('❌ Failed to set verified_badge_pending:', vbErr);
+        if (vbErr) console.error('❌ Failed to apply verified badge bundle (performer_profiles):', vbErr);
+
+        // Pro Insights lives on the users table
+        const { error: insErr } = await supabaseAdmin
+          .from('users')
+          .update({ insights_unlocked: true })
+          .eq('id', userId);
+        if (insErr) console.error('❌ Failed to unlock insights (verified badge bundle):', insErr);
+
         break;
       }
 

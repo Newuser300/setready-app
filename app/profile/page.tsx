@@ -762,7 +762,7 @@ export default function ProfilePage() {
             <FL>UBCP / ACTRA Membership</FL>
             <a href="/membership" style={{ display: 'block', padding: '12px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#fafafa', textDecoration: 'none' }}>
               <span style={{ fontWeight: 700, fontSize: '14px', color: '#1a1a2e' }}>🎭 Verify UBCP / ACTRA Membership</span>
-              <span style={{ display: 'block', fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>Upload your membership card to get a verified badge on your profile →</span>
+              <span style={{ display: 'block', fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>Upload an image of your digital card →</span>
             </a>
           </div>
           <div style={{ marginBottom: '12px' }}>
@@ -1494,7 +1494,30 @@ export default function ProfilePage() {
             <div style={{ fontSize: '12px', color: '#fcd34d' }}>⏳ Purchased — pending admin review. Your badge appears once approved.</div>
           ) : (
             <>
-              <p style={{ fontSize: '12px', color: '#d1d5db', margin: '0 0 14px', lineHeight: '1.5' }}>Stand out with a verified checkmark on your profile and in casting searches. Reviewed by our team before it goes live.</p>
+              <p style={{ fontSize: '12px', color: '#d1d5db', margin: '0 0 12px', lineHeight: '1.5' }}>Stand out with a verified checkmark on your profile and in casting searches — now bundled with three of our most popular upgrades. Reviewed by our team before it goes live.</p>
+              <div style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.35)', borderRadius: '10px', padding: '12px 14px', margin: '0 0 14px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#4ade80', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Everything included</div>
+                {[
+                  ['✓ Verified Pro badge', '$9.99'],
+                  ['📊 Pro Insights', '$4.99'],
+                  ['🚀 Profile Boost — 1 month', '$5.98'],
+                  ['📸 4 extra photo slots', '$9.98'],
+                ].map(([label, price]) => (
+                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#d1d5db', marginBottom: '4px' }}>
+                    <span>{label}</span>
+                    <span style={{ color: '#9ca3af', textDecoration: 'line-through' }}>{price}</span>
+                  </div>
+                ))}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', margin: '8px 0', paddingTop: '8px', display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#d1d5db' }}>
+                  <span>Total value</span>
+                  <span style={{ color: '#9ca3af', textDecoration: 'line-through' }}>$30.94</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 800, color: '#4ade80' }}>
+                  <span>Yours for</span>
+                  <span>$9.99</span>
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#fcd34d', marginTop: '4px', textAlign: 'right' }}>You save $20.95 (68% off)</div>
+              </div>
               <button
                 disabled={badgeLoading}
                 onClick={async () => {
