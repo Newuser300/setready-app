@@ -192,7 +192,12 @@ export default function MembershipPage() {
             <p className="text-sm text-gray-600 mt-1">
               {latest.status === 'approved' && 'Your membership tier now shows on your profile.'}
               {latest.status === 'pending' && 'We usually review within a couple of days. You can update your submission below if needed.'}
-              {latest.status === 'rejected' && (latest.review_notes || 'Please check your details and resubmit below.')}
+              {latest.status === 'rejected' && (
+                <>
+                  {latest.review_notes ? <>Reason: {latest.review_notes}<br /></> : null}
+                  Please upload a new copy of your UBCP/ACTRA card below to try again.
+                </>
+              )}
             </p>
           </div>
         )}

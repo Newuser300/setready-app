@@ -113,5 +113,34 @@ export async function POST(req: NextRequest) {
       .eq('id', sub.user_id);
   }
 
+  // Notify the member of the decision (in-app message).
+  const unionTierLabel = `${UNION_LABELS[sub.union_org] || 'UBCP/ACTRA'} ${TIER_LABELS[sub.tier] || ''}`.trim();
+  const msg = action === 'approve'
+    ? {
+        subject: 'Membership verified ✓',
+        body: `Good news — your ${unionTierLabel} membership has been verified. A verified badge now shows on your profile.`,
+        action_url: '/profile',
+        action_label: 'View Profile',
+      }
+    : {
+        subject: 'Membership verification — action needed',
+        body: `We couldn't verify your membership submission.${notes?.trim() ? ` Reason: ${notes.trim()}` : ''} Please upload a new copy of your UBCP/ACTRA membership card to try again.`,
+        action_url: '/membership',
+        action_label: 'Re-upload',
+      };
+
+  await supabaseAdmin.from('messages').insert({
+    sender_type: 'system',
+    sender_name: 'SetReady',
+    recipient_type: 'performer',
+    recipient_id: sub.user_id,
+    subject: msg.subject,
+    body: msg.body,
+    message_type: 'general',
+    priority: 'normal',
+    action_url: msg.action_url,
+    action_label: msg.action_label,
+  });
+
   return NextResponse.json({ success: true });
 }

@@ -759,6 +759,13 @@ export default function ProfilePage() {
             )}
           </div>
           <div style={{ marginBottom: '12px' }}>
+            <FL>UBCP / ACTRA Membership</FL>
+            <a href="/membership" style={{ display: 'block', padding: '12px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#fafafa', textDecoration: 'none' }}>
+              <span style={{ fontWeight: 700, fontSize: '14px', color: '#1a1a2e' }}>🎭 Verify UBCP / ACTRA Membership</span>
+              <span style={{ display: 'block', fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>Upload your membership card to get a verified badge on your profile →</span>
+            </a>
+          </div>
+          <div style={{ marginBottom: '12px' }}>
             <FL>Bio</FL>
             <textarea value={bio} onChange={e => setBio(e.target.value.slice(0, 500))} placeholder="Tell casting directors about yourself — your experience, look, and personality..." rows={4} style={{ ...ta, fontFamily: 'inherit' }} />
             <p style={{ fontSize: '11px', color: '#9ca3af', margin: '4px 0 0', textAlign: 'right' }}>{bio.length}/500</p>

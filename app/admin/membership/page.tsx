@@ -101,19 +101,6 @@ export default function AdminMembershipPage() {
     }
   }
 
-  // Opens the public ACTRA/UBCP background-performer directory and copies the
-  // member's name so the admin can paste it into the search and confirm quickly.
-  async function searchDirectory(s: Submission) {
-    const q = `${s.user_name || ''} ${s.member_number || ''}`.trim();
-    try {
-      if (q && navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(q);
-        toast.success('Name copied — paste it into the directory search');
-      }
-    } catch { /* ignore */ }
-    window.open('https://background.actraonline.ca/', '_blank', 'noopener');
-  }
-
   const pending = subs.filter((s) => s.status === 'pending');
   const others = subs.filter((s) => s.status !== 'pending');
 
@@ -143,7 +130,6 @@ export default function AdminMembershipPage() {
       </div>
       <div className="flex gap-2 mt-3 flex-wrap">
         <button onClick={() => viewDoc(s.file_url)} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition">👁 View proof</button>
-        <button onClick={() => searchDirectory(s)} className="px-3 py-1.5 bg-gray-100 text-gray-700 border border-gray-200 rounded-lg text-xs font-semibold hover:bg-gray-200 transition">🔎 Directory</button>
         {s.status !== 'approved' && (
           <button onClick={() => review(s.id, 'approve')} disabled={busyId === s.id} className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 transition disabled:opacity-50">✓ Approve</button>
         )}
