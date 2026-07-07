@@ -213,18 +213,17 @@ async function fulfillEvent(event: Stripe.Event): Promise<void> {
           .from('performer_profiles')
           .update({
             verified_badge_pending: true,
-            photos_unlocked: true,
             boost_expires_at: base.toISOString(),
           })
           .eq('user_id', userId);
         if (vbErr) console.error('❌ Failed to apply verified badge bundle (performer_profiles):', vbErr);
 
-        // Pro Insights lives on the users table
+        // Pro Insights and extra photo slots both live on the users table
         const { error: insErr } = await supabaseAdmin
           .from('users')
-          .update({ insights_unlocked: true })
+          .update({ insights_unlocked: true, photos_unlocked: true })
           .eq('id', userId);
-        if (insErr) console.error('❌ Failed to unlock insights (verified badge bundle):', insErr);
+        if (insErr) console.error('❌ Failed to unlock insights/photos (verified badge bundle):', insErr);
 
         break;
       }
