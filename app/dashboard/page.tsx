@@ -106,10 +106,10 @@ function ContactModal({ onClose }: { onClose: () => void }) {
         <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 8px' }}>Contact SetReady</h2>
         <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 16px', lineHeight: '1.5' }}>Questions, feedback, or need help? Email us and we&apos;ll get back to you.</p>
         <a
-          href="mailto:setready@mail.com"
+          href="mailto:support@setready.site"
           style={{ display: 'inline-block', fontSize: '16px', fontWeight: '700', color: '#1a1a2e', backgroundColor: '#F59E0B', padding: '13px 24px', borderRadius: '10px', textDecoration: 'none', marginBottom: '16px' }}
         >
-          ✉️ setready@mail.com
+          ✉️ support@setready.site
         </a>
         <div>
           <button onClick={onClose} style={{ width: '100%', padding: '12px', backgroundColor: 'transparent', color: '#9ca3af', border: '1px solid #e5e7eb', borderRadius: '10px', fontSize: '14px', cursor: 'pointer' }}>Close</button>

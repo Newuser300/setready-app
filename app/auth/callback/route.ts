@@ -91,7 +91,7 @@ Here is how to get started:
 
 5. Check What's Filming.
 
-If you have any questions contact us at setready@mail.com
+If you have any questions contact us at support@setready.site
 
 Welcome to the set!
 — The SetReady Team`,

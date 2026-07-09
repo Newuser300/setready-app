@@ -24,13 +24,13 @@ export default function DeleteAccountPage() {
       const res = await fetch('/api/account/delete', { method: 'POST' });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error || 'Error deleting account. Please contact support at setready@mail.com');
+        setError(d.error || 'Error deleting account. Please contact support at support@setready.site');
         return;
       }
       await supabase.auth.signOut();
       router.push('/');
     } catch {
-      setError('Error deleting account. Please contact support at setready@mail.com');
+      setError('Error deleting account. Please contact support at support@setready.site');
     } finally {
       setDeleting(false);
     }

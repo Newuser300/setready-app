@@ -294,7 +294,7 @@ export function buildMessageEmailHtml({
               SetReady — Canada's Background Performer Platform<br/>
               <a href="https://www.setready.site" style="color:#F59E0B;text-decoration:none;">setready.site</a>
               &nbsp;·&nbsp;
-              <a href="mailto:setready@mail.com" style="color:#9ca3af;text-decoration:none;">setready@mail.com</a>
+              <a href="mailto:support@setready.site" style="color:#9ca3af;text-decoration:none;">support@setready.site</a>
               <br/><br/>
               <span style="font-size:11px;color:#d1d5db;">You received this because you have a SetReady account.</span>
             </td>

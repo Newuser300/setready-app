@@ -176,7 +176,7 @@ export function castingRequestEmailHtml({
                 SetReady — Canada's Background Performer Platform<br/>
                 <a href="https://www.setready.site" style="color:#F59E0B;">setready.site</a>
                 &nbsp;·&nbsp;
-                <a href="mailto:setready@mail.com" style="color:#9ca3af;">setready@mail.com</a>
+                <a href="mailto:support@setready.site" style="color:#9ca3af;">support@setready.site</a>
               </p>
             </td>
           </tr>

@@ -43,3 +43,6 @@ next-env.d.ts
 # local credential/notes files
 *.rtf
 Supabase.txt
+Google Console.txt
+Vercel.txt
+TO DO.txt

@@ -322,7 +322,7 @@ export async function POST(req: NextRequest) {
         await sendEmail({
           to: cd.email,
           subject: 'Update on Your SetReady Casting Director Application',
-          html: `<p>Hi ${cd.name || 'there'},</p><p>After review, we are unable to approve your casting director application at this time.${reason ? ` Reason: ${reason}` : ''}</p><p>If you have questions, please contact us at setready@mail.com.</p><p>— The SetReady Team</p>`,
+          html: `<p>Hi ${cd.name || 'there'},</p><p>After review, we are unable to approve your casting director application at this time.${reason ? ` Reason: ${reason}` : ''}</p><p>If you have questions, please contact us at support@setready.site.</p><p>— The SetReady Team</p>`,
         }).catch(() => {})
       }
     } else if (entityType === 'agency') {
@@ -332,7 +332,7 @@ export async function POST(req: NextRequest) {
         await sendEmail({
           to: ag.email,
           subject: 'Update on Your SetReady Agency Application',
-          html: `<p>Hi ${ag.contact_name || 'there'},</p><p>After review, we are unable to approve your agency application for <strong>${ag.name}</strong> at this time.${reason ? ` Reason: ${reason}` : ''}</p><p>If you have questions, please contact us at setready@mail.com.</p><p>— The SetReady Team</p>`,
+          html: `<p>Hi ${ag.contact_name || 'there'},</p><p>After review, we are unable to approve your agency application for <strong>${ag.name}</strong> at this time.${reason ? ` Reason: ${reason}` : ''}</p><p>If you have questions, please contact us at support@setready.site.</p><p>— The SetReady Team</p>`,
         }).catch(() => {})
       }
     } else if (entityType === 'casting_request') {
@@ -351,7 +351,7 @@ export async function POST(req: NextRequest) {
         await sendEmail({
           to: cdEmail,
           subject: `Update on your casting request "${cr?.production_name}"`,
-          html: `<p>Hi ${cdName || 'there'},</p><p>Your casting request for <strong>${cr?.production_name}</strong> was not approved at this time.${reason ? ` Reason: ${reason}` : ''}</p><p>Please contact us at setready@mail.com if you have questions.</p><p>— The SetReady Team</p>`,
+          html: `<p>Hi ${cdName || 'there'},</p><p>Your casting request for <strong>${cr?.production_name}</strong> was not approved at this time.${reason ? ` Reason: ${reason}` : ''}</p><p>Please contact us at support@setready.site if you have questions.</p><p>— The SetReady Team</p>`,
         }).catch(() => {})
       }
     }

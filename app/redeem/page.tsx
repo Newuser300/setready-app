@@ -112,7 +112,7 @@ export default function RedeemPage() {
         )}
         
         <p className="text-center text-sm text-gray-500 mt-6">
-          Need a code? Email <a href="mailto:setready@mail.com" className="text-teal-600 hover:underline">setready@mail.com</a>
+          Need a code? Email <a href="mailto:support@setready.site" className="text-teal-600 hover:underline">support@setready.site</a>
         </p>
       </div>
     </div>

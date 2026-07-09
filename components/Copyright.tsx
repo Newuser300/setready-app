@@ -13,7 +13,7 @@ export default function Copyright() {
         {' · '}
         <a href="/privacy" style={{ color: '#9ca3af', textDecoration: 'underline' }}>Privacy</a>
         {' · '}
-        <a href="mailto:setready@mail.com" style={{ color: '#9ca3af', textDecoration: 'underline' }}>Contact</a>
+        <a href="mailto:support@setready.site" style={{ color: '#9ca3af', textDecoration: 'underline' }}>Contact</a>
       </p>
     </div>
   )

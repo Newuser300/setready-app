@@ -343,7 +343,7 @@ export default function PreviewPage() {
           <div style={{ display: 'flex', gap: '24px', justifyContent: 'center' }}>
             <a href="/terms" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'none' }}>Terms</a>
             <a href="/privacy" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'none' }}>Privacy</a>
-            <a href="mailto:setready@mail.com" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'none' }}>Contact</a>
+            <a href="mailto:support@setready.site" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'none' }}>Contact</a>
           </div>
         </div>
       </footer>
