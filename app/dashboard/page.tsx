@@ -7,6 +7,8 @@ import { createClient } from '@/utils/supabase/client';
 import { openCheckout } from '@/utils/isAndroidApp';
 const supabase = createClient()
 import Copyright from '@/components/Copyright';
+import StickIcon from './StickIcons';
+import DailyQuoteScene from './DailyQuoteScene';
 
 type Module = {
   id: string;
@@ -70,18 +72,18 @@ const moduleTitleOverrides: Record<number, string> = {
 
 const quickActions = [
   { icon: '👤', label: 'My Profile', action: 'link' as const, href: '/profile' },
+  { icon: '📋', label: 'Residency Docs', action: 'link' as const, href: '/residency' },
   { icon: '📖', label: 'Film Set Terms', action: 'link' as const, href: '/glossary' },
   { icon: '👔', label: 'What to Wear', action: 'link' as const, href: '/clothing' },
-  { icon: '📋', label: 'Residency Docs', action: 'link' as const, href: '/residency' },
-  { icon: '📋', label: 'Work Log', action: 'link' as const, href: '/work-log' },
+  { icon: '📝', label: 'Work Log', action: 'link' as const, href: '/work-log' },
   { icon: '👥', label: 'Contacts', action: 'link' as const, href: '/contacts' },
-  { icon: '🎭', label: 'Set Etiquette Simulator', action: 'link' as const, href: '/simulator' },
+  { icon: '🎬', label: 'Set Etiquette Simulator', action: 'link' as const, href: '/simulator' },
   { icon: '💰', label: 'Rate Calculator', action: 'link' as const, href: '/rate-calculator' },
   { icon: '⚖️', label: 'Know Your Rights', action: 'external' as const, href: 'https://ubcpactra.ca/agreements/' },
   { icon: '🤝', label: 'My Referrals', action: 'link' as const, href: '/referrals' },
-  { icon: '🎬', label: "What's Filming", action: 'link' as const, href: '/whats-filming' },
+  { icon: '🎥', label: "What's Filming", action: 'link' as const, href: '/whats-filming' },
   { icon: '🍁', label: 'Find Agencies', action: 'link' as const, href: '/agencies' },
-  { icon: '🎭', label: 'Agency Click', action: 'modal' as const, modal: 'agencyClick' },
+  { icon: '🖱️', label: 'Agency Click', action: 'modal' as const, modal: 'agencyClick' },
   { icon: '🎬', label: 'SetReady Casting', action: 'link' as const, href: '/casting-portal' },
   { icon: '📅', label: 'Availability', action: 'link' as const, href: '/availability' },
   { icon: '🎫', label: 'Voucher Wallet', action: 'link' as const, href: '/voucher-wallet' },
@@ -89,6 +91,8 @@ const quickActions = [
   { icon: '🎮', label: 'Games', action: 'link' as const, href: '/games' },
   { icon: '🌟', label: 'A-List Scenes', action: 'link' as const, href: '/a-list' },
   { icon: '📬', label: 'Messages', action: 'link' as const, href: '/messages' },
+  { icon: '📚', label: 'Free Ebooks to Read', action: 'external' as const, href: 'https://www.gutenberg.org/' },
+  { icon: '🏆', label: 'My Certificates', action: 'scroll' as const, target: 'my-certificates' },
   { icon: '☕', label: 'Support SetReady', action: 'link' as const, href: '/donate' },
 ];
 
@@ -791,6 +795,8 @@ export default function Dashboard() {
       window.open(item.href, '_blank', 'noopener,noreferrer');
     } else if (item.action === 'modal' && item.modal === 'agencyClick') {
       openAgencyClickModal();
+    } else if (item.action === 'scroll' && 'target' in item && item.target) {
+      document.getElementById(item.target)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
 
@@ -831,7 +837,9 @@ export default function Dashboard() {
   const visibleActions = (isFullMember
     ? quickActions.filter(a => a.label !== 'Voucher Wallet')
     : quickActions
-  ).filter(a => a.label !== 'SetReady Casting' || isAdmin)
+  )
+    .filter(a => a.label !== 'SetReady Casting' || isAdmin)
+    .filter(a => a.label !== 'Availability' || isAdmin)
 
   const section1Modules = modules.filter(m => m.section === 1);
   const section2Modules = modules.filter(m => m.section === 2);
@@ -1137,6 +1145,11 @@ export default function Dashboard() {
           )}
 
           {/* QUICK ACTION GRID */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '4px 0 14px' }}>
+            <span style={{ fontSize: '20px' }}>🎟️</span>
+            <h2 style={{ fontSize: '18px', fontWeight: 900, color: '#1a1a2e', margin: 0 }}>Your Toolkit</h2>
+            <span style={{ flex: 1, height: '3px', borderRadius: '3px', background: 'linear-gradient(90deg,#F59E0B,#EC4899,#7C3AED,#0D9488)' }} />
+          </div>
           <div style={{
             display: 'grid',
             gridTemplateColumns: isMobile ? 'repeat(4, 1fr)' : 'repeat(6, 1fr)',
@@ -1153,14 +1166,14 @@ export default function Dashboard() {
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '6px',
+                  gap: '7px',
                   padding: '12px 4px',
                   backgroundColor: 'white',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '12px',
+                  border: '1px solid #eef0f4',
+                  borderRadius: '14px',
                   cursor: 'pointer',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                  minHeight: '72px',
+                  boxShadow: '0 2px 6px rgba(26,26,46,0.07)',
+                  minHeight: '86px',
                 }}
               >
                 {item.label === 'Messages' && unreadMessages > 0 ? (
@@ -1172,13 +1185,13 @@ export default function Dashboard() {
                     {String(item.badge)}
                   </span>
                 ) : null}
-                <span style={{ fontSize: '24px', lineHeight: 1 }}>{item.icon}</span>
+                <StickIcon name={item.label} size={44} />
                 <span style={{
-                  fontSize: '10px',
-                  color: item.label === 'Support SetReady' ? '#F59E0B' : '#374151',
+                  fontSize: '11px',
+                  color: item.label === 'Support SetReady' ? '#EA580C' : '#1f2937',
                   textAlign: 'center',
-                  fontWeight: item.label === 'Support SetReady' ? '700' : '500',
-                  lineHeight: '1.3',
+                  fontWeight: 700,
+                  lineHeight: '1.25',
                 }}>
                   {item.label}
                 </span>
@@ -1431,7 +1444,7 @@ export default function Dashboard() {
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', margin: '28px 0' }} />
 
           {/* MY CERTIFICATES */}
-          <div style={{ marginBottom: '28px' }}>
+          <div id="my-certificates" style={{ marginBottom: '28px', scrollMarginTop: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
               <div style={{ fontSize: '28px' }}>🏆</div>
               <div>
@@ -1491,6 +1504,9 @@ export default function Dashboard() {
               </div>
             );
           })()}
+
+          {/* Daily movie quote + animated crew */}
+          <DailyQuoteScene />
 
           {/* Footer */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px', display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
