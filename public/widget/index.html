@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SetReady — Training & Certification</title>
+<style>
+  :root{--navy:#1a1a2e;--amber:#F59E0B;--amber-d:#c77f08;--ink:#1f2430;--muted:#6b7280;--line:#e8ebf2;--bg:#f7f8fb;--card:#fff;--green:#16a34a;--green-l:#e9f7ef;--red:#dc2626;}
+  *{box-sizing:border-box;font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;}
+  body{margin:0;background:var(--bg);color:var(--ink);}
+  .wrap{max-width:640px;margin:0 auto;padding:18px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 2px 10px rgba(26,26,46,.05);}
+  .brandbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .logo{width:38px;height:38px;border-radius:9px;background:var(--amber);color:var(--navy);font-weight:900;display:flex;align-items:center;justify-content:center;font-size:15px;}
+  .brandbar .t{font-weight:800;font-size:15px;}
+  .brandbar .s{font-size:11px;color:var(--muted);}
+  h1{font-size:22px;margin:0 0 6px;}
+  h2{font-size:18px;margin:0 0 4px;}
+  p.sub{color:var(--muted);font-size:14px;line-height:1.55;margin:0 0 18px;}
+  .field{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:11px;font-size:15px;margin-bottom:10px;}
+  .field:focus{outline:none;border-color:var(--amber);}
+  .btn{border:none;border-radius:11px;padding:12px 20px;font-size:15px;font-weight:700;cursor:pointer;}
+  .btn-p{background:var(--amber);color:var(--navy);}
+  .btn-p:hover{background:var(--amber-d);color:#fff;}
+  .btn-g{background:#fff;border:1.5px solid var(--line);color:var(--ink);}
+  .btn-g:hover{border-color:var(--amber);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .mod{display:flex;align-items:center;gap:13px;padding:13px 15px;border:1px solid var(--line);border-radius:13px;margin-bottom:10px;}
+  .mod .n{width:34px;height:34px;border-radius:9px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;}
+  .mod.done{background:var(--green-l);border-color:#bfe6cd;}
+  .mod.done .n{background:var(--green);}
+  .mod .body{flex:1;}
+  .mod .mt{font-weight:700;font-size:14px;}
+  .mod .ms{font-size:12px;color:var(--muted);}
+  .bar{height:7px;background:var(--line);border-radius:99px;overflow:hidden;margin:10px 0 4px;}
+  .bar>div{height:100%;background:var(--amber);transition:width .3s;}
+  .opt{display:block;width:100%;text-align:left;padding:13px 15px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-size:14px;cursor:pointer;margin-bottom:9px;}
+  .opt:hover{border-color:var(--amber);}
+  .opt.correct{border-color:var(--green);background:var(--green-l);}
+  .opt.wrong{border-color:var(--red);background:#fdeef0;}
+  .pill{display:inline-block;font-size:12px;font-weight:700;padding:4px 11px;border-radius:99px;background:#fff4e0;color:var(--amber-d);}
+  .paywall{background:#fff8ee;border:1px solid #f7e2bd;border-radius:13px;padding:16px;margin-bottom:14px;}
+  .cert{border:3px solid var(--amber);border-radius:16px;padding:26px;text-align:center;background:linear-gradient(180deg,#fffdf8,#fff);}
+  .cert .seal{width:56px;height:56px;border-radius:50%;background:var(--amber);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 10px;}
+  .cert h2{font-family:Georgia,serif;font-size:15px;color:var(--muted);font-weight:400;letter-spacing:.08em;text-transform:uppercase;}
+  .cert .name{font-family:Georgia,serif;font-size:26px;font-weight:700;margin:8px 0;color:var(--navy);}
+  .cert .cid{font-size:11px;color:var(--muted);margin-top:10px;font-family:ui-monospace,Menlo,monospace;}
+  .note{font-size:11px;color:var(--muted);margin-top:14px;line-height:1.5;}
+  .foot{text-align:center;font-size:11px;color:var(--muted);margin-top:14px;}
+  .foot a{color:var(--amber-d);text-decoration:none;font-weight:600;}
+  .banner{border-radius:11px;padding:12px 14px;font-size:13px;margin-bottom:12px;}
+  .banner.ok{background:var(--green-l);border:1px solid #bfe6cd;color:#15803d;}
+  .demoTag{position:fixed;top:8px;right:8px;background:var(--navy);color:#ffcf6b;font-size:10px;font-weight:700;padding:4px 9px;border-radius:99px;opacity:.85;}
+</style>
+</head>
+<body>
+<div class="wrap"><div id="app" class="card"></div>
+  <div class="foot">Powered by <a href="https://www.setready.site" target="_blank">SetReady</a> · Canada’s background-performer training</div>
+</div>
+<div id="demoTag"></div>
+<script>
+// ============ CONFIG ============
+const params = new URLSearchParams(location.search);
+const PARTNER = params.get('partner') || params.get('p') || '';
+const API = (params.get('api') || '').replace(/\/$/,'');
+// Demo mode: opened as a file, no partner key, or ?demo=1 — runs fully offline with mock data.
+const DEMO = params.get('demo') === '1' || location.protocol === 'file:' || !PARTNER;
+if (DEMO) document.getElementById('demoTag').outerHTML = '<div class="demoTag">DEMO MODE</div>';
+
+// ============ MOCK BACKEND (demo only) ============
+const MOCK = {
+  config: {
+    partnerName: '1ov1 Talent Portal',
+    mode: 'free',            // 'free' (promo-funded) or 'paid'
+    price: 9.99,
+    promoActive: true,
+    modules: [
+      { id:'m1', n:1, title:'On-set etiquette & the chain of command', mins:12 },
+      { id:'m2', n:2, title:'Continuity, marks & hitting your position', mins:10 },
+      { id:'m3', n:3, title:'Wardrobe, props & the fitting process', mins:9 },
+      { id:'m4', n:4, title:'Set safety & emergency procedures', mins:11 },
+      { id:'m5', n:5, title:'Vouchers, ACTRA/UBCP basics & getting paid', mins:14 },
+    ],
+  },
+  enrollments: [],
+  enroll(name,email){ const id='wenr_'+Math.random().toString(36).slice(2,10); this.enrollments.push({id,name,email,status:'enrolled'}); return {ok:true, enrollmentId:id}; },
+  complete(email,name){ const cid='SR-'+Date.now().toString(36).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase(); return {ok:true, certId:cid, issuedAt:new Date().toISOString()}; },
+};
+
+// Quiz bank (one scenario per module — same engine the full course uses)
+const QUIZ = {
+  m1:[{q:'The AD gives you a direction that conflicts with what an extra told you. Who do you follow?',o:['The other extra','The Assistant Director (AD)','Whoever is closest'],a:1}],
+  m2:[{q:'Between takes you must return to exactly where you started. This is called…',o:['Blocking your scene','Hitting your mark','Slating'],a:1}],
+  m3:[{q:'Wardrobe gives you a jacket for the scene. Mid-shoot it feels warm. You…',o:['Take it off between takes on your own','Keep continuity — check with wardrobe/AD before changing anything','Swap it for your own jacket'],a:1}],
+  m4:[{q:'You see a cable across a walkway on set. You…',o:['Step over it and say nothing','Flag it to the AD / safety and avoid it','Move it yourself immediately'],a:1}],
+  m5:[{q:'At wrap, what confirms your hours for payment?',o:['A verbal “you’re good”','A signed voucher / time sheet','A text from another extra'],a:1}],
+};
+
+// ============ HELPERS ============
+async function apiGet(path){ if(DEMO) return MOCK.config; const r=await fetch(API+path+(path.includes('?')?'&':'?')+'partner='+encodeURIComponent(PARTNER)); if(!r.ok) throw new Error('config'); return r.json(); }
+async function apiPost(path,body){ if(DEMO){ if(path.endsWith('/enroll')) return MOCK.enroll(body.name,body.email); if(path.endsWith('/complete')) return MOCK.complete(body.email,body.name); return {ok:true}; }
+  const r=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({partner:PARTNER},body))}); if(!r.ok) throw new Error(path); return r.json(); }
+const $=id=>document.getElementById(id);
+const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// ============ STATE ============
+let CFG=null;
+let S={ step:'load', name:'', email:'', enrollmentId:null, unlocked:false, done:new Set(), quiz:null, cert:null };
+
+function brand(){ return `<div class="brandbar"><div class="logo">SR</div><div><div class="t">${esc(CFG?CFG.partnerName:'SetReady')} · Training</div><div class="s">SetReady Certified Background Performer program</div></div></div>`; }
+
+function render(){
+  const a=$('app');
+  if(S.step==='load'){ a.innerHTML=brand()+'<p class="sub">Loading…</p>'; return; }
+  if(S.step==='welcome'){
+    a.innerHTML=brand()+`
+      <h1>Get SetReady Certified</h1>
+      <p class="sub">${CFG.modules.length} short modules on how a professional background performer works on set — then earn your <b>SetReady Certificate of Completion</b> with a verifiable ID. ${CFG.mode==='paid'?`Access is <b>$${CFG.price.toFixed(2)}</b> one-time.`:`Free for ${esc(CFG.partnerName)} talent.`}</p>
+      <input class="field" id="fName" placeholder="Full name" value="${esc(S.name)}">
+      <input class="field" id="fEmail" type="email" placeholder="Email address" value="${esc(S.email)}">
+      <button class="btn btn-p" style="width:100%" onclick="doEnroll()">Start my training →</button>
+      <div class="note">By starting, you agree your name, email and progress are recorded by SetReady to issue and verify your certificate.</div>`;
+    return;
+  }
+  if(S.step==='paywall'){
+    a.innerHTML=brand()+`
+      <h2>Unlock your training</h2>
+      <p class="sub">One-time access to all ${CFG.modules.length} modules and your certificate.</p>
+      <div class="paywall"><div style="font-size:26px;font-weight:800">$${CFG.price.toFixed(2)}<span style="font-size:13px;color:var(--muted);font-weight:600"> one-time</span></div><div style="font-size:12px;color:var(--muted);margin-top:4px">Includes all modules + verifiable certificate.</div></div>
+      <button class="btn btn-p" style="width:100%;margin-bottom:10px" onclick="payNow()">Pay $${CFG.price.toFixed(2)} & start</button>
+      ${CFG.promoActive?`<div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:6px">Have a promo code from ${esc(CFG.partnerName)}?</div>
+      <div style="display:flex;gap:8px"><input class="field" id="fPromo" placeholder="Promo code" style="margin:0"><button class="btn btn-g" onclick="applyPromo()">Apply</button></div>`:''}
+      <div id="promoMsg" class="note"></div>`;
+    return;
+  }
+  if(S.step==='dashboard'){
+    const total=CFG.modules.length, done=S.done.size, pct=Math.round(done/total*100);
+    a.innerHTML=brand()+`
+      ${done>0?`<div class="banner ok">Progress saved for <b>${esc(S.email)}</b>.</div>`:''}
+      <h2>Your modules</h2><p class="sub">Complete all ${total} to earn your certificate.</p>
+      <div class="bar"><div style="width:${pct}%"></div></div><div class="note" style="margin-top:0">${done} of ${total} complete · ${pct}%</div>
+      <div style="margin-top:14px">${CFG.modules.map(m=>{const d=S.done.has(m.id);return `<div class="mod ${d?'done':''}"><div class="n">${d?'✓':m.n}</div><div class="body"><div class="mt">${esc(m.title)}</div><div class="ms">${m.mins} min · lesson + quiz</div></div>${d?'<span class="pill">Done</span>':`<button class="btn btn-g" onclick="startModule('${m.id}')">Start</button>`}</div>`;}).join('')}</div>
+      ${done===total?`<button class="btn btn-p" style="width:100%;margin-top:12px" onclick="finish()">🎓 Get my certificate</button>`:''}`;
+    return;
+  }
+  if(S.step==='quiz'){
+    const m=CFG.modules.find(x=>x.id===S.quiz.id), q=QUIZ[S.quiz.id]?QUIZ[S.quiz.id][0]:QUIZ.m1[0];
+    a.innerHTML=brand()+`
+      <div class="pill">Module ${m.n}</div>
+      <h2 style="margin-top:8px">${esc(m.title)}</h2>
+      <p class="sub">Read the quick lesson, then answer to complete the module. This teaches the professional habit — real situations are always checked with your AD.</p>
+      <div class="card" style="box-shadow:none;background:#fafbfe;margin-bottom:14px;font-size:13.5px;line-height:1.6">On a professional set, background performers follow the Assistant Director, keep continuity, and never improvise safety. Here’s a scenario:</div>
+      <div style="font-weight:700;margin-bottom:12px">${esc(q.q)}</div>
+      <div id="qopts">${q.o.map((o,i)=>`<button class="opt" id="o${i}" onclick="answer(${i})">${esc(o)}</button>`).join('')}</div>
+      <div id="qfb" class="note"></div>
+      <div id="qnext" style="display:none;margin-top:12px"><button class="btn btn-p" onclick="passModule('${S.quiz.id}')">Complete module →</button></div>`;
+    return;
+  }
+  if(S.step==='cert'){
+    const d=new Date(S.cert.issuedAt);
+    a.innerHTML=brand()+`
+      <div class="cert">
+        <div class="seal">🎓</div>
+        <h2>Certificate of Completion</h2>
+        <div class="name">${esc(S.name)}</div>
+        <div style="font-size:13px;color:var(--muted)">has completed the SetReady Background Performer training</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px">Issued ${d.toLocaleDateString()} · via ${esc(CFG.partnerName)}</div>
+        <div class="cid">Certificate ID: ${esc(S.cert.certId)}</div>
+      </div>
+      <div class="note">Supplementary training — not accredited. Verify this certificate anytime at setready.site/verify. A copy has been recorded to SetReady and emailed to ${esc(S.email)}.</div>
+      <button class="btn btn-g" style="width:100%;margin-top:12px" onclick="window.print()">🖨️ Save / print certificate</button>`;
+    return;
+  }
+}
+
+// ============ ACTIONS ============
+async function boot(){ try{ CFG=await apiGet('/api/embed/config'); }catch(e){ CFG=MOCK.config; } S.step='welcome'; render(); }
+async function doEnroll(){
+  const name=$('fName').value.trim(), email=$('fEmail').value.trim();
+  if(!name||!/.+@.+\..+/.test(email)){ alert('Please enter your name and a valid email.'); return; }
+  S.name=name; S.email=email;
+  try{ const r=await apiPost('/api/embed/enroll',{name,email}); S.enrollmentId=r.enrollmentId||null; }catch(e){}
+  S.step = (CFG.mode==='paid' && !S.unlocked) ? 'paywall' : 'dashboard';
+  render();
+}
+function applyPromo(){ const code=($('fPromo').value||'').trim(); if(!code){ return; }
+  // Demo: any non-empty code unlocks. Live: validated by /api/embed/config against the partner's promo.
+  if(DEMO || code){ S.unlocked=true; S.step='dashboard'; render(); }
+  else { $('promoMsg').textContent='That code isn’t valid.'; }
+}
+async function payNow(){
+  if(DEMO){ S.unlocked=true; S.step='dashboard'; render(); return; }
+  try{ const r=await apiPost('/api/embed/checkout',{email:S.email,name:S.name}); if(r.url){ location.href=r.url; return; } }catch(e){}
+  alert('Payment could not start. Please try again.');
+}
+function startModule(id){ S.quiz={id}; S.step='quiz'; render(); }
+function answer(i){ const q=QUIZ[S.quiz.id]?QUIZ[S.quiz.id][0]:QUIZ.m1[0]; const opts=$('qopts'); [...opts.children].forEach(b=>b.disabled=true);
+  $('o'+q.a).classList.add('correct'); if(i!==q.a) $('o'+i).classList.add('wrong');
+  $('qfb').innerHTML = i===q.a ? '<b style="color:var(--green)">Correct.</b> On set, the AD is your chain of command.' : '<b style="color:var(--red)">Not quite.</b> The safe answer is always: follow the AD.';
+  $('qnext').style.display='block';
+}
+function passModule(id){ S.done.add(id); S.step='dashboard'; render(); }
+async function finish(){
+  let r; try{ r=await apiPost('/api/embed/complete',{email:S.email,name:S.name,modules:[...S.done]}); }catch(e){ r=MOCK.complete(S.email,S.name); }
+  S.cert={certId:r.certId, issuedAt:r.issuedAt||new Date().toISOString()};
+  S.step='cert'; render();
+  // tell the host page our height (for the loader auto-resize)
+  postHeight();
+}
+function postHeight(){ try{ parent.postMessage({setready:'height', px:document.body.scrollHeight}, '*'); }catch(e){} }
+window.addEventListener('load', ()=>{ boot(); });
+const _ro = new ResizeObserver(()=>postHeight()); try{ _ro.observe(document.body);}catch(e){}
+</script>
+</body>
+</html>
