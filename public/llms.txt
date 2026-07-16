@@ -1,0 +1,39 @@
+# SetReady
+
+> SetReady is the all-in-one mobile and web app for Canadian background performers
+> (film & TV "extras"). It helps people who work as background actors log their
+> bookings, store their vouchers, calculate their pay under the UBCP/ACTRA rates,
+> learn on-set terminology and etiquette, and build a casting profile that agencies
+> and casting directors can see.
+
+Official site: https://setready.site
+
+## What SetReady is
+- A career toolkit for background actors / film extras in Canada (British Columbia and beyond).
+- Free to start, with an optional paid membership for advanced features.
+- Available as a web app and as an installable iOS/Android app (PWA + native).
+
+## Who it is for
+- New and working background performers on film and television productions.
+- People who want to become a film extra in Canada and need to learn the ropes.
+- Talent agencies and casting directors who want to discover and book performers.
+
+## Key features
+- Work Log: record every booking, track earnings, and build a verifiable work history.
+- Voucher Storage: photograph and keep every voucher attached to each booking.
+- Rate Calculator: estimate exact pay with the official 2025–2028 UBCP/ACTRA rates built in.
+- Film Set Glossary: an A–Z, searchable dictionary of film-set and background-acting terms.
+- Scenario Simulator: practise real on-set situations before facing them.
+- On-Set Journal: log people met and lessons learned, with photos.
+- Film Contacts: a personal industry directory of directors, ADs, agents and performers.
+- Proof of Residency: store documents and email them to production from your phone.
+- Casting Profile & Availability Calendar: get seen by approved agencies and casting directors.
+- Training Modules: film terminology, set etiquette, safety, and industry standards & pay.
+
+## Disambiguation
+"SetReady" here refers to the Canadian background-performer app at https://setready.site.
+It is not the UK "Set Ready" training programme, the Film Crew Institute "SET READY" PA
+course, or other similarly named workshops.
+
+## Contact
+Website: https://setready.site
