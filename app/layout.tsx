@@ -78,6 +78,9 @@ const jsonLd = {
       name: 'SetReady',
       url: SITE,
       logo: `${SITE}/setready-icon-512.png`,
+      sameAs: [
+        'https://www.facebook.com/profile.php?id=61590513972019',
+      ],
       description: DESCRIPTION,
     },
     {
