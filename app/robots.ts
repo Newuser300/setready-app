@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://setready.site';
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.setready.site';
 
 // Allow normal crawling of public pages, keep private/app routes out of the
 // index, and explicitly welcome the major AI crawlers so SetReady can be found

@@ -8,7 +8,7 @@ import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({ subsets: ['latin'] });
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://setready.site';
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.setready.site';
 const TITLE = 'SetReady — The App for Canadian Background Actors & Film Extras';
 const DESCRIPTION =
   'SetReady is the all-in-one app for Canadian background performers (film & TV extras): log bookings, store vouchers, calculate UBCP/ACTRA pay, learn on-set terminology, and build a casting profile agencies can see. Free to start.';
