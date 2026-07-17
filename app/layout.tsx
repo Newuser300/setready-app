@@ -4,6 +4,7 @@ import './globals.css';
 import { Toaster } from 'react-hot-toast';
 import PWAInstaller from '@/components/PWAInstaller';
 import VisitTracker from '@/components/VisitTracker';
+import RebrandBanner from '@/components/RebrandBanner';
 import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -170,6 +171,10 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         {children}
+        {/* Lives in the root layout, not on the homepage: signed-in arrivals are
+            pushed straight to /dashboard, which would unmount a page-level
+            banner before it could be read. */}
+        <RebrandBanner />
         <Toaster position="top-right" />
         <PWAInstaller />
         <VisitTracker />

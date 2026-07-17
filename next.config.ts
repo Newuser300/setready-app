@@ -30,6 +30,16 @@ const nextConfig: NextConfig = {
       // /api and /auth are excluded: Stripe does not follow redirects on webhook
       // delivery, and the auth callback must complete on the domain that issued
       // the code verifier cookie.
+      // The homepage carries a marker so BGReady can greet arrivals with the
+      // rebrand notice. It still lands on the real homepage, so Change of
+      // Address sees old-home -> new-home and transfers its ranking.
+      // This must precede the catch-all below: first match wins.
+      {
+        source: '/',
+        has: [{ type: 'host', value: '(www\\.)?setready\\.site' }],
+        destination: 'https://www.bgready.site/?from=setready',
+        permanent: true,
+      },
       {
         source: '/:path((?!api/|auth/).*)',
         has: [{ type: 'host', value: '(www\\.)?setready\\.site' }],
