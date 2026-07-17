@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">SetReady</string>
-    <string name="title_activity_main">SetReady</string>
+    <string name="app_name">BGReady</string>
+    <string name="title_activity_main">BGReady</string>
     <string name="package_name">com.setready.app</string>
     <string name="custom_url_scheme">com.setready.app</string>
 </resources>

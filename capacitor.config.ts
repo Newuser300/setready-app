@@ -2,10 +2,10 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.setready.app',
-  appName: 'SetReady',
+  appName: 'BGReady',
   webDir: 'out',
   server: {
-    url: 'https://www.setready.site',
+    url: 'https://www.bgready.site',
     cleartext: false,
     androidScheme: 'https',
   },
