@@ -93,7 +93,7 @@ export default function SignIn() {
               flexShrink: 0,
             }}>SR</div>
             <div>
-              <div style={{ fontFamily: 'Georgia, serif', fontSize: '24px', fontWeight: 700, color: 'white', lineHeight: 1 }}>SetReady</div>
+              <div style={{ fontFamily: 'Georgia, serif', fontSize: '24px', fontWeight: 700, color: 'white', lineHeight: 1 }}>BGReady</div>
               <div style={{ fontSize: '11px', color: '#F59E0B', marginTop: '4px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Background Performer Platform</div>
             </div>
           </div>
@@ -134,7 +134,7 @@ export default function SignIn() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontWeight: 900, fontSize: '16px', color: '#1a1a2e',
               }}>SR</div>
-              <span style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: 700, color: '#1a1a2e' }}>SetReady</span>
+              <span style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: 700, color: '#1a1a2e' }}>BGReady</span>
             </div>
           </div>
         )}
@@ -145,7 +145,7 @@ export default function SignIn() {
             WELCOME BACK
           </div>
           <h1 style={{ fontFamily: 'Georgia, serif', fontSize: isMobile ? '26px' : '30px', fontWeight: 700, color: '#1a1a2e', margin: 0, lineHeight: 1.2 }}>
-            Sign in to SetReady
+            Sign in to BGReady
           </h1>
         </div>
 
@@ -279,7 +279,7 @@ export default function SignIn() {
 
         <div style={{ marginTop: '16px', textAlign: 'center' }}>
           <p style={{ fontSize: '11px', color: '#9ca3af', margin: 0 }}>
-            Need help? support@setready.site
+            Need help? support@bgready.site
           </p>
         </div>
 

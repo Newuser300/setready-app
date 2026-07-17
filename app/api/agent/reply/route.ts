@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
   // Email notification — fire and forget so a send failure doesn't fail the in-app reply
   if (user?.email) {
-    const emailBody = `${body.trim()}\n\n---\nPlease reply to this message through SetReady, not by replying to this email.`
+    const emailBody = `${body.trim()}\n\n---\nPlease reply to this message through BGReady, not by replying to this email.`
     sendEmail({
       to: user.email,
       subject: reply.subject,
@@ -43,8 +43,8 @@ export async function POST(request: NextRequest) {
         subject: reply.subject,
         body: emailBody,
         senderName: session.name,
-        actionUrl: 'https://www.setready.site/messages',
-        actionLabel: 'Reply in SetReady →',
+        actionUrl: 'https://www.bgready.site/messages',
+        actionLabel: 'Reply in BGReady →',
       }),
     }).catch((e: Error) => console.error('[agent/reply] email notification failed:', e))
   }

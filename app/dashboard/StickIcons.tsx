@@ -3,7 +3,7 @@
 import React from 'react';
 
 /*
- * SetReady stick-figure tab icons.
+ * BGReady stick-figure tab icons.
  * Each tab gets a UNIQUE little stick person doing something relevant to the tab,
  * on a soft colour-tinted rounded tile. Consistent body, unique arms + prop + colour.
  */
@@ -214,7 +214,7 @@ const ICONS: Record<string, IconDef> = {
       </>
     ),
   },
-  'SetReady Casting': {
+  'BGReady Casting': {
     bg: '#FEF9C3', accent: '#CA8A04', pop: '#A16207',
     art: (
       <>
@@ -335,7 +335,7 @@ const ICONS: Record<string, IconDef> = {
       </>
     ),
   },
-  'Support SetReady': {
+  'Support BGReady': {
     bg: '#FFEDD5', accent: '#EA580C', pop: '#F59E0B',
     art: (
       <>

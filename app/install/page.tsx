@@ -42,19 +42,19 @@ export default function InstallPage() {
     { icon: '⬆️', title: 'Open in Safari', desc: 'Make sure you are using the Safari browser — Chrome on iPhone does not support home screen installation.' },
     { icon: '⎙', title: 'Tap the Share button', desc: 'Tap the Share icon at the bottom of the browser (the box with an arrow pointing up).' },
     { icon: '＋', title: 'Tap "Add to Home Screen"', desc: 'Scroll down in the share sheet to find the "Add to Home Screen" option and tap it.' },
-    { icon: '✓', title: 'Tap Add', desc: 'Confirm by tapping "Add" in the top right. SetReady appears on your home screen instantly.' },
+    { icon: '✓', title: 'Tap Add', desc: 'Confirm by tapping "Add" in the top right. BGReady appears on your home screen instantly.' },
   ]
 
   const androidSteps = [
     { icon: '⋮', title: 'Open Chrome menu', desc: 'Tap the three-dot menu icon in the top right corner of Chrome.' },
     { icon: '＋', title: 'Tap "Add to Home Screen"', desc: 'Scroll down in the menu to find "Add to Home Screen" and tap it.' },
-    { icon: '✓', title: 'Tap Install', desc: 'A dialog will appear — tap "Install" to confirm. SetReady is now on your home screen.' },
+    { icon: '✓', title: 'Tap Install', desc: 'A dialog will appear — tap "Install" to confirm. BGReady is now on your home screen.' },
   ]
 
   const desktopSteps = [
     { icon: '⊕', title: 'Look for the install icon', desc: 'In Chrome, Edge, or Brave, look for the install icon (⊕) in the address bar on the right side.' },
-    { icon: '↓', title: 'Click "Install SetReady"', desc: 'Click the icon and select "Install SetReady" from the dropdown prompt.' },
-    { icon: '✓', title: 'Launch from desktop', desc: 'SetReady now opens as a standalone app — no browser chrome, no tabs.' },
+    { icon: '↓', title: 'Click "Install BGReady"', desc: 'Click the icon and select "Install BGReady" from the dropdown prompt.' },
+    { icon: '✓', title: 'Launch from desktop', desc: 'BGReady now opens as a standalone app — no browser chrome, no tabs.' },
   ]
 
   return (
@@ -63,7 +63,7 @@ export default function InstallPage() {
       <div style={{ padding: '20px 20px 0', maxWidth: '480px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
           <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#F59E0B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '13px', color: '#1a1a2e', fontFamily: 'Arial, sans-serif' }}>SR</div>
-          <span style={{ fontWeight: '700', fontSize: '15px', color: 'white' }}>SetReady</span>
+          <span style={{ fontWeight: '700', fontSize: '15px', color: 'white' }}>BGReady</span>
         </Link>
         <Link href="/" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>← Back</Link>
       </div>
@@ -74,11 +74,11 @@ export default function InstallPage() {
         {installed ? (
           <>
             <h1 style={{ fontSize: '26px', fontWeight: '800', margin: '0 0 10px' }}>✅ Already Installed!</h1>
-            <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: '1.5' }}>You are using the SetReady app. No further action needed.</p>
+            <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: '1.5' }}>You are using the BGReady app. No further action needed.</p>
           </>
         ) : (
           <>
-            <h1 style={{ fontSize: '26px', fontWeight: '800', margin: '0 0 10px', lineHeight: '1.2' }}>Install SetReady</h1>
+            <h1 style={{ fontSize: '26px', fontWeight: '800', margin: '0 0 10px', lineHeight: '1.2' }}>Install BGReady</h1>
             <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: '1.5' }}>Add to your home screen for instant access on set — works like a native app, no App Store needed.</p>
           </>
         )}
@@ -139,7 +139,7 @@ export default function InstallPage() {
                   >
                     📲 Install Now
                   </button>
-                  <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginTop: '12px' }}>Tap to add SetReady to your home screen</p>
+                  <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginTop: '12px' }}>Tap to add BGReady to your home screen</p>
                 </div>
               ) : (
                 androidSteps.map((s, i) => (
@@ -178,7 +178,7 @@ export default function InstallPage() {
 
           {/* Footer note */}
           <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.08)', fontSize: '13px', color: 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: '1.6' }}>
-            Once installed, SetReady opens like a native app — no browser needed.
+            Once installed, BGReady opens like a native app — no browser needed.
           </div>
 
           {/* CTA */}

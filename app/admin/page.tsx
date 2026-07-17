@@ -375,7 +375,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `setready-emails-${new Date().toISOString().slice(0, 10)}.txt`;
+    a.download = `bgready-emails-${new Date().toISOString().slice(0, 10)}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1183,7 +1183,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
           <div className="flex items-center gap-3">
             <span className="text-2xl">⚙️</span>
             <div>
-              <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">SetReady</p>
+              <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">BGReady</p>
               <h1 className="text-lg font-bold leading-tight">Admin Panel</h1>
             </div>
           </div>
@@ -2117,7 +2117,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
               {/* Add new admin */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
                 <h4 className="font-bold text-gray-800 mb-1 text-sm">Add New Admin</h4>
-                <p className="text-xs text-gray-500 mb-4">Grant admin access to another email address. They must already have a SetReady account.</p>
+                <p className="text-xs text-gray-500 mb-4">Grant admin access to another email address. They must already have a BGReady account.</p>
 
                 {!confirmNewAdmin ? (
                   <div className="flex gap-2">
@@ -2182,7 +2182,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                     <input
                       value={promoForm.code}
                       onChange={e => setPromoForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
-                      placeholder="e.g. SETREADY2026"
+                      placeholder="e.g. BGREADY2026"
                       className="flex-1 min-w-0 px-3 py-2 border border-gray-200 rounded-lg text-sm uppercase tracking-wider font-mono"
                     />
                     <button

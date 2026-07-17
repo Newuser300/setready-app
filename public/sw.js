@@ -1,4 +1,4 @@
-const CACHE = 'setready-v1'
+const CACHE = 'bgready-v1'
 const PRECACHE = [
   '/',
   '/dashboard',

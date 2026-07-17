@@ -249,8 +249,8 @@ export async function POST(req: NextRequest) {
       if (cd?.email) {
         await sendEmail({
           to: cd.email,
-          subject: 'Your SetReady Casting Director Access Has Been Approved',
-          html: `<p>Hi ${cd.name || 'there'},</p><p>Your casting director account for <strong>${cd.company || 'your company'}</strong> has been approved on SetReady Casting.</p><p>You can now log in at <a href="https://setready.site/casting/login">setready.site/casting/login</a> and begin posting casting requests.</p><p>— The SetReady Team</p>`,
+          subject: 'Your BGReady Casting Director Access Has Been Approved',
+          html: `<p>Hi ${cd.name || 'there'},</p><p>Your casting director account for <strong>${cd.company || 'your company'}</strong> has been approved on BGReady Casting.</p><p>You can now log in at <a href="https://bgready.site/casting/login">bgready.site/casting/login</a> and begin posting casting requests.</p><p>— The BGReady Team</p>`,
         }).catch(() => {})
       }
     } else if (entityType === 'agency') {
@@ -266,8 +266,8 @@ export async function POST(req: NextRequest) {
       if (ag?.email) {
         await sendEmail({
           to: ag.email,
-          subject: 'Your SetReady Agency Application Has Been Approved',
-          html: `<p>Congratulations!</p><p>Your agency <strong>${ag.name}</strong> has been approved on SetReady Casting.</p><p>You can now log in at <a href="https://setready.site/agent/login">setready.site/agent/login</a> and begin building your roster.</p><p>— The SetReady Team</p>`,
+          subject: 'Your BGReady Agency Application Has Been Approved',
+          html: `<p>Congratulations!</p><p>Your agency <strong>${ag.name}</strong> has been approved on BGReady Casting.</p><p>You can now log in at <a href="https://bgready.site/agent/login">bgready.site/agent/login</a> and begin building your roster.</p><p>— The BGReady Team</p>`,
         }).catch(() => {})
       }
     } else if (entityType === 'casting_request') {
@@ -305,7 +305,7 @@ export async function POST(req: NextRequest) {
           await sendEmail({
             to: cdEmail,
             subject: `Your casting request "${cr.production_name}" has been approved`,
-            html: `<p>Hi ${cdName || 'there'},</p><p>Your casting request for <strong>${cr.production_name}</strong> has been approved and is now live. Agents will be notified.</p><p>— The SetReady Team</p>`,
+            html: `<p>Hi ${cdName || 'there'},</p><p>Your casting request for <strong>${cr.production_name}</strong> has been approved and is now live. Agents will be notified.</p><p>— The BGReady Team</p>`,
           }).catch(() => {})
         }
       }
@@ -321,8 +321,8 @@ export async function POST(req: NextRequest) {
       if (cd?.email) {
         await sendEmail({
           to: cd.email,
-          subject: 'Update on Your SetReady Casting Director Application',
-          html: `<p>Hi ${cd.name || 'there'},</p><p>After review, we are unable to approve your casting director application at this time.${reason ? ` Reason: ${reason}` : ''}</p><p>If you have questions, please contact us at support@setready.site.</p><p>— The SetReady Team</p>`,
+          subject: 'Update on Your BGReady Casting Director Application',
+          html: `<p>Hi ${cd.name || 'there'},</p><p>After review, we are unable to approve your casting director application at this time.${reason ? ` Reason: ${reason}` : ''}</p><p>If you have questions, please contact us at support@bgready.site.</p><p>— The BGReady Team</p>`,
         }).catch(() => {})
       }
     } else if (entityType === 'agency') {
@@ -331,8 +331,8 @@ export async function POST(req: NextRequest) {
       if (ag?.email) {
         await sendEmail({
           to: ag.email,
-          subject: 'Update on Your SetReady Agency Application',
-          html: `<p>Hi ${ag.contact_name || 'there'},</p><p>After review, we are unable to approve your agency application for <strong>${ag.name}</strong> at this time.${reason ? ` Reason: ${reason}` : ''}</p><p>If you have questions, please contact us at support@setready.site.</p><p>— The SetReady Team</p>`,
+          subject: 'Update on Your BGReady Agency Application',
+          html: `<p>Hi ${ag.contact_name || 'there'},</p><p>After review, we are unable to approve your agency application for <strong>${ag.name}</strong> at this time.${reason ? ` Reason: ${reason}` : ''}</p><p>If you have questions, please contact us at support@bgready.site.</p><p>— The BGReady Team</p>`,
         }).catch(() => {})
       }
     } else if (entityType === 'casting_request') {
@@ -351,7 +351,7 @@ export async function POST(req: NextRequest) {
         await sendEmail({
           to: cdEmail,
           subject: `Update on your casting request "${cr?.production_name}"`,
-          html: `<p>Hi ${cdName || 'there'},</p><p>Your casting request for <strong>${cr?.production_name}</strong> was not approved at this time.${reason ? ` Reason: ${reason}` : ''}</p><p>Please contact us at support@setready.site if you have questions.</p><p>— The SetReady Team</p>`,
+          html: `<p>Hi ${cdName || 'there'},</p><p>Your casting request for <strong>${cr?.production_name}</strong> was not approved at this time.${reason ? ` Reason: ${reason}` : ''}</p><p>Please contact us at support@bgready.site if you have questions.</p><p>— The BGReady Team</p>`,
         }).catch(() => {})
       }
     }

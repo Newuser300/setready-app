@@ -287,7 +287,7 @@ export default function ClothingGuidePage() {
                 ))}
               </ul>
               <div className="mt-6 pt-4 border-t border-gray-200 text-center">
-                <p className="text-xs text-gray-400 font-medium tracking-wide">SetReady · setready.site</p>
+                <p className="text-xs text-gray-400 font-medium tracking-wide">BGReady · bgready.site</p>
               </div>
             </div>
           </div>

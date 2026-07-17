@@ -2,7 +2,7 @@ import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const FROM_EMAIL = 'SetReady <notifications@setready.site>'
+const FROM_EMAIL = 'BGReady <notifications@bgready.site>'
 
 function isEmailEnabled() {
   return !!process.env.RESEND_API_KEY
@@ -64,8 +64,8 @@ export function castingRequestEmailHtml({
 }) {
   const dashboardUrl =
     recipientType === 'agent'
-      ? 'https://www.setready.site/agent/dashboard'
-      : 'https://www.setready.site/casting-portal'
+      ? 'https://www.bgready.site/agent/dashboard'
+      : 'https://www.bgready.site/casting-portal'
 
   const ctaText =
     recipientType === 'agent'
@@ -103,7 +103,7 @@ export function castingRequestEmailHtml({
             <td style="background:#1a1a2e;padding:24px 32px;">
               <table><tr><td>
                 <div style="width:44px;height:44px;background:#F59E0B;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#1a1a2e;vertical-align:middle;">SR</div>
-                <span style="color:white;font-size:22px;font-weight:700;margin-left:12px;vertical-align:middle;">SetReady Casting</span>
+                <span style="color:white;font-size:22px;font-weight:700;margin-left:12px;vertical-align:middle;">BGReady Casting</span>
               </td></tr></table>
             </td>
           </tr>
@@ -155,7 +155,7 @@ export function castingRequestEmailHtml({
 
               ${recipientType === 'performer' ? `
               <div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px;padding:16px;margin-bottom:24px;font-size:14px;color:#92400e;">
-                <strong>📋 Self-Represented Performer:</strong> As an independent performer, the casting director may contact you directly using the contact information on your SetReady profile. Make sure your profile is complete and up to date.
+                <strong>📋 Self-Represented Performer:</strong> As an independent performer, the casting director may contact you directly using the contact information on your BGReady profile. Make sure your profile is complete and up to date.
               </div>` : ''}
 
               <!-- CTA -->
@@ -173,10 +173,10 @@ export function castingRequestEmailHtml({
           <tr>
             <td style="background:#f9fafb;padding:20px 32px;border-top:1px solid #e5e7eb;text-align:center;">
               <p style="font-size:12px;color:#9ca3af;margin:0;">
-                SetReady — Canada's Background Performer Platform<br/>
-                <a href="https://www.setready.site" style="color:#F59E0B;">setready.site</a>
+                BGReady — Canada's Background Performer Platform<br/>
+                <a href="https://www.bgready.site" style="color:#F59E0B;">bgready.site</a>
                 &nbsp;·&nbsp;
-                <a href="mailto:support@setready.site" style="color:#9ca3af;">support@setready.site</a>
+                <a href="mailto:support@bgready.site" style="color:#9ca3af;">support@bgready.site</a>
               </p>
             </td>
           </tr>
@@ -226,7 +226,7 @@ export function submissionConfirmedEmailHtml({
         <table width="600" style="background:white;border-radius:16px;overflow:hidden;">
           <tr>
             <td style="background:#1a1a2e;padding:24px 32px;">
-              <span style="color:white;font-size:20px;font-weight:700;">🎬 SetReady Casting</span>
+              <span style="color:white;font-size:20px;font-weight:700;">🎬 BGReady Casting</span>
             </td>
           </tr>
           <tr><td style="background:#F59E0B;height:4px;"></td></tr>
@@ -249,12 +249,12 @@ export function submissionConfirmedEmailHtml({
 
               <p style="font-size:14px;color:#6b7280;line-height:1.6;">Your agency will be in touch with further details. Please confirm your availability with them directly.</p>
 
-              <a href="https://www.setready.site/availability" style="display:inline-block;background:#F59E0B;color:#1a1a2e;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;margin-top:16px;">Update Your Availability</a>
+              <a href="https://www.bgready.site/availability" style="display:inline-block;background:#F59E0B;color:#1a1a2e;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;margin-top:16px;">Update Your Availability</a>
             </td>
           </tr>
           <tr>
             <td style="padding:16px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;font-size:12px;color:#9ca3af;">
-              SetReady · <a href="https://www.setready.site" style="color:#F59E0B;">setready.site</a>
+              BGReady · <a href="https://www.bgready.site" style="color:#F59E0B;">bgready.site</a>
             </td>
           </tr>
         </table>
@@ -283,7 +283,7 @@ export function agentConfirmationEmailHtml({
     <tr>
       <td align="center" style="padding:40px 20px;">
         <table width="600" style="background:white;border-radius:16px;overflow:hidden;">
-          <tr><td style="background:#1a1a2e;padding:24px 32px;"><span style="color:white;font-size:20px;font-weight:700;">🎬 SetReady Casting</span></td></tr>
+          <tr><td style="background:#1a1a2e;padding:24px 32px;"><span style="color:white;font-size:20px;font-weight:700;">🎬 BGReady Casting</span></td></tr>
           <tr><td style="background:#F59E0B;height:4px;"></td></tr>
           <tr>
             <td style="padding:32px;">
@@ -293,10 +293,10 @@ export function agentConfirmationEmailHtml({
                 <strong>${performerName}</strong> has been confirmed by the casting director for <strong>${productionName}</strong> on ${shootDate}.
               </p>
               <p style="font-size:14px;color:#6b7280;line-height:1.6;margin-top:16px;">Please contact the performer to confirm their availability and provide call time details.</p>
-              <a href="https://www.setready.site/agent/dashboard" style="display:inline-block;background:#F59E0B;color:#1a1a2e;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;margin-top:20px;">View Agent Dashboard</a>
+              <a href="https://www.bgready.site/agent/dashboard" style="display:inline-block;background:#F59E0B;color:#1a1a2e;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;margin-top:20px;">View Agent Dashboard</a>
             </td>
           </tr>
-          <tr><td style="padding:16px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;font-size:12px;color:#9ca3af;">SetReady · <a href="https://www.setready.site" style="color:#F59E0B;">setready.site</a></td></tr>
+          <tr><td style="padding:16px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;font-size:12px;color:#9ca3af;">BGReady · <a href="https://www.bgready.site" style="color:#F59E0B;">bgready.site</a></td></tr>
         </table>
       </td>
     </tr>
@@ -329,7 +329,7 @@ export function bookingConfirmedPerformerEmailHtml({
     <tr>
       <td align="center" style="padding:40px 20px;">
         <table width="600" style="background:white;border-radius:16px;overflow:hidden;">
-          <tr><td style="background:#1a1a2e;padding:24px 32px;"><span style="color:white;font-size:20px;font-weight:700;">🎬 SetReady</span></td></tr>
+          <tr><td style="background:#1a1a2e;padding:24px 32px;"><span style="color:white;font-size:20px;font-weight:700;">🎬 BGReady</span></td></tr>
           <tr><td style="background:#22c55e;height:4px;"></td></tr>
           <tr>
             <td style="padding:32px;">
@@ -347,10 +347,10 @@ export function bookingConfirmedPerformerEmailHtml({
                 ${rate ? `<tr><td style="padding:6px 0;font-size:13px;color:#6b7280;font-weight:600;">Rate</td><td style="padding:6px 0;font-size:14px;color:#1a1a2e;font-weight:700;">${rate}</td></tr>` : ''}
               </table>
               <p style="font-size:13px;color:#9ca3af;line-height:1.6;margin-top:20px;">Your agent or the casting director will contact you with further details. Please ensure your availability is up to date.</p>
-              <a href="https://www.setready.site/dashboard" style="display:inline-block;background:#F59E0B;color:#1a1a2e;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;margin-top:20px;">View Your Dashboard</a>
+              <a href="https://www.bgready.site/dashboard" style="display:inline-block;background:#F59E0B;color:#1a1a2e;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;margin-top:20px;">View Your Dashboard</a>
             </td>
           </tr>
-          <tr><td style="padding:16px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;font-size:12px;color:#9ca3af;">SetReady · <a href="https://www.setready.site" style="color:#F59E0B;">setready.site</a></td></tr>
+          <tr><td style="padding:16px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;font-size:12px;color:#9ca3af;">BGReady · <a href="https://www.bgready.site" style="color:#F59E0B;">bgready.site</a></td></tr>
         </table>
       </td>
     </tr>
@@ -375,26 +375,26 @@ export function rosterInviteEmailHtml({
     <tr>
       <td align="center" style="padding:40px 20px;">
         <table width="600" style="background:white;border-radius:16px;overflow:hidden;">
-          <tr><td style="background:#1a1a2e;padding:24px 32px;"><span style="color:white;font-size:20px;font-weight:700;">🎬 SetReady</span></td></tr>
+          <tr><td style="background:#1a1a2e;padding:24px 32px;"><span style="color:white;font-size:20px;font-weight:700;">🎬 BGReady</span></td></tr>
           <tr><td style="background:#F59E0B;height:4px;"></td></tr>
           <tr>
             <td style="padding:32px;">
-              <h1 style="color:#1a1a2e;font-family:Georgia,serif;margin:0 0 8px;">You've been invited to SetReady</h1>
+              <h1 style="color:#1a1a2e;font-family:Georgia,serif;margin:0 0 8px;">You've been invited to BGReady</h1>
               <p style="color:#6b7280;margin:0 0 20px;">Hi ${firstName},</p>
               <p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 20px;">
-                <strong>${agencyName}</strong> has added you to their roster on SetReady — Canada's platform for background performers and talent agents.
+                <strong>${agencyName}</strong> has added you to their roster on BGReady — Canada's platform for background performers and talent agents.
               </p>
               <p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 24px;">
                 Click the button below to claim your profile, review the information added on your behalf, and set your own password. Your profile stays <strong>private</strong> until you confirm it — nothing is shared with casting until you do.
               </p>
-              <a href="${claimUrl}" style="display:inline-block;background:#F59E0B;color:#1a1a2e;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">Claim My SetReady Profile</a>
+              <a href="${claimUrl}" style="display:inline-block;background:#F59E0B;color:#1a1a2e;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">Claim My BGReady Profile</a>
               <p style="font-size:13px;color:#9ca3af;margin:24px 0 0;line-height:1.6;">
                 This invite link is unique to you and expires after use. If you don't know <strong>${agencyName}</strong> or weren't expecting this email, you can safely ignore it — no account will be created.
               </p>
             </td>
           </tr>
           <tr><td style="padding:16px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;font-size:12px;color:#9ca3af;">
-            SetReady · <a href="https://www.setready.site" style="color:#F59E0B;">setready.site</a>
+            BGReady · <a href="https://www.bgready.site" style="color:#F59E0B;">bgready.site</a>
           </td></tr>
         </table>
       </td>
@@ -420,7 +420,7 @@ export function abandonedCartEmailHtml({
     <tr>
       <td align="center" style="padding:40px 20px;">
         <table width="600" style="background:white;border-radius:16px;overflow:hidden;">
-          <tr><td style="background:#1a1a2e;padding:24px 32px;"><span style="color:white;font-size:20px;font-weight:700;">🎬 SetReady</span></td></tr>
+          <tr><td style="background:#1a1a2e;padding:24px 32px;"><span style="color:white;font-size:20px;font-weight:700;">🎬 BGReady</span></td></tr>
           <tr><td style="background:#F59E0B;height:4px;"></td></tr>
           <tr>
             <td style="padding:32px;">
@@ -435,8 +435,8 @@ export function abandonedCartEmailHtml({
             </td>
           </tr>
           <tr><td style="padding:16px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;font-size:12px;color:#9ca3af;">
-            SetReady · <a href="https://www.setready.site" style="color:#F59E0B;">setready.site</a><br/>
-            You're receiving this because you started a purchase on SetReady.
+            BGReady · <a href="https://www.bgready.site" style="color:#F59E0B;">bgready.site</a><br/>
+            You're receiving this because you started a purchase on BGReady.
           </td></tr>
         </table>
       </td>
@@ -449,8 +449,8 @@ export function abandonedCartEmailHtml({
 export async function sendAbandonedCartEmail(to: string, itemName: string, recoveryUrl: string) {
   return sendEmail({
     to,
-    subject: `You left ${itemName} behind — finish your SetReady purchase`,
+    subject: `You left ${itemName} behind — finish your BGReady purchase`,
     html: abandonedCartEmailHtml({ itemName, recoveryUrl }),
-    text: `You started checking out for ${itemName} on SetReady but didn't finish. Complete it here: ${recoveryUrl}`,
+    text: `You started checking out for ${itemName} on BGReady but didn't finish. Complete it here: ${recoveryUrl}`,
   })
 }

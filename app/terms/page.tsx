@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 export const metadata = {
-  title: 'Terms of Service — SetReady',
-  description: 'The terms that govern your use of SetReady.',
+  title: 'Terms of Service — BGReady',
+  description: 'The terms that govern your use of BGReady.',
 };
 
 const wrap: CSSProperties = {
@@ -27,26 +27,26 @@ const a: CSSProperties = { color: '#1d4ed8' };
 export default function TermsOfServicePage() {
   return (
     <main style={wrap}>
-      <a href="/" style={back}>&larr; Back to SetReady</a>
+      <a href="/" style={back}>&larr; Back to BGReady</a>
       <h1 style={h1}>Terms of Service</h1>
       <p style={updated}>Last updated: June 27, 2026</p>
 
       <div style={intro}>
-        By using SetReady you agree to these Terms and to our <a style={a} href="/privacy">Privacy Policy</a>.
-        If you do not agree, please do not use the Service. SetReady is available only to adults (18+) who
+        By using BGReady you agree to these Terms and to our <a style={a} href="/privacy">Privacy Policy</a>.
+        If you do not agree, please do not use the Service. BGReady is available only to adults (18+) who
         reside in Canada.
       </div>
 
       <h2 style={h2}>1. Acceptance of these terms</h2>
       <p style={p}>
-        By accessing or using SetReady (&ldquo;SetReady&rdquo;, &ldquo;we&rdquo;, &ldquo;our&rdquo;, &ldquo;us&rdquo;),
+        By accessing or using BGReady (&ldquo;BGReady&rdquo;, &ldquo;we&rdquo;, &ldquo;our&rdquo;, &ldquo;us&rdquo;),
         you agree to be bound by these Terms of Service and our Privacy Policy, which explains how we collect,
         use, and share your personal information.
       </p>
 
-      <h2 style={h2}>2. What SetReady is</h2>
+      <h2 style={h2}>2. What BGReady is</h2>
       <p style={p}>
-        SetReady is an online platform that connects Canadian film and television background performers with
+        BGReady is an online platform that connects Canadian film and television background performers with
         agents and casting directors. The Service includes:
       </p>
       <ul style={ul}>
@@ -62,7 +62,7 @@ export default function TermsOfServicePage() {
       </ul>
       <p style={p}>Features may change, be added, or be removed over time.</p>
 
-      <h2 style={h2}>3. Eligibility and where SetReady is offered</h2>
+      <h2 style={h2}>3. Eligibility and where BGReady is offered</h2>
       <h3 style={h3}>3.1 Age</h3>
       <p style={p}>
         You must be at least <strong>18 years old</strong> and the age of majority in your province or territory
@@ -72,7 +72,7 @@ export default function TermsOfServicePage() {
       </p>
       <h3 style={h3}>3.2 Location</h3>
       <p style={p}>
-        SetReady is offered <strong>only to residents of Canada</strong>. The Service is not directed to, or
+        BGReady is offered <strong>only to residents of Canada</strong>. The Service is not directed to, or
         intended for, users outside Canada.
       </p>
       <h3 style={h3}>3.3 Your account</h3>
@@ -80,10 +80,10 @@ export default function TermsOfServicePage() {
       <h3 style={h3}>3.4 Suspension and termination</h3>
       <p style={p}>You may delete your account at any time in Settings.</p>
       <p style={p}>
-        SetReady reserves the right, at its sole discretion, to suspend, restrict, or terminate your account or
+        BGReady reserves the right, at its sole discretion, to suspend, restrict, or terminate your account or
         access to all or part of the Service, at any time and with or without notice, including where: (a) you
         breach or we reasonably suspect you have breached these Terms; (b) your conduct is unlawful, fraudulent,
-        abusive, harassing, or harmful to other users, to SetReady, or to any third party; (c) you fail to pay
+        abusive, harassing, or harmful to other users, to BGReady, or to any third party; (c) you fail to pay
         fees when due; (d) we are required to do so by law or by a request from law enforcement or a governmental
         authority; or (e) we discontinue or materially modify the Service.
       </p>
@@ -92,7 +92,7 @@ export default function TermsOfServicePage() {
         requiring immediate action, we will endeavour to provide notice and the reasons for the action, unless
         doing so is prohibited by law or would create a security risk. In urgent cases, we may suspend or terminate
         access immediately and without prior notice. You may appeal a suspension or termination within 14 days by
-        emailing <a style={a} href="mailto:support@setready.site">support@setready.site</a>.
+        emailing <a style={a} href="mailto:support@bgready.site">support@bgready.site</a>.
       </p>
       <p style={p}>
         Upon termination, your right to access and use the Service will immediately cease. Termination does not
@@ -104,7 +104,7 @@ export default function TermsOfServicePage() {
       <h3 style={h3}>4.1 Your content and the licence you grant</h3>
       <p style={p}>
         You retain ownership of the content you upload, including your photos and profile information. By
-        uploading content, you grant SetReady a non-exclusive, royalty-free licence to host, store, reproduce,
+        uploading content, you grant BGReady a non-exclusive, royalty-free licence to host, store, reproduce,
         and display that content for the purpose of operating and providing the Service — including displaying
         your profile and photos to agents and casting directors and, where you use the headshot analyzer,
         transmitting your photo to our AI provider to generate feedback. This licence ends when you delete the
@@ -132,7 +132,7 @@ export default function TermsOfServicePage() {
 
       <h2 style={h2}>5. Intellectual property</h2>
       <p style={p}>
-        Our software, designs, logos, training materials, and quiz content are owned by SetReady and protected
+        Our software, designs, logos, training materials, and quiz content are owned by BGReady and protected
         by Canadian and international law. Certificates generated by the Service are proof of course completion
         only; they do not guarantee employment, union membership, or any specific outcome.
       </p>
@@ -149,7 +149,7 @@ export default function TermsOfServicePage() {
       <h3 style={h3}>7.1 Billing</h3>
       <p style={p}>
         Paid features are sold by subscription, and current pricing is shown in the Service. Subscriptions are
-        billed through our payment processor, Stripe. If you obtain SetReady through the Apple App Store or
+        billed through our payment processor, Stripe. If you obtain BGReady through the Apple App Store or
         Google Play, your subscription may instead be billed by that store under its own terms; in that case you
         must manage and cancel the subscription through that store, and you can restore purchases using the
         store&rsquo;s restore function.
@@ -192,7 +192,7 @@ export default function TermsOfServicePage() {
 
       <h2 style={h2}>10. Limitation of liability</h2>
       <p style={p}>
-        To the maximum extent permitted by law, SetReady and its owners, employees, and affiliates are not liable
+        To the maximum extent permitted by law, BGReady and its owners, employees, and affiliates are not liable
         for any indirect, incidental, special, consequential, or punitive damages arising from your use of the
         Service, including loss of profits, data, or goodwill. Our total liability will not exceed the amount you
         paid us, if any, in the 12 months before the claim. Nothing in this Section excludes or limits liability
@@ -202,7 +202,7 @@ export default function TermsOfServicePage() {
 
       <h2 style={h2}>11. Indemnification</h2>
       <p style={p}>
-        You agree to indemnify and hold SetReady harmless from claims, damages, losses, and expenses arising from
+        You agree to indemnify and hold BGReady harmless from claims, damages, losses, and expenses arising from
         your violation of these Terms, your use of the Service, or your violation of any third-party rights.
       </p>
 
@@ -227,14 +227,14 @@ export default function TermsOfServicePage() {
       </p>
 
       <h2 style={h2}>15. Contact</h2>
-      <p style={p}>For any inquiry, including legal and support matters: <a style={a} href="mailto:support@setready.site">support@setready.site</a>.</p>
+      <p style={p}>For any inquiry, including legal and support matters: <a style={a} href="mailto:support@bgready.site">support@bgready.site</a>.</p>
 
       <h2 style={h2}>16. Entire agreement</h2>
-      <p style={p}>These Terms and the Privacy Policy are the entire agreement between you and SetReady regarding the Service and supersede any prior agreements.</p>
+      <p style={p}>These Terms and the Privacy Policy are the entire agreement between you and BGReady regarding the Service and supersede any prior agreements.</p>
 
       <h2 style={h2}>17. Force majeure</h2>
       <p style={p}>
-        SetReady is not liable for any delay or failure to perform caused by events outside its reasonable
+        BGReady is not liable for any delay or failure to perform caused by events outside its reasonable
         control, including acts of God, war, terrorism, civil unrest, fire, flood, strikes, or interruptions of
         third-party services (including Supabase, Vercel, Stripe, Resend, Anthropic, or internet service providers).
       </p>

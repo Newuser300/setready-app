@@ -66,7 +66,7 @@ export default function CastingLoginPage() {
               <Logo size="lg" darkBackground={false} showText={false} />
             </div>
             <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 6px' }}>
-              SetReady Casting
+              BGReady Casting
             </h1>
             <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>
               Sign in to your casting director account
@@ -124,11 +124,11 @@ export default function CastingLoginPage() {
           )}
 
           <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', color: '#6b7280' }}>
-            New to SetReady Casting?{' '}
+            New to BGReady Casting?{' '}
             <Link href="/casting/register" style={{ color: '#F59E0B', fontWeight: '600', textDecoration: 'none' }}>Apply for free access</Link>
           </div>
           <div style={{ textAlign: 'center', marginTop: '10px', fontSize: '13px', color: '#9ca3af' }}>
-            <Link href="/casting/about" style={{ color: '#9ca3af', textDecoration: 'underline' }}>Learn more about SetReady Casting →</Link>
+            <Link href="/casting/about" style={{ color: '#9ca3af', textDecoration: 'underline' }}>Learn more about BGReady Casting →</Link>
           </div>
         </div>
       </div>

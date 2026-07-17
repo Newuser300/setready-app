@@ -86,7 +86,7 @@ export default function RedeemPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-gray-800">Redeem Access Code</h1>
-          <p className="text-gray-600 mt-2">Enter the unique code provided by SetReady support.</p>
+          <p className="text-gray-600 mt-2">Enter the unique code provided by BGReady support.</p>
         </div>
         
         <input
@@ -112,7 +112,7 @@ export default function RedeemPage() {
         )}
         
         <p className="text-center text-sm text-gray-500 mt-6">
-          Need a code? Email <a href="mailto:support@setready.site" className="text-teal-600 hover:underline">support@setready.site</a>
+          Need a code? Email <a href="mailto:support@bgready.site" className="text-teal-600 hover:underline">support@bgready.site</a>
         </p>
       </div>
     </div>

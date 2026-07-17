@@ -30,7 +30,7 @@ export default function CastingPortalPage() {
 
       {/* Title */}
       <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '36px', fontWeight: 700, color: 'white', margin: '0 0 8px', textAlign: 'center' }}>
-        SetReady Casting
+        BGReady Casting
       </h1>
       <p style={{ fontSize: '14px', color: '#F59E0B', letterSpacing: '0.12em', textTransform: 'uppercase', margin: '0 0 20px' }}>
         Background Performer Platform

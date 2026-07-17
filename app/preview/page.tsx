@@ -114,7 +114,7 @@ export default function PreviewPage() {
             Preview
           </p>
           <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(36px, 7vw, 52px)', fontWeight: '700', color: '#1a1a2e', lineHeight: '1.15', margin: '0 0 20px', letterSpacing: '-0.01em' }}>
-            See everything SetReady includes.
+            See everything BGReady includes.
           </h1>
           <p style={{ fontSize: '18px', color: '#6b7280', lineHeight: '1.6', margin: '0 0 32px' }}>
             Explore every module and tool below. Create a free account to get started.
@@ -338,12 +338,12 @@ export default function PreviewPage() {
             <Logo size="sm" darkBackground={true} />
           </div>
           <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 16px' }}>
-            © 2026 SetReady. All rights reserved.
+            © 2026 BGReady. All rights reserved.
           </p>
           <div style={{ display: 'flex', gap: '24px', justifyContent: 'center' }}>
             <a href="/terms" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'none' }}>Terms</a>
             <a href="/privacy" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'none' }}>Privacy</a>
-            <a href="mailto:support@setready.site" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'none' }}>Contact</a>
+            <a href="mailto:support@bgready.site" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'none' }}>Contact</a>
           </div>
         </div>
       </footer>

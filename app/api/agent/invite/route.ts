@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
       expires_at: expiresAt,
     })
 
-    const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://setready.ca'}/agent/join?token=${token}`
+    const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.bgready.site'}/agent/join?token=${token}`
 
     return NextResponse.json({ success: true, inviteUrl, token })
   }

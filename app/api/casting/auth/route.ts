@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     )
 
     if (cd.is_active === false) return NextResponse.json(
-      { error: 'Your account has been suspended. Please contact support@setready.site.' },
+      { error: 'Your account has been suspended. Please contact support@bgready.site.' },
       { status: 403 }
     )
 
@@ -120,7 +120,7 @@ export async function POST(req: Request) {
       await sendEmail({
         to: adminEmail,
         subject: `New casting director application: ${name}`,
-        html: `<p>A new casting director has applied and is awaiting approval.</p><p><strong>Name:</strong> ${name}<br/><strong>Company:</strong> ${company || '—'}<br/><strong>Email:</strong> ${email.toLowerCase()}${phone ? `<br/><strong>Phone:</strong> ${phone}` : ''}</p><p>Review under Casting → Pending Applications: <a href="https://setready.site/admin">setready.site/admin</a></p>`,
+        html: `<p>A new casting director has applied and is awaiting approval.</p><p><strong>Name:</strong> ${name}<br/><strong>Company:</strong> ${company || '—'}<br/><strong>Email:</strong> ${email.toLowerCase()}${phone ? `<br/><strong>Phone:</strong> ${phone}` : ''}</p><p>Review under Casting → Pending Applications: <a href="https://bgready.site/admin">bgready.site/admin</a></p>`,
       }).catch(() => {})
     }
 

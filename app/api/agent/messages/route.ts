@@ -113,9 +113,9 @@ export async function POST(request: NextRequest) {
 
   if (!message) return NextResponse.json({ error: 'Failed to send message' }, { status: 500 })
 
-  // Email notification with "reply in SetReady" instruction — fire and forget
+  // Email notification with "reply in BGReady" instruction — fire and forget
   if (resolvedEmail) {
-    const emailBody = `${messageBody.trim()}\n\n---\nPlease reply to this message through SetReady, not by replying to this email.`
+    const emailBody = `${messageBody.trim()}\n\n---\nPlease reply to this message through BGReady, not by replying to this email.`
     sendEmail({
       to: resolvedEmail,
       subject: subject.trim(),
@@ -123,8 +123,8 @@ export async function POST(request: NextRequest) {
         subject: subject.trim(),
         body: emailBody,
         senderName: session.name,
-        actionUrl: 'https://www.setready.site/messages',
-        actionLabel: 'Reply in SetReady →',
+        actionUrl: 'https://www.bgready.site/messages',
+        actionLabel: 'Reply in BGReady →',
       }),
     }).catch((e: Error) => console.error('[agent/messages] email notification failed:', e))
   }

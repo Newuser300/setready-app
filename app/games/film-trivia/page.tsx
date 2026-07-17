@@ -146,7 +146,7 @@ export default function FilmTrivia() {
           <h1 style={{ fontSize: '28px', fontWeight: '800', color: 'white', margin: '0 0 8px', letterSpacing: '-0.5px' }}>Film Set Trivia</h1>
           <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', margin: '0 0 28px', lineHeight: '1.6' }}>
             You'll see a definition. Pick the correct film set term from four options.
-            10 questions per round — all from the SetReady glossary.
+            10 questions per round — all from the BGReady glossary.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginBottom: '32px', flexWrap: 'wrap' }}>
             {[['📖', `${TERMS.length} terms`], ['❓', '10 questions'], ['⏱', '~3 minutes']].map(([icon, label]) => (

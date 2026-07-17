@@ -264,7 +264,7 @@ export function buildMessageEmailHtml({
           <tr>
             <td style="background:#1a1a2e;padding:24px 32px;">
               <div style="width:40px;height:40px;background:#F59E0B;border-radius:50%;display:inline-block;text-align:center;line-height:40px;font-weight:900;font-size:15px;color:#1a1a2e;vertical-align:middle;">SR</div>
-              <span style="color:white;font-size:20px;font-weight:700;vertical-align:middle;margin-left:10px;">SetReady</span>
+              <span style="color:white;font-size:20px;font-weight:700;vertical-align:middle;margin-left:10px;">BGReady</span>
             </td>
           </tr>
           ${priorityBanner}
@@ -291,12 +291,12 @@ export function buildMessageEmailHtml({
           </tr>
           <tr>
             <td style="background:#f9fafb;padding:20px 32px;border-top:1px solid #e5e7eb;text-align:center;font-size:12px;color:#9ca3af;">
-              SetReady — Canada's Background Performer Platform<br/>
-              <a href="https://www.setready.site" style="color:#F59E0B;text-decoration:none;">setready.site</a>
+              BGReady — Canada's Background Performer Platform<br/>
+              <a href="https://www.bgready.site" style="color:#F59E0B;text-decoration:none;">bgready.site</a>
               &nbsp;·&nbsp;
-              <a href="mailto:support@setready.site" style="color:#9ca3af;text-decoration:none;">support@setready.site</a>
+              <a href="mailto:support@bgready.site" style="color:#9ca3af;text-decoration:none;">support@bgready.site</a>
               <br/><br/>
-              <span style="font-size:11px;color:#d1d5db;">You received this because you have a SetReady account.</span>
+              <span style="font-size:11px;color:#d1d5db;">You received this because you have a BGReady account.</span>
             </td>
           </tr>
         </table>

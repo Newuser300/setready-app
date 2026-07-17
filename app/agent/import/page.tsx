@@ -5,7 +5,7 @@ import Papa from 'papaparse'
 import Logo from '@/components/Logo'
 import Link from 'next/link'
 
-// ── SetReady field definitions ────────────────────────────────────────────────
+// ── BGReady field definitions ────────────────────────────────────────────────
 
 const SR_FIELDS = [
   { value: '',               label: '— skip column —' },
@@ -98,7 +98,7 @@ function downloadTemplate() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = 'setready_roster_template.csv'
+  a.download = 'bgready_roster_template.csv'
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)

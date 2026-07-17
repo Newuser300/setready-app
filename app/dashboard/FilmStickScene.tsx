@@ -3,7 +3,7 @@
 import React from 'react';
 
 /*
- * Animated film-crew of stick people for the SetReady dashboard hero.
+ * Animated film-crew of stick people for the BGReady dashboard hero.
  * A director claps a clapperboard, a camera operator films (blinking record dot),
  * and an actor performs under a sweeping spotlight. Pure SVG + CSS keyframes.
  */

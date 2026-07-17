@@ -215,7 +215,7 @@ export default function CompleteProfile() {
               fontFamily: 'inherit',
             }}
           >
-            {loading ? 'Saving…' : 'Enter SetReady'}
+            {loading ? 'Saving…' : 'Enter BGReady'}
           </button>
         </form>
 

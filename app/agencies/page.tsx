@@ -769,7 +769,7 @@ export default function AgenciesPage() {
             {agencies.length} agencies across {PROVINCES.length - 1} provinces and national resources
           </p>
           <p className="text-xs text-gray-400 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 max-w-2xl">
-            ⚠️ Always verify agency details directly as information may change. SetReady does not endorse any specific agency.
+            ⚠️ Always verify agency details directly as information may change. BGReady does not endorse any specific agency.
           </p>
         </div>
       </section>

@@ -436,7 +436,7 @@ async function fulfillEvent(event: Stripe.Event): Promise<void> {
         null;
       if (!email) break;
 
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.setready.site';
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.bgready.site';
 
       // Prefer Stripe's one-click recovery link (when recovery was enabled on the
       // session); otherwise fall back to the item's page so they can restart.
@@ -445,7 +445,7 @@ async function fulfillEvent(event: Stripe.Event): Promise<void> {
         (session as any).recovery_url ??
         `${appUrl}${session.metadata?.returnPath || '/dashboard'}`;
 
-      const itemName = session.metadata?.itemName || 'your SetReady purchase';
+      const itemName = session.metadata?.itemName || 'your BGReady purchase';
 
       await sendAbandonedCartEmail(email, itemName, recoveryUrl);
       break;

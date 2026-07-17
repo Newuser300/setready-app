@@ -149,7 +149,7 @@ export async function POST(req: Request) {
 
   if (lookupError || !found) {
     return NextResponse.json(
-      { error: 'No SetReady account found with that email address.' },
+      { error: 'No BGReady account found with that email address.' },
       { status: 404 }
     )
   }
@@ -269,12 +269,12 @@ export async function DELETE(req: Request) {
   <table width="100%" cellpadding="0" cellspacing="0">
     <tr><td align="center" style="padding:40px 20px;">
       <table width="600" style="background:white;border-radius:16px;overflow:hidden;">
-        <tr><td style="background:#1a1a2e;padding:24px 32px;"><span style="color:white;font-size:20px;font-weight:700;">🎬 SetReady</span></td></tr>
+        <tr><td style="background:#1a1a2e;padding:24px 32px;"><span style="color:white;font-size:20px;font-weight:700;">🎬 BGReady</span></td></tr>
         <tr><td style="background:#F59E0B;height:4px;"></td></tr>
         <tr><td style="padding:32px;">
           <h1 style="color:#1a1a2e;font-family:Georgia,serif;margin:0 0 16px;">Roster Update</h1>
           <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 16px;">Hi ${user.name || 'there'},</p>
-          <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 24px;">You've been removed from <strong>${agencyName}'s</strong> roster on SetReady.</p>
+          <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 24px;">You've been removed from <strong>${agencyName}'s</strong> roster on BGReady.</p>
           <p style="color:#6b7280;font-size:13px;">If you believe this was a mistake, please contact your agent directly.</p>
         </td></tr>
       </table>

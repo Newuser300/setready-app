@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
 
   if (broadcastTypes.includes(recipientType)) {
     const message = await broadcastMessage({
-      senderName: 'SetReady Admin',
+      senderName: 'BGReady Admin',
       recipientType,
       subject,
       body: msgBody,
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
 
     const message = await sendMessage({
       senderType: 'admin',
-      senderName: 'SetReady Admin',
+      senderName: 'BGReady Admin',
       recipientType: rType || 'performer',
       recipientId,
       subject,

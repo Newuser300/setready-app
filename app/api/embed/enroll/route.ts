@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/utils/supabase/admin';
 
 // Records a widget user/subscriber. Upserts by (partner, email) so re-entry
-// keeps one row. This is what makes widget users visible to the SetReady admin.
+// keeps one row. This is what makes widget users visible to the BGReady admin.
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({} as Record<string, unknown>));
   const key = String(body.partner || '');

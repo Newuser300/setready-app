@@ -1,9 +1,9 @@
 import type { MetadataRoute } from 'next';
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.setready.site';
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.bgready.site';
 
 // Allow normal crawling of public pages, keep private/app routes out of the
-// index, and explicitly welcome the major AI crawlers so SetReady can be found
+// index, and explicitly welcome the major AI crawlers so BGReady can be found
 // and cited inside AI assistants (ChatGPT, Claude, Perplexity, Google AI, etc.).
 export default function robots(): MetadataRoute.Robots {
   const disallow = [

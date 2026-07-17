@@ -215,7 +215,7 @@ export default function ClaimPage({ params }: { params: Promise<{ token: string 
         <div style={{ maxWidth: '420px', width: '100%', textAlign: 'center' }}>
           <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎉</div>
           <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', color: '#1a1a2e', margin: '0 0 10px' }}>
-            Welcome to SetReady!
+            Welcome to BGReady!
           </h1>
           <p style={{ fontSize: '15px', color: '#6b7280', margin: '0 0 20px', lineHeight: '1.6' }}>
             Your profile has been created. Redirecting you to your dashboard…
@@ -238,11 +238,11 @@ export default function ClaimPage({ params }: { params: Promise<{ token: string 
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
             <div style={{ width: '40px', height: '40px', backgroundColor: '#F59E0B', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '14px', color: '#1a1a2e' }}>SR</div>
-            <span style={{ fontFamily: 'Georgia, serif', fontSize: '20px', fontWeight: 700, color: '#1a1a2e' }}>SetReady</span>
+            <span style={{ fontFamily: 'Georgia, serif', fontSize: '20px', fontWeight: 700, color: '#1a1a2e' }}>BGReady</span>
           </div>
           <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '16px 20px', textAlign: 'left', marginBottom: '8px' }}>
             <div style={{ fontSize: '13px', color: '#92400e', lineHeight: '1.6' }}>
-              <strong>{invite?.agency_name}</strong> has invited you to join SetReady and added some info to get you started.{' '}
+              <strong>{invite?.agency_name}</strong> has invited you to join BGReady and added some info to get you started.{' '}
               <strong>Review and correct anything below</strong>, then set your password to claim your profile.
             </div>
           </div>
@@ -394,7 +394,7 @@ export default function ClaimPage({ params }: { params: Promise<{ token: string 
 
           {/* Consent notice */}
           <div style={{ fontSize: '12px', color: '#9ca3af', textAlign: 'center', marginBottom: '16px', lineHeight: '1.5' }}>
-            By clicking Confirm, you agree to SetReady&apos;s{' '}
+            By clicking Confirm, you agree to BGReady&apos;s{' '}
             <Link href="/terms" style={{ color: '#F59E0B' }}>Terms of Service</Link> and{' '}
             <Link href="/privacy" style={{ color: '#F59E0B' }}>Privacy Policy</Link>.
             Your profile will be visible to the inviting agency.

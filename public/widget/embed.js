@@ -1,17 +1,17 @@
-/* SetReady embeddable Training & Certificates widget — loader.
+/* BGReady embeddable Training & Certificates widget — loader.
    Install (the ONLY thing a partner adds to their site):
 
      <div id="setready-widget"></div>
-     <script src="https://www.setready.site/widget/embed.js" data-partner="YOUR_PARTNER_KEY"></script>
+     <script src="https://www.bgready.site/widget/embed.js" data-partner="YOUR_PARTNER_KEY"></script>
 
    The loader finds #setready-widget (or creates one where the script sits),
-   drops in a responsive iframe pointing at SetReady's hosted widget, and
+   drops in a responsive iframe pointing at BGReady's hosted widget, and
    auto-resizes it. Nothing else to configure. */
 (function () {
   var scriptEl = document.currentScript;
   var partner = (scriptEl && scriptEl.getAttribute('data-partner')) || '';
   // Origin the widget is served from (same origin as this script by default).
-  var origin = 'https://www.setready.site';
+  var origin = 'https://www.bgready.site';
   try { origin = new URL(scriptEl.src).origin; } catch (e) {}
 
   function mount() {
@@ -27,7 +27,7 @@
 
     var iframe = document.createElement('iframe');
     iframe.src = origin + '/widget/index.html?partner=' + encodeURIComponent(partner) + '&api=' + encodeURIComponent(origin);
-    iframe.title = 'SetReady Training & Certification';
+    iframe.title = 'BGReady Training & Certification';
     iframe.setAttribute('allow', 'payment');
     iframe.style.width = '100%';
     iframe.style.minHeight = '640px';

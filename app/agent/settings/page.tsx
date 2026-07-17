@@ -234,7 +234,7 @@ export default function AgentSettingsPage() {
           <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#1a1a2e', margin: '0 0 12px' }}>Plan</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ padding: '4px 12px', backgroundColor: '#f0fdf4', color: '#16a34a', fontWeight: '700', borderRadius: '20px', fontSize: '13px' }}>Free</span>
-            <span style={{ color: '#6b7280', fontSize: '13px' }}>SetReady is free for agencies — no subscription required.</span>
+            <span style={{ color: '#6b7280', fontSize: '13px' }}>BGReady is free for agencies — no subscription required.</span>
           </div>
         </div>
 

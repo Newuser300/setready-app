@@ -39,8 +39,8 @@ export async function POST(req: Request) {
             currency: 'cad',
             unit_amount: amount,
             product_data: {
-              name: 'Support SetReady',
-              description: 'One-time donation to keep SetReady free for background performers across Canada.',
+              name: 'Support BGReady',
+              description: 'One-time donation to keep BGReady free for background performers across Canada.',
             },
           },
           quantity: 1,

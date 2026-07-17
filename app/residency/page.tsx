@@ -850,7 +850,7 @@ export default function ResidencyPage() {
             🔒 Your documents are stored securely and privately.
           </p>
           <p className="text-gray-400 text-sm mt-1.5">
-            Only you can access them. They are never shared with SetReady or third parties.
+            Only you can access them. They are never shared with BGReady or third parties.
           </p>
         </div>
 

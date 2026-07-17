@@ -55,9 +55,9 @@ export default function DonatePage() {
         <div style={{ backgroundColor: '#1e1e35', borderRadius: '20px', padding: '32px', border: '1px solid rgba(255,255,255,0.08)' }}>
           <div style={{ textAlign: 'center', marginBottom: '24px' }}>
             <div style={{ fontSize: '48px', marginBottom: '8px' }}>☕</div>
-            <h1 style={{ fontSize: '24px', fontWeight: '900', color: 'white', margin: '0 0 6px' }}>Support SetReady</h1>
+            <h1 style={{ fontSize: '24px', fontWeight: '900', color: 'white', margin: '0 0 6px' }}>Support BGReady</h1>
             <p style={{ fontSize: '14px', color: '#9ca3af', margin: 0, lineHeight: '1.6' }}>
-              SetReady is free for performers. If it's helped your career, consider buying us a coffee to keep the lights on.
+              BGReady is free for performers. If it's helped your career, consider buying us a coffee to keep the lights on.
             </p>
           </div>
 
@@ -149,7 +149,7 @@ export default function DonatePage() {
 
         {/* Thanks message */}
         <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '13px', color: '#9ca3af', lineHeight: '1.6' }}>
-          Thank you for believing in SetReady. Every contribution helps us keep the platform free for performers across Canada. 🇨🇦
+          Thank you for believing in BGReady. Every contribution helps us keep the platform free for performers across Canada. 🇨🇦
         </div>
       </div>
     </div>

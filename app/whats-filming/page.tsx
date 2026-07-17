@@ -104,7 +104,7 @@ export default function WhatsFilmingPage() {
         </div>
 
         <p style={{ fontSize: '11px', color: '#6b7280', textAlign: 'center', margin: '28px 0 0', lineHeight: '1.6' }}>
-          SetReady links to each union&apos;s public production list. Productions shown are signatory to that union&apos;s agreements. Always confirm details with the production or your agent.
+          BGReady links to each union&apos;s public production list. Productions shown are signatory to that union&apos;s agreements. Always confirm details with the production or your agent.
         </p>
       </div>
     </div>

@@ -171,7 +171,7 @@ export default function Home() {
             </div>
           </div>
           <p style={{ textAlign: 'center', fontSize: '18px', color: '#9ca3af', marginTop: '36px', lineHeight: '1.6' }}>
-            Most of SetReady is free. The training is optional.
+            Most of BGReady is free. The training is optional.
           </p>
         </div>
       </section>
@@ -292,7 +292,7 @@ export default function Home() {
               {
                 n: '4',
                 title: 'Install it on your phone',
-                desc: 'Add SetReady to your home screen for instant access on set — works like a native app.',
+                desc: 'Add BGReady to your home screen for instant access on set — works like a native app.',
                 sub: '📲 Install in seconds — free',
               },
             ].map((step, i) => (
@@ -331,13 +331,13 @@ export default function Home() {
             <FadeIn>
               <div style={{ flex: '1 1 320px', minWidth: 0 }}>
                 <p style={{ fontSize: '12px', color: '#F59E0B', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: '600', marginBottom: '16px' }}>
-                  SetReady Casting
+                  BGReady Casting
                 </p>
                 <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: '700', color: '#1a1a2e', margin: '0 0 20px', lineHeight: '1.25' }}>
                   Get discovered by agents and casting directors.
                 </h2>
                 <p style={{ fontSize: '16px', color: '#6b7280', lineHeight: '1.7', margin: '0 0 28px' }}>
-                  Your free performer profile is visible to every approved agency and casting director on SetReady Casting — Canada&apos;s background performer casting network.
+                  Your free performer profile is visible to every approved agency and casting director on BGReady Casting — Canada&apos;s background performer casting network.
                 </p>
                 <Link
                   href="/casting/about"
@@ -386,7 +386,7 @@ export default function Home() {
             <Logo size="sm" darkBackground={true} />
           </div>
           <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 16px' }}>
-            © 2026 SetReady. All rights reserved.
+            © 2026 BGReady. All rights reserved.
           </p>
           <div style={{ display: 'flex', gap: '24px', justifyContent: 'center' }}>
             <Link href="/terms" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'none' }}>Terms</Link>

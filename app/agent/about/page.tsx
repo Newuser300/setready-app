@@ -71,7 +71,7 @@ export default function AgentAboutPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
           {[
-            { n: '1', title: 'Register your agency', desc: 'Your account is reviewed and approved by the SetReady team — usually same day.' },
+            { n: '1', title: 'Register your agency', desc: 'Your account is reviewed and approved by the BGReady team — usually same day.' },
             { n: '2', title: 'Build your roster', desc: 'Invite performers by email. They join your roster and set up their availability calendars.' },
             { n: '3', title: 'Get notified of casting calls', desc: 'When a casting director posts a request, you\'re notified instantly in the dashboard.' },
             { n: '4', title: 'Submit available performers', desc: 'Filter your roster by the shoot date, check who\'s available, and submit in one click.' },
@@ -151,7 +151,7 @@ export default function AgentAboutPage() {
       {/* Footer */}
       <div style={{ backgroundColor: '#111827', padding: '24px', textAlign: 'center' }}>
         <div style={{ color: '#4b5563', fontSize: '13px' }}>
-          © {new Date().getFullYear()} SetReady · <Link href="/casting/about" style={{ color: '#6b7280', textDecoration: 'none' }}>For Casting Directors</Link> · <Link href="/privacy" style={{ color: '#6b7280', textDecoration: 'none' }}>Privacy</Link> · <Link href="/terms" style={{ color: '#6b7280', textDecoration: 'none' }}>Terms</Link>
+          © {new Date().getFullYear()} BGReady · <Link href="/casting/about" style={{ color: '#6b7280', textDecoration: 'none' }}>For Casting Directors</Link> · <Link href="/privacy" style={{ color: '#6b7280', textDecoration: 'none' }}>Privacy</Link> · <Link href="/terms" style={{ color: '#6b7280', textDecoration: 'none' }}>Terms</Link>
         </div>
       </div>
     </div>

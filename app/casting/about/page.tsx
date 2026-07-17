@@ -8,11 +8,11 @@ const FEATURES = [
   { icon: '📋', title: '5-Step Casting Requests', desc: 'Post a casting call in under 2 minutes. Agencies are notified instantly.' },
   { icon: '✅', title: 'One-Click Confirmation', desc: 'Shortlist, confirm, or pass on any submission without a single email.' },
   { icon: '🔔', title: 'Real-Time Notifications', desc: 'Get notified the moment an agency submits performers for your request.' },
-  { icon: '🆓', title: 'Free Forever', desc: 'SetReady Casting is completely free for verified casting directors. No credit card required.' },
+  { icon: '🆓', title: 'Free Forever', desc: 'BGReady Casting is completely free for verified casting directors. No credit card required.' },
 ]
 
 const COMPARISON = [
-  ['Feature', 'AgencyClick', 'SetReady Casting'],
+  ['Feature', 'AgencyClick', 'BGReady Casting'],
   ['Availability calendar', '❌', '✅ Heatmap'],
   ['Performer search filters', 'Basic', 'Advanced (8+ filters)'],
   ['Casting request workflow', '✅', '✅ Streamlined'],
@@ -103,7 +103,7 @@ export default function CastingAboutPage() {
 
       {/* Comparison Table */}
       <div style={{ maxWidth: '700px', margin: '0 auto', padding: '64px 24px' }}>
-        <h2 style={{ textAlign: 'center', fontSize: '28px', fontWeight: '800', color: '#1a1a2e', marginBottom: '32px' }}>SetReady vs AgencyClick</h2>
+        <h2 style={{ textAlign: 'center', fontSize: '28px', fontWeight: '800', color: '#1a1a2e', marginBottom: '32px' }}>BGReady vs AgencyClick</h2>
         <div style={{ backgroundColor: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
           {COMPARISON.map((row, i) => (
             <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', borderBottom: i < COMPARISON.length - 1 ? '1px solid #f3f4f6' : 'none', backgroundColor: i === 0 ? '#1a1a2e' : i % 2 === 0 ? '#f9fafb' : 'white' }}>
@@ -129,7 +129,7 @@ export default function CastingAboutPage() {
       {/* Footer */}
       <div style={{ backgroundColor: '#1a1a2e', padding: '24px', textAlign: 'center' }}>
         <div style={{ color: '#4b5563', fontSize: '13px' }}>
-          © {new Date().getFullYear()} SetReady · <Link href="/agent/about" style={{ color: '#6b7280', textDecoration: 'none' }}>For Agencies</Link> · <Link href="/privacy" style={{ color: '#6b7280', textDecoration: 'none' }}>Privacy</Link> · <Link href="/terms" style={{ color: '#6b7280', textDecoration: 'none' }}>Terms</Link>
+          © {new Date().getFullYear()} BGReady · <Link href="/agent/about" style={{ color: '#6b7280', textDecoration: 'none' }}>For Agencies</Link> · <Link href="/privacy" style={{ color: '#6b7280', textDecoration: 'none' }}>Privacy</Link> · <Link href="/terms" style={{ color: '#6b7280', textDecoration: 'none' }}>Terms</Link>
         </div>
       </div>
     </div>

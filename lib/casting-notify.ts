@@ -78,7 +78,7 @@ export async function notifyAllAgents(
   await writeMessages(
     agents.map(agent => ({
       sender_type: 'system',
-      sender_name: 'SetReady Casting',
+      sender_name: 'BGReady Casting',
       recipient_type: 'agent',
       recipient_id: agent.id,
       subject: title,
@@ -163,7 +163,7 @@ export async function notifyIndependentPerformers(
   await writeMessages(
     independentIds.map((userId: string) => ({
       sender_type: 'system',
-      sender_name: 'SetReady Casting',
+      sender_name: 'BGReady Casting',
       recipient_type: 'performer',
       recipient_id: userId,
       subject: `New Casting: ${castingRequestData.production_name}`,
@@ -232,7 +232,7 @@ export async function notifyAgentOfConfirmation(
   // Mirror to messages table
   await writeMessages([{
     sender_type: 'system',
-    sender_name: 'SetReady Casting',
+    sender_name: 'BGReady Casting',
     recipient_type: 'agent',
     recipient_id: agentId,
     subject: `${performerName} Confirmed`,
@@ -285,7 +285,7 @@ export async function notifyPerformerOfConfirmation(
   // Mirror to messages table
   await writeMessages([{
     sender_type: 'system',
-    sender_name: 'SetReady Casting',
+    sender_name: 'BGReady Casting',
     recipient_type: 'performer',
     recipient_id: performerUserId,
     subject: `🎉 You've been confirmed for ${castingRequestData.production_name}!`,

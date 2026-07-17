@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.setready.site'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.bgready.site'
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
           currency: 'cad',
           unit_amount: 998, // $9.98 CAD
           product_data: {
-            name: 'SetReady — 4 Extra Photo Slots',
+            name: 'BGReady — 4 Extra Photo Slots',
             description: 'Unlock 4 additional named photo slots on your performer profile. One-time purchase, never expires.',
           },
         },

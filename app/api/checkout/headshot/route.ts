@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   const quantity = body.quantity === 5 ? 5 : 1
   const unitAmountCents = 200 // $2.00 CAD per analysis
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.setready.site'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.bgready.site'
 
   try {
     const session = await stripe.checkout.sessions.create({

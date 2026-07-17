@@ -195,7 +195,7 @@ export async function POST(req: Request) {
       await sendEmail({
         to: adminEmail,
         subject: `Casting request needs approval: ${productionName}`,
-        html: `<p>A casting request was submitted and is waiting for approval.</p><p><strong>Production:</strong> ${productionName}<br/><strong>Role:</strong> ${roleType}<br/><strong>Shoot date:</strong> ${shootDate}${location ? `<br/><strong>Location:</strong> ${location}` : ''}</p><p>Review under Casting → Pending Applications: <a href="https://setready.site/admin">setready.site/admin</a></p>`,
+        html: `<p>A casting request was submitted and is waiting for approval.</p><p><strong>Production:</strong> ${productionName}<br/><strong>Role:</strong> ${roleType}<br/><strong>Shoot date:</strong> ${shootDate}${location ? `<br/><strong>Location:</strong> ${location}` : ''}</p><p>Review under Casting → Pending Applications: <a href="https://bgready.site/admin">bgready.site/admin</a></p>`,
       }).catch(() => {})
     }
   }

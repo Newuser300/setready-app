@@ -4,7 +4,7 @@ import { randomBytes } from 'crypto'
 import { supabaseAdmin } from '@/utils/isAdmin'
 import { sendEmail } from '@/lib/email'
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.setready.site'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.bgready.site'
 
 function tableFor(type: string) {
   if (type === 'agent') return 'agent_accounts'
@@ -46,9 +46,9 @@ export async function POST(request: NextRequest) {
       const resetUrl = `${APP_URL}/auth/reset-password?token=${token}&type=${accountType}`
       await sendEmail({
         to: account.email,
-        subject: 'Reset your SetReady password',
+        subject: 'Reset your BGReady password',
         html: `<p>Hi ${account.name || 'there'},</p>
-<p>We received a request to reset your SetReady password. Click the link below to choose a new one. This link expires in 1 hour.</p>
+<p>We received a request to reset your BGReady password. Click the link below to choose a new one. This link expires in 1 hour.</p>
 <p><a href="${resetUrl}" style="display:inline-block;background:#F59E0B;color:#1a1a2e;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;">Reset Password</a></p>
 <p style="color:#888;font-size:12px;">If you did not request this, you can safely ignore this email. Your password will not change.</p>
 <p style="color:#888;font-size:12px;">Or paste this link into your browser:<br/>${resetUrl}</p>`,

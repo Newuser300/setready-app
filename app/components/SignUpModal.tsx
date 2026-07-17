@@ -106,7 +106,7 @@ export default function SignUpModal({ onClose }: SignUpModalProps) {
             marginBottom: '2rem',
             lineHeight: '1.6',
           }}>
-            Join SetReady and start your professional acting journey today
+            Join BGReady and start your professional acting journey today
           </p>
 
           {/* Primary button — gold */}

@@ -274,7 +274,7 @@ export default function SignUp() {
               flexShrink: 0,
             }}>SR</div>
             <div>
-              <div style={{ fontFamily: 'Georgia, serif', fontSize: '24px', fontWeight: 700, color: 'white', lineHeight: 1 }}>SetReady</div>
+              <div style={{ fontFamily: 'Georgia, serif', fontSize: '24px', fontWeight: 700, color: 'white', lineHeight: 1 }}>BGReady</div>
               <div style={{ fontSize: '11px', color: '#F59E0B', marginTop: '4px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Background Performer Platform</div>
             </div>
           </div>
@@ -316,7 +316,7 @@ export default function SignUp() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontWeight: 900, fontSize: '16px', color: '#1a1a2e',
               }}>SR</div>
-              <span style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: 700, color: '#1a1a2e' }}>SetReady</span>
+              <span style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: 700, color: '#1a1a2e' }}>BGReady</span>
             </div>
           </div>
         )}
@@ -487,7 +487,7 @@ export default function SignUp() {
               </span>
             </label>
             <p style={{ fontSize: '11px', color: '#9ca3af', margin: '6px 0 0 25px', lineHeight: 1.4 }}>
-              SetReady is for adults 18 and older who reside in Canada. If you are under 18 or outside Canada, please do not create an account.
+              BGReady is for adults 18 and older who reside in Canada. If you are under 18 or outside Canada, please do not create an account.
             </p>
           </div>
 
@@ -576,7 +576,7 @@ export default function SignUp() {
 
         <div style={{ marginTop: '16px', textAlign: 'center' }}>
           <p style={{ fontSize: '11px', color: '#9ca3af', margin: 0 }}>
-            Need help? support@setready.site
+            Need help? support@bgready.site
           </p>
         </div>
 

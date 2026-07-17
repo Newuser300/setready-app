@@ -100,7 +100,7 @@ export default function PWAInstaller() {
       }}>SR</div>
       <div style={{ flex: 1 }}>
         <div style={{ color: 'white', fontWeight: '700', fontSize: '14px', lineHeight: '1.3' }}>
-          Add SetReady to your home screen
+          Add BGReady to your home screen
         </div>
         <div style={{ color: '#9ca3af', fontSize: '12px', marginTop: '3px', lineHeight: '1.4' }}>
           Quick access on set — works like a native app

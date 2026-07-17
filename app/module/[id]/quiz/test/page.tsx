@@ -1705,7 +1705,7 @@ const requestReview = () => {
   } else if (typeof window !== 'undefined' && (window as any).webkit?.messageHandlers?.requestReview) {
     (window as any).webkit.messageHandlers.requestReview.postMessage({});
   } else {
-    localStorage.setItem('setready_quiz_completed', Date.now().toString());
+    localStorage.setItem('bgready_quiz_completed', Date.now().toString());
     console.log('Quiz completed successfully!');
   }
 };

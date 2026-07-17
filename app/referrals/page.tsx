@@ -135,9 +135,9 @@ export default function ReferralsPage() {
                 <p className="text-xs font-semibold text-blue-700 mb-2">Your referral link:</p>
                 <div className="flex items-center gap-2 flex-wrap">
                   <code className="text-xs text-blue-700 bg-blue-100 px-2 py-1 rounded break-all">
-                    {`https://www.setready.site/auth/sign-up?ref=${referralCode}`}
+                    {`https://www.bgready.site/auth/sign-up?ref=${referralCode}`}
                   </code>
-                  <button onClick={() => copyToClipboard(`https://www.setready.site/auth/sign-up?ref=${referralCode}`, 'link')}
+                  <button onClick={() => copyToClipboard(`https://www.bgready.site/auth/sign-up?ref=${referralCode}`, 'link')}
                     className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition whitespace-nowrap">
                     {copiedText === 'link' ? '✓ Copied!' : 'Copy Link'}
                   </button>

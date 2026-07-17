@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     } else if (certificateType === 'section2') {
       courseName = 'Section 2: From Background to Acting';
     } else {
-      courseName = 'SetReady Training Course';
+      courseName = 'BGReady Training Course';
     }
 
     // 5. Generate certificate hash

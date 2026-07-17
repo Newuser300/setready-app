@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Payment configuration error' }, { status: 500 });
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.setready.site';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.bgready.site';
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',

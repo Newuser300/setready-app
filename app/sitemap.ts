@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.setready.site';
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.bgready.site';
 
 // Public, indexable pages only. Private/app routes (dashboard, work-log, etc.)
 // are intentionally excluded and disallowed in robots.ts.

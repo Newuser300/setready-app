@@ -5,7 +5,7 @@ import Logo from '@/components/Logo'
 
 const HEAR_OPTIONS = [
   'Google / Search', 'Colleague recommendation', 'Social media', 'Industry event',
-  'SetReady performer told me', 'UBCP/ACTRA', 'Email newsletter', 'Other',
+  'BGReady performer told me', 'UBCP/ACTRA', 'Email newsletter', 'Other',
 ]
 
 export default function CastingRegisterPage() {
@@ -61,7 +61,7 @@ export default function CastingRegisterPage() {
               Casting director accounts are reviewed and approved within <strong>24 hours</strong>. You'll receive an email confirmation.
             </p>
             <div style={{ padding: '14px', backgroundColor: '#f0fdf4', border: '1px solid #86efac', borderRadius: '12px', marginBottom: '24px', fontSize: '13px', color: '#15803d' }}>
-              ✓ SetReady Casting is <strong>free forever</strong> for verified casting directors
+              ✓ BGReady Casting is <strong>free forever</strong> for verified casting directors
             </div>
             <Link href="/casting/login" style={{ display: 'inline-block', padding: '12px 28px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', borderRadius: '10px', textDecoration: 'none', fontSize: '15px' }}>
               Back to Login

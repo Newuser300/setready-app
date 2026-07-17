@@ -189,7 +189,7 @@ export default function GlossaryPage() {
 
         {/* Footer disclaimer */}
         <p className="text-xs text-gray-400 text-center mt-10 pb-4">
-          SetReady Film Set Glossary — for use on set or as a training reference.
+          BGReady Film Set Glossary — for use on set or as a training reference.
           Definitions reflect standard Canadian film industry usage in British Columbia.
         </p>
         <Copyright />

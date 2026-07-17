@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
 
   await supabaseAdmin.from('messages').insert({
     sender_type: 'system',
-    sender_name: 'SetReady',
+    sender_name: 'BGReady',
     recipient_type: 'performer',
     recipient_id: sub.user_id,
     subject: msg.subject,

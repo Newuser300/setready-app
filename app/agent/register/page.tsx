@@ -108,7 +108,7 @@ export default function AgentRegisterPage() {
               Agency Application
             </h1>
             <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>
-              Apply to access the SetReady Casting platform
+              Apply to access the BGReady Casting platform
             </p>
           </div>
 

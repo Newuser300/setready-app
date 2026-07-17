@@ -21,7 +21,7 @@ function shortlistedEmailHtml({
     <tr>
       <td align="center" style="padding:40px 20px;">
         <table width="600" style="background:white;border-radius:16px;overflow:hidden;">
-          <tr><td style="background:#1a1a2e;padding:24px 32px;"><span style="color:white;font-size:20px;font-weight:700;">🎬 SetReady Casting</span></td></tr>
+          <tr><td style="background:#1a1a2e;padding:24px 32px;"><span style="color:white;font-size:20px;font-weight:700;">🎬 BGReady Casting</span></td></tr>
           <tr><td style="background:#F59E0B;height:4px;"></td></tr>
           <tr>
             <td style="padding:32px;">
@@ -36,7 +36,7 @@ function shortlistedEmailHtml({
                 </tr>
               </table>
               <p style="font-size:14px;color:#6b7280;line-height:1.6;">A tentative hold has been placed on your availability calendar for this date. You'll receive a follow-up if you're confirmed.</p>
-              <a href="https://setready.site/availability" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#F59E0B;color:#1a1a2e;border-radius:8px;text-decoration:none;font-weight:700;">View Calendar</a>
+              <a href="https://bgready.site/availability" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#F59E0B;color:#1a1a2e;border-radius:8px;text-decoration:none;font-weight:700;">View Calendar</a>
             </td>
           </tr>
         </table>
@@ -142,7 +142,7 @@ export async function PATCH(req: Request) {
       // Mirror to messages table so the performer's message centre shows the confirmation.
       await supabaseAdmin.from('messages').insert({
         sender_type: 'system',
-        sender_name: 'SetReady Casting',
+        sender_name: 'BGReady Casting',
         recipient_type: 'performer',
         recipient_id: performerId,
         subject: `🎉 You've been confirmed for ${productionName}!`,

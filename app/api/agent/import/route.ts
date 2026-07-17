@@ -4,7 +4,7 @@ import { getAgentSession } from '@/lib/casting-auth'
 import { sendEmail, rosterInviteEmailHtml } from '@/lib/email'
 import { supabaseAdmin } from '@/utils/supabase/admin'
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://setready.ca'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.bgready.site'
 
 type ImportRow = {
   first_name?: string
@@ -102,7 +102,7 @@ export async function POST(req: Request) {
     const existingUserId = userByEmail.get(emailNorm)
 
     if (existingUserId) {
-      // ── Performer has a SetReady account — link via agency_roster ──────────
+      // ── Performer has a BGReady account — link via agency_roster ──────────
 
       if (alreadyOnRoster.has(existingUserId)) {
         skippedRows.push({ email, reason: 'Already linked to this agency\'s roster' })
@@ -187,7 +187,7 @@ export async function POST(req: Request) {
 
       const emailResult = await sendEmail({
         to: email,
-        subject: `${agencyName} invited you to join SetReady`,
+        subject: `${agencyName} invited you to join BGReady`,
         html: rosterInviteEmailHtml({ firstName, agencyName, claimUrl }),
       })
 

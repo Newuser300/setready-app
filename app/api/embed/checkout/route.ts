@@ -35,7 +35,7 @@ export async function POST(request: Request) {
         price_data: {
           currency: 'cad',
           unit_amount: partner.price_cents ?? 999,
-          product_data: { name: 'SetReady Training & Certification' },
+          product_data: { name: 'BGReady Training & Certification' },
         },
       },
     ],

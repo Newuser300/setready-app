@@ -115,7 +115,7 @@ export async function POST(req: Request) {
         recipient_id: '00000000-0000-0000-0000-000000000000',
         type: 'new_agency_application',
         title: 'New Agency Application',
-        message: `${agencyName} has applied to join SetReady Casting.`,
+        message: `${agencyName} has applied to join BGReady Casting.`,
         action_url: '/admin'
       })
 
@@ -125,7 +125,7 @@ export async function POST(req: Request) {
       await sendEmail({
         to: adminEmail,
         subject: `New agency application: ${agencyName}`,
-        html: `<p>A new agency has applied and is awaiting approval.</p><p><strong>Agency:</strong> ${agencyName}<br/><strong>Contact:</strong> ${name}<br/><strong>Email:</strong> ${email.toLowerCase()}${phone ? `<br/><strong>Phone:</strong> ${phone}` : ''}${city ? `<br/><strong>City:</strong> ${city}, ${province || 'BC'}` : ''}${licenceNumber ? `<br/><strong>Licence:</strong> ${licenceNumber}` : ''}</p><p>Review under Casting → Pending Applications: <a href="https://setready.site/admin">setready.site/admin</a></p>`,
+        html: `<p>A new agency has applied and is awaiting approval.</p><p><strong>Agency:</strong> ${agencyName}<br/><strong>Contact:</strong> ${name}<br/><strong>Email:</strong> ${email.toLowerCase()}${phone ? `<br/><strong>Phone:</strong> ${phone}` : ''}${city ? `<br/><strong>City:</strong> ${city}, ${province || 'BC'}` : ''}${licenceNumber ? `<br/><strong>Licence:</strong> ${licenceNumber}` : ''}</p><p>Review under Casting → Pending Applications: <a href="https://bgready.site/admin">bgready.site/admin</a></p>`,
       }).catch(() => {})
     }
 

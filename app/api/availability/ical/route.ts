@@ -65,8 +65,8 @@ export async function GET(req: Request) {
           start: [cur.getFullYear(), cur.getMonth() + 1, cur.getDate()] as [number, number, number],
           end: [cur.getFullYear(), cur.getMonth() + 1, cur.getDate()] as [number, number, number],
           title: b.production ? `Booked — ${b.production}` : 'Booked — unavailable',
-          description: b.note || 'Confirmed booking — SetReady',
-          uid: `setready-booking-${b.id}-${ds}@setready.site`,
+          description: b.note || 'Confirmed booking — BGReady',
+          uid: `setready-booking-${b.id}-${ds}@bgready.site`,
         })
       }
       cur.setDate(cur.getDate() + 1)
@@ -87,8 +87,8 @@ export async function GET(req: Request) {
         start: [y, m, d] as [number, number, number],
         end: [y, m, d] as [number, number, number],
         title: statusLabel[day.status] || 'Available for filming',
-        description: day.notes || 'Available for background work — SetReady',
-        uid: `setready-avail-${day.id || day.date}@setready.site`,
+        description: day.notes || 'Available for background work — BGReady',
+        uid: `setready-avail-${day.id || day.date}@bgready.site`,
       }
     })
 
@@ -102,7 +102,7 @@ export async function GET(req: Request) {
   return new Response(value, {
     headers: {
       'Content-Type': 'text/calendar;charset=utf-8',
-      'Content-Disposition': 'attachment; filename="setready-availability.ics"',
+      'Content-Disposition': 'attachment; filename="bgready-availability.ics"',
       'Cache-Control': 'no-cache',
     },
   })

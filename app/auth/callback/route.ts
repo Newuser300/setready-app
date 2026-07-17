@@ -65,16 +65,16 @@ export async function GET(request: Request) {
         .from('messages')
         .select('*', { count: 'exact', head: true })
         .eq('recipient_id', data.user.id)
-        .eq('subject', 'Welcome to SetReady!')
+        .eq('subject', 'Welcome to BGReady!')
 
       if (count === 0) {
         await supabaseAdmin.from('messages').insert({
           sender_type: 'system',
-          sender_name: 'SetReady',
+          sender_name: 'BGReady',
           recipient_type: 'performer',
           recipient_id: data.user.id,
-          subject: 'Welcome to SetReady!',
-          body: `Welcome to SetReady — Canada's background performer platform.
+          subject: 'Welcome to BGReady!',
+          body: `Welcome to BGReady — Canada's background performer platform.
 
 Here is how to get started:
 
@@ -91,10 +91,10 @@ Here is how to get started:
 
 5. Check What's Filming.
 
-If you have any questions contact us at support@setready.site
+If you have any questions contact us at support@bgready.site
 
 Welcome to the set!
-— The SetReady Team`,
+— The BGReady Team`,
           message_type: 'general',
           priority: 'normal',
           action_url: '/profile',

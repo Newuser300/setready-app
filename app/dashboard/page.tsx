@@ -84,7 +84,7 @@ const quickActions = [
   { icon: '🎥', label: "What's Filming", action: 'link' as const, href: '/whats-filming' },
   { icon: '🍁', label: 'Find Agencies', action: 'link' as const, href: '/agencies' },
   { icon: '🖱️', label: 'Agency Click', action: 'modal' as const, modal: 'agencyClick' },
-  { icon: '🎬', label: 'SetReady Casting', action: 'link' as const, href: '/casting-portal' },
+  { icon: '🎬', label: 'BGReady Casting', action: 'link' as const, href: '/casting-portal' },
   { icon: '📅', label: 'Availability', action: 'link' as const, href: '/availability' },
   { icon: '🎫', label: 'Voucher Wallet', action: 'link' as const, href: '/voucher-wallet' },
   { icon: '🤳', label: 'Headshot AI', action: 'link' as const, href: '/headshot-analyzer' },
@@ -93,7 +93,7 @@ const quickActions = [
   { icon: '📬', label: 'Messages', action: 'link' as const, href: '/messages' },
   { icon: '📚', label: 'Free Ebooks to Read', action: 'external' as const, href: 'https://www.gutenberg.org/' },
   { icon: '🏆', label: 'My Certificates', action: 'scroll' as const, target: 'my-certificates' },
-  { icon: '☕', label: 'Support SetReady', action: 'link' as const, href: '/donate' },
+  { icon: '☕', label: 'Support BGReady', action: 'link' as const, href: '/donate' },
 ];
 
 function ContactModal({ onClose }: { onClose: () => void }) {
@@ -107,13 +107,13 @@ function ContactModal({ onClose }: { onClose: () => void }) {
         style={{ backgroundColor: 'white', borderRadius: '16px', maxWidth: '420px', width: '90%', padding: '28px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}
       >
         <div style={{ fontSize: '40px', marginBottom: '12px' }}>📬</div>
-        <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 8px' }}>Contact SetReady</h2>
+        <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 8px' }}>Contact BGReady</h2>
         <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 16px', lineHeight: '1.5' }}>Questions, feedback, or need help? Email us and we&apos;ll get back to you.</p>
         <a
-          href="mailto:support@setready.site"
+          href="mailto:support@bgready.site"
           style={{ display: 'inline-block', fontSize: '16px', fontWeight: '700', color: '#1a1a2e', backgroundColor: '#F59E0B', padding: '13px 24px', borderRadius: '10px', textDecoration: 'none', marginBottom: '16px' }}
         >
-          ✉️ support@setready.site
+          ✉️ support@bgready.site
         </a>
         <div>
           <button onClick={onClose} style={{ width: '100%', padding: '12px', backgroundColor: 'transparent', color: '#9ca3af', border: '1px solid #e5e7eb', borderRadius: '10px', fontSize: '14px', cursor: 'pointer' }}>Close</button>
@@ -136,7 +136,7 @@ function SignUpGateModal({ onClose }: { onClose: () => void }) {
       >
         <div style={{ fontSize: '40px', marginBottom: '10px' }}>🎬</div>
         <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#1a1a2e', margin: '0 0 8px' }}>Create your free account</h2>
-        <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 20px', lineHeight: 1.5 }}>Sign up to unlock the training modules, casting tools, games, and everything else on SetReady.</p>
+        <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 20px', lineHeight: 1.5 }}>Sign up to unlock the training modules, casting tools, games, and everything else on BGReady.</p>
         <Link href="/auth/sign-up" style={{ display: 'block', fontSize: '16px', fontWeight: 700, color: '#1a1a2e', backgroundColor: '#F59E0B', padding: '13px', borderRadius: '10px', textDecoration: 'none', marginBottom: '10px' }}>
           Sign Up Free
         </Link>
@@ -838,7 +838,7 @@ export default function Dashboard() {
     ? quickActions.filter(a => a.label !== 'Voucher Wallet')
     : quickActions
   )
-    .filter(a => a.label !== 'SetReady Casting' || isAdmin)
+    .filter(a => a.label !== 'BGReady Casting' || isAdmin)
     .filter(a => a.label !== 'Availability' || isAdmin)
 
   const section1Modules = modules.filter(m => m.section === 1);
@@ -881,7 +881,7 @@ export default function Dashboard() {
               <div>
                 <h1 className="font-bold tracking-tight" style={{ fontSize: isMobile ? '20px' : '28px' }}>
                   {isGuest
-                    ? <>Welcome to <span className="text-yellow-300">SetReady</span></>
+                    ? <>Welcome to <span className="text-yellow-300">BGReady</span></>
                     : <>Welcome back, <span className="text-yellow-300">{displayName || user?.email?.split('@')[0]}</span></>}
                   {verifiedBadge && (
                     <span title="Verified Pro" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#22c55e', color: '#06281a', fontSize: '13px', fontWeight: 700, padding: '4px 12px 4px 10px', borderRadius: '999px', marginLeft: '10px', verticalAlign: 'middle' }}>
@@ -943,7 +943,7 @@ export default function Dashboard() {
             {isGuest && (
               <div data-guest-allow style={{ marginTop: isMobile ? '12px' : '16px', backgroundColor: '#F59E0B', borderRadius: '12px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                 <div style={{ color: '#1a1a2e', fontSize: '13px', fontWeight: 700, minWidth: 0 }}>
-                  👀 You&apos;re previewing SetReady — create a free account to unlock every feature.
+                  👀 You&apos;re previewing BGReady — create a free account to unlock every feature.
                 </div>
                 <Link href="/auth/sign-up" data-guest-allow style={{ flexShrink: 0, backgroundColor: '#1a1a2e', color: 'white', fontSize: '13px', fontWeight: 700, padding: '9px 18px', borderRadius: '9px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
                   Sign Up Free →
@@ -1008,7 +1008,7 @@ export default function Dashboard() {
                 backgroundColor: 'rgba(255,255,255,0.06)',
               }}>
                 <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', lineHeight: '1.4', flex: 1 }}>
-                  📲 Add SetReady to your home screen for quick access on set
+                  📲 Add BGReady to your home screen for quick access on set
                 </span>
                 <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                   <button
@@ -1049,7 +1049,7 @@ export default function Dashboard() {
                   Subscription activated!
                 </div>
                 <div style={{ color: '#16a34a', fontSize: '14px' }}>
-                  All training modules are now unlocked. Welcome to SetReady!
+                  All training modules are now unlocked. Welcome to BGReady!
                 </div>
               </div>
             </div>
@@ -1078,7 +1078,7 @@ export default function Dashboard() {
             <div style={{ backgroundColor: 'white', borderRadius: '14px', border: '1px solid #e5e7eb', padding: '18px 20px', marginBottom: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '10px' }}>
                 <div>
-                  <div style={{ fontWeight: '800', fontSize: '15px', color: '#1a1a2e' }}>Explore what SetReady offers!</div>
+                  <div style={{ fontWeight: '800', fontSize: '15px', color: '#1a1a2e' }}>Explore what BGReady offers!</div>
                   <div style={{ fontSize: '12px', color: '#d97706', fontWeight: '700', marginTop: '2px' }}>{checklistDoneCount} of 6 complete</div>
                 </div>
                 <button
@@ -1188,7 +1188,7 @@ export default function Dashboard() {
                 <StickIcon name={item.label} size={44} />
                 <span style={{
                   fontSize: '11px',
-                  color: item.label === 'Support SetReady' ? '#EA580C' : '#1f2937',
+                  color: item.label === 'Support BGReady' ? '#EA580C' : '#1f2937',
                   textAlign: 'center',
                   fontWeight: 700,
                   lineHeight: '1.25',
@@ -1513,7 +1513,7 @@ export default function Dashboard() {
             <Link href="/privacy" style={{ fontSize: '12px', color: '#6b7280', textDecoration: 'none' }}>Privacy Policy</Link>
             <Link href="/terms" style={{ fontSize: '12px', color: '#6b7280', textDecoration: 'none' }}>Terms of Service</Link>
             <button onClick={() => setShowContactModal(true)} style={{ fontSize: '12px', color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer' }}>Contact</button>
-            <Link href="/donate" style={{ fontSize: '12px', color: '#F59E0B', fontWeight: '600', textDecoration: 'none' }}>☕ Support SetReady</Link>
+            <Link href="/donate" style={{ fontSize: '12px', color: '#F59E0B', fontWeight: '600', textDecoration: 'none' }}>☕ Support BGReady</Link>
             <button onClick={async () => { await supabase.auth.signOut(); router.push('/auth/sign-in'); }} style={{ fontSize: '12px', color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer' }}>
               Sign Out
             </button>
@@ -1758,7 +1758,7 @@ export default function Dashboard() {
               Subscribe to Access Modules
             </h2>
             <p style={{ color: '#6b7280', marginTop: '8px', lineHeight: '1.6', fontSize: '14px' }}>
-              Get full access to all Section 1 modules, quizzes, certificates and all SetReady tools for just $9.99/month.
+              Get full access to all Section 1 modules, quizzes, certificates and all BGReady tools for just $9.99/month.
             </p>
             <button
               onClick={() => { setShowSubscribeModal(false); handleSection1Checkout(); }}
@@ -1857,7 +1857,7 @@ export default function Dashboard() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
                 <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '16px', color: '#F59E0B', fontFamily: 'Arial, sans-serif', flexShrink: 0 }}>SR</div>
                 <div>
-                  <div style={{ fontWeight: '800', fontSize: '17px', color: '#1a1a2e' }}>SetReady</div>
+                  <div style={{ fontWeight: '800', fontSize: '17px', color: '#1a1a2e' }}>BGReady</div>
                   <div style={{ fontSize: '12px', color: '#9ca3af' }}>Background Performer Platform</div>
                 </div>
                 <button onClick={() => setShowInstallModal(false)} style={{ marginLeft: 'auto', background: 'none', border: 'none', fontSize: '22px', color: '#9ca3af', cursor: 'pointer', lineHeight: 1 }}>×</button>
@@ -1866,19 +1866,19 @@ export default function Dashboard() {
               {isStandalone && (
                 <div style={{ textAlign: 'center', padding: '32px 0' }}>
                   <div style={{ fontSize: '52px', marginBottom: '12px' }}>✅</div>
-                  <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 8px' }}>SetReady is already installed!</h2>
+                  <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 8px' }}>BGReady is already installed!</h2>
                   <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>You are using the installed app.</p>
                 </div>
               )}
 
               {!isStandalone && isIOS && (
                 <div>
-                  <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 6px' }}>Add SetReady to Your Home Screen</h2>
+                  <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 6px' }}>Add BGReady to Your Home Screen</h2>
                   <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 24px' }}>Follow these steps in Safari:</p>
                   {[
                     { icon: '⬆️', step: 'Tap the Share button', sub: 'At the bottom of your Safari browser' },
                     { icon: '＋', step: 'Tap "Add to Home Screen"', sub: 'Scroll down in the share menu to find it' },
-                    { icon: '✓', step: 'Tap Add', sub: 'SetReady appears on your home screen instantly' },
+                    { icon: '✓', step: 'Tap Add', sub: 'BGReady appears on your home screen instantly' },
                   ].map((s, i) => (
                     <div key={i} style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', marginBottom: '20px' }}>
                       <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>{s.icon}</div>
@@ -1896,7 +1896,7 @@ export default function Dashboard() {
 
               {!isStandalone && isAndroid && (
                 <div>
-                  <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 20px' }}>Install SetReady on Android</h2>
+                  <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 20px' }}>Install BGReady on Android</h2>
                   {deferredInstallPrompt ? (
                     <div style={{ textAlign: 'center', padding: '8px 0 16px' }}>
                       <button
@@ -1910,7 +1910,7 @@ export default function Dashboard() {
                       >
                         📲 Install Now
                       </button>
-                      <p style={{ fontSize: '13px', color: '#9ca3af', marginTop: '10px' }}>Tap to add SetReady to your home screen</p>
+                      <p style={{ fontSize: '13px', color: '#9ca3af', marginTop: '10px' }}>Tap to add BGReady to your home screen</p>
                     </div>
                   ) : (
                     <div>
@@ -1918,7 +1918,7 @@ export default function Dashboard() {
                       {[
                         { icon: '⋮', step: 'Open Chrome menu', sub: 'Tap the three-dot menu in the top right' },
                         { icon: '＋', step: 'Tap "Add to Home Screen"', sub: 'Scroll down in the menu to find it' },
-                        { icon: '✓', step: 'Tap Install', sub: 'SetReady appears on your home screen' },
+                        { icon: '✓', step: 'Tap Install', sub: 'BGReady appears on your home screen' },
                       ].map((s, i) => (
                         <div key={i} style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', marginBottom: '20px' }}>
                           <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '700', flexShrink: 0 }}>{s.icon}</div>
@@ -1935,9 +1935,9 @@ export default function Dashboard() {
 
               {!isStandalone && !isIOS && !isAndroid && (
                 <div>
-                  <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 12px' }}>Install SetReady on Your Computer</h2>
+                  <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e', margin: '0 0 12px' }}>Install BGReady on Your Computer</h2>
                   <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 20px', lineHeight: '1.5' }}>
-                    Look for the install icon <strong>(⊕)</strong> in your browser address bar, or use your browser menu and select <strong>"Install SetReady"</strong>.
+                    Look for the install icon <strong>(⊕)</strong> in your browser address bar, or use your browser menu and select <strong>"Install BGReady"</strong>.
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
                     {['✓ Chrome', '✓ Edge', '✓ Brave'].map(b => (
@@ -1950,7 +1950,7 @@ export default function Dashboard() {
 
               {!isStandalone && (
                 <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #f3f4f6', fontSize: '13px', color: '#9ca3af', textAlign: 'center', lineHeight: '1.5' }}>
-                  Once installed, SetReady opens like a native app — no browser needed.
+                  Once installed, BGReady opens like a native app — no browser needed.
                 </div>
               )}
             </div>

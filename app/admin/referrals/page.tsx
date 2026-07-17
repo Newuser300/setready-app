@@ -181,7 +181,7 @@ export default function AdminReferralsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-200 text-sm mb-1">Admin Panel</p>
-              <h1 className="text-2xl font-bold">SetReady Admin — Referral Payouts</h1>
+              <h1 className="text-2xl font-bold">BGReady Admin — Referral Payouts</h1>
             </div>
             <Link
               href="/dashboard"
@@ -485,7 +485,7 @@ export default function AdminReferralsPage() {
 
         {/* Footer */}
         <div className="text-center text-xs text-gray-400 pb-4">
-          SetReady Admin • Referral Payouts • Data refreshes on page load
+          BGReady Admin • Referral Payouts • Data refreshes on page load
         </div>
       </div>
     </div>

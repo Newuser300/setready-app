@@ -7,13 +7,13 @@ export default function Copyright() {
       marginTop: '40px',
     }}>
       <p style={{ fontSize: '12px', color: '#9ca3af', margin: 0 }}>
-        © 2026 SetReady. All rights reserved.
+        © 2026 BGReady. All rights reserved.
         {' '}
         <a href="/terms" style={{ color: '#9ca3af', textDecoration: 'underline' }}>Terms</a>
         {' · '}
         <a href="/privacy" style={{ color: '#9ca3af', textDecoration: 'underline' }}>Privacy</a>
         {' · '}
-        <a href="mailto:support@setready.site" style={{ color: '#9ca3af', textDecoration: 'underline' }}>Contact</a>
+        <a href="mailto:support@bgready.site" style={{ color: '#9ca3af', textDecoration: 'underline' }}>Contact</a>
       </p>
     </div>
   )

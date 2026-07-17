@@ -869,9 +869,9 @@ export default function AvailabilityPage() {
           {showIcalSection && (
             <div style={{ marginTop: '16px' }}>
               <div style={{ marginBottom: '20px' }}>
-                <p style={{ color: 'white', fontWeight: '600', fontSize: '13px', margin: '0 0 4px' }}>📤 Subscribe to Your SetReady Calendar</p>
+                <p style={{ color: 'white', fontWeight: '600', fontSize: '13px', margin: '0 0 4px' }}>📤 Subscribe to Your BGReady Calendar</p>
                 <p style={{ color: '#9ca3af', fontSize: '12px', margin: '0 0 10px', lineHeight: '1.5' }}>
-                  Add this link to Google Calendar, Apple Calendar or Outlook to see your SetReady availability on your personal calendar.
+                  Add this link to Google Calendar, Apple Calendar or Outlook to see your BGReady availability on your personal calendar.
                 </p>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <div style={{ flex: 1, backgroundColor: '#0f0f1a', borderRadius: '8px', padding: '8px 12px', fontSize: '11px', color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', border: '1px solid rgba(255,255,255,0.06)' }}>
@@ -887,7 +887,7 @@ export default function AvailabilityPage() {
               </div>
               <div>
                 <p style={{ color: 'white', fontWeight: '600', fontSize: '13px', margin: '0 0 6px' }}>📥 Import from Google Calendar</p>
-                <p style={{ color: '#9ca3af', fontSize: '12px', margin: '0 0 8px' }}>Mark your Google Calendar busy times as Unavailable in SetReady automatically.</p>
+                <p style={{ color: '#9ca3af', fontSize: '12px', margin: '0 0 8px' }}>Mark your Google Calendar busy times as Unavailable in BGReady automatically.</p>
                 <button
                   onClick={() => setShowGcalModal(true)}
                   style={{ padding: '8px 16px', backgroundColor: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '8px', color: '#3b82f6', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
@@ -1013,7 +1013,7 @@ export default function AvailabilityPage() {
               placeholder="https://calendar.google.com/calendar/ical/..."
               style={{ width: '100%', backgroundColor: '#0f0f1a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '10px 12px', color: 'white', fontSize: '13px', boxSizing: 'border-box', outline: 'none', marginBottom: '8px' }}
             />
-            <p style={{ color: '#6b7280', fontSize: '12px', margin: '0 0 12px' }}>Busy events will be marked as Unavailable in SetReady.</p>
+            <p style={{ color: '#6b7280', fontSize: '12px', margin: '0 0 12px' }}>Busy events will be marked as Unavailable in BGReady.</p>
             <button
               onClick={importGcal}
               disabled={importingGcal || !gcalUrl.trim()}

@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 export const metadata = {
-  title: 'Privacy Policy — SetReady',
-  description: 'How SetReady collects, uses, discloses, and protects your personal information.',
+  title: 'Privacy Policy — BGReady',
+  description: 'How BGReady collects, uses, discloses, and protects your personal information.',
 };
 
 const wrap: CSSProperties = {
@@ -29,12 +29,12 @@ const a: CSSProperties = { color: '#1d4ed8' };
 export default function PrivacyPolicyPage() {
   return (
     <main style={wrap}>
-      <a href="/" style={back}>&larr; Back to SetReady</a>
+      <a href="/" style={back}>&larr; Back to BGReady</a>
       <h1 style={h1}>Privacy Policy</h1>
       <p style={updated}>Last updated: June 18, 2026</p>
 
       <div style={summary}>
-        <strong>In short:</strong> SetReady is a Canada-only platform that connects adult background
+        <strong>In short:</strong> BGReady is a Canada-only platform that connects adult background
         performers with agents and casting directors. To do that, we collect your profile information —
         including photos, physical details, general location, and availability — and make it visible to
         agents and casting directors. We use trusted service providers in the United States to run the
@@ -42,19 +42,19 @@ export default function PrivacyPolicyPage() {
       </div>
 
       <p style={p}>
-        This Privacy Policy explains how SetReady (&ldquo;SetReady&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;)
+        This Privacy Policy explains how BGReady (&ldquo;BGReady&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;)
         collects, uses, discloses, and protects your personal information, and your rights under Canadian
         privacy law, including the federal <em>Personal Information Protection and Electronic Documents Act</em>
         (PIPEDA) and applicable provincial laws such as Quebec&rsquo;s <em>Law 25</em>.
       </p>
 
-      <h2 style={h2}>1. Who SetReady is for</h2>
+      <h2 style={h2}>1. Who BGReady is for</h2>
       <p style={p}>
-        SetReady is intended <strong>solely for residents of Canada</strong>. The Service is not directed to,
+        BGReady is intended <strong>solely for residents of Canada</strong>. The Service is not directed to,
         or intended for use by, anyone outside Canada.
       </p>
       <p style={p}>
-        SetReady is for <strong>adults only</strong>. You must be at least <strong>18 years of age</strong> and
+        BGReady is for <strong>adults only</strong>. You must be at least <strong>18 years of age</strong> and
         the age of majority in your province or territory to create an account or use the Service. We do not
         knowingly collect personal information from anyone under 18. If we learn that we have collected
         information from a minor, we will delete it and close the account.
@@ -89,7 +89,7 @@ export default function PrivacyPolicyPage() {
       </p>
       <h3 style={h3}>Consent</h3>
       <p style={p}>
-        By creating an account and using SetReady, you consent to the collection, use, and disclosure of your
+        By creating an account and using BGReady, you consent to the collection, use, and disclosure of your
         personal information as described in this policy. Because your profile includes sensitive information
         such as photos, we rely on your consent to display and process that information as described in Section 4.
         You may withdraw your consent at any time (see Section 8), though doing so may limit or end your ability
@@ -98,7 +98,7 @@ export default function PrivacyPolicyPage() {
 
       <h2 style={h2}>4. How your information is shown to other users</h2>
       <p style={p}>
-        SetReady is a marketplace, and this is its core purpose. Information in your performer profile —
+        BGReady is a marketplace, and this is its core purpose. Information in your performer profile —
         including your <strong>name, photos, physical characteristics, special skills, general
         location/region, and availability</strong> — is made visible to other users of the Service,
         specifically <strong>agents and casting directors</strong>, so they can consider you for work and
@@ -164,7 +164,7 @@ export default function PrivacyPolicyPage() {
         <li style={li}><strong>Withdraw consent</strong> or <strong>delete</strong> your account, subject to the legal retention noted above.</li>
         <li style={li}><strong>Request portability</strong> of certain information you provided, in a structured, commonly used format, where required by law.</li>
       </ul>
-      <p style={p}>To exercise these rights, contact us at <a style={a} href="mailto:support@setready.site">support@setready.site</a>. We will respond within the timeframes required by law.</p>
+      <p style={p}>To exercise these rights, contact us at <a style={a} href="mailto:support@bgready.site">support@bgready.site</a>. We will respond within the timeframes required by law.</p>
 
       <h2 style={h2}>9. Security and breach response</h2>
       <p style={p}>
@@ -178,13 +178,13 @@ export default function PrivacyPolicyPage() {
       <h2 style={h2}>10. Accuracy of your information</h2>
       <p style={p}>
         You are responsible for keeping your information accurate and up to date. You can update your profile in
-        your account settings, or contact us at <a style={a} href="mailto:support@setready.site">support@setready.site</a> and we will correct it promptly.
+        your account settings, or contact us at <a style={a} href="mailto:support@bgready.site">support@bgready.site</a> and we will correct it promptly.
       </p>
 
       <h2 style={h2}>11. Privacy Officer and accountability</h2>
       <p style={p}>
         We have designated a Privacy Officer responsible for our compliance with applicable privacy law. You can
-        reach the Privacy Officer at <a style={a} href="mailto:support@setready.site">support@setready.site</a>.
+        reach the Privacy Officer at <a style={a} href="mailto:support@bgready.site">support@bgready.site</a>.
       </p>
 
       <h2 style={h2}>12. Changes to this policy</h2>
@@ -195,7 +195,7 @@ export default function PrivacyPolicyPage() {
 
       <h2 style={h2}>13. Contact and complaints</h2>
       <p style={p}>
-        Questions, or to exercise your rights: <a style={a} href="mailto:support@setready.site">support@setready.site</a>.
+        Questions, or to exercise your rights: <a style={a} href="mailto:support@bgready.site">support@bgready.site</a>.
       </p>
       <p style={p}>If you are not satisfied with our response, you may contact:</p>
       <ul style={ul}>

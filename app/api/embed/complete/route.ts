@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/utils/supabase/admin';
 
 // Marks a widget enrollment complete and issues a verifiable certificate ID.
-// Records the completion so it shows in the SetReady admin console.
+// Records the completion so it shows in the BGReady admin console.
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({} as Record<string, unknown>));
   const key = String(body.partner || '');
