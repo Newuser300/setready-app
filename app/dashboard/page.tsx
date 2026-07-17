@@ -877,8 +877,9 @@ export default function Dashboard() {
         {/* Hero Header */}
         <div style={{ backgroundColor: '#1a1a2e', color: 'white' }}>
           <div className="max-w-4xl mx-auto px-4" style={{ paddingTop: isMobile ? '16px' : '24px', paddingBottom: isMobile ? '16px' : '24px' }}>
-            <div style={{ textAlign: 'center', marginBottom: isMobile ? '10px' : '14px' }}>
-              <span style={{ fontFamily: 'Georgia, serif', fontWeight: 800, letterSpacing: '-0.01em', color: '#F59E0B', fontSize: isMobile ? '26px' : '34px' }}>BGReady</span>
+            <div style={{ marginBottom: isMobile ? '12px' : '16px' }}>
+              <div style={{ fontFamily: 'Georgia, serif', fontWeight: 800, letterSpacing: '-0.01em', color: '#F59E0B', fontSize: isMobile ? '22px' : '26px', lineHeight: 1 }}>BGReady</div>
+              <div style={{ fontSize: isMobile ? '11px' : '12.5px', color: 'rgba(255,255,255,0.6)', marginTop: '4px', letterSpacing: '0.01em' }}>All-in-one Background Performer Platform</div>
             </div>
             <div className="flex items-center justify-between">
               <div>
