@@ -169,14 +169,14 @@ export default function SettingsPage() {
       const res = await fetch('/api/account/delete', { method: 'POST' });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        alert(d.error || 'Error deleting account. Please contact support at support@bgready.site');
+        alert(d.error || 'Error deleting account. Please contact support at support@setready.site');
         return;
       }
       await supabase.auth.signOut();
       router.push('/auth/sign-in');
     } catch (err) {
       console.error('Delete error:', err);
-      alert('Error deleting account. Please contact support at support@bgready.site');
+      alert('Error deleting account. Please contact support at support@setready.site');
     } finally {
       setDeleting(false);
     }
@@ -406,10 +406,10 @@ export default function SettingsPage() {
             </button>
             <div className="pt-2 mt-2 border-t border-gray-200">
               <a 
-                href="mailto:support@bgready.site" 
+                href="mailto:support@setready.site" 
                 className="block text-blue-600 hover:underline"
               >
-                📧 Contact Support: support@bgready.site
+                📧 Contact Support: support@setready.site
               </a>
             </div>
           </div>

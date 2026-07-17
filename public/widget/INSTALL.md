@@ -24,4 +24,4 @@ That's it. The widget loads inside your page, sizes itself automatically, and wo
 - **Free for your talent (Option A):** they just start — the promo is applied automatically by your key.
 - **Paid (Option B):** talent pay the one-time fee inside the widget; you receive your referral share.
 - Works in any website builder that lets you paste HTML/embed code (Webflow, WordPress, Wix, Squarespace, a custom portal, etc.). In "embed / custom HTML" blocks, paste the same snippet.
-- Every enrollee is recorded by BGReady; you'll get a monthly summary. Questions: **support@bgready.site**.
+- Every enrollee is recorded by BGReady; you'll get a monthly summary. Questions: **support@setready.site**.

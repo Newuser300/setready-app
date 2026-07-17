@@ -164,7 +164,7 @@ export default function PrivacyPolicyPage() {
         <li style={li}><strong>Withdraw consent</strong> or <strong>delete</strong> your account, subject to the legal retention noted above.</li>
         <li style={li}><strong>Request portability</strong> of certain information you provided, in a structured, commonly used format, where required by law.</li>
       </ul>
-      <p style={p}>To exercise these rights, contact us at <a style={a} href="mailto:support@bgready.site">support@bgready.site</a>. We will respond within the timeframes required by law.</p>
+      <p style={p}>To exercise these rights, contact us at <a style={a} href="mailto:support@setready.site">support@setready.site</a>. We will respond within the timeframes required by law.</p>
 
       <h2 style={h2}>9. Security and breach response</h2>
       <p style={p}>
@@ -178,13 +178,13 @@ export default function PrivacyPolicyPage() {
       <h2 style={h2}>10. Accuracy of your information</h2>
       <p style={p}>
         You are responsible for keeping your information accurate and up to date. You can update your profile in
-        your account settings, or contact us at <a style={a} href="mailto:support@bgready.site">support@bgready.site</a> and we will correct it promptly.
+        your account settings, or contact us at <a style={a} href="mailto:support@setready.site">support@setready.site</a> and we will correct it promptly.
       </p>
 
       <h2 style={h2}>11. Privacy Officer and accountability</h2>
       <p style={p}>
         We have designated a Privacy Officer responsible for our compliance with applicable privacy law. You can
-        reach the Privacy Officer at <a style={a} href="mailto:support@bgready.site">support@bgready.site</a>.
+        reach the Privacy Officer at <a style={a} href="mailto:support@setready.site">support@setready.site</a>.
       </p>
 
       <h2 style={h2}>12. Changes to this policy</h2>
@@ -195,7 +195,7 @@ export default function PrivacyPolicyPage() {
 
       <h2 style={h2}>13. Contact and complaints</h2>
       <p style={p}>
-        Questions, or to exercise your rights: <a style={a} href="mailto:support@bgready.site">support@bgready.site</a>.
+        Questions, or to exercise your rights: <a style={a} href="mailto:support@setready.site">support@setready.site</a>.
       </p>
       <p style={p}>If you are not satisfied with our response, you may contact:</p>
       <ul style={ul}>

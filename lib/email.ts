@@ -176,7 +176,7 @@ export function castingRequestEmailHtml({
                 BGReady — Canada's Background Performer Platform<br/>
                 <a href="https://www.bgready.site" style="color:#F59E0B;">bgready.site</a>
                 &nbsp;·&nbsp;
-                <a href="mailto:support@bgready.site" style="color:#9ca3af;">support@bgready.site</a>
+                <a href="mailto:support@setready.site" style="color:#9ca3af;">support@setready.site</a>
               </p>
             </td>
           </tr>

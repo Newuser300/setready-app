@@ -92,7 +92,7 @@ export default function TermsOfServicePage() {
         requiring immediate action, we will endeavour to provide notice and the reasons for the action, unless
         doing so is prohibited by law or would create a security risk. In urgent cases, we may suspend or terminate
         access immediately and without prior notice. You may appeal a suspension or termination within 14 days by
-        emailing <a style={a} href="mailto:support@bgready.site">support@bgready.site</a>.
+        emailing <a style={a} href="mailto:support@setready.site">support@setready.site</a>.
       </p>
       <p style={p}>
         Upon termination, your right to access and use the Service will immediately cease. Termination does not
@@ -227,7 +227,7 @@ export default function TermsOfServicePage() {
       </p>
 
       <h2 style={h2}>15. Contact</h2>
-      <p style={p}>For any inquiry, including legal and support matters: <a style={a} href="mailto:support@bgready.site">support@bgready.site</a>.</p>
+      <p style={p}>For any inquiry, including legal and support matters: <a style={a} href="mailto:support@setready.site">support@setready.site</a>.</p>
 
       <h2 style={h2}>16. Entire agreement</h2>
       <p style={p}>These Terms and the Privacy Policy are the entire agreement between you and BGReady regarding the Service and supersede any prior agreements.</p>

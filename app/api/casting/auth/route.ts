@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     )
 
     if (cd.is_active === false) return NextResponse.json(
-      { error: 'Your account has been suspended. Please contact support@bgready.site.' },
+      { error: 'Your account has been suspended. Please contact support@setready.site.' },
       { status: 403 }
     )
 

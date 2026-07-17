@@ -576,7 +576,7 @@ export default function SignUp() {
 
         <div style={{ marginTop: '16px', textAlign: 'center' }}>
           <p style={{ fontSize: '11px', color: '#9ca3af', margin: 0 }}>
-            Need help? support@bgready.site
+            Need help? support@setready.site
           </p>
         </div>
 

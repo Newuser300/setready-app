@@ -294,7 +294,7 @@ export function buildMessageEmailHtml({
               BGReady — Canada's Background Performer Platform<br/>
               <a href="https://www.bgready.site" style="color:#F59E0B;text-decoration:none;">bgready.site</a>
               &nbsp;·&nbsp;
-              <a href="mailto:support@bgready.site" style="color:#9ca3af;text-decoration:none;">support@bgready.site</a>
+              <a href="mailto:support@setready.site" style="color:#9ca3af;text-decoration:none;">support@setready.site</a>
               <br/><br/>
               <span style="font-size:11px;color:#d1d5db;">You received this because you have a BGReady account.</span>
             </td>
