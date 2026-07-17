@@ -23,6 +23,21 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: false,
   },
   reactCompiler: true,
+  async redirects() {
+    return [
+      // The retired SetReady domain is redirected to BGReady permanently (308),
+      // preserving the path so deep links and their ranking signals carry over.
+      // /api and /auth are excluded: Stripe does not follow redirects on webhook
+      // delivery, and the auth callback must complete on the domain that issued
+      // the code verifier cookie.
+      {
+        source: '/:path((?!api/|auth/).*)',
+        has: [{ type: 'host', value: '(www\\.)?setready\\.site' }],
+        destination: 'https://www.bgready.site/:path',
+        permanent: true,
+      },
+    ]
+  },
 };
 
 export default nextConfig;
