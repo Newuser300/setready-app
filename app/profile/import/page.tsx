@@ -334,7 +334,7 @@ export default function ProfileImportPage() {
         <div style={{ maxWidth: '600px', margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '32px', height: '32px', backgroundColor: '#F59E0B', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '11px', color: '#1a1a2e' }}>SR</div>
+              <div style={{ width: '32px', height: '32px', backgroundColor: '#F59E0B', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '11px', color: '#1a1a2e' }}>BG</div>
               <div>
                 <div style={{ fontWeight: 700, fontSize: '14px', color: '#1a1a2e' }}>Build Your Profile</div>
                 <div style={{ fontSize: '11px', color: '#9ca3af' }}>About 5 minutes</div>

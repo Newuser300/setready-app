@@ -62,7 +62,7 @@ export default function InstallPage() {
       {/* Header */}
       <div style={{ padding: '20px 20px 0', maxWidth: '480px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#F59E0B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '13px', color: '#1a1a2e', fontFamily: 'Arial, sans-serif' }}>SR</div>
+          <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#F59E0B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '13px', color: '#1a1a2e', fontFamily: 'Arial, sans-serif' }}>BG</div>
           <span style={{ fontWeight: '700', fontSize: '15px', color: 'white' }}>BGReady</span>
         </Link>
         <Link href="/" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>← Back</Link>
@@ -70,7 +70,7 @@ export default function InstallPage() {
 
       {/* Hero */}
       <div style={{ textAlign: 'center', padding: '48px 24px 32px', maxWidth: '480px', margin: '0 auto' }}>
-        <div style={{ width: '72px', height: '72px', borderRadius: '20px', backgroundColor: '#F59E0B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '24px', color: '#1a1a2e', fontFamily: 'Arial, sans-serif', margin: '0 auto 20px' }}>SR</div>
+        <div style={{ width: '72px', height: '72px', borderRadius: '20px', backgroundColor: '#F59E0B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '24px', color: '#1a1a2e', fontFamily: 'Arial, sans-serif', margin: '0 auto 20px' }}>BG</div>
         {installed ? (
           <>
             <h1 style={{ fontSize: '26px', fontWeight: '800', margin: '0 0 10px' }}>✅ Already Installed!</h1>

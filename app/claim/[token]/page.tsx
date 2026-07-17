@@ -237,7 +237,7 @@ export default function ClaimPage({ params }: { params: Promise<{ token: string 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-            <div style={{ width: '40px', height: '40px', backgroundColor: '#F59E0B', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '14px', color: '#1a1a2e' }}>SR</div>
+            <div style={{ width: '40px', height: '40px', backgroundColor: '#F59E0B', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '14px', color: '#1a1a2e' }}>BG</div>
             <span style={{ fontFamily: 'Georgia, serif', fontSize: '20px', fontWeight: 700, color: '#1a1a2e' }}>BGReady</span>
           </div>
           <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '16px 20px', textAlign: 'left', marginBottom: '8px' }}>

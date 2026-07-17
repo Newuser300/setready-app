@@ -102,7 +102,7 @@ export default function SigninPage({ params }: { params: Promise<{ token: string
 
       {/* Header */}
       <div style={{ backgroundColor: '#1a1a2e', padding: '20px', textAlign: 'center', borderBottom: '1px solid rgba(245,158,11,0.2)' }}>
-        <div style={{ fontSize: '32px', fontWeight: '900', color: '#F59E0B', letterSpacing: '-0.02em' }}>SR</div>
+        <div style={{ fontSize: '32px', fontWeight: '900', color: '#F59E0B', letterSpacing: '-0.02em' }}>BG</div>
         <div style={{ color: '#9ca3af', fontSize: '12px', letterSpacing: '0.15em', marginTop: '2px' }}>SETREADY</div>
         <div style={{ marginTop: '12px' }}>
           <div style={{ fontSize: '22px', fontWeight: '800', color: 'white' }}>On-Set Check-In</div>

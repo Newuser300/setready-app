@@ -140,7 +140,7 @@ export default function CompleteProfile() {
       <div style={{ maxWidth: '440px', width: '100%', backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '14px', padding: '32px' }}>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-          <div style={{ width: '44px', height: '44px', backgroundColor: '#F59E0B', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '16px', color: '#1a1a2e' }}>SR</div>
+          <div style={{ width: '44px', height: '44px', backgroundColor: '#F59E0B', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '16px', color: '#1a1a2e' }}>BG</div>
           <div>
             <div style={{ fontSize: '11px', fontWeight: 700, color: '#F59E0B', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Almost there</div>
             <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: 700, color: '#1a1a2e', margin: 0 }}>Finish setting up</h1>

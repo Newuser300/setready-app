@@ -97,7 +97,7 @@ export default function PWAInstaller() {
         fontSize: '17px',
         fontWeight: '900',
         color: '#1a1a2e',
-      }}>SR</div>
+      }}>BG</div>
       <div style={{ flex: 1 }}>
         <div style={{ color: 'white', fontWeight: '700', fontSize: '14px', lineHeight: '1.3' }}>
           Add BGReady to your home screen

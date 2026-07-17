@@ -24,12 +24,12 @@ export default function Logo({ size = 'md', darkBackground = true, showText = fa
           className="font-bold text-[#1a1a2e] leading-none select-none"
           style={{ fontSize: cfg.srFont }}
         >
-          SR
+          BG
         </span>
       </span>
       {showText && (
         <span className={`font-bold tracking-tight ${cfg.wordmark}`}>
-          <span className={setColor}>Set</span>
+          <span className={setColor}>BG</span>
           <span className="text-[#F59E0B]">Ready</span>
         </span>
       )}

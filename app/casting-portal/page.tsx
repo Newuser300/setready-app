@@ -25,7 +25,7 @@ export default function CastingPortalPage() {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontWeight: 900, fontSize: '20px', color: '#1a1a2e',
           margin: '0 auto',
-        }}>SR</div>
+        }}>BG</div>
       </div>
 
       {/* Title */}

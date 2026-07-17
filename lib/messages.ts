@@ -263,7 +263,7 @@ export function buildMessageEmailHtml({
         <table width="600" style="background:white;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
           <tr>
             <td style="background:#1a1a2e;padding:24px 32px;">
-              <div style="width:40px;height:40px;background:#F59E0B;border-radius:50%;display:inline-block;text-align:center;line-height:40px;font-weight:900;font-size:15px;color:#1a1a2e;vertical-align:middle;">SR</div>
+              <div style="width:40px;height:40px;background:#F59E0B;border-radius:50%;display:inline-block;text-align:center;line-height:40px;font-weight:900;font-size:15px;color:#1a1a2e;vertical-align:middle;">BG</div>
               <span style="color:white;font-size:20px;font-weight:700;vertical-align:middle;margin-left:10px;">BGReady</span>
             </td>
           </tr>

@@ -220,11 +220,11 @@ export async function generateCertificatePDF(data: CertificateData): Promise<Buf
   const CertificatePDF = () => (
     <Document>
       <Page size="A4" style={styles.page}>
-        <Text style={styles.watermark}>SET READY</Text>
+        <Text style={styles.watermark}>BGREADY</Text>
         <View style={styles.border}>
           <View style={styles.innerBorder}>
             <View style={styles.header}>
-              <Text style={styles.logo}>SET READY</Text>
+              <Text style={styles.logo}>BGREADY</Text>
               <Text style={styles.logoSubtitle}>FILM INDUSTRY TRAINING</Text>
               <View style={styles.decorativeLine} />
             </View>

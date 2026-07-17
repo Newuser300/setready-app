@@ -100,7 +100,7 @@ export default function Home() {
       {/* ── SECTION 0 — STICKY NAV ───────────────────────────── */}
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, backgroundColor: '#1a1a2e', height: '64px', display: 'flex', alignItems: 'center' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 20px', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Logo size="md" darkBackground={true} />
+          <Logo size="md" darkBackground={true} showText={true} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button
               onClick={() => router.push('/auth/sign-in')}
@@ -122,7 +122,7 @@ export default function Home() {
       <section style={{ backgroundColor: 'white', paddingTop: '140px', paddingBottom: '100px', textAlign: 'center', padding: '140px 20px 100px' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
           <p style={{ fontSize: '12px', color: '#F59E0B', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: '600', marginBottom: '28px' }}>
-            Canada&apos;s Background Performer Platform
+            BGReady &mdash; Canada&apos;s Background Performer Platform
           </p>
           <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(44px, 8vw, 72px)', fontWeight: '700', color: '#1a1a2e', lineHeight: '1.1', letterSpacing: '-0.02em', margin: '0 0 28px' }}>
             Everything a Background Performer<br />needs in one place.

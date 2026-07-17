@@ -102,7 +102,7 @@ export function castingRequestEmailHtml({
           <tr>
             <td style="background:#1a1a2e;padding:24px 32px;">
               <table><tr><td>
-                <div style="width:44px;height:44px;background:#F59E0B;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#1a1a2e;vertical-align:middle;">SR</div>
+                <div style="width:44px;height:44px;background:#F59E0B;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#1a1a2e;vertical-align:middle;">BG</div>
                 <span style="color:white;font-size:22px;font-weight:700;margin-left:12px;vertical-align:middle;">BGReady Casting</span>
               </td></tr></table>
             </td>

@@ -91,7 +91,7 @@ export default function SignIn() {
               fontWeight: 900, fontSize: '18px', color: '#1a1a2e',
               letterSpacing: '-0.5px',
               flexShrink: 0,
-            }}>SR</div>
+            }}>BG</div>
             <div>
               <div style={{ fontFamily: 'Georgia, serif', fontSize: '24px', fontWeight: 700, color: 'white', lineHeight: 1 }}>BGReady</div>
               <div style={{ fontSize: '11px', color: '#F59E0B', marginTop: '4px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Background Performer Platform</div>
@@ -133,7 +133,7 @@ export default function SignIn() {
                 borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontWeight: 900, fontSize: '16px', color: '#1a1a2e',
-              }}>SR</div>
+              }}>BG</div>
               <span style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: 700, color: '#1a1a2e' }}>BGReady</span>
             </div>
           </div>

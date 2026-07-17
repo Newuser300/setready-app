@@ -877,6 +877,9 @@ export default function Dashboard() {
         {/* Hero Header */}
         <div style={{ backgroundColor: '#1a1a2e', color: 'white' }}>
           <div className="max-w-4xl mx-auto px-4" style={{ paddingTop: isMobile ? '16px' : '24px', paddingBottom: isMobile ? '16px' : '24px' }}>
+            <div style={{ textAlign: 'center', marginBottom: isMobile ? '10px' : '14px' }}>
+              <span style={{ fontFamily: 'Georgia, serif', fontWeight: 800, letterSpacing: '-0.01em', color: '#F59E0B', fontSize: isMobile ? '26px' : '34px' }}>BGReady</span>
+            </div>
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="font-bold tracking-tight" style={{ fontSize: isMobile ? '20px' : '28px' }}>
@@ -898,6 +901,14 @@ export default function Dashboard() {
                     <span>Admin</span>
                   </Link>
                 )}
+                <button
+                  onClick={() => setShowInstallModal(true)}
+                  style={{ background: 'none', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '8px', cursor: 'pointer', padding: '4px 10px', color: 'rgba(255,255,255,0.85)', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px' }}
+                  title="Install BGReady app"
+                >
+                  <span style={{ fontSize: '15px' }}>📲</span>
+                  <span className="hidden sm:inline">Install</span>
+                </button>
                 <button
                   onClick={async () => {
                     setShowUnionNotifPanel(true)
@@ -994,38 +1005,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Install App Hero Banner */}
-            {showInstallBanner && (
-              <div style={{
-                marginTop: '12px',
-                border: '1px solid rgba(245,158,11,0.5)',
-                borderRadius: '12px',
-                padding: '11px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '12px',
-                backgroundColor: 'rgba(255,255,255,0.06)',
-              }}>
-                <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', lineHeight: '1.4', flex: 1 }}>
-                  📲 Add BGReady to your home screen for quick access on set
-                </span>
-                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                  <button
-                    onClick={() => setShowInstallModal(true)}
-                    style={{ padding: '6px 14px', backgroundColor: '#F59E0B', color: '#1a1a2e', fontWeight: '700', fontSize: '12px', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-                  >
-                    Install
-                  </button>
-                  <button
-                    onClick={() => { setShowInstallBanner(false); localStorage.setItem('sr-install-dismissed', 'true'); }}
-                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '16px', padding: '0 4px', lineHeight: 1 }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -1855,7 +1834,7 @@ export default function Dashboard() {
               <div style={{ width: '40px', height: '4px', backgroundColor: '#e5e7eb', borderRadius: '2px', margin: '0 auto 20px' }} />
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '16px', color: '#F59E0B', fontFamily: 'Arial, sans-serif', flexShrink: 0 }}>SR</div>
+                <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '16px', color: '#F59E0B', fontFamily: 'Arial, sans-serif', flexShrink: 0 }}>BG</div>
                 <div>
                   <div style={{ fontWeight: '800', fontSize: '17px', color: '#1a1a2e' }}>BGReady</div>
                   <div style={{ fontSize: '12px', color: '#9ca3af' }}>Background Performer Platform</div>
