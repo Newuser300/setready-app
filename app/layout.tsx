@@ -12,7 +12,7 @@ const inter = Inter({ subsets: ['latin'] });
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.bgready.site';
 const TITLE = 'BGReady — The App for Canadian Background Actors & Film Extras';
 const DESCRIPTION =
-  'BGReady is the all-in-one app for Canadian background performers (film & TV extras): log bookings, store vouchers, calculate UBCP/ACTRA pay, learn on-set terminology, and build a casting profile agencies can see. Free to start.';
+  'BGReady: the all-in-one app for Canadian background performers and movie extras. Log bookings, store vouchers, and calculate UBCP/ACTRA pay. Free to start.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),

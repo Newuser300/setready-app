@@ -47,4 +47,7 @@ Google Console.txt
 Vercel.txt
 TO DO.txt
 
+# local marketing assets (large binaries + contact lists — keep out of the repo)
+/BGReady Marketing/
+
 .vercel
