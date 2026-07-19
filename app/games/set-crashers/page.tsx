@@ -21,7 +21,15 @@ const WORLD_W = 1280, WORLD_H = 720;
 const GROUND_Y = 660;
 const SLING = { x: 200, y: 470 };
 const MAX_PULL = 150;          // max drag distance (px in world space)
-const LAUNCH_SCALE = 0.18;     // pull -> velocity (+20% from 0.15; VMAX cap scales from this, so shots stay on-world)
+const LAUNCH_SCALE = 0.225;    // pull -> velocity. +25% from 0.18 (which was itself +20% from 0.15).
+// One knob drives three things, so they can never drift apart:
+//   the launched velocity        (vx/vy at launch)
+//   the VMAX safety cap          (MAX_PULL * LAUNCH_SCALE * 1.1)
+//   the dotted aim preview       (same formula, so the arc stays truthful)
+// At 0.225: VMAX = 37.1 px/frame, or 64.1 with the Power Sling buff.
+// Projectiles are r20-r30 (40-60px across) and the thinnest block is 16px,
+// so the swept path still overlaps every body — no tunnelling at this speed.
+// Do not push much past ~0.3 without re-checking that.
 const DIFFICULTY = 2;          // 1 = original. Higher = heavier, tougher targets & sturdier structures. Try 2.5–3 for much harder.
 
 // ── "BOX OFFICE" SCORING — your score is your film's gross ──
