@@ -96,7 +96,10 @@ export async function POST(request: Request) {
     }
 
     // ── 4. Create portal session ──────────────────────────────────
-    const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`;
+    // Fall back to the live domain: an unset env var would yield
+    // "undefined/dashboard", which Stripe rejects as an invalid return_url.
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.bgready.site';
+    const returnUrl = `${appUrl}/dashboard`;
     console.log('[portal] Creating portal session for customer:', stripeCustomerId, '— return_url:', returnUrl);
 
     let portalSession: Stripe.BillingPortal.Session;
