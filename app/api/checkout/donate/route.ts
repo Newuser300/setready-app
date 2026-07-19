@@ -30,6 +30,12 @@ export async function POST(req: Request) {
     const metadata: Record<string, string> = { type: 'donation' }
     if (donorUserId) metadata.donor_user_id = donorUserId
 
+    // Fall back to the live domain: an unset env var would yield
+
+    // "undefined/...", which Stripe rejects as an invalid URL.
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.bgready.site'
+
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: 'payment',
       payment_method_types: ['card'],
@@ -47,8 +53,8 @@ export async function POST(req: Request) {
         },
       ],
       metadata,
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/donate/thank-you`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/donate`,
+      success_url: `${appUrl}/donate/thank-you`,
+      cancel_url: `${appUrl}/donate`,
       submit_type: 'donate',
     }
 

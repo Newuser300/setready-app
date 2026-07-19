@@ -39,6 +39,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Payment configuration error' }, { status: 500 });
     }
     
+    // Fall back to the live domain: an unset env var would yield
+    
+    // "undefined/...", which Stripe rejects as an invalid URL.
+    
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.bgready.site'
+    
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],
@@ -48,8 +54,8 @@ export async function POST(request: Request) {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?section2_unlocked=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?canceled=true`,
+      success_url: `${appUrl}/dashboard?section2_unlocked=true`,
+      cancel_url: `${appUrl}/dashboard?canceled=true`,
       client_reference_id: user.id,
       ...abandonedCartOptions({ email: user.email, mode: 'payment' }),
       metadata: {
