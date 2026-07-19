@@ -22,28 +22,7 @@ const GROUND_Y = 660;
 const SLING = { x: 200, y: 470 };
 const MAX_PULL = 150;          // max drag distance (px in world space)
 const LAUNCH_SCALE = 0.18;     // pull -> velocity (+20% from 0.15; VMAX cap scales from this, so shots stay on-world)
-const DIFFICULTY = 6;          // 1 = original, 2 = previous. 6 = current "hard mode".
-// ── DIFFICULTY MATH — read before changing ────────────────────────────────
-// This single number drives two things:
-//   target HP      = 100 * (1 + (D-1) * 0.5)   (line ~419)
-//   block density  = base * (1 + (D-1) * 0.6)   (line ~417)
-// Damage is dealt as `force * 60`, and only when force > 2 (line ~482).
-//
-// HP is deliberately scaled SUB-LINEARLY while weight scales faster. That is
-// the whole trick: structures get much heavier and sturdier (the real source
-// of difficulty) without turning targets into bullet sponges.
-//
-// Why that matters: 142 of the 182 levels have MORE targets than shots, so
-// they can only be cleared by chain reactions — one shot collapsing a
-// structure onto several targets. Collapse debris lands with low force
-// (roughly 2-6). If target HP outruns that, those levels stop being hard and
-// become impossible.
-//   D = 2  -> 200 HP : force 3.4 kills          (old, easy)
-//   D = 6  -> 350 HP : force 5.9 kills          (current — collapses still work)
-//   naive linear D=6 would have been 600 HP (force 10) and would have broken
-//   the chain-reaction levels outright.
-// Raise above 8 only with play-testing. Never use a linear HP curve here.
-// ──────────────────────────────────────────────────────────────────────────
+const DIFFICULTY = 2;          // 1 = original. Higher = heavier, tougher targets & sturdier structures. Try 2.5–3 for much harder.
 
 // ── "BOX OFFICE" SCORING — your score is your film's gross ──
 const SC = { KNOCKDOWN: 1000, UNDER_BUDGET: 5000, ONE_TAKE: 15000, CHAIN: 500, MULTI_CAP: 4 };
@@ -437,7 +416,7 @@ export default function SetCrashers() {
           angle: b.angle ?? 0, friction: b.kind === 'plank' ? 0.85 : 0.75, frictionStatic: 1.2,
           restitution: 0.02, density: (isT ? 0.0018 : heavy ? 0.006 : 0.0028) * (1 + (DIFFICULTY - 1) * 0.6), label: isT ? 'target' : b.kind,
         });
-        body.crasherKind = b.kind; body.crasherHP = isT ? Math.round(100 * (1 + (DIFFICULTY - 1) * 0.5)) : 0; body.crasherAlive = true; body.crasherStartY = b.y; body.crasherStartX = b.x;
+        body.crasherKind = b.kind; body.crasherHP = isT ? Math.round(100 * DIFFICULTY) : 0; body.crasherAlive = true; body.crasherStartY = b.y; body.crasherStartX = b.x;
         Composite.add(engine.world, body); bodies.push(body); if (isT) targets.push(body);
       }
       for (let i = 0; i < 90; i++) Engine.update(engine, 1000 / 60);
