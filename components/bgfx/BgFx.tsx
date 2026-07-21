@@ -385,6 +385,24 @@ export default function BgFx() {
     return () => clearTimeout(t);
   }, [seg]);
 
+  /* Nicola port: amber shimmer on plain-text page headings */
+  useEffect(() => {
+    if (reduced()) return;
+    const t = setTimeout(() => {
+      try {
+        document.querySelectorAll<HTMLElement>('h1, h2').forEach(el => {
+          const txt = el.textContent || '';
+          if (el.childElementCount === 0 && txt.trim().length > 0 && txt.length < 60
+              && !/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(txt)
+              && !el.classList.contains('bgfx-shimmer')) {
+            el.classList.add('bgfx-shimmer');
+          }
+        });
+      } catch {}
+    }, 450);
+    return () => clearTimeout(t);
+  }, [pathname]);
+
   /* #8 odometer: roll big stat numbers on dashboard, best effort */
   useEffect(() => {
     if (reduced() || seg !== 'dashboard') return;

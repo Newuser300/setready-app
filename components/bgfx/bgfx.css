@@ -124,3 +124,20 @@ body[data-bgfx="journal"] textarea:focus{caret-color:#F59E0B}
  .bgfx-clap,.bgfx-action,.bgfx-craft,.bgfx-pa,.bgfx-gate,.bgfx-boom,.bgfx-wrap,.bgfx-spot,.bgfx-carpet,.bgfx-flash,.bgfx-dolly,.bgfx-beam,.bgfx-star,.bgfx-shake2{display:none!important}
  body[data-bgfx="headshot-analyzer"] img,body[data-bgfx="availability"] button:active,body[data-bgfx="clothing"] .rounded-2xl:hover,.bgfx-marquee::before,.bgfx-odo{animation:none!important}
 }
+/* ---- ported from Nicola Lodge: shimmer, hover pop, card sheen ---- */
+.bgfx-shimmer{background:linear-gradient(100deg,#F59E0B 25%,#FDE68A 42%,#b45309 50%,#FDE68A 58%,#F59E0B 75%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:bgfxShimmer 6s linear infinite}
+@keyframes bgfxShimmer{0%{background-position:190% 0}100%{background-position:-90% 0}}
+/* hover pop: transforms only act on block-shaped elements, so tabs/tiles/buttons
+   pop while inline text links are naturally unaffected */
+body[data-bgfx] a[href]:not([class*="bgfx"]),body[data-bgfx] button:not([class*="bgfx"]){transition:transform .16s ease,box-shadow .16s ease,filter .16s ease}
+body[data-bgfx] a[href]:not([class*="bgfx"]):hover,body[data-bgfx] button:not([class*="bgfx"]):hover{transform:translateY(-3px) scale(1.02);filter:brightness(1.06)}
+body[data-bgfx] a[href]:not([class*="bgfx"]):active,body[data-bgfx] button:not([class*="bgfx"]):active{transform:translateY(-1px) scale(.99)}
+/* amber sheen sweeping across tile links on hover */
+body[data-bgfx] a[class*="rounded"]{position:relative;overflow:hidden}
+body[data-bgfx] a[class*="rounded"]::after{content:'';position:absolute;top:0;left:-80%;width:55%;height:100%;background:linear-gradient(105deg,transparent,rgba(245,158,11,.18),transparent);transform:skewX(-18deg);transition:left .5s ease;pointer-events:none}
+body[data-bgfx] a[class*="rounded"]:hover::after{left:140%}
+@media (prefers-reduced-motion:reduce){
+ .bgfx-shimmer{animation:none;-webkit-text-fill-color:#F59E0B}
+ body[data-bgfx] a[href]:hover,body[data-bgfx] button:hover{transform:none}
+ body[data-bgfx] a[class*="rounded"]::after{display:none}
+}
