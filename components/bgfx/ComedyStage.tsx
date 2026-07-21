@@ -156,8 +156,10 @@ function Act2() {
           </svg>
         </div>
       </div>
+      <i className="banana" />
       <i className="cup c1" /><i className="cup c2" /><i className="cup c3" />
-      <div className="note2">nailed it</div>
+      <div className="note2 lattes">MY LATTES!</div>
+      <div className="note2 nailed">nailed it</div>
     </div>
   );
 }
@@ -169,7 +171,7 @@ function Act3() {
       <Backdrop kind={3} />
       <div className="fig zom"><Man /></div>
       <div className="note2 ring">RING RING</div>
-      <div className="note2 himom">hi mom</div>
+      <div className="note2 himom">yes mom, I&rsquo;m being scary</div>
     </div>
   );
 }
@@ -180,34 +182,40 @@ function Act4() {
     <div className="act act4" aria-hidden="true">
       <Backdrop kind={4} />
       <div className="fig duel1"><Man /></div>
-      <div className="fig duel2"><Man /></div>
+      <div className="fig duel2"><div><Man /></div></div>
       <i className="sword sw1" /><i className="sword sw2" />
+      <span className="sp sp1">✦</span><span className="sp sp2">✦</span><span className="sp sp3">✦</span>
       <i className="thumb" />
     </div>
   );
 }
 
-/* Act 5 — The Slate Snap: TAKE 2 claims another nose. */
+/* Act 5 — The Stunt: wire work, wire snap, "he\u2019s fine", triumphant exit. */
 function Act5() {
   return (
     <div className="act act5" aria-hidden="true">
       <Backdrop kind={5} />
-      <div className="fig slateguy"><Man /></div>
-      <div className="fig perf5"><Man /></div>
-      <div className="slate">
-        <svg width="26" height="20" viewBox="0 0 26 20" aria-hidden="true">
-          <rect className="lid" x="1" y="1" width="24" height="5" rx="1" fill={AMBER} />
-          <rect x="1" y="7" width="24" height="12" rx="1.5" fill={NAVY} stroke={AMBER} strokeWidth="1.4" />
+      <i className="wire" />
+      <div className="fig stunt">
+        <svg width="26" height="42" viewBox="0 0 26 40" stroke={INK} strokeWidth="2.4" strokeLinecap="round" fill="none" aria-hidden="true">
+          <path d="M13 12 L4 16 L6 27 L13 22 Z" fill={AMBER} stroke="none" opacity=".85" />
+          <circle cx="13" cy="6" r="4.2" fill={NAVY} />
+          <line x1="13" y1="10" x2="13" y2="24" />
+          <line className="warm" x1="13" y1="14" x2="5" y2="19" />
+          <line x1="13" y1="14" x2="21" y2="18" />
+          <line x1="13" y1="24" x2="6" y2="37" />
+          <line x1="13" y1="24" x2="20" y2="37" />
         </svg>
       </div>
-      <div className="note2 take2">TAKE 2</div>
+      <div className="note2 snap">SNAP!</div>
+      <div className="note2 fine">he&rsquo;s fine</div>
       <i className="puff p1" /><i className="puff p2" /><i className="puff p3" />
     </div>
   );
 }
 
 const ACTS = [Act1, Act2, Act3, Act4, Act5];
-const ACT_MS = 8000;
+const ACT_MS = 10000;
 const GAP_MS = 2000;
 const FIRST_MS = 2000;
 
