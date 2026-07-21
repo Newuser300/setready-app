@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import ComedyStage from '@/components/bgfx/ComedyStage'
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
@@ -875,7 +876,8 @@ export default function Dashboard() {
     <>
       <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }} onClickCapture={handleGuestGate}>
         {/* Hero Header */}
-        <div style={{ backgroundColor: '#1a1a2e', color: 'white' }}>
+        <div style={{ backgroundColor: '#1a1a2e', color: 'white', position: 'relative', overflow: 'hidden' }}>
+          <ComedyStage />
           <div className="max-w-4xl mx-auto px-4" style={{ paddingTop: isMobile ? '16px' : '24px', paddingBottom: isMobile ? '16px' : '24px' }}>
             <div style={{ marginBottom: isMobile ? '12px' : '16px' }}>
               <div style={{ fontFamily: 'Georgia, serif', fontWeight: 800, letterSpacing: '-0.01em', color: '#F59E0B', fontSize: isMobile ? '22px' : '26px', lineHeight: 1 }}>BGReady</div>
