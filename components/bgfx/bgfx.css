@@ -28,12 +28,38 @@
 .bgfx-wait-dots::after{content:'';animation:bgfxDots 1.6s steps(4) infinite}
 @keyframes bgfxDots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
 /* ---- #4 craft services sneak ---- */
-.bgfx-craft{position:fixed;bottom:6px;left:-70px;z-index:9997;pointer-events:none;animation:bgfxCraft 9s linear both}
-@keyframes bgfxCraft{0%{left:-70px}12%{left:12%}16%{left:11%}18%{left:13%}40%{left:46%}44%{left:45%}46%{left:47%}72%{left:82%}76%{left:81%}100%{left:110%}}
-.bgfx-craft .lean{animation:bgfxCraftLook 9s ease both}
-@keyframes bgfxCraftLook{0%,10%{transform:none}13%,17%{transform:rotate(-8deg)}19%{transform:none}41%,45%{transform:rotate(8deg)}47%,100%{transform:none}}
-.bgfx-craft .stack{animation:bgfxStackWobble .5s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:50% 100%}
-@keyframes bgfxStackWobble{0%{transform:rotate(-4deg)}100%{transform:rotate(5deg)}}
+.bgfx-craft{position:fixed;bottom:6px;left:-70px;z-index:9997;pointer-events:none;animation:bgfxCraft 10.5s ease both}
+@keyframes bgfxCraft{0%{left:-70px}28%{left:38%}31%{left:40%}74%{left:40%}100%{left:112%}}
+.bgfx-craft .crman{transform-origin:50% 100%;animation:bgfxCraftMan 10.5s ease both}
+@keyframes bgfxCraftMan{
+ 0%,29%{transform:none}
+ 31%{transform:rotate(40deg) translateY(4px)}
+ 33%{transform:rotate(74deg) translateY(9px)}          /* down he goes */
+ 52%{transform:rotate(74deg) translateY(9px)}          /* catching from the floor */
+ 56%{transform:rotate(30deg) translateY(4px)}
+ 60%{transform:none}                                    /* back on his feet */
+ 63%{transform:rotate(-9deg)}                           /* ...did anyone see that? */
+ 66%{transform:rotate(-9deg)}
+ 69%{transform:rotate(9deg)}
+ 72%{transform:rotate(9deg)}
+ 75%,100%{transform:none}}                              /* walks off like a professional */
+.bgfx-craft .cf{position:absolute;width:10px;height:6px;border-radius:2px;background:#F59E0B;left:16px;bottom:34px}
+.bgfx-craft .cf2{background:#d97706;bottom:41px}
+.bgfx-craft .cf3{bottom:48px}
+.bgfx-craft .cf4{width:7px;height:10px;border-radius:2px 2px 3px 3px;background:#d97706;bottom:55px}
+.bgfx-craft .cf1{animation:bgfxCf1 10.5s ease both}
+@keyframes bgfxCf1{0%,30%{transform:none}35%{transform:translate(-16px,26px) rotate(-160deg)}44%{transform:translate(-5px,30px) rotate(-350deg)}54%{transform:translate(-5px,30px)}58%{transform:translate(-1px,6px)}61%,100%{transform:none}}
+.bgfx-craft .cf2{animation:bgfxCf2 10.5s ease both}
+@keyframes bgfxCf2{0%,31%{transform:none}37%{transform:translate(12px,-24px) rotate(150deg)}47%{transform:translate(6px,34px) rotate(330deg)}54%{transform:translate(6px,34px)}58%{transform:translate(2px,7px)}62%,100%{transform:none}}
+.bgfx-craft .cf3{animation:bgfxCf3 10.5s ease both}
+@keyframes bgfxCf3{0%,32%{transform:none}39%{transform:translate(24px,-18px) rotate(200deg)}50%{transform:translate(12px,38px) rotate(390deg)}55%{transform:translate(12px,38px)}59%{transform:translate(4px,8px)}63%,100%{transform:none}}
+.bgfx-craft .cf4{animation:bgfxCf4 10.5s ease both}
+@keyframes bgfxCf4{0%,33%{transform:none}41%{transform:translate(-8px,-30px) rotate(-200deg)}52%{transform:translate(-2px,42px) rotate(-380deg)}56%{transform:translate(-2px,42px)}60%{transform:translate(0,9px)}64%,100%{transform:none}}
+.bgfx-craft .oops{position:absolute;left:26px;top:-14px;background:#fffbe8;color:#111;border-radius:6px;padding:2px 7px;font-size:10px;font-weight:800;border:1px solid #d9c86f;white-space:nowrap;opacity:0;animation:bgfxOops 10.5s ease both}
+@keyframes bgfxOops{0%,29%{opacity:0;transform:scale(.5)}32%{opacity:1;transform:scale(1.15)}36%{transform:scale(1)}48%{opacity:1}54%,100%{opacity:0}}
+.bgfx-craft .pf{position:absolute;width:9px;height:9px;border-radius:50%;background:radial-gradient(circle,rgba(156,163,175,.55),transparent 70%);left:8px;bottom:0;opacity:0;animation:bgfxCraftPuff 10.5s ease both}
+.bgfx-craft .pf2{left:22px;animation-delay:.1s}
+@keyframes bgfxCraftPuff{0%,30%{opacity:0;transform:scale(.4)}34%{opacity:.85;transform:scale(1.7)}44%,100%{opacity:0;transform:scale(2.6)}}
 /* ---- #10 PA sprint with casting notice ---- */
 .bgfx-pa{position:fixed;top:64px;left:-90px;z-index:9998;pointer-events:none;animation:bgfxPa 5.5s ease-in-out both}
 @keyframes bgfxPa{0%{left:-90px}30%{left:calc(50% - 40px)}36%{left:calc(50% - 46px)}70%{left:calc(50% - 44px)}100%{left:110%}}

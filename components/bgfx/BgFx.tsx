@@ -67,23 +67,24 @@ function RunnerSVG({ note }: { note?: string }) {
 }
 
 function CraftSneak() {
+  /* The crafty's run: sprints with an armful of snacks, wipes out, catches
+     every single item from the floor, stands, checks nobody saw, walks off. */
   return (
-    <div className="lean">
-      <svg width="44" height="52" viewBox="0 0 30 44" stroke={INK} strokeWidth="2.4" strokeLinecap="round" fill="none" aria-hidden="true">
-        <circle cx="12" cy="8" r="4.2" fill="#111327" />
-        <line x1="12" y1="12" x2="12" y2="27" />
-        <line x1="12" y1="16" x2="20" y2="13" />
-        <line x1="12" y1="17" x2="21" y2="19" />
-        <line x1="12" y1="27" x2="6" y2="39" />
-        <line x1="12" y1="27" x2="18" y2="39" />
-        <g className="stack" stroke="none">
-          <rect x="18" y="2" width="9" height="4" rx="1" fill={AMBER} />
-          <rect x="17.5" y="6.5" width="10" height="4" rx="1" fill="#d97706" />
-          <rect x="18.5" y="11" width="8" height="4" rx="1" fill={AMBER} />
-          <circle cx="22" cy="-1" r="2.4" fill="#d97706" />
-        </g>
-      </svg>
-    </div>
+    <>
+      <div className="crman">
+        <svg width="44" height="52" viewBox="0 0 30 44" stroke={INK} strokeWidth="2.4" strokeLinecap="round" fill="none" aria-hidden="true">
+          <circle cx="12" cy="8" r="4.2" fill="#111327" />
+          <line x1="12" y1="12" x2="12" y2="27" />
+          <line x1="12" y1="16" x2="20" y2="13" />
+          <line x1="12" y1="17" x2="21" y2="19" />
+          <line x1="12" y1="27" x2="6" y2="39" />
+          <line x1="12" y1="27" x2="18" y2="39" />
+        </svg>
+      </div>
+      <i className="cf cf1" /><i className="cf cf2" /><i className="cf cf3" /><i className="cf cf4" />
+      <span className="oops">!</span>
+      <i className="pf" /><i className="pf pf2" />
+    </>
   );
 }
 
@@ -256,7 +257,7 @@ export default function BgFx() {
     const iv = setInterval(() => {
       if (document.visibilityState !== 'visible') return;
       setCraft(c => c + 1);
-      setTimeout(() => setCraft(0), 9200);
+      setTimeout(() => setCraft(0), 10800);
     }, 180000);
     return () => clearInterval(iv);
   }, []);
