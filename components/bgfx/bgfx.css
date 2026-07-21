@@ -68,16 +68,16 @@
 @keyframes bgfxWrapT{0%{transform:translateY(10px);opacity:0}18%{transform:none;opacity:1}80%{opacity:1}100%{opacity:0}}
 /* ---- route-scoped decorations ---- */
 /* #5 headshot develop */
-body[data-bgfx="headshot-analyzer"] main img{animation:bgfxDevelop 1.3s ease both}
+body[data-bgfx="headshot-analyzer"] img{animation:bgfxDevelop 1.3s ease both}
 @keyframes bgfxDevelop{0%{filter:sepia(1) hue-rotate(-45deg) saturate(3) brightness(.35) contrast(1.4);opacity:.2}60%{filter:sepia(.5) hue-rotate(-20deg) brightness(.75)}100%{filter:none;opacity:1}}
 /* #6 availability day flip */
-body[data-bgfx="availability"] main button:active{animation:bgfxFlip .32s ease}
+body[data-bgfx="availability"] button:active{animation:bgfxFlip .32s ease}
 @keyframes bgfxFlip{0%{transform:rotateX(0)}50%{transform:rotateX(78deg)}100%{transform:rotateX(0)}}
 /* #7 wardrobe hanger swing */
-body[data-bgfx="clothing"] main img:hover{animation:bgfxHang .7s ease;transform-origin:50% -12px}
+body[data-bgfx="clothing"] .rounded-2xl:hover{animation:bgfxHang .7s ease;transform-origin:50% -14px}
 @keyframes bgfxHang{0%{transform:rotate(0)}30%{transform:rotate(-5deg)}60%{transform:rotate(4deg)}80%{transform:rotate(-2deg)}100%{transform:rotate(0)}}
 /* #12 journal caret */
-body[data-bgfx="journal"] main textarea:focus{caret-color:#F59E0B}
+body[data-bgfx="journal"] textarea:focus{caret-color:#F59E0B}
 /* #14 games marquee */
 .bgfx-marquee{position:relative;border-radius:14px}
 .bgfx-marquee::before{content:'';position:absolute;inset:-3px;border-radius:16px;pointer-events:none;background:repeating-conic-gradient(from 0deg,rgba(245,158,11,.85) 0deg 7deg,rgba(245,158,11,.12) 7deg 14deg);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;padding:3px;animation:bgfxChase 1.2s linear infinite}
@@ -122,5 +122,5 @@ body[data-bgfx="journal"] main textarea:focus{caret-color:#F59E0B}
 @keyframes bgfxOdo{0%{transform:translateY(-14px);opacity:0;filter:blur(2px)}100%{transform:none;opacity:1;filter:none}}
 @media (prefers-reduced-motion:reduce){
  .bgfx-clap,.bgfx-action,.bgfx-craft,.bgfx-pa,.bgfx-gate,.bgfx-boom,.bgfx-wrap,.bgfx-spot,.bgfx-carpet,.bgfx-flash,.bgfx-dolly,.bgfx-beam,.bgfx-star,.bgfx-shake2{display:none!important}
- body[data-bgfx] main img,.bgfx-marquee::before,.bgfx-odo{animation:none!important}
+ body[data-bgfx="headshot-analyzer"] img,body[data-bgfx="availability"] button:active,body[data-bgfx="clothing"] .rounded-2xl:hover,.bgfx-marquee::before,.bgfx-odo{animation:none!important}
 }

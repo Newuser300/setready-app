@@ -132,6 +132,8 @@ export default function MessagesPage() {
       if (tab === 'casting_request') msgs = msgs.filter(m => m.message_type === 'casting_request' || m.sender_type === 'casting_director')
       setMessages(msgs)
       setUnreadCount(data.unread_count || 0)
+      // BGReady FX: the boom mic dips in with the unread count (purely decorative)
+      try { window.dispatchEvent(new CustomEvent('bgfx:unread', { detail: data.unread_count || 0 })) } catch {}
     }
     setLoading(false)
   }

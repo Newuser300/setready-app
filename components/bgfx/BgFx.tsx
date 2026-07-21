@@ -290,7 +290,7 @@ export default function BgFx() {
     if (reduced() || seg !== 'messages') return;
     const t = setTimeout(() => {
       try {
-        const badge = document.querySelector('main [class*="badge"], main [class*="unread"]');
+        const badge = document.querySelector('[class*="badge"], [class*="unread"]');
         const n = badge ? parseInt(badge.textContent || '', 10) : NaN;
         if (!isNaN(n) && n > 0) { setBoom(n); setTimeout(() => setBoom(0), 4800); }
       } catch {}
@@ -378,7 +378,7 @@ export default function BgFx() {
     const t = setTimeout(() => {
       try {
         document.querySelectorAll<HTMLAnchorElement>(
-          'main a[href*="film-trivia"], main a[href*="set-crashers"], main a[href*="set-match"], main a[href*="studio-tycoon"]'
+          'a[href*="film-trivia"], a[href*="set-crashers"], a[href*="set-match"], a[href*="studio-tycoon"]'
         ).forEach(a => a.classList.add('bgfx-marquee'));
       } catch {}
     }, 600);
@@ -390,7 +390,7 @@ export default function BgFx() {
     if (reduced() || seg !== 'dashboard') return;
     const t = setTimeout(() => {
       try {
-        document.querySelectorAll<HTMLElement>('main *').forEach(el => {
+        document.querySelectorAll<HTMLElement>('h1,h2,h3,p,span,div,b,strong').forEach(el => {
           if (el.childElementCount === 0 && /^\$?\d{1,6}(\.\d{1,2})?$/.test((el.textContent || '').trim())
               && el.offsetHeight > 0 && parseFloat(getComputedStyle(el).fontSize) >= 18
               && !el.classList.contains('bgfx-odo')) {
