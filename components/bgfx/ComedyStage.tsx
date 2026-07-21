@@ -143,7 +143,6 @@ function Act2() {
       </div>
       <i className="banana" />
       <i className="cup c1" /><i className="cup c2" /><i className="cup c3" />
-      <div className="note2 lattes">MY LATTES!</div>
       <div className="note2 nailed">nailed it</div>
     </div>
   );

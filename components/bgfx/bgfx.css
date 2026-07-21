@@ -221,8 +221,6 @@ body[data-bgfx] a[class*="rounded"]:hover::after{left:140%}
 @keyframes a2c1{0%,33%{opacity:1;transform:translate(0,0)}40%{transform:translate(-26px,-26px) rotate(-160deg)}48%{transform:translate(-12px,6px) rotate(-340deg)}56%{opacity:1;transform:translate(-4px,10px)}90%{opacity:1;transform:translate(-4px,10px)}100%{opacity:1;transform:translate(-4px,10px) translateX(66vw)}}
 @keyframes a2c2{0%,33%{opacity:1;transform:translate(0,-11px)}41%{transform:translate(8px,-34px) rotate(150deg)}50%{transform:translate(4px,4px) rotate(330deg)}58%{opacity:1;transform:translate(2px,8px)}90%{opacity:1;transform:translate(2px,8px)}100%{opacity:1;transform:translate(2px,8px) translateX(66vw)}}
 @keyframes a2c3{0%,33%{opacity:1;transform:translate(0,-22px)}42%{transform:translate(30px,-30px) rotate(200deg)}54%{transform:translate(16px,-46px) rotate(380deg)}80%{transform:translate(9px,-46px) rotate(380deg)}86%{opacity:1;transform:translate(9px,20px) rotate(420deg)}90%{opacity:1;transform:translate(9px,20px) rotate(420deg)}100%{opacity:1;transform:translate(9px,20px) rotate(420deg) translateX(66vw)}}
-.act2 .lattes{left:34%;top:2px;animation:a2lat 10s ease both}
-@keyframes a2lat{0%,34%{opacity:0;transform:scale(.6)}38%{opacity:1;transform:scale(1.1)}48%{opacity:1;transform:scale(1)}54%,100%{opacity:0}}
 .act2 .note2.nailed{left:38%;top:6px;animation:a2note 10s ease both}
 @keyframes a2note{0%,58%{opacity:0}64%{opacity:1;transform:scale(1.1)}80%{opacity:1;transform:scale(1)}86%,100%{opacity:0}}
 /* ---- act 3: the zombie extra (privacy pivot for mom; lurches clean off set) ---- */
