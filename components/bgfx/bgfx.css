@@ -1,0 +1,126 @@
+/* ============ BGReady FX — film-set animation layer ============ */
+/* All effects are additive decorations. Nothing here is load-bearing. */
+
+/* ---- #1 clapperboard route transition ---- */
+.bgfx-clap{position:fixed;inset:0;z-index:9999;pointer-events:none;display:flex;align-items:center;justify-content:center;background:rgba(10,10,18,.0);animation:bgfxClapBg .62s ease both}
+@keyframes bgfxClapBg{0%{background:rgba(10,10,18,.85)}55%{background:rgba(10,10,18,.85)}100%{background:rgba(10,10,18,0)}}
+.bgfx-clap svg{width:150px;height:auto;animation:bgfxClapPop .62s ease both}
+@keyframes bgfxClapPop{0%{transform:scale(.7);opacity:0}18%{transform:scale(1.05);opacity:1}45%{transform:scale(1);opacity:1}80%{opacity:1}100%{opacity:0;transform:scale(1.06)}}
+.bgfx-clap .stick{transform-box:fill-box;transform-origin:0% 100%;animation:bgfxClapStick .3s ease both}
+@keyframes bgfxClapStick{0%{transform:rotate(-24deg)}60%{transform:rotate(-24deg)}100%{transform:rotate(0)}}
+/* ---- #2 director: BACKGROUND ... ACTION! ---- */
+.bgfx-action{position:fixed;top:12px;left:0;right:0;z-index:9998;display:flex;justify-content:center;pointer-events:none}
+.bgfx-action .inner{display:flex;align-items:center;gap:10px;background:#111327;border:1px solid rgba(245,158,11,.5);border-radius:12px;padding:8px 16px;box-shadow:0 10px 30px rgba(0,0,0,.5);animation:bgfxActIn 3.4s ease both}
+@keyframes bgfxActIn{0%{transform:translateY(-60px);opacity:0}10%{transform:none;opacity:1}82%{transform:none;opacity:1}100%{transform:translateY(-60px);opacity:0}}
+.bgfx-action .txt{font-weight:900;letter-spacing:.12em;color:#F59E0B;font-size:14px}
+.bgfx-action .txt i{font-style:normal;color:#fff;animation:bgfxActWord 3.4s steps(1) both}
+@keyframes bgfxActWord{0%,45%{opacity:0}50%,100%{opacity:1}}
+.bgfx-mega{transform-box:fill-box;transform-origin:20% 60%;animation:bgfxMega 3.4s ease both}
+@keyframes bgfxMega{0%,42%{transform:none}48%{transform:rotate(-14deg)}54%{transform:rotate(0)}60%{transform:rotate(-12deg)}66%,100%{transform:rotate(0)}}
+/* ---- #3 waiting chair loader (component-level) ---- */
+.bgfx-wait svg{overflow:visible}
+.bgfx-sip{transform-box:fill-box;transform-origin:100% 100%;animation:bgfxSip 2.6s ease-in-out infinite}
+@keyframes bgfxSip{0%,55%,100%{transform:none}65%,80%{transform:rotate(-46deg)}}
+.bgfx-watch{transform-box:fill-box;transform-origin:100% 100%;animation:bgfxWatch 5.2s ease-in-out infinite}
+@keyframes bgfxWatch{0%,30%,100%{transform:none}38%,46%{transform:rotate(-70deg)}}
+.bgfx-slump{animation:bgfxSlump 5.2s ease-in-out infinite}
+@keyframes bgfxSlump{0%,60%,100%{transform:none}78%,90%{transform:translateY(2.5px) rotate(3deg)}}
+.bgfx-wait-dots::after{content:'';animation:bgfxDots 1.6s steps(4) infinite}
+@keyframes bgfxDots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+/* ---- #4 craft services sneak ---- */
+.bgfx-craft{position:fixed;bottom:6px;left:-70px;z-index:9997;pointer-events:none;animation:bgfxCraft 9s linear both}
+@keyframes bgfxCraft{0%{left:-70px}12%{left:12%}16%{left:11%}18%{left:13%}40%{left:46%}44%{left:45%}46%{left:47%}72%{left:82%}76%{left:81%}100%{left:110%}}
+.bgfx-craft .lean{animation:bgfxCraftLook 9s ease both}
+@keyframes bgfxCraftLook{0%,10%{transform:none}13%,17%{transform:rotate(-8deg)}19%{transform:none}41%,45%{transform:rotate(8deg)}47%,100%{transform:none}}
+.bgfx-craft .stack{animation:bgfxStackWobble .5s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:50% 100%}
+@keyframes bgfxStackWobble{0%{transform:rotate(-4deg)}100%{transform:rotate(5deg)}}
+/* ---- #10 PA sprint with casting notice ---- */
+.bgfx-pa{position:fixed;top:64px;left:-90px;z-index:9998;pointer-events:none;animation:bgfxPa 5.5s ease-in-out both}
+@keyframes bgfxPa{0%{left:-90px}30%{left:calc(50% - 40px)}36%{left:calc(50% - 46px)}70%{left:calc(50% - 44px)}100%{left:110%}}
+.bgfx-pa .note{position:absolute;left:40px;top:-6px;background:#fffbe8;color:#111;border-radius:6px;padding:5px 9px;font-size:11px;font-weight:800;border:1px solid #d9c86f;box-shadow:0 6px 16px rgba(0,0,0,.4);white-space:nowrap;animation:bgfxNote 5.5s ease both}
+@keyframes bgfxNote{0%,28%{opacity:0;transform:scale(.6)}34%{opacity:1;transform:scale(1.06)}38%{transform:scale(1)}66%{opacity:1}74%,100%{opacity:0}}
+.bgfx-run .g1{transform-box:fill-box;transform-origin:50% 0;animation:bgfxRun1 .22s linear infinite alternate}
+.bgfx-run .g2{transform-box:fill-box;transform-origin:50% 0;animation:bgfxRun2 .22s linear infinite alternate}
+.bgfx-run .a1{transform-box:fill-box;transform-origin:0 0;animation:bgfxRun2 .22s linear infinite alternate}
+.bgfx-run .a2{transform-box:fill-box;transform-origin:0 0;animation:bgfxRun1 .22s linear infinite alternate}
+@keyframes bgfxRun1{0%{transform:rotate(30deg)}100%{transform:rotate(-26deg)}}
+@keyframes bgfxRun2{0%{transform:rotate(-28deg)}100%{transform:rotate(26deg)}}
+/* ---- #11 gate check ---- */
+.bgfx-gate{position:fixed;inset:0;z-index:9999;pointer-events:none;display:flex;align-items:center;justify-content:center}
+.bgfx-gate .iris{position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,transparent var(--r,75vmax),#05060c calc(var(--r,75vmax) + 2px));animation:bgfxIris 1.5s ease both}
+@keyframes bgfxIris{0%{--r:75vmax}45%{--r:0vmax}55%{--r:0vmax}100%{--r:75vmax}}
+@property --r{syntax:'<length-percentage>';initial-value:75vmax;inherits:false}
+.bgfx-gate .msg{position:relative;background:#111327;border:1px solid rgba(245,158,11,.55);color:#F59E0B;font-weight:900;letter-spacing:.1em;font-size:13px;border-radius:10px;padding:8px 14px;animation:bgfxGateMsg 1.5s ease both}
+@keyframes bgfxGateMsg{0%,40%{opacity:0;transform:scale(.8)}55%{opacity:1;transform:scale(1.05)}70%{transform:scale(1)}88%{opacity:1}100%{opacity:0}}
+/* ---- #16 boom mic ---- */
+.bgfx-boom{position:fixed;top:-80px;left:50%;transform:translateX(-50%);z-index:9997;pointer-events:none;animation:bgfxBoom 4.6s ease both}
+@keyframes bgfxBoom{0%{top:-90px}18%{top:-6px}26%{top:-12px}30%{top:-8px}78%{top:-8px}100%{top:-90px}}
+.bgfx-boom .cnt{position:absolute;left:50%;top:58px;transform:translateX(-50%);background:#F59E0B;color:#111;font-size:11px;font-weight:900;border-radius:999px;padding:2px 8px;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+/* ---- #20 that's a wrap ---- */
+.bgfx-wrap{position:fixed;inset:0;z-index:10000;pointer-events:none;background:#05060c;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;animation:bgfxWrapBg 1.9s ease both}
+@keyframes bgfxWrapBg{0%{opacity:0}12%{opacity:1}85%{opacity:1}100%{opacity:0}}
+.bgfx-wrap .lights{display:flex;gap:14px}
+.bgfx-wrap .lights i{width:16px;height:16px;border-radius:50%;background:#F59E0B;box-shadow:0 0 18px rgba(245,158,11,.8);animation:bgfxLightOff 1.9s steps(1) both}
+.bgfx-wrap .lights i:nth-child(2){animation-delay:.12s}.bgfx-wrap .lights i:nth-child(3){animation-delay:.24s}
+.bgfx-wrap .lights i:nth-child(4){animation-delay:.36s}.bgfx-wrap .lights i:nth-child(5){animation-delay:.48s}
+@keyframes bgfxLightOff{0%,35%{opacity:1}60%,100%{opacity:.12}}
+.bgfx-wrap .t{color:#F59E0B;font-weight:900;letter-spacing:.18em;font-size:18px;animation:bgfxWrapT 1.9s ease both}
+@keyframes bgfxWrapT{0%{transform:translateY(10px);opacity:0}18%{transform:none;opacity:1}80%{opacity:1}100%{opacity:0}}
+/* ---- route-scoped decorations ---- */
+/* #5 headshot develop */
+body[data-bgfx="headshot-analyzer"] main img{animation:bgfxDevelop 1.3s ease both}
+@keyframes bgfxDevelop{0%{filter:sepia(1) hue-rotate(-45deg) saturate(3) brightness(.35) contrast(1.4);opacity:.2}60%{filter:sepia(.5) hue-rotate(-20deg) brightness(.75)}100%{filter:none;opacity:1}}
+/* #6 availability day flip */
+body[data-bgfx="availability"] main button:active{animation:bgfxFlip .32s ease}
+@keyframes bgfxFlip{0%{transform:rotateX(0)}50%{transform:rotateX(78deg)}100%{transform:rotateX(0)}}
+/* #7 wardrobe hanger swing */
+body[data-bgfx="clothing"] main img:hover{animation:bgfxHang .7s ease;transform-origin:50% -12px}
+@keyframes bgfxHang{0%{transform:rotate(0)}30%{transform:rotate(-5deg)}60%{transform:rotate(4deg)}80%{transform:rotate(-2deg)}100%{transform:rotate(0)}}
+/* #12 journal caret */
+body[data-bgfx="journal"] main textarea:focus{caret-color:#F59E0B}
+/* #14 games marquee */
+.bgfx-marquee{position:relative;border-radius:14px}
+.bgfx-marquee::before{content:'';position:absolute;inset:-3px;border-radius:16px;pointer-events:none;background:repeating-conic-gradient(from 0deg,rgba(245,158,11,.85) 0deg 7deg,rgba(245,158,11,.12) 7deg 14deg);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;padding:3px;animation:bgfxChase 1.2s linear infinite}
+@keyframes bgfxChase{0%{filter:brightness(1)}50%{filter:brightness(1.6)}100%{filter:brightness(1)}}
+/* #15 glossary spotlight sweep */
+.bgfx-spot{position:fixed;inset:0;z-index:9996;pointer-events:none;background:radial-gradient(240px 340px at var(--sx,-20%) 40%,rgba(245,158,11,.14),transparent 70%);animation:bgfxSpot 2.4s ease both}
+@keyframes bgfxSpot{0%{--sx:-20%}100%{--sx:120%}}
+@property --sx{syntax:'<length-percentage>';initial-value:-20%;inherits:false}
+/* #9 red carpet + paparazzi */
+.bgfx-carpet{position:fixed;top:0;left:0;right:0;height:5px;z-index:9996;pointer-events:none;background:linear-gradient(90deg,#7f1d1d,#b91c1c,#7f1d1d);transform-origin:0 50%;animation:bgfxCarpet 1s cubic-bezier(.2,.7,.3,1) both}
+@keyframes bgfxCarpet{0%{transform:scaleX(0)}100%{transform:scaleX(1)}}
+.bgfx-flash{position:fixed;z-index:9996;width:14px;height:14px;border-radius:50%;background:#fff;pointer-events:none;animation:bgfxFlash .5s ease both}
+@keyframes bgfxFlash{0%{opacity:0;transform:scale(.3)}20%{opacity:.95;transform:scale(2.6)}100%{opacity:0;transform:scale(.6)}}
+/* #13 scroll dolly (module pages) */
+.bgfx-dolly{position:fixed;bottom:0;left:0;z-index:9996;pointer-events:none;transition:transform .18s linear}
+/* #19 projector beam (install) */
+.bgfx-beam{position:fixed;top:0;right:0;width:46vw;height:60vh;z-index:0;pointer-events:none;background:linear-gradient(115deg,rgba(245,158,11,.10),transparent 62%);clip-path:polygon(100% 0,10% 0,100% 92%);animation:bgfxBeam 5s ease-in-out infinite alternate}
+@keyframes bgfxBeam{0%{opacity:.5}100%{opacity:1}}
+.bgfx-beam i{position:absolute;width:3px;height:3px;border-radius:50%;background:rgba(255,240,200,.7);animation:bgfxMote 7s linear infinite}
+.bgfx-beam i:nth-child(1){top:12%;right:18%;animation-delay:0s}
+.bgfx-beam i:nth-child(2){top:26%;right:34%;animation-delay:1.7s}
+.bgfx-beam i:nth-child(3){top:8%;right:44%;animation-delay:3.1s}
+.bgfx-beam i:nth-child(4){top:33%;right:12%;animation-delay:4.6s}
+@keyframes bgfxMote{0%{transform:translate(0,0);opacity:0}12%{opacity:.9}100%{transform:translate(-70px,60px);opacity:0}}
+/* #17 rising star (membership) */
+.bgfx-star{position:fixed;top:70px;right:14px;z-index:9996;pointer-events:none;animation:bgfxStarIn 6s ease both}
+@keyframes bgfxStarIn{0%{opacity:0;transform:translateY(16px)}8%{opacity:1;transform:none}88%{opacity:1}100%{opacity:0}}
+.bgfx-star .climb{animation:bgfxClimb 6s ease both}
+@keyframes bgfxClimb{0%{transform:translate(0,26px)}30%{transform:translate(12px,16px)}60%{transform:translate(24px,7px)}85%,100%{transform:translate(36px,-3px)}}
+.bgfx-star .tw{transform-box:fill-box;transform-origin:50% 50%;animation:bgfxTw 1.4s ease-in-out infinite}
+@keyframes bgfxTw{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.25) rotate(18deg)}}
+/* #18 handshake (agencies) */
+.bgfx-shake2{position:fixed;top:70px;right:14px;z-index:9996;pointer-events:none;animation:bgfxStarIn 5.5s ease both}
+.bgfx-shake2 .arm{transform-box:fill-box;transform-origin:0 0;animation:bgfxHands .3s ease-in-out infinite alternate}
+@keyframes bgfxHands{0%{transform:rotate(4deg)}100%{transform:rotate(-6deg)}}
+.bgfx-shake2 .hat1{animation:bgfxHat1 5.5s ease both}
+.bgfx-shake2 .hat2{animation:bgfxHat2 5.5s ease both}
+@keyframes bgfxHat1{0%,30%{transform:none;opacity:1}45%{transform:translate(-10px,-14px) rotate(-40deg)}60%,100%{transform:translate(-14px,30px) rotate(-80deg);opacity:1}}
+@keyframes bgfxHat2{0%,34%{transform:none;opacity:1}48%{transform:translate(10px,-12px) rotate(35deg)}62%,100%{transform:translate(15px,30px) rotate(75deg);opacity:1}}
+/* #8 odometer digits */
+.bgfx-odo{display:inline-block;animation:bgfxOdo .8s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes bgfxOdo{0%{transform:translateY(-14px);opacity:0;filter:blur(2px)}100%{transform:none;opacity:1;filter:none}}
+@media (prefers-reduced-motion:reduce){
+ .bgfx-clap,.bgfx-action,.bgfx-craft,.bgfx-pa,.bgfx-gate,.bgfx-boom,.bgfx-wrap,.bgfx-spot,.bgfx-carpet,.bgfx-flash,.bgfx-dolly,.bgfx-beam,.bgfx-star,.bgfx-shake2{display:none!important}
+ body[data-bgfx] main img,.bgfx-marquee::before,.bgfx-odo{animation:none!important}
+}

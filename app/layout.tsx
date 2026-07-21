@@ -5,6 +5,8 @@ import { Toaster } from 'react-hot-toast';
 import PWAInstaller from '@/components/PWAInstaller';
 import VisitTracker from '@/components/VisitTracker';
 import RebrandBanner from '@/components/RebrandBanner';
+import BgFx from '@/components/bgfx/BgFx';
+import '@/components/bgfx/bgfx.css';
 import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -178,6 +180,7 @@ export default function RootLayout({
         <Toaster position="top-right" />
         <PWAInstaller />
         <VisitTracker />
+        <BgFx />
         <Analytics />
       </body>
     </html>
