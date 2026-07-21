@@ -141,3 +141,76 @@ body[data-bgfx] a[class*="rounded"]:hover::after{left:140%}
  body[data-bgfx] a[href]:hover,body[data-bgfx] button:hover{transform:none}
  body[data-bgfx] a[class*="rounded"]::after{display:none}
 }
+
+/* ================= the stickman comedy theatre (top banner, 5 acts) ================= */
+.bgfx-stage{position:fixed;top:0;left:0;right:0;height:64px;z-index:9990;pointer-events:none;overflow:hidden}
+.bgfx-stage .act{position:absolute;inset:0}
+.bgfx-stage .fig{position:absolute;bottom:2px}
+.bgfx-stage .note2{position:absolute;background:#fffbe8;color:#111;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:800;border:1px solid #d9c86f;box-shadow:0 6px 16px rgba(0,0,0,.4);white-space:nowrap;opacity:0}
+.bgfx-stage .puff{position:absolute;width:10px;height:10px;border-radius:50%;background:radial-gradient(circle,rgba(156,163,175,.6),transparent 70%);opacity:0}
+/* generic limb animators */
+.bgfx-flail .a1{transform-box:fill-box;transform-origin:0 0;animation:bgfxFlail1 .34s ease-in-out infinite alternate}
+.bgfx-flail .a2{transform-box:fill-box;transform-origin:0 0;animation:bgfxFlail2 .3s ease-in-out infinite alternate}
+@keyframes bgfxFlail1{0%{transform:rotate(-70deg)}100%{transform:rotate(35deg)}}
+@keyframes bgfxFlail2{0%{transform:rotate(60deg)}100%{transform:rotate(-45deg)}}
+/* ---- act 1: the audition ---- */
+.act1 .perf{left:32%;animation:a1perf 8s ease both}
+@keyframes a1perf{0%,52%{transform:none;opacity:1}60%{transform:rotate(12deg) translateY(4px)}78%{transform:translateX(-20vw) rotate(12deg)}100%{transform:translateX(-48vw) rotate(12deg);opacity:1}}
+.act1 .perf .flailwrap{animation:a1stop 8s steps(1) both}
+@keyframes a1stop{0%,52%{opacity:1}53%,100%{opacity:1}}
+.act1 .dchair{right:10%}
+.act1 .note2{right:16%;top:8px;animation:a1note 8s ease both}
+@keyframes a1note{0%,46%{opacity:0;transform:scale(.6)}50%{opacity:1;transform:scale(1.12)}53%{transform:scale(1)}72%{opacity:1}80%,100%{opacity:0}}
+/* ---- act 2: the coffee run ---- */
+.act2 .runner{left:-8%;animation:a2run 8s ease both}
+@keyframes a2run{0%{left:-8%;transform:none}36%{left:40%;transform:none}40%{left:44%;transform:rotate(64deg) translateY(9px)}54%{left:44%;transform:rotate(64deg) translateY(9px)}60%{left:45%;transform:none}100%{left:45%;transform:none}}
+.act2 .cup{position:absolute;width:9px;height:11px;background:#F59E0B;border-radius:2px 2px 3px 3px;bottom:34px;opacity:0}
+.act2 .cup.c1{left:44%;animation:a2c1 8s ease both}
+.act2 .cup.c2{left:45%;animation:a2c2 8s ease both}
+.act2 .cup.c3{left:46%;animation:a2c3 8s ease both}
+@keyframes a2c1{0%,37%{opacity:1;transform:translate(0,0)}44%{transform:translate(-26px,-26px) rotate(-160deg)}52%{transform:translate(-12px,6px) rotate(-340deg)}62%,100%{opacity:1;transform:translate(-4px,10px)}}
+@keyframes a2c2{0%,37%{opacity:1;transform:translate(0,-11px)}45%{transform:translate(8px,-34px) rotate(150deg)}54%{transform:translate(4px,4px) rotate(330deg)}64%,100%{opacity:1;transform:translate(2px,8px)}}
+@keyframes a2c3{0%,37%{opacity:1;transform:translate(0,-22px)}46%{transform:translate(30px,-30px) rotate(200deg)}58%{transform:translate(16px,-46px) rotate(380deg)}80%{transform:translate(9px,-46px) rotate(380deg)}88%,100%{opacity:1;transform:translate(9px,20px) rotate(420deg)}}
+.act2 .note2{left:38%;top:6px;animation:a2note 8s ease both}
+@keyframes a2note{0%,60%{opacity:0}66%{opacity:1;transform:scale(1.1)}84%{opacity:1;transform:scale(1)}92%,100%{opacity:0}}
+/* ---- act 3: the zombie extra ---- */
+.act3 .zom{left:-8%;animation:a3z 8s linear both}
+@keyframes a3z{0%{left:-8%;transform:rotate(4deg)}8%{transform:rotate(-3deg) translateY(2px)}16%{transform:rotate(5deg)}24%{transform:rotate(-4deg) translateY(2px)}32%{transform:rotate(4deg)}40%{left:36%;transform:rotate(4deg)}46%{left:37%;transform:none}70%{left:37%;transform:none}78%{transform:rotate(4deg)}86%{transform:rotate(-4deg) translateY(2px)}100%{left:78%;transform:rotate(5deg)}}
+.act3 .zom .a1{transform-box:fill-box;transform-origin:0 0;animation:a3arm1 8s both}
+@keyframes a3arm1{0%,42%{transform:rotate(-64deg)}46%,72%{transform:rotate(0)}76%,100%{transform:rotate(-64deg)}}
+.act3 .zom .a2{transform-box:fill-box;transform-origin:0 0;animation:a3arm2 8s both}
+@keyframes a3arm2{0%,42%{transform:rotate(-118deg)}46%,72%{transform:rotate(-150deg)}76%,100%{transform:rotate(-118deg)}}
+.act3 .ring{left:34%;top:4px;animation:a3ring 8s ease both}
+@keyframes a3ring{0%,38%{opacity:0}42%{opacity:1;transform:translateY(-3px)}48%{opacity:1}52%,100%{opacity:0}}
+.act3 .himom{left:40%;top:6px;animation:a3mom 8s ease both}
+@keyframes a3mom{0%,52%{opacity:0}56%{opacity:1}68%{opacity:1}74%,100%{opacity:0}}
+/* ---- act 4: the never-ending death scene ---- */
+.act4 .duel1{left:34%}
+.act4 .duel2{left:46%;animation:a4die 8s ease both;transform-origin:50% 100%}
+@keyframes a4die{0%,34%{transform:none}40%{transform:translateX(9px) rotate(-11deg)}46%{transform:translateX(12px) rotate(349deg)}53%{transform:translateX(14px) rotate(440deg) translateY(9px)}58%{transform:translateX(15px) rotate(405deg) translateY(4px)}63%{transform:translateX(17px) rotate(450deg) translateY(10px)}75%,100%{transform:translateX(17px) rotate(450deg) translateY(10px)}}
+.act4 .sword{position:absolute;width:2.5px;height:22px;background:#9ca3af;bottom:26px;transform-origin:50% 100%}
+.act4 .sw1{left:calc(34% + 20px);animation:a4sw1 8s ease both}
+@keyframes a4sw1{0%{transform:rotate(40deg)}6%{transform:rotate(70deg)}12%{transform:rotate(35deg)}18%{transform:rotate(75deg)}24%{transform:rotate(40deg)}30%{transform:rotate(80deg)}36%,100%{transform:rotate(30deg)}}
+.act4 .sw2{left:calc(46% + 2px);animation:a4sw2 8s ease both}
+@keyframes a4sw2{0%{transform:rotate(-40deg)}6%{transform:rotate(-72deg)}12%{transform:rotate(-38deg)}18%{transform:rotate(-76deg)}24%{transform:rotate(-42deg)}30%{transform:rotate(-70deg)}38%{transform:rotate(-20deg)}44%,100%{opacity:0}}
+.act4 .duel1 .a1{transform-box:fill-box;transform-origin:0 0;animation:a4watch 8s both}
+@keyframes a4watch{0%,56%{transform:none}62%,74%{transform:rotate(-80deg)}80%,100%{transform:none}}
+.act4 .thumb{position:absolute;width:6px;height:6px;border-radius:50%;background:#F59E0B;left:calc(46% + 26px);bottom:16px;opacity:0;animation:a4thumb 8s ease both}
+@keyframes a4thumb{0%,82%{opacity:0;transform:translateY(4px)}88%{opacity:1;transform:translateY(-6px)}100%{opacity:1;transform:translateY(-6px)}}
+/* ---- act 5: the slate snap ---- */
+.act5 .slateguy{left:38%}
+.act5 .perf5{left:50%;animation:a5perf 8s ease both;transform-origin:50% 100%}
+@keyframes a5perf{0%,24%{transform:none}28%{transform:translateY(-7px)}32%{transform:translateY(0)}36%{transform:translateY(-9px)}40%{transform:translateY(0)}44%{transform:translateY(-6px)}48%{transform:translateY(0)}62%{transform:none}70%{transform:rotate(84deg) translateY(6px)}75%,100%{transform:rotate(88deg) translateY(8px)}}
+.act5 .perf5 .a1{transform-box:fill-box;transform-origin:0 0;animation:a5clutch 8s both}
+@keyframes a5clutch{0%,24%{transform:none}27%,60%{transform:rotate(-130deg)}66%,100%{transform:none}}
+.act5 .slate{position:absolute;left:calc(38% + 20px);bottom:24px;animation:a5slate 8s ease both}
+@keyframes a5slate{0%,20%{transform:none}24%{transform:translateX(6px) rotate(-8deg)}28%,100%{transform:none}}
+.act5 .slate .lid{transform-box:fill-box;transform-origin:0% 100%;animation:a5lid 8s ease both}
+@keyframes a5lid{0%,20%{transform:rotate(-28deg)}24%,100%{transform:rotate(0)}}
+.act5 .take2{left:44%;top:6px;animation:a5t2 8s ease both}
+@keyframes a5t2{0%,52%{opacity:0}58%{opacity:1;transform:scale(1.1)}76%{opacity:1;transform:scale(1)}84%,100%{opacity:0}}
+.act5 .puff.p1{left:52%;bottom:8px;animation:a5puff 8s ease both}
+.act5 .puff.p2{left:55%;bottom:12px;animation:a5puff 8s ease both;animation-delay:.12s}
+.act5 .puff.p3{left:49%;bottom:10px;animation:a5puff 8s ease both;animation-delay:.2s}
+@keyframes a5puff{0%,70%{opacity:0;transform:scale(.4)}76%{opacity:.8;transform:scale(1.6)}88%,100%{opacity:0;transform:scale(2.4)}}
+@media (prefers-reduced-motion:reduce){.bgfx-stage{display:none}}

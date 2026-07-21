@@ -11,6 +11,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
+import ComedyStage from './ComedyStage';
 
 /* ---------- tiny sprite library (inline SVG, stroke stickmen) ---------- */
 
@@ -218,6 +219,8 @@ export default function BgFx() {
   const [dollyX, setDollyX] = useState(0);
   const seenFirst = useRef(false);
   const lastGate = useRef(0);
+  const [stageAct, setStageAct] = useState(-1);
+  const stageT = useRef<ReturnType<typeof setTimeout> | null>(null);
   const actionShown = useRef(false);
 
   const seg = pathname.split('/')[1] || 'home';
@@ -385,6 +388,26 @@ export default function BgFx() {
     return () => clearTimeout(t);
   }, [seg]);
 
+  /* The Stickman Comedy Theatre: 5 acts, 2s intermissions, on the dashboard banner */
+  useEffect(() => {
+    if (reduced() || seg !== 'dashboard') { setStageAct(-1); return; }
+    let alive = true;
+    let i = 0;
+    const ACT_MS = 8000, GAP_MS = 2000, FIRST_MS = 2500;
+    const play = () => {
+      if (!alive) return;
+      setStageAct(i % 5);
+      stageT.current = setTimeout(() => {
+        if (!alive) return;
+        setStageAct(-1);
+        i++;
+        stageT.current = setTimeout(play, GAP_MS);
+      }, ACT_MS);
+    };
+    stageT.current = setTimeout(play, FIRST_MS);
+    return () => { alive = false; if (stageT.current) clearTimeout(stageT.current); setStageAct(-1); };
+  }, [seg]);
+
   /* Nicola port: amber shimmer on plain-text page headings */
   useEffect(() => {
     if (reduced()) return;
@@ -473,6 +496,7 @@ export default function BgFx() {
       )}
 
       {seg === 'journal' && !reduced() && <TypistCameo />}
+      {seg === 'dashboard' && <ComedyStage act={stageAct} />}
       {seg === 'membership' && !reduced() && <RisingStar />}
       {seg === 'agencies' && !reduced() && <Handshake />}
     </>
