@@ -18,6 +18,13 @@ type Stats = {
   totalCertificates: number;
   pendingPayouts: number;
   pendingPayoutAmount: number;
+  verifiedBadges?: number;
+  badgesPending?: number;
+  insightsUnlocked?: number;
+  photosUnlocked?: number;
+  gamePurchases?: number;
+  donationCount?: number;
+  donationTotal?: number;
 };
 
 type RecentUser = {
@@ -130,6 +137,7 @@ export default function AdminPage() {
   const [accessToken, setAccessToken] = useState('');
   const [stats, setStats] = useState<Stats | null>(null);
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
+  const [userFilter, setUserFilter] = useState('');
   const [moduleStats, setModuleStats] = useState<ModuleStat[]>([]);
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [activeSection, setActiveSection] = useState<NavSection>('overview');
@@ -190,6 +198,8 @@ export default function AdminPage() {
   // Verified badges (own top-level tab)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [pendingBadges, setPendingBadges] = useState<any[]>([]);
+  const [approvedBadges, setApprovedBadges] = useState<any[]>([]);
+  const [badgeCounts, setBadgeCounts] = useState<{pending:number;approved:number}>({pending:0,approved:0});
   const [badgesLoading, setBadgesLoading] = useState(false);
 
   async function loadVerifiedBadges() {
@@ -198,6 +208,8 @@ export default function AdminPage() {
     if (res.ok) {
       const data = await res.json();
       setPendingBadges(data.pendingBadges || []);
+      setApprovedBadges(data.approvedBadges || []);
+      setBadgeCounts(data.badgeCounts || { pending: 0, approved: 0 });
     }
     setBadgesLoading(false);
   }
@@ -1173,6 +1185,13 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
     { key: 'donations',       label: 'Donations',       icon: '❤️' },
   ];
 
+  const filteredUsers = userFilter.trim()
+    ? recentUsers.filter(u => {
+        const q = userFilter.trim().toLowerCase();
+        return (u.email || '').toLowerCase().includes(q) || (u.name || '').toLowerCase().includes(q);
+      })
+    : recentUsers;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Toaster position="top-right" />
@@ -1265,8 +1284,12 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                 { icon: '✅', label: 'Active Subscribers',      value: stats.activeSubscribers,                     color: 'text-green-600' },
                 { icon: '🎓', label: 'Section 2 Purchases',     value: stats.section2Purchases,                     color: 'text-purple-600' },
                 { icon: '🏆', label: 'Certificates Issued',     value: stats.totalCertificates,                     color: 'text-yellow-600' },
-                { icon: '💰', label: 'Pending Payout Requests', value: stats.pendingPayouts,                        color: 'text-orange-600' },
-                { icon: '💵', label: 'Total Pending Amount',    value: `$${stats.pendingPayoutAmount.toFixed(2)}`,  color: 'text-red-600' },
+                { icon: '✓',  label: 'Verified Badges',         value: `${stats.verifiedBadges ?? 0}${(stats.badgesPending ?? 0) > 0 ? ` (${stats.badgesPending} pending)` : ''}`, color: 'text-teal-600' },
+                { icon: '📊', label: 'Pro Insights Unlocked',   value: stats.insightsUnlocked ?? 0,                 color: 'text-indigo-600' },
+                { icon: '📸', label: 'Photo Slots Unlocked',    value: stats.photosUnlocked ?? 0,                   color: 'text-pink-600' },
+                { icon: '🎮', label: 'Game Purchases',          value: stats.gamePurchases ?? 0,                    color: 'text-fuchsia-600' },
+                { icon: '❤️', label: 'Donations',               value: `${stats.donationCount ?? 0} · $${(stats.donationTotal ?? 0).toFixed(2)}`, color: 'text-rose-600' },
+                { icon: '💰', label: 'Affiliate Payouts Owed',  value: `${stats.pendingPayouts} · $${stats.pendingPayoutAmount.toFixed(2)}`, color: 'text-orange-600' },
               ].map(card => (
                 <div key={card.label} className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
                   <div className="flex items-center gap-2 mb-2">
@@ -1345,9 +1368,20 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
           <div className="space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h2 className="text-xl font-bold text-gray-800">Recent Users</h2>
-                <p className="text-sm text-gray-500">Latest 20 signups</p>
+                <h2 className="text-xl font-bold text-gray-800">All Users</h2>
+                <p className="text-sm text-gray-500">
+                  {userFilter.trim()
+                    ? `${filteredUsers.length} of ${recentUsers.length} shown`
+                    : `${recentUsers.length} total — newest first`}
+                </p>
               </div>
+              <input
+                type="text"
+                value={userFilter}
+                onChange={e => setUserFilter(e.target.value)}
+                placeholder="Search name or email…"
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
               <div className="flex gap-2">
                 <button
                   onClick={downloadEmails}
@@ -1376,7 +1410,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
-                    {recentUsers.map(u => (
+                    {filteredUsers.map(u => (
                       <tr key={u.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3 text-gray-800 font-medium">{u.email}</td>
                         <td className="px-4 py-3 text-gray-600">{u.name || '—'}</td>
@@ -1418,7 +1452,7 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
                         </td>
                       </tr>
                     ))}
-                    {recentUsers.length === 0 && (
+                    {filteredUsers.length === 0 && (
                       <tr><td colSpan={8} className="px-4 py-10 text-center text-gray-400">No users found.</td></tr>
                     )}
                   </tbody>
@@ -3306,7 +3340,9 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-gray-800">✓ Verified Badge Requests</h2>
-              <p className="text-sm text-gray-500">Performers who purchased a verified badge, awaiting your approval.</p>
+              <p className="text-sm text-gray-500">
+                {badgeCounts.pending} awaiting approval · {badgeCounts.approved} verified
+              </p>
             </div>
             <button onClick={loadVerifiedBadges} className="text-xs text-blue-600 font-semibold hover:underline">{badgesLoading ? 'Loading...' : 'Refresh'}</button>
           </div>
@@ -3339,6 +3375,47 @@ const [photoCodeMaxUses, setPhotoCodeMaxUses] = useState('1');
               </div>
             ))
           )}
+
+          {/* Verified members — the record of who was approved */}
+          <div className="pt-4">
+            <h3 className="text-sm font-bold text-gray-700 mb-1">
+              Verified Members ({badgeCounts.approved})
+            </h3>
+            <p className="text-xs text-gray-500 mb-3">Performers whose badge you have approved.</p>
+            {approvedBadges.length === 0 ? (
+              <div className="text-center py-6 text-gray-400 text-sm bg-white border border-gray-200 rounded-xl">
+                No verified members yet.
+              </div>
+            ) : (
+              <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
+                {approvedBadges.map((b: any) => (
+                  <div key={b.user_id} className="p-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      {b.headshot_url
+                        ? <img src={b.headshot_url} alt="" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover' }} />
+                        : <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#e5e7eb' }} />}
+                      <div>
+                        <div className="text-sm font-semibold text-gray-800">
+                          {(b.users as any)?.name || (b.users as any)?.email || b.user_id}
+                          <span className="ml-2 text-xs font-bold text-green-700 bg-green-50 border border-green-200 rounded-full px-2 py-0.5">✓ Verified</span>
+                        </div>
+                        <div className="text-xs text-gray-400">{(b.users as any)?.email}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <a href={`/profile/${b.user_id}`} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline">View profile</a>
+                      <button onClick={async () => {
+                        if (!confirm('Remove this verified badge?')) return
+                        await fetch('/api/admin/casting', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ action: 'deny_badge', id: b.user_id }) })
+                        setApprovedBadges(prev => prev.filter(x => x.user_id !== b.user_id))
+                        setBadgeCounts(c => ({ ...c, approved: Math.max(0, c.approved - 1) }))
+                      }} className="px-2.5 py-1 bg-red-50 text-red-600 border border-red-200 text-xs font-bold rounded-lg hover:bg-red-100">Remove</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

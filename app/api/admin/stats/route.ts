@@ -37,7 +37,9 @@ export async function GET(request: Request) {
       .from('users')
       .select('id, email, name, subscription_status, section2_unlocked, referral_code, referred_by, created_at')
       .order('created_at', { ascending: false })
-      .limit(20),
+      // The Users tab renders this list, so it must return every user, not a
+      // recent slice. Capped high rather than unbounded to protect the payload.
+      .limit(5000),
     supabaseAdmin.from('user_progress').select('user_id, module_id, score').eq('completed', true),
     supabaseAdmin.from('modules').select('id, module_number, title').order('module_number'),
     supabaseAdmin.from('certificates').select('module_id').eq('certificate_type', 'module'),
@@ -45,6 +47,30 @@ export async function GET(request: Request) {
 
   const pendingPayouts = pendingPayoutsResult.data || [];
   const pendingPayoutAmount = pendingPayouts.reduce((sum, r) => sum + (r.amount || 0), 0);
+
+  // Every other paid feature, so the Overview reflects real activity rather than
+  // subscriptions and Section 2 alone. Counted in parallel; any failure yields 0
+  // rather than breaking the whole stats call.
+  const [
+    verifiedBadgesResult,
+    badgesPendingResult,
+    insightsResult,
+    photosResult,
+    gamePurchasesResult,
+    donationsResult,
+  ] = await Promise.all([
+    supabaseAdmin.from('performer_profiles').select('*', { count: 'exact', head: true }).eq('verified_badge', true),
+    supabaseAdmin.from('performer_profiles').select('*', { count: 'exact', head: true }).eq('verified_badge_pending', true),
+    supabaseAdmin.from('users').select('*', { count: 'exact', head: true }).eq('insights_unlocked', true),
+    supabaseAdmin.from('users').select('*', { count: 'exact', head: true }).eq('photos_unlocked', true),
+    supabaseAdmin.from('game_purchases').select('*', { count: 'exact', head: true }),
+    supabaseAdmin.from('donations').select('amount_cents'),
+  ]);
+
+  const donationRows = donationsResult.data || [];
+  const donationTotal = donationRows.reduce(
+    (sum: number, d: { amount_cents?: number }) => sum + (d.amount_cents || 0), 0
+  ) / 100;
 
   const allProgress = allProgressResult.data || [];
   const modules = modulesResult.data || [];
@@ -114,6 +140,13 @@ export async function GET(request: Request) {
       totalCertificates: certsCountResult.count ?? 0,
       pendingPayouts: pendingPayouts.length,
       pendingPayoutAmount,
+      verifiedBadges: verifiedBadgesResult.count ?? 0,
+      badgesPending: badgesPendingResult.count ?? 0,
+      insightsUnlocked: insightsResult.count ?? 0,
+      photosUnlocked: photosResult.count ?? 0,
+      gamePurchases: gamePurchasesResult.count ?? 0,
+      donationCount: donationRows.length,
+      donationTotal,
     },
     recentUsers: recentUsersEnriched,
     moduleStats,

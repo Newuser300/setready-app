@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { supabaseAdmin } from '@/utils/supabase/admin'
+import { notifyAdmin, adminAlertHtml } from '@/lib/email'
 
 async function getUser() {
   const supabase = await createClient()
@@ -97,6 +98,33 @@ export async function POST(req: Request) {
   if (unlockError) {
     console.error('❌ promo unlock error:', unlockError)
     return NextResponse.json({ error: 'Code accepted but unlock failed — contact support' }, { status: 500 })
+  }
+
+  // A verified badge redeemed by promo still needs admin approval, and no
+  // Stripe webhook fires for it — so alert the admin here. Non-blocking.
+  if (codeType === 'verified_badge') {
+    ;(async () => {
+      try {
+        const { data: buyer } = await supabaseAdmin
+          .from('users').select('name, email').eq('id', user.id).maybeSingle()
+        const who = buyer?.name ? `${buyer.name} (${buyer.email})` : (buyer?.email || user.id)
+        await notifyAdmin({
+          subject: `Action needed: Verified Badge redeemed by ${buyer?.name || buyer?.email || 'a member'}`,
+          html: adminAlertHtml({
+            title: 'Verified Badge — approval needed',
+            lines: [
+              `<b>Verified Badge</b> — redeemed with promo code (no payment)`,
+              `Redeemed by ${who}`,
+              '<b>This needs your approval</b> before the badge appears on their profile.',
+            ],
+            actionLabel: 'Review in Admin',
+            actionUrl: 'https://www.bgready.site/admin?section=verified_badges',
+          }),
+        })
+      } catch (err) {
+        console.error('[promo] admin notification failed:', err)
+      }
+    })()
   }
 
   return NextResponse.json({ success: true, type: codeType })

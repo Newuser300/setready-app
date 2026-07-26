@@ -7,7 +7,7 @@ import { waitUntil } from '@vercel/functions';
 import type Stripe from 'stripe'
 import { stripe } from '@/lib/stripe';
 import { supabaseAdmin } from '@/utils/supabase/admin';
-import { sendAbandonedCartEmail } from '@/lib/email';
+import { sendAbandonedCartEmail, notifyAdmin, adminAlertHtml } from '@/lib/email';
 
 /**
  * Resolve a subscription's current period end as an ISO string.
@@ -116,6 +116,62 @@ async function fulfillEvent(event: Stripe.Event): Promise<void> {
       if (!userId) {
         console.error('❌ No userId — client_reference_id and metadata.userId are both missing. Skipping.');
         break;
+      }
+
+      // Alert the admin on every completed purchase. One place, so no product
+      // type can be added later and silently go unreported. Fire-and-forget:
+      // Stripe needs a fast 200 and a failed email must never fail the webhook.
+      if (session.mode === 'payment' && session.metadata?.type) {
+        const purchaseType = session.metadata.type;
+        const NICE_NAME: Record<string, string> = {
+          section2: 'Section 2 Training',
+          verified_badge: 'Verified Badge',
+          boost: 'Profile Boost',
+          insights: 'Pro Insights',
+          photo_slots: 'Photo Slots',
+          headshot_credits: 'Headshot Credits',
+          game_purchase: 'Game Pack',
+        };
+        const label = NICE_NAME[purchaseType] || purchaseType;
+        const amount = session.amount_total != null
+          ? `$${(session.amount_total / 100).toFixed(2)} ${(session.currency || 'cad').toUpperCase()}`
+          : 'amount not recorded';
+        const needsApproval = purchaseType === 'verified_badge';
+
+        waitUntil((async () => {
+          try {
+            const { data: buyer } = await supabaseAdmin
+              .from('users')
+              .select('name, email')
+              .eq('id', userId)
+              .maybeSingle();
+
+            const who = buyer?.name ? `${buyer.name} (${buyer.email})` : (buyer?.email || userId);
+            const lines = [
+              `<b>${label}</b> — ${amount}`,
+              `Purchased by ${who}`,
+            ];
+            if (needsApproval) {
+              lines.push('<b>This purchase needs your approval</b> before the badge appears on their profile.');
+            }
+
+            await notifyAdmin({
+              subject: needsApproval
+                ? `Action needed: Verified Badge purchased by ${buyer?.name || buyer?.email || 'a member'}`
+                : `New purchase: ${label} — ${amount}`,
+              html: adminAlertHtml({
+                title: needsApproval ? 'Verified Badge — approval needed' : 'New purchase',
+                lines,
+                actionLabel: needsApproval ? 'Review in Admin' : 'Open Admin',
+                actionUrl: needsApproval
+                  ? 'https://www.bgready.site/admin?section=verified_badges'
+                  : 'https://www.bgready.site/admin',
+              }),
+            });
+          } catch (err) {
+            console.error('[webhook] admin purchase notification failed:', err);
+          }
+        })());
       }
 
       // One-time Section 2 payment: session.customer is null, use userId directly

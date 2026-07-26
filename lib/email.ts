@@ -39,6 +39,59 @@ export async function sendEmail({
   }
 }
 
+/**
+ * Notify the site admin. Used for events that need a human to act — a verified
+ * badge awaiting approval, a new paid purchase, and so on.
+ *
+ * Falls back to the ADMIN_EMAILS env var if set, so adding an admin there is
+ * enough to bring them into the loop.
+ */
+export async function notifyAdmin({
+  subject,
+  html,
+  text,
+}: {
+  subject: string
+  html: string
+  text?: string
+}) {
+  const envAdmins = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map(e => e.trim())
+    .filter(Boolean)
+
+  const recipients = envAdmins.length > 0 ? envAdmins : ['mikebhangu@gmail.com']
+
+  return sendEmail({ to: recipients, subject, html, text })
+}
+
+/** Standard wrapper so every admin alert looks the same. */
+export function adminAlertHtml({
+  title,
+  lines,
+  actionLabel,
+  actionUrl,
+}: {
+  title: string
+  lines: string[]
+  actionLabel?: string
+  actionUrl?: string
+}) {
+  const rows = lines
+    .map(l => `<p style="margin:0 0 8px;font-size:14px;color:#374151;line-height:1.6;">${l}</p>`)
+    .join('')
+  const button =
+    actionLabel && actionUrl
+      ? `<a href="${actionUrl}" style="display:inline-block;margin-top:18px;background:#F59E0B;color:#1a1a2e;
+           font-weight:700;font-size:14px;padding:11px 22px;border-radius:8px;text-decoration:none;">${actionLabel}</a>`
+      : ''
+  return `<div style="font-family:-apple-system,Arial,sans-serif;max-width:560px;margin:0 auto;padding:28px 24px;">
+    <div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#F59E0B;margin-bottom:6px;">BGREADY ADMIN</div>
+    <h1 style="font-family:Georgia,serif;font-size:22px;color:#1a1a2e;margin:0 0 16px;">${title}</h1>
+    ${rows}${button}
+  </div>`
+}
+
 // ── Email Templates ──────────────────────────────────────────────────────────
 
 export function castingRequestEmailHtml({

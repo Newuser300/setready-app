@@ -33,11 +33,23 @@ export async function GET(req: NextRequest) {
         .order('user_id', { ascending: false }),
     ])
 
+    // Approved badges — so the tab shows who was verified, not just who is waiting.
+    const { data: approvedBadges } = await supabaseAdmin
+      .from('performer_profiles')
+      .select('user_id, headshot_url, users(email, name)')
+      .eq('verified_badge', true)
+      .order('user_id', { ascending: false })
+
     return NextResponse.json({
       castingDirectors: pendingCDs || [],
       agencies: pendingAgencies || [],
       pendingRequests: pendingRequests || [],
       pendingBadges: pendingBadges || [],
+      approvedBadges: approvedBadges || [],
+      badgeCounts: {
+        pending: (pendingBadges || []).length,
+        approved: (approvedBadges || []).length,
+      },
     })
   }
 
