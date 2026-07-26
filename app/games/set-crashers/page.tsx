@@ -214,6 +214,9 @@ export default function SetCrashers() {
     ammo: number; armed: boolean; loadGuard: number; ended: boolean; powerUsed: boolean;
     settleT: number; flightT: number; last: number; launchDir: number; projKind: string; detonate: boolean;
     comboCount?: number; comboLast?: number; shotTargets?: number; maxComboThisLevel?: number; settleLossT?: number; skyStrikeActive?: boolean; levelScore?: number; shotDowns?: number; scoreStreak?: number; _lastTally?: number;
+    // Boomerang return: whether it has turned, how long since, and the launch speed
+    // it should match on the way back.
+    boomTurned?: boolean; boomTurnT?: number; boomSpeed?: number;
     drops: Drop[]; dropTimer: number; bonusT: number; bonusCaught: Record<string, number>; bonusEnded: boolean;
   }>({ engine: null, raf: 0, mode: 'level', bodies: [], targets: [], projectile: null, flying: false, extra: [], aiming: false, aimX: 0, aimY: 0, particles: [], shake: 0, ammo: 0, armed: false, loadGuard: 0, ended: false, powerUsed: false, settleT: 0, flightT: 0, last: 0, launchDir: 1, projKind: 'clapper', detonate: false, drops: [], dropTimer: 6, bonusT: 15, bonusCaught: {}, bonusEnded: false });
 
@@ -593,7 +596,17 @@ export default function SetCrashers() {
   const triggerPower = () => {
     const Matter = MatterRef.current; const G = g.current; const p = G.projectile;
     if (!p || !G.flying || G.powerUsed) return;
-    const def = PROJECTILES[G.projKind]; if (!def || def.power === 'none' || def.power === 'boomerang') return;
+    const def = PROJECTILES[G.projKind]; if (!def || def.power === 'none') return;
+    // Boomerang: the tap turns it early. It otherwise turns on its own the moment
+    // it leaves the screen, so the button brings the return forward rather than
+    // being the only way to trigger it.
+    if (def.power === 'boomerang') {
+      if (!G.boomTurned && !(p as any).crasherBounced) {
+        G.boomTurned = true; G.boomTurnT = 0;
+        spawnParticles(p.position.x, p.position.y, 10, '#a16207', 160);
+      }
+      return;
+    }
     G.powerUsed = true;
     if (def.power === 'explode') { explodeAt(p.position.x, p.position.y, 200, 0.6); Matter.Composite.remove(G.engine.world, p); G.projectile = null; G.flying = false; setTimeout(() => settleCheck(), 600); }
     else if (def.power === 'bomb') { explodeAt(p.position.x, p.position.y, 260, 0.85); Matter.Composite.remove(G.engine.world, p); G.projectile = null; G.flying = false; setTimeout(() => settleCheck(), 600); }
@@ -849,21 +862,32 @@ export default function SetCrashers() {
         //      – X ramp  delayed 0.08 s then ramps to full over 0.30 s — curve follows.
         //    Gravity carries the downward momentum after the bell fades.
         if (G.flying && G.projectile && G.projKind === 'boomerang') {
-          const p = G.projectile; const t = G.flightT || 0;
+          const p = G.projectile;
           const v = p.velocity;
           if (!(p as any).crasherBounced) {
-            if (t < 0.46) {
+            if (!G.boomTurned) {
+              // OUTBOUND — gravity cancelled so it holds the aimed line and actually
+              // reaches the edge of the play area.
               Matter.Body.setVelocity(p, { x: v.x, y: v.y - 0.34 * dt * 60 });
+
+              // Turn the moment it clears the screen in the direction it was fired.
+              const gone = G.launchDir > 0 ? p.position.x > WORLD_W : p.position.x < 0;
+              // Safety net: a low or short shot may never leave the screen, so it
+              // still turns after a beat rather than sailing on forever.
+              const stalled = (G.flightT || 0) > 1.6;
+              if (gone || stalled) { G.boomTurned = true; G.boomTurnT = 0; }
             } else {
-              const arc = t - 0.46;
-              // Bell: 0 → peak (arc = 0.175 s) → 0 (arc = 0.35 s) — smooth plunge with no step.
-              const yBell = Math.sin(Math.PI * Math.min(arc / 0.35, 1.0));
-              // X-ramp: 0.08 s delayed start, ramps to 1 over 0.30 s — curve follows the plunge.
-              const xRamp = Math.min(Math.max(arc - 0.08, 0) / 0.30, 1.0);
-              Matter.Body.setVelocity(p, {
-                x: v.x - G.launchDir * xRamp * 5.0 * dt * 60,
-                y: v.y + yBell * 2.8 * dt * 60,
-              });
+              // RETURN — drive horizontal velocity across to the opposite direction
+              // over ~0.45 s, so it genuinely comes back instead of merely drifting.
+              G.boomTurnT = (G.boomTurnT || 0) + dt;
+              const k = Math.min(G.boomTurnT / 0.45, 1);      // 0 → 1 turn progress
+              const ease = k * k * (3 - 2 * k);                // smoothstep, no hard edge
+              const target = -G.launchDir * (G.boomSpeed || 18) * 0.92;
+              const nx = v.x + (target - v.x) * ease * dt * 6;
+              // Gentle lift through the turn so it arcs rather than hooking flat,
+              // fading out as the turn completes and gravity takes back over.
+              const lift = Math.sin(Math.PI * k) * 1.6 * dt * 60;
+              Matter.Body.setVelocity(p, { x: nx, y: v.y - lift + 0.34 * dt * 60 * ease });
             }
           }
         }
@@ -880,13 +904,25 @@ export default function SetCrashers() {
           G.flightT = (G.flightT || 0) + dt;
           const sp = Math.hypot(p.velocity.x, p.velocity.y);
           const edgeLvl = G.mode === 'level' && !!LEVELS[lvlRef.current]?.edges;
-          const off = edgeLvl ? (p.position.y > WORLD_H + 140) : (p.position.x > WORLD_W + 140 || p.position.x < -140 || p.position.y > WORLD_H + 140);
+          // A boomerang has to leave the screen to turn, so while it is still on its
+          // way back it gets a much wider horizontal margin — otherwise the shot would
+          // be resolved the instant it exits and it could never return. Falling off
+          // the bottom still ends it, and the flight timer remains the hard backstop.
+          const boomReturning = G.projKind === 'boomerang'
+            && !(p as any).crasherBounced
+            && (!G.boomTurned || (G.boomTurnT || 0) < 1.2);
+          const sideMargin = boomReturning ? 900 : 140;
+          const off = edgeLvl
+            ? (p.position.y > WORLD_H + 140)
+            : (p.position.x > WORLD_W + sideMargin || p.position.x < -sideMargin || p.position.y > WORLD_H + 140);
           const restThresh = G.mode === 'bonus' ? 4 : 2.5;
           const restHold = G.mode === 'bonus' ? 0.05 : 0.35;
           const maxFlight = G.mode === 'bonus' ? 0.8 : G.projKind === 'boomerang' ? 3.4 : 2.6;
           // Boomerang: don't let the rest-threshold terminate the shot while it's still arcing —
           // the return force temporarily kills x-speed which would otherwise trip the check.
-          const boomerangArcing = G.projKind === 'boomerang' && (G.flightT || 0) < 1.5;
+          // Still turning, or freshly turned: the reversal briefly zeroes x-speed, which
+          // would otherwise read as "at rest" and cut the shot short mid-turn.
+          const boomerangArcing = boomReturning;
           if (off || (!boomerangArcing && sp < restThresh)) { G.settleT += dt; } else G.settleT = 0;
           if (off || G.settleT > restHold || G.flightT > maxFlight) {
             if (!off && G.projKind === 'bomb' && !G.powerUsed) { G.powerUsed = true; explodeAt(p.position.x, p.position.y, 260, 0.85); Matter.Composite.remove(G.engine.world, p); }
@@ -1097,6 +1133,9 @@ export default function SetCrashers() {
     Matter.Body.setVelocity(proj, { x: vx, y: vy });
     const firstArm = !G.armed;
     G.projectile = proj; proj.crasherProjKind = key; proj.crasherR = r; G.flying = true; G.powerUsed = false; G.settleT = 0; G.flightT = 0; G.detonate = false; G.armed = true; G.launchDir = vx >= 0 ? 1 : -1; G.projKind = key;
+    // Boomerang return state — reset per shot. boomSpeed is the launch speed, used
+    // as the target speed for the way back so the return matches the throw.
+    G.boomTurned = false; G.boomTurnT = 0; G.boomSpeed = Math.hypot(vx, vy);
     if (G.mode === 'level' && firstArm) {
       for (const t of G.targets) {
         if (!t.crasherAlive) continue;
