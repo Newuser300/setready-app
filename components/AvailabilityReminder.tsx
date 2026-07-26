@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 
 const STORAGE_KEY = 'sr-availability-reminder-dismissed-at';
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -12,18 +13,41 @@ export default function AvailabilityReminder() {
   const router = useRouter();
   const [show, setShow] = useState(false);
 
+  // The Availability feature is admin-only for now, so this reminder must not
+  // reach ordinary users. Gate on the same server-side admin check the
+  // dashboard uses, then apply the usual 30-day snooze logic.
   // Start hidden (matches server render to avoid hydration mismatch), then
   // decide on the client whether it's due.
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      const last = raw ? parseInt(raw, 10) : 0;
-      if (!last || Number.isNaN(last) || Date.now() - last >= THIRTY_DAYS_MS) {
-        setShow(true);
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+
+        const res = await fetch('/api/admin/check', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const data = res.ok ? await res.json() : { isAdmin: false };
+        if (cancelled || data.isAdmin !== true) return;
+      } catch {
+        return; // On any failure, stay hidden — fail closed.
       }
-    } catch {
-      // localStorage unavailable (e.g. private mode) — just don't show.
-    }
+
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const last = raw ? parseInt(raw, 10) : 0;
+        if (!last || Number.isNaN(last) || Date.now() - last >= THIRTY_DAYS_MS) {
+          if (!cancelled) setShow(true);
+        }
+      } catch {
+        // localStorage unavailable (e.g. private mode) — just don't show.
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, []);
 
   function snooze() {
