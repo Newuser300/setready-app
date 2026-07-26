@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server';
-import Stripe from 'stripe';
+import { stripe } from '@/lib/stripe';
 import { verifyAdminRequest, supabaseAdmin } from '@/utils/isAdmin';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-04-22.dahlia',
-});
 
 // GET ?email=: look up user details for confirmation panel
 export async function GET(request: Request) {

@@ -225,9 +225,18 @@ export default function SignUp() {
             We sent a confirmation link to
           </p>
           <p style={{ fontSize: '15px', fontWeight: '700', color: '#1a1a2e', margin: '0 0 24px' }}>{email}</p>
-          <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '16px', marginBottom: '24px', textAlign: 'left' }}>
-            <p style={{ fontSize: '13px', color: '#92400e', margin: 0, lineHeight: '1.6' }}>
-              Click the link in the email to activate your account. If you don't see it, check your spam or junk folder.
+          <div style={{ backgroundColor: '#fffbeb', border: '2px solid #f59e0b', borderRadius: '12px', padding: '16px', marginBottom: '24px', textAlign: 'left' }}>
+            <p style={{ fontSize: '14px', fontWeight: '800', color: '#92400e', margin: '0 0 8px', lineHeight: '1.5' }}>
+              ⚠️ Check your spam or junk folder
+            </p>
+            <p style={{ fontSize: '13px', color: '#92400e', margin: '0 0 8px', lineHeight: '1.6' }}>
+              Confirmation emails often land there. Look for a message from{' '}
+              <strong>notifications@bgready.site</strong> and click the link inside to activate
+              your account.
+            </p>
+            <p style={{ fontSize: '12.5px', color: '#a16207', margin: 0, lineHeight: '1.6' }}>
+              Found it in spam? Mark it <strong>&ldquo;Not spam&rdquo;</strong> so future BGReady
+              emails reach your inbox.
             </p>
           </div>
           <Link href="/auth/sign-in" style={{ display: 'block', padding: '13px', backgroundColor: '#1a1a2e', color: 'white', fontWeight: '700', fontSize: '15px', borderRadius: '10px', textDecoration: 'none' }}>

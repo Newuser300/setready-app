@@ -1,11 +1,7 @@
 import { NextResponse } from 'next/server'
-import Stripe from 'stripe'
+import { stripe } from '@/lib/stripe'
 import { supabaseAdmin } from '@/utils/supabase/admin'
 import { createClient } from '@/utils/supabase/server'
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-04-22.dahlia',
-})
 
 export async function POST() {
   // A user may only delete themselves — authenticate via their own session.

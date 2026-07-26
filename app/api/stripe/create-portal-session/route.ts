@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
-import Stripe from 'stripe';
+import type Stripe from 'stripe'
+import { stripe } from '@/lib/stripe';
 import { supabaseAdmin } from '@/utils/supabase/admin';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-04-22.dahlia',
-});
 
 export async function POST(request: Request) {
   try {

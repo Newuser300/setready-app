@@ -1,12 +1,8 @@
 import { NextResponse } from 'next/server';
-import Stripe from 'stripe';
+import { stripe } from '@/lib/stripe';
 import { createClient } from '@/utils/supabase/server';
 import { supabaseAdmin } from '@/utils/supabase/admin';
 import { abandonedCartOptions } from '@/lib/checkout-recovery';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-04-22.dahlia' as any,
-});
 
 const ITEMS: Record<string, { priceEnv: string }> = {
   boost2:  { priceEnv: 'STRIPE_TYCOON_BOOST2_PRICE_ID' },

@@ -4,13 +4,10 @@ export const runtime = 'nodejs'
 
 import { NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
-import Stripe from 'stripe';
+import type Stripe from 'stripe'
+import { stripe } from '@/lib/stripe';
 import { supabaseAdmin } from '@/utils/supabase/admin';
 import { sendAbandonedCartEmail } from '@/lib/email';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-04-22.dahlia',
-});
 
 /**
  * Resolve a subscription's current period end as an ISO string.
