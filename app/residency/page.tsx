@@ -6,14 +6,6 @@ import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
 import Copyright from '@/components/Copyright';
 import { createClient } from '@/utils/supabase/client';
-import {
-  addLocalDoc,
-  deleteLocalDoc,
-  getLocalDocFile,
-  isLocalStorageSupported,
-  listLocalDocs,
-  type LocalResidencyMeta,
-} from '@/lib/residency-local';
 const supabase = createClient()
 
 // Rows left behind by the earlier version, which uploaded to Supabase Storage.
@@ -29,24 +21,6 @@ type LegacyResidencyDoc = {
   notes: string | null;
   created_at: string;
 };
-
-const DOC_TYPES_CITIZENSHIP = [
-  'Passport',
-  'Birth Certificate',
-  'Certificate of Indian Status Card',
-  'Citizenship Card',
-  'Permanent Resident Card',
-];
-
-const DOC_TYPES_BC = [
-  "Notice of Assessment",
-  "BC Driver's Licence",
-  "BC Services Card",
-  "Utility Bill (Hydro/Gas)",
-  "Property Tax Notice",
-  "Bank Statement",
-  "Other",
-];
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/heic', 'image/heif', 'application/pdf'];
@@ -117,25 +91,13 @@ function fileTypeIcon(fileType: string | null): string {
 
 export default function ResidencyPage() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const emailFileInputRef = useRef<HTMLInputElement>(null);
   const emailCameraInputRef = useRef<HTMLInputElement>(null);
 
   const [userName, setUserName] = useState('');
   const [accessToken, setAccessToken] = useState('');
   const [legacyDocs, setLegacyDocs] = useState<LegacyResidencyDoc[]>([]);
-  const [localDocs, setLocalDocs] = useState<LocalResidencyMeta[]>([]);
-  const [localSupported, setLocalSupported] = useState(true);
   const [pageLoading, setPageLoading] = useState(true);
-
-  // Upload form
-  const [docType, setDocType] = useState('');
-  const [docLabel, setDocLabel] = useState('');
-  const [docNotes, setDocNotes] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState('');
-  const [uploading, setUploading] = useState(false);
 
   // Delete
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -150,9 +112,6 @@ export default function ResidencyPage() {
   const [emailFiles, setEmailFiles] = useState<File[]>([]);
   const [emailSentTo, setEmailSentTo] = useState('');
   const [emailPreparing, setEmailPreparing] = useState(false);
-  // Documents chosen from the BGReady library rather than the device. These
-  // travel as IDs; the server reads their bytes out of Storage when sending.
-  const [selectedSavedDocs, setSelectedSavedDocs] = useState<Set<string>>(new Set());
 
   useEffect(() => { loadPage(); }, []);
 
@@ -181,22 +140,8 @@ export default function ResidencyPage() {
       `Hi,\n\nPlease find my proof of residency documents attached as requested.\n\n${name ? name + '\n' : ''}UBCP/ACTRA Member`
     );
 
-    setLocalSupported(isLocalStorageSupported());
-    await Promise.all([
-      loadLocalDocs(),
-      loadLegacyDocs(session?.access_token ?? ''),
-    ]);
+    await loadLegacyDocs(session?.access_token ?? '');
     setPageLoading(false);
-  }
-
-  async function loadLocalDocs() {
-    if (!isLocalStorageSupported()) { setLocalDocs([]); return; }
-    try {
-      setLocalDocs(await listLocalDocs());
-    } catch {
-      setLocalDocs([]);
-      setLocalSupported(false);
-    }
   }
 
   /**
@@ -211,103 +156,6 @@ export default function ResidencyPage() {
       if (res.ok) setLegacyDocs(data.documents || []);
     } catch {
       // A failure here must not block the page — the local library is primary.
-    }
-  }
-
-  function handleFileChange(file: File) {
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error('File too large. Maximum size is 10MB.');
-      return;
-    }
-    const isHeic = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
-    const accepted = ACCEPTED_TYPES.includes(file.type) || isHeic;
-    if (!accepted) {
-      toast.error('File type not supported. Use JPG, PNG, HEIC, or PDF.');
-      return;
-    }
-    setSelectedFile(file);
-    const canPreview = file.type.startsWith('image/') && !file.type.includes('heic') && !file.type.includes('heif') && !isHeic;
-    if (canPreview) {
-      const reader = new FileReader();
-      reader.onload = e => setFilePreview(e.target?.result as string);
-      reader.readAsDataURL(file);
-    } else {
-      setFilePreview('');
-    }
-  }
-
-  function clearFile() {
-    setSelectedFile(null);
-    setFilePreview('');
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    if (cameraInputRef.current) cameraInputRef.current.value = '';
-  }
-
-  /**
-   * Saves a document to this device only.
-   *
-   * Nothing leaves the phone: no upload, no server record. Photos are shrunk
-   * first so the library stays small and so the same file sends reliably later.
-   */
-  async function handleUpload() {
-    if (!selectedFile || !docType) {
-      toast.error('Please select a document type and a file.');
-      return;
-    }
-    if (!localSupported) {
-      toast.error('This browser cannot store documents on your device.');
-      return;
-    }
-
-    setUploading(true);
-    try {
-      const prepared = await compressImage(selectedFile);
-      await addLocalDoc({
-        document_type: docType,
-        document_label: docLabel.trim() || null,
-        notes: docNotes.trim() || null,
-        file: prepared,
-      });
-
-      toast.success('Saved to this device.');
-      setDocType('');
-      setDocLabel('');
-      setDocNotes('');
-      clearFile();
-      await loadLocalDocs();
-    } catch {
-      toast.error('Could not save to this device. Your browser may be out of storage.');
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  /** Opens a device-stored document in a new tab from an in-memory URL. */
-  async function handleViewLocal(id: string) {
-    try {
-      const file = await getLocalDocFile(id);
-      if (!file) { toast.error('That document is no longer on this device.'); return; }
-      const url = URL.createObjectURL(file);
-      window.open(url, '_blank', 'noopener');
-      // Give the new tab time to take the URL before it is revoked.
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
-    } catch {
-      toast.error('Could not open that document.');
-    }
-  }
-
-  async function handleDeleteLocal(id: string) {
-    setDeletingId(id);
-    try {
-      await deleteLocalDoc(id);
-      setConfirmDeleteId(null);
-      setSelectedSavedDocs(prev => { const n = new Set(prev); n.delete(id); return n; });
-      await loadLocalDocs();
-      toast.success('Removed from this device.');
-    } catch {
-      toast.error('Could not remove that document.');
-    } finally {
-      setDeletingId(null);
     }
   }
 
@@ -394,23 +242,8 @@ export default function ResidencyPage() {
     setEmailFiles(prev => prev.filter((_, i) => i !== index));
   }
 
-  function toggleSavedDoc(id: string) {
-    setSelectedSavedDocs(prev => {
-      const n = new Set(prev);
-      if (n.has(id)) n.delete(id); else n.add(id);
-      return n;
-    });
-    setEmailSentTo('');
-  }
-
-  // Everything now travels in the request body: the saved library lives on this
-  // device, so its bytes are uploaded at send time just like a fresh pick.
-  const savedSelectedBytes = localDocs
-    .filter(d => selectedSavedDocs.has(d.id))
-    .reduce((sum, d) => sum + d.size, 0);
-  const emailTotalBytes =
-    emailFiles.reduce((sum, f) => sum + f.size, 0) + savedSelectedBytes;
-  const emailAttachmentCount = emailFiles.length + selectedSavedDocs.size;
+  const emailTotalBytes = emailFiles.reduce((sum, f) => sum + f.size, 0);
+  const emailAttachmentCount = emailFiles.length;
 
   /**
    * Sends the chosen files to the production as real email attachments.
@@ -442,17 +275,6 @@ export default function ResidencyPage() {
       form.append('message', emailMessage.trim());
       emailFiles.forEach(f => form.append('files', f, f.name));
 
-      // Pull the chosen library documents off this device and attach the bytes.
-      for (const id of selectedSavedDocs) {
-        const file = await getLocalDocFile(id);
-        if (!file) {
-          toast.error('One of your saved documents is no longer on this device.');
-          await loadLocalDocs();
-          return;
-        }
-        form.append('files', file, file.name);
-      }
-
       const res = await fetch('/api/residency/send', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -467,7 +289,6 @@ export default function ResidencyPage() {
 
       setEmailSentTo(productionEmail.trim());
       setEmailFiles([]);
-      setSelectedSavedDocs(new Set());
       if (emailFileInputRef.current) emailFileInputRef.current.value = '';
       if (emailCameraInputRef.current) emailCameraInputRef.current.value = '';
       toast.success(`Sent to ${productionEmail.trim()}.`);
@@ -517,9 +338,11 @@ export default function ResidencyPage() {
         {/* ── Hero ── */}
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-bold text-gray-900">
-            Store your documents securely for quick access on set.
+            Send your proof of residency to production in seconds.
           </h2>
-          <p className="text-gray-500">Email them to production directly from this page.</p>
+          <p className="text-gray-500">
+            Straight from your phone, as email attachments. Nothing is stored.
+          </p>
         </div>
 
         {/* ── Accepted Documents ── */}
@@ -608,235 +431,6 @@ export default function ResidencyPage() {
           </div>
         </div>
 
-        {/* ── My Documents (this device only) ── */}
-        <div>
-          <h2 className="text-xl font-bold text-gray-800 mb-1">
-            My Documents
-            {localDocs.length > 0 && (
-              <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
-                {localDocs.length}
-              </span>
-            )}
-          </h2>
-          <p className="text-sm text-gray-500 mb-4">
-            Saved on this device only — never uploaded to BGReady.
-          </p>
-
-          {!localSupported && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
-              <p className="text-sm text-red-800">
-                This browser cannot store documents on your device. You can still attach files
-                directly from your phone when emailing a production.
-              </p>
-            </div>
-          )}
-
-          {localDocs.length === 0 ? (
-            <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-12 text-center">
-              <p className="text-4xl mb-3">📂</p>
-              <p className="text-gray-500 font-medium">No documents saved on this device yet.</p>
-              <p className="text-gray-400 text-sm mt-1">Add your first document using the form below.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {localDocs.map(doc => (
-                <div key={doc.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col gap-3">
-                  <div className="flex items-start gap-3">
-                    <span className="text-3xl shrink-0 mt-0.5">{fileTypeIcon(doc.file_type)}</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-gray-800 text-sm">{doc.document_type}</p>
-                      {doc.document_label && (
-                        <p className="text-xs text-gray-500 mt-0.5">{doc.document_label}</p>
-                      )}
-                      {doc.notes && (
-                        <p className="text-xs text-blue-600 mt-0.5 italic">{doc.notes}</p>
-                      )}
-                      <p className="text-xs text-gray-400 mt-1">
-                        {new Date(doc.created_at).toLocaleDateString('en-CA', {
-                          year: 'numeric', month: 'short', day: 'numeric',
-                        })}
-                      </p>
-                    </div>
-                  </div>
-
-                  {confirmDeleteId === doc.id ? (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-red-600 font-semibold flex-1">Remove from this device?</span>
-                      <button
-                        onClick={() => handleDeleteLocal(doc.id)}
-                        disabled={deletingId === doc.id}
-                        className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition disabled:opacity-50"
-                      >
-                        {deletingId === doc.id ? '...' : 'Yes, Remove'}
-                      </button>
-                      <button
-                        onClick={() => setConfirmDeleteId(null)}
-                        className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleViewLocal(doc.id)}
-                        className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition"
-                      >
-                        👁 View
-                      </button>
-                      <button
-                        onClick={() => setConfirmDeleteId(doc.id)}
-                        className="px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-semibold hover:bg-red-100 transition"
-                      >
-                        🗑 Remove
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* ── Upload New Document ── */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-            <h2 className="font-bold text-gray-800 text-lg">Upload New Document</h2>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Saved on this device only · JPG, PNG, HEIC, PDF · Max 10MB
-            </p>
-          </div>
-          <div className="p-6 space-y-5">
-
-            {/* Document Type */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Document Type <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={docType}
-                onChange={e => setDocType(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm bg-white"
-              >
-                <option value="">— Select document type —</option>
-                <optgroup label="Citizenship / PR Status">
-                  {DOC_TYPES_CITIZENSHIP.map(t => <option key={t} value={t}>{t}</option>)}
-                </optgroup>
-                <optgroup label="BC Residency">
-                  {DOC_TYPES_BC.map(t => <option key={t} value={t}>{t}</option>)}
-                </optgroup>
-              </select>
-            </div>
-
-            {/* Custom Label */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Custom Label <span className="text-gray-400 font-normal">(optional)</span>
-              </label>
-              <input
-                type="text"
-                value={docLabel}
-                onChange={e => setDocLabel(e.target.value)}
-                placeholder="e.g. Front of Passport, Jan 2026 Hydro Bill"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-              />
-            </div>
-
-            {/* Notes */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Notes <span className="text-gray-400 font-normal">(optional)</span>
-              </label>
-              <input
-                type="text"
-                value={docNotes}
-                onChange={e => setDocNotes(e.target.value)}
-                placeholder="e.g. Financial info blacked out"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-              />
-            </div>
-
-            {/* File Upload */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                File <span className="text-red-500">*</span>
-              </label>
-
-              {!selectedFile ? (
-                <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center space-y-4">
-                  <p className="text-gray-400 text-sm">Take a photo or choose a file from your device</p>
-                  <div className="flex justify-center gap-3 flex-wrap">
-                    <label className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold cursor-pointer hover:bg-blue-700 transition shadow-sm">
-                      📷 Take Photo
-                      <input
-                        ref={cameraInputRef}
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        className="hidden"
-                        onChange={e => { if (e.target.files?.[0]) handleFileChange(e.target.files[0]); }}
-                      />
-                    </label>
-                    <label className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-semibold cursor-pointer hover:bg-gray-200 transition shadow-sm">
-                      📁 Choose File
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept={ACCEPTED_EXTENSIONS}
-                        className="hidden"
-                        onChange={e => { if (e.target.files?.[0]) handleFileChange(e.target.files[0]); }}
-                      />
-                    </label>
-                  </div>
-                  <p className="text-xs text-gray-400">JPG · PNG · HEIC · PDF · Max 10MB</p>
-                </div>
-              ) : (
-                <div className="border border-gray-200 rounded-xl p-4 space-y-3">
-                  {filePreview ? (
-                    <img
-                      src={filePreview}
-                      alt="Preview"
-                      className="w-full max-h-52 object-contain rounded-lg bg-gray-50"
-                    />
-                  ) : (
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                      <span className="text-3xl">
-                        {selectedFile.type === 'application/pdf' ? '📄' : '🖼️'}
-                      </span>
-                      <div>
-                        <p className="text-sm font-medium text-gray-800 break-all">{selectedFile.name}</p>
-                        <p className="text-xs text-gray-500">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                      </div>
-                    </div>
-                  )}
-                  <button
-                    onClick={clearFile}
-                    className="text-xs text-red-500 hover:text-red-700 transition font-medium"
-                  >
-                    ✕ Remove file
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Submit */}
-            <button
-              onClick={handleUpload}
-              disabled={uploading || !selectedFile || !docType}
-              className="w-full py-3.5 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {uploading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Saving...
-                </span>
-              ) : (
-                '💾 Save Document'
-              )}
-            </button>
-          </div>
-        </div>
-
         {/* ── Email to Production ── */}
         {/*
           Attachments are chosen from the device and posted straight to
@@ -847,7 +441,7 @@ export default function ResidencyPage() {
           <div className="px-6 py-5 border-b border-amber-300" style={{ backgroundColor: '#F59E0B' }}>
             <h2 className="font-extrabold text-gray-900 text-xl">📧 Email Documents to Production</h2>
             <p className="text-gray-800 font-medium mt-0.5 text-sm">
-              Sent as real attachments — nothing is stored
+              Attach from your phone — sent as real attachments, nothing stored
             </p>
           </div>
           <div className="p-6 space-y-5">
@@ -903,42 +497,6 @@ export default function ResidencyPage() {
                 onChange={e => addEmailFiles(e.target.files)}
                 className="hidden"
               />
-
-              {localDocs.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                    Saved on this device
-                  </p>
-                  <div className="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100 max-h-56 overflow-y-auto">
-                    {localDocs.map(doc => (
-                      <label
-                        key={doc.id}
-                        className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedSavedDocs.has(doc.id)}
-                          onChange={() => toggleSavedDoc(doc.id)}
-                          className="w-4 h-4 rounded border-gray-300 accent-amber-500"
-                        />
-                        <span className="text-lg">{fileTypeIcon(doc.file_type)}</span>
-                        <span className="text-sm text-gray-700">
-                          <span className="font-medium">{doc.document_type}</span>
-                          {doc.document_label && (
-                            <span className="text-gray-500"> — {doc.document_label}</span>
-                          )}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {localDocs.length > 0 && (
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                  Or pick a file now
-                </p>
-              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <button
@@ -1026,13 +584,9 @@ export default function ResidencyPage() {
                 no links, nothing to expire, nothing for them to chase.
               </p>
               <p className="text-sm text-blue-800 leading-relaxed mt-2">
-                Attach documents <strong>saved on this device</strong>, pick a file
-                <strong> right now</strong>, or a mix of both.
-              </p>
-              <p className="text-sm text-blue-800 leading-relaxed mt-2">
-                <strong>Nothing is stored on our side.</strong> The files go from your phone
-                straight to the production — no copy is kept and no link is created. The
-                production replies directly to your email address.
+                <strong>Nothing is stored anywhere.</strong> Your documents stay in your own
+                phone&rsquo;s files and go straight to the production — BGReady keeps no copy and
+                creates no link. The production replies directly to your email address.
               </p>
             </div>
 
@@ -1142,9 +696,8 @@ export default function ResidencyPage() {
             🔒 Your documents never touch our servers.
           </p>
           <p className="text-gray-400 text-sm mt-1.5">
-            They are saved on this device and sent straight from it as email attachments.
-            BGReady keeps no copy. That also means we cannot recover them — if you clear your
-            browser data or switch phones, you will need to add them again.
+            Your documents stay in your phone&rsquo;s own files. They are attached to the email
+            you send and passed straight to the production. BGReady never keeps a copy.
           </p>
         </div>
 
