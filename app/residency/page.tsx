@@ -40,6 +40,62 @@ const DOC_TYPES_BC = [
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/heic', 'image/heif', 'application/pdf'];
 const ACCEPTED_EXTENSIONS = '.jpg,.jpeg,.png,.heic,.pdf';
+const MAX_EMAIL_FILES = 8;
+// Vercel caps a serverless request body at 4.5MB, so the whole attachment set
+// must fit inside that. Photos are downscaled below before they ever count
+// toward this, which keeps a normal set of ID photos well under the ceiling.
+const MAX_EMAIL_TOTAL = 4 * 1024 * 1024;
+const COMPRESS_MAX_DIMENSION = 2000;
+const COMPRESS_QUALITY = 0.82;
+
+/**
+ * Shrinks a photo in the browser before it is attached.
+ *
+ * A phone camera shot is often 4-6MB, which alone would blow the request
+ * limit. Downscaling to 2000px on the long edge keeps every word on an ID or
+ * a utility bill readable while bringing the file to a few hundred KB.
+ * Anything that cannot be decoded (HEIC on some browsers, PDFs) is returned
+ * untouched rather than rejected.
+ */
+async function compressImage(file: File): Promise<File> {
+  if (!file.type.startsWith('image/')) return file;
+  if (typeof createImageBitmap !== 'function') return file;
+
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, COMPRESS_MAX_DIMENSION / Math.max(bitmap.width, bitmap.height));
+
+    // Already small enough and already a compact format — leave it alone.
+    if (scale === 1 && file.size <= 1024 * 1024 && file.type === 'image/jpeg') {
+      bitmap.close?.();
+      return file;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) { bitmap.close?.(); return file; }
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close?.();
+
+    const blob: Blob | null = await new Promise(resolve =>
+      canvas.toBlob(b => resolve(b), 'image/jpeg', COMPRESS_QUALITY)
+    );
+    if (!blob || blob.size >= file.size) return file;
+
+    const newName = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+    return new File([blob], newName, { type: 'image/jpeg', lastModified: Date.now() });
+  } catch {
+    return file;
+  }
+}
+
+function humanSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 function fileTypeIcon(fileType: string | null): string {
   if (!fileType) return '📄';
@@ -52,6 +108,8 @@ export default function ResidencyPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const emailFileInputRef = useRef<HTMLInputElement>(null);
+  const emailCameraInputRef = useRef<HTMLInputElement>(null);
 
   const [userId, setUserId] = useState('');
   const [userName, setUserName] = useState('');
@@ -71,14 +129,15 @@ export default function ResidencyPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Email
+  // Email to production. The attachments are picked from the device and sent
+  // straight through — they are never uploaded to storage or saved anywhere.
   const [productionEmail, setProductionEmail] = useState('');
   const [emailUserName, setEmailUserName] = useState('');
-  const [selectedEmailDocs, setSelectedEmailDocs] = useState<Set<string>>(new Set());
   const [emailMessage, setEmailMessage] = useState('');
   const [emailLoading, setEmailLoading] = useState(false);
-  // Fallback: full email text shown on-screen if no mail app opens
-  const [emailFallbackText, setEmailFallbackText] = useState('');
+  const [emailFiles, setEmailFiles] = useState<File[]>([]);
+  const [emailSentTo, setEmailSentTo] = useState('');
+  const [emailPreparing, setEmailPreparing] = useState(false);
 
   useEffect(() => { loadPage(); }, []);
 
@@ -241,107 +300,105 @@ export default function ResidencyPage() {
       if (!res.ok) { toast.error(data.error || 'Delete failed.'); return; }
       toast.success('Document deleted.');
       setConfirmDeleteId(null);
-      setSelectedEmailDocs(prev => { const n = new Set(prev); n.delete(id); return n; });
       await loadDocs(token);
     } finally {
       setDeletingId(null);
     }
   }
 
-  function toggleEmailDoc(id: string) {
-    setSelectedEmailDocs(prev => {
-      const n = new Set(prev);
-      if (n.has(id)) n.delete(id); else n.add(id);
-      return n;
-    });
-  }
+  async function addEmailFiles(list: FileList | null) {
+    if (!list || list.length === 0) return;
+    const incoming = Array.from(list);
+    const kept: File[] = [];
 
-  function selectAllEmailDocs() {
-    if (selectedEmailDocs.size === docs.length) {
-      setSelectedEmailDocs(new Set());
-    } else {
-      setSelectedEmailDocs(new Set(docs.map(d => d.id)));
+    setEmailPreparing(true);
+    try {
+    for (const raw of incoming) {
+      const file = await compressImage(raw);
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(`"${file.name}" is larger than 10MB.`);
+        continue;
+      }
+      const lower = file.name.toLowerCase();
+      const isHeic = lower.endsWith('.heic') || lower.endsWith('.heif');
+      if (!ACCEPTED_TYPES.includes(file.type) && !isHeic) {
+        toast.error(`"${file.name}" is not a supported file type.`);
+        continue;
+      }
+      kept.push(file);
+    }
+    if (kept.length === 0) return;
+
+    setEmailFiles(prev => {
+      const merged = [...prev];
+      for (const f of kept) {
+        if (!merged.some(m => m.name === f.name && m.size === f.size)) merged.push(f);
+      }
+      if (merged.length > MAX_EMAIL_FILES) {
+        toast.error(`You can send up to ${MAX_EMAIL_FILES} documents at a time.`);
+        return merged.slice(0, MAX_EMAIL_FILES);
+      }
+      return merged;
+    });
+    setEmailSentTo('');
+    } finally {
+      setEmailPreparing(false);
     }
   }
 
+  function removeEmailFile(index: number) {
+    setEmailFiles(prev => prev.filter((_, i) => i !== index));
+  }
+
+  const emailTotalBytes = emailFiles.reduce((sum, f) => sum + f.size, 0);
+
+  /**
+   * Sends the chosen files to the production as real email attachments.
+   *
+   * The files go from the device straight to the send endpoint, which holds
+   * them in memory only for the length of the request. Nothing is written to
+   * Supabase Storage, no database row is created, and no shareable link is
+   * generated — so no copy of the document survives the send.
+   */
   async function handleSendEmail() {
     if (!productionEmail.trim()) { toast.error('Please enter the production email address.'); return; }
-    if (selectedEmailDocs.size === 0) { toast.error('Please select at least one document.'); return; }
+    if (emailFiles.length === 0) { toast.error('Please attach at least one document.'); return; }
+    if (emailTotalBytes > MAX_EMAIL_TOTAL) {
+      toast.error('Those documents are too large to send at once. Send them in two emails.');
+      return;
+    }
 
     setEmailLoading(true);
-    setEmailFallbackText('');
+    setEmailSentTo('');
     try {
       const token = await getToken();
-      const selected = docs.filter(d => selectedEmailDocs.has(d.id));
+      const form = new FormData();
+      form.append('to', productionEmail.trim());
+      form.append('senderName', emailUserName.trim());
+      form.append('message', emailMessage.trim());
+      emailFiles.forEach(f => form.append('files', f, f.name));
 
-      const urlResults = await Promise.all(
-        selected.map(async doc => {
-          const res = await fetch('/api/residency/signed-url', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ fileUrl: doc.file_url }),
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(`Failed to get link for "${doc.document_type}"`);
-          return { doc, signedUrl: data.signedUrl as string };
-        })
-      );
-
-      const subjectText = `Proof of Residency — ${emailUserName}`;
-      const subject = encodeURIComponent(subjectText);
-
-      let body = emailMessage + '\n\n';
-      body += '——\nPROOF OF RESIDENCY DOCUMENTS:\n\n';
-      urlResults.forEach(({ doc, signedUrl }, i) => {
-        const label = doc.document_label
-          ? `${doc.document_type} (${doc.document_label})`
-          : doc.document_type;
-        body += `Document ${i + 1} — ${label}:\n${signedUrl}\n\n`;
+      const res = await fetch('/api/residency/send', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
       });
-      body += 'Note: These links expire in 72 hours for security.';
+      const data = await res.json();
 
-      const fullPlainEmail =
-        `To: ${productionEmail.trim()}\n` +
-        `Subject: ${subjectText}\n\n` +
-        body;
-      setEmailFallbackText(fullPlainEmail);
-
-      let copied = false;
-      try {
-        if (navigator.clipboard && window.isSecureContext) {
-          await navigator.clipboard.writeText(fullPlainEmail);
-          copied = true;
-        }
-      } catch {
-        copied = false;
+      if (!res.ok) {
+        toast.error(data.error || 'The email could not be sent.');
+        return;
       }
 
-      const mailtoUrl = `mailto:${encodeURIComponent(productionEmail.trim())}?subject=${subject}&body=${encodeURIComponent(body)}`;
-      window.location.href = mailtoUrl;
-
-      if (copied) {
-        toast.success('If your email app did not open, the full message was copied — paste it into your email.');
-      } else {
-        toast('If your email app did not open, copy the message shown below and paste it into your email.', { icon: 'ℹ️' });
-      }
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to prepare email.');
+      setEmailSentTo(productionEmail.trim());
+      setEmailFiles([]);
+      if (emailFileInputRef.current) emailFileInputRef.current.value = '';
+      if (emailCameraInputRef.current) emailCameraInputRef.current.value = '';
+      toast.success(`Sent to ${productionEmail.trim()}.`);
+    } catch {
+      toast.error('The email could not be sent. Please try again.');
     } finally {
       setEmailLoading(false);
-    }
-  }
-
-  async function copyFallbackEmail() {
-    if (!emailFallbackText) return;
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(emailFallbackText);
-        toast.success('Email copied to clipboard.');
-      } else {
-        toast.error('Could not copy automatically — select the text and copy it manually.');
-      }
-    } catch {
-      toast.error('Could not copy automatically — select the text and copy it manually.');
     }
   }
 
@@ -691,155 +748,184 @@ export default function ResidencyPage() {
         </div>
 
         {/* ── Email to Production ── */}
+        {/*
+          Attachments are chosen from the device and posted straight to
+          /api/residency/send, which forwards them to the production and keeps
+          nothing. No upload to storage, no saved record, no shareable link.
+        */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-6 py-5 border-b border-amber-300" style={{ backgroundColor: '#F59E0B' }}>
             <h2 className="font-extrabold text-gray-900 text-xl">📧 Email Documents to Production</h2>
-            <p className="text-gray-800 font-medium mt-0.5 text-sm">Open your email app with documents pre-linked</p>
+            <p className="text-gray-800 font-medium mt-0.5 text-sm">
+              Sent as real attachments — nothing is stored
+            </p>
           </div>
           <div className="p-6 space-y-5">
 
-            {docs.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
-                <p className="text-3xl mb-2">📭</p>
-                <p>Upload documents first to use this feature.</p>
-              </div>
-            ) : (
-              <>
-                {/* Production Email */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    Production Email <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    value={productionEmail}
-                    onChange={e => setProductionEmail(e.target.value)}
-                    placeholder="Enter production email address"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 text-sm"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    This changes per production — find it on your call sheet or ask your agent.
-                  </p>
-                </div>
+            {/* Production Email */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                Production Email <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="email"
+                value={productionEmail}
+                onChange={e => { setProductionEmail(e.target.value); setEmailSentTo(''); }}
+                placeholder="Enter production email address"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 text-sm"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                This changes per production — find it on your call sheet or ask your agent.
+              </p>
+            </div>
 
-                {/* Your Name */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Your Name</label>
-                  <input
-                    type="text"
-                    value={emailUserName}
-                    onChange={e => setEmailUserName(e.target.value)}
-                    placeholder="Your name"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 text-sm"
-                  />
-                </div>
+            {/* Your Name */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Your Name</label>
+              <input
+                type="text"
+                value={emailUserName}
+                onChange={e => setEmailUserName(e.target.value)}
+                placeholder="Your name"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 text-sm"
+              />
+            </div>
 
-                {/* Select Documents */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-semibold text-gray-700">Select Documents to Send</label>
-                    <button
-                      onClick={selectAllEmailDocs}
-                      className="text-xs text-blue-600 hover:text-blue-800 font-medium transition"
-                    >
-                      {selectedEmailDocs.size === docs.length ? 'Deselect All' : 'Select All'}
-                    </button>
-                  </div>
-                  <div className="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100 max-h-64 overflow-y-auto">
-                    {docs.map(doc => (
-                      <label
-                        key={doc.id}
-                        className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedEmailDocs.has(doc.id)}
-                          onChange={() => toggleEmailDoc(doc.id)}
-                          className="w-4 h-4 rounded border-gray-300 accent-amber-500"
-                        />
-                        <span className="text-sm text-gray-700">
-                          <span className="font-medium">{doc.document_type}</span>
-                          {doc.document_label && (
-                            <span className="text-gray-500"> — {doc.document_label}</span>
-                          )}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                  {selectedEmailDocs.size > 0 && (
-                    <p className="text-xs text-gray-500 mt-1.5">
-                      {selectedEmailDocs.size} document{selectedEmailDocs.size !== 1 ? 's' : ''} selected
-                    </p>
-                  )}
-                </div>
+            {/* Attach Documents */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                Attach Documents <span className="text-red-500">*</span>
+              </label>
 
-                {/* Message */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    Message <span className="text-gray-400 font-normal">(optional)</span>
-                  </label>
-                  <textarea
-                    value={emailMessage}
-                    onChange={e => setEmailMessage(e.target.value)}
-                    rows={5}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 text-sm font-mono resize-none"
-                  />
-                </div>
+              <input
+                ref={emailFileInputRef}
+                type="file"
+                multiple
+                accept={ACCEPTED_EXTENSIONS}
+                onChange={e => addEmailFiles(e.target.files)}
+                className="hidden"
+              />
+              <input
+                ref={emailCameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={e => addEmailFiles(e.target.files)}
+                className="hidden"
+              />
 
-                {/* How it works */}
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                  <p className="text-sm font-semibold text-blue-900 mb-1">How this works</p>
-                  <p className="text-sm text-blue-800 leading-relaxed">
-                    This will open your email app with the documents linked. The production can click
-                    each link to view your documents. <strong>Links expire after 72 hours</strong> for security.
-                  </p>
-                  <p className="text-sm text-blue-800 leading-relaxed mt-2">
-                    If your email app does not open automatically, use the <strong>Copy Email</strong> button
-                    that appears after you tap the button below, then paste it into your email program.
-                  </p>
-                </div>
-
-                {/* Send button */}
+              <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={handleSendEmail}
-                  disabled={emailLoading || !productionEmail.trim() || selectedEmailDocs.size === 0}
-                  className="w-full py-4 font-bold text-base rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
-                  style={{ backgroundColor: '#F59E0B', color: '#1F2937' }}
+                  type="button"
+                  onClick={() => emailFileInputRef.current?.click()}
+                  className="py-3 px-4 border-2 border-dashed border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:border-amber-400 hover:bg-amber-50 transition"
                 >
-                  {emailLoading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="w-4 h-4 border-2 border-gray-800 border-t-transparent rounded-full animate-spin" />
-                      Generating links...
-                    </span>
-                  ) : (
-                    '📧 Open Email with Documents'
-                  )}
+                  📎 Choose Files
                 </button>
+                <button
+                  type="button"
+                  onClick={() => emailCameraInputRef.current?.click()}
+                  className="py-3 px-4 border-2 border-dashed border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:border-amber-400 hover:bg-amber-50 transition"
+                >
+                  📷 Take Photo
+                </button>
+              </div>
 
-                {/* Fallback: shown after an attempt so the user can copy/paste manually */}
-                {emailFallbackText && (
-                  <div className="border border-gray-200 rounded-xl p-4 space-y-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-gray-700">
-                        Email app didn&apos;t open? Copy the message and paste it into your email:
-                      </p>
+              {emailFiles.length > 0 && (
+                <div className="mt-3 border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100">
+                  {emailFiles.map((file, i) => (
+                    <div key={`${file.name}-${i}`} className="flex items-center gap-3 px-4 py-3">
+                      <span className="text-lg">{fileTypeIcon(file.type)}</span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-sm font-medium text-gray-800 truncate">{file.name}</span>
+                        <span className="block text-xs text-gray-500">{humanSize(file.size)}</span>
+                      </span>
                       <button
-                        onClick={copyFallbackEmail}
-                        className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition whitespace-nowrap"
+                        type="button"
+                        onClick={() => removeEmailFile(i)}
+                        className="text-xs font-semibold text-red-600 hover:text-red-800 transition"
                       >
-                        📋 Copy Email
+                        Remove
                       </button>
                     </div>
-                    <textarea
-                      readOnly
-                      value={emailFallbackText}
-                      rows={10}
-                      onFocus={e => e.currentTarget.select()}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-xs font-mono resize-none bg-gray-50"
-                    />
-                  </div>
-                )}
-              </>
+                  ))}
+                </div>
+              )}
+
+              <p className="text-xs text-gray-500 mt-1.5">
+                JPG, PNG, HEIC or PDF · {MAX_EMAIL_FILES} documents max · photos are
+                automatically shrunk so they send reliably
+                {emailFiles.length > 0 && ` · ${humanSize(emailTotalBytes)} total`}
+              </p>
+              {emailPreparing && (
+                <p className="text-xs text-gray-500 mt-1">Preparing documents...</p>
+              )}
+              {emailTotalBytes > MAX_EMAIL_TOTAL && (
+                <p className="text-xs text-red-600 font-semibold mt-1">
+                  These add up to more than {humanSize(MAX_EMAIL_TOTAL)} — remove one, or send
+                  them in two emails.
+                </p>
+              )}
+            </div>
+
+            {/* Message */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                Message <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <textarea
+                value={emailMessage}
+                onChange={e => setEmailMessage(e.target.value)}
+                rows={5}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 text-sm font-mono resize-none"
+              />
+            </div>
+
+            {/* How it works */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <p className="text-sm font-semibold text-blue-900 mb-1">How this works</p>
+              <p className="text-sm text-blue-800 leading-relaxed">
+                Your documents are sent to the production as <strong>real email attachments</strong> —
+                no links, nothing to expire, nothing for them to chase.
+              </p>
+              <p className="text-sm text-blue-800 leading-relaxed mt-2">
+                <strong>Nothing is stored.</strong> The files go from your device straight to the
+                production. BGReady does not keep a copy, and no shareable link is created.
+                The production replies directly to your email address.
+              </p>
+            </div>
+
+            {/* Send button */}
+            <button
+              onClick={handleSendEmail}
+              disabled={
+                emailLoading ||
+                emailPreparing ||
+                !productionEmail.trim() ||
+                emailFiles.length === 0 ||
+                emailTotalBytes > MAX_EMAIL_TOTAL
+              }
+              className="w-full py-4 font-bold text-base rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+              style={{ backgroundColor: '#F59E0B', color: '#1F2937' }}
+            >
+              {emailLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-gray-800 border-t-transparent rounded-full animate-spin" />
+                  Sending...
+                </span>
+              ) : (
+                '📧 Send Documents to Production'
+              )}
+            </button>
+
+            {emailSentTo && (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+                <p className="text-sm font-semibold text-green-900">✅ Sent to {emailSentTo}</p>
+                <p className="text-xs text-green-800 mt-1">
+                  The attachments were delivered and nothing was kept. Check your own inbox for a
+                  reply — the production replies straight to you.
+                </p>
+              </div>
             )}
           </div>
         </div>
@@ -847,10 +933,11 @@ export default function ResidencyPage() {
         {/* ── Security Notice ── */}
         <div className="bg-gray-800 rounded-2xl p-6 text-center">
           <p className="text-white font-semibold text-base">
-            🔒 Your documents are stored securely and privately.
+            🔒 Your documents stay private.
           </p>
           <p className="text-gray-400 text-sm mt-1.5">
-            Only you can access them. They are never shared with BGReady or third parties.
+            Documents you save here are visible only to you. Documents you email to a production
+            are sent straight from your device as attachments — BGReady never stores a copy of them.
           </p>
         </div>
 

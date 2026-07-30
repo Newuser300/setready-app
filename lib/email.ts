@@ -13,15 +13,23 @@ export async function sendEmail({
   subject,
   html,
   text,
+  replyTo,
+  attachments,
 }: {
   to: string | string[]
   subject: string
   html: string
   text?: string
+  // Set when the recipient should reply to a person rather than to the
+  // no-reply notifications mailbox (residency documents sent to a production).
+  replyTo?: string
+  // Held in memory by the caller and passed straight through to the provider.
+  // Nothing here is written to storage.
+  attachments?: { filename: string; content: Buffer }[]
 }) {
   if (!isEmailEnabled()) {
     console.log('[Email] Not configured. Would have sent to:', to, '| Subject:', subject)
-    return { success: false, reason: 'not configured' }
+    return { success: false, reason: 'not configured' as const }
   }
 
   try {
@@ -31,11 +39,23 @@ export async function sendEmail({
       subject,
       html,
       text: text || subject,
+      ...(replyTo ? { replyTo } : {}),
+      ...(attachments && attachments.length > 0 ? { attachments } : {}),
     })
+
+    // The Resend SDK does not throw when the API rejects a send. It resolves
+    // with { data: null, error: {...} }. Treating that as success would report
+    // a delivered email that never left the building, so the error branch has
+    // to be read explicitly.
+    if (result.error) {
+      console.error('[Email] Provider rejected send to', to, '|', result.error)
+      return { success: false, reason: 'rejected' as const, error: result.error }
+    }
+
     return { success: true, data: result }
   } catch (err) {
     console.error('[Email] Send error:', err)
-    return { success: false, error: err }
+    return { success: false, reason: 'threw' as const, error: err }
   }
 }
 

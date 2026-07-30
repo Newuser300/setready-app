@@ -57,7 +57,7 @@ export default function DonatePage() {
             <div style={{ fontSize: '48px', marginBottom: '8px' }}>☕</div>
             <h1 style={{ fontSize: '24px', fontWeight: '900', color: 'white', margin: '0 0 6px' }}>Support BGReady</h1>
             <p style={{ fontSize: '14px', color: '#9ca3af', margin: 0, lineHeight: '1.6' }}>
-              BGReady is free for performers. If it's helped your career, consider buying us a coffee to keep the lights on.
+              BGReady is free for performers. If it's helped your career, if it&rsquo;s helped your career, your support keeps it that way.
             </p>
           </div>
 
@@ -122,7 +122,7 @@ export default function DonatePage() {
             </div>
           )}
 
-          {/* Donate button */}
+          {/* Support button */}
           <button
             onClick={handleDonate}
             disabled={loading || finalAmount < 1 || finalAmount > 1000}
@@ -139,7 +139,7 @@ export default function DonatePage() {
               transition: 'all 0.15s',
             }}
           >
-            {loading ? 'Redirecting...' : `☕ Donate $${finalAmount.toFixed(0)} CAD`}
+            {loading ? 'Redirecting...' : `☕ Support with $${finalAmount.toFixed(0)} CAD`}
           </button>
 
           <div style={{ textAlign: 'center', marginTop: '14px', fontSize: '12px', color: '#6b7280' }}>
@@ -149,7 +149,7 @@ export default function DonatePage() {
 
         {/* Thanks message */}
         <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '13px', color: '#9ca3af', lineHeight: '1.6' }}>
-          Thank you for believing in BGReady. Every contribution helps us keep the platform free for performers across Canada. 🇨🇦
+          Thank you for believing in BGReady. Every bit of support keeps the platform free for performers across Canada. 🇨🇦
         </div>
       </div>
     </div>
