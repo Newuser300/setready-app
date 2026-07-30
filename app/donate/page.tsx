@@ -57,7 +57,7 @@ export default function DonatePage() {
             <div style={{ fontSize: '48px', marginBottom: '8px' }}>☕</div>
             <h1 style={{ fontSize: '24px', fontWeight: '900', color: 'white', margin: '0 0 6px' }}>Support BGReady</h1>
             <p style={{ fontSize: '14px', color: '#9ca3af', margin: 0, lineHeight: '1.6' }}>
-              BGReady is free for performers. If it's helped your career, if it&rsquo;s helped your career, your support keeps it that way.
+              BGReady is free for performers. If it&rsquo;s helped your career, your support keeps it that way.
             </p>
           </div>
 
@@ -144,6 +144,9 @@ export default function DonatePage() {
 
           <div style={{ textAlign: 'center', marginTop: '14px', fontSize: '12px', color: '#6b7280' }}>
             Secure payment via Stripe. One-time, no recurring charges.
+            <br />
+            BGReady is a business, not a registered charity. Tips are not charitable
+            donations and are not tax-deductible.
           </div>
         </div>
 
