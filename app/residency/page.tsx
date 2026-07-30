@@ -481,6 +481,28 @@ export default function ResidencyPage() {
                 Attach Documents <span className="text-red-500">*</span>
               </label>
 
+              {/*
+                BGReady holds no document library, so "Choose Files" can only
+                show what is already on the device. Performers who keep their
+                documents in email or cloud storage need to save them down
+                first, and will otherwise find an empty file picker.
+              */}
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-3">
+                <p className="text-sm font-semibold text-amber-900 mb-1">
+                  📥 Save your documents to this device first
+                </p>
+                <p className="text-sm text-amber-800 leading-relaxed">
+                  BGReady does not keep a copy of your documents, so it can only attach what is
+                  already saved on this phone or computer. If yours are in your email, Google
+                  Drive, iCloud, or Dropbox, download them to your device first — then they will
+                  appear when you tap <strong>Choose Files</strong>.
+                </p>
+                <p className="text-sm text-amber-800 leading-relaxed mt-2">
+                  Do not have a copy yet? Tap <strong>Take Photo</strong> to photograph the
+                  document right now.
+                </p>
+              </div>
+
               <input
                 ref={emailFileInputRef}
                 type="file"
