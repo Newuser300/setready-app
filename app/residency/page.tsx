@@ -6,9 +6,20 @@ import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
 import Copyright from '@/components/Copyright';
 import { createClient } from '@/utils/supabase/client';
+import {
+  addLocalDoc,
+  deleteLocalDoc,
+  getLocalDocFile,
+  isLocalStorageSupported,
+  listLocalDocs,
+  type LocalResidencyMeta,
+} from '@/lib/residency-local';
 const supabase = createClient()
 
-type ResidencyDoc = {
+// Rows left behind by the earlier version, which uploaded to Supabase Storage.
+// Nothing new is ever written in this shape; the page only lists them so a
+// performer can pull a copy down and clear it off the server.
+type LegacyResidencyDoc = {
   id: string;
   document_type: string;
   document_label: string | null;
@@ -111,10 +122,11 @@ export default function ResidencyPage() {
   const emailFileInputRef = useRef<HTMLInputElement>(null);
   const emailCameraInputRef = useRef<HTMLInputElement>(null);
 
-  const [userId, setUserId] = useState('');
   const [userName, setUserName] = useState('');
   const [accessToken, setAccessToken] = useState('');
-  const [docs, setDocs] = useState<ResidencyDoc[]>([]);
+  const [legacyDocs, setLegacyDocs] = useState<LegacyResidencyDoc[]>([]);
+  const [localDocs, setLocalDocs] = useState<LocalResidencyMeta[]>([]);
+  const [localSupported, setLocalSupported] = useState(true);
   const [pageLoading, setPageLoading] = useState(true);
 
   // Upload form
@@ -138,6 +150,9 @@ export default function ResidencyPage() {
   const [emailFiles, setEmailFiles] = useState<File[]>([]);
   const [emailSentTo, setEmailSentTo] = useState('');
   const [emailPreparing, setEmailPreparing] = useState(false);
+  // Documents chosen from the BGReady library rather than the device. These
+  // travel as IDs; the server reads their bytes out of Storage when sending.
+  const [selectedSavedDocs, setSelectedSavedDocs] = useState<Set<string>>(new Set());
 
   useEffect(() => { loadPage(); }, []);
 
@@ -152,7 +167,6 @@ export default function ResidencyPage() {
     if (error || !user) { router.push('/auth/sign-in'); return; }
     const { data: { session } } = await supabase.auth.getSession();
     setAccessToken(session?.access_token ?? '');
-    setUserId(user.id);
 
     const { data: profile } = await supabase
       .from('users')
@@ -167,16 +181,37 @@ export default function ResidencyPage() {
       `Hi,\n\nPlease find my proof of residency documents attached as requested.\n\n${name ? name + '\n' : ''}UBCP/ACTRA Member`
     );
 
-    await loadDocs(session?.access_token ?? '');
+    setLocalSupported(isLocalStorageSupported());
+    await Promise.all([
+      loadLocalDocs(),
+      loadLegacyDocs(session?.access_token ?? ''),
+    ]);
     setPageLoading(false);
   }
 
-  async function loadDocs(token: string) {
-    const res = await fetch('/api/residency', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    if (res.ok) setDocs(data.documents || []);
+  async function loadLocalDocs() {
+    if (!isLocalStorageSupported()) { setLocalDocs([]); return; }
+    try {
+      setLocalDocs(await listLocalDocs());
+    } catch {
+      setLocalDocs([]);
+      setLocalSupported(false);
+    }
+  }
+
+  /**
+   * Lists documents still sitting in Supabase from the previous version.
+   * Read-only: the page never adds to this, it only helps clear it out.
+   */
+  async function loadLegacyDocs(token: string) {
+    if (!token) return;
+    try {
+      const res = await fetch('/api/residency', { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (res.ok) setLegacyDocs(data.documents || []);
+    } catch {
+      // A failure here must not block the page — the local library is primary.
+    }
   }
 
   function handleFileChange(file: File) {
@@ -208,68 +243,76 @@ export default function ResidencyPage() {
     if (cameraInputRef.current) cameraInputRef.current.value = '';
   }
 
+  /**
+   * Saves a document to this device only.
+   *
+   * Nothing leaves the phone: no upload, no server record. Photos are shrunk
+   * first so the library stays small and so the same file sends reliably later.
+   */
   async function handleUpload() {
     if (!selectedFile || !docType) {
       toast.error('Please select a document type and a file.');
       return;
     }
+    if (!localSupported) {
+      toast.error('This browser cannot store documents on your device.');
+      return;
+    }
+
     setUploading(true);
     try {
-      // Fetch a fresh token from the shared client right before saving.
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token ?? accessToken;
-      if (!token) {
-        toast.error('Your session expired. Please sign in again.');
-        router.push('/auth/sign-in');
-        return;
-      }
-
-      const sanitized = selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const filePath = `${userId}/${Date.now()}_${sanitized}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('residency_docs')
-        .upload(filePath, selectedFile, {
-          contentType: selectedFile.type || 'application/octet-stream',
-          cacheControl: '3600',
-        });
-
-      if (uploadError) {
-        toast.error(`Upload failed: ${uploadError.message}`);
-        return;
-      }
-
-      const res = await fetch('/api/residency', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          document_type: docType,
-          document_label: docLabel.trim() || null,
-          file_url: filePath,
-          filename: selectedFile.name,
-          file_type: selectedFile.type,
-          notes: docNotes.trim() || null,
-        }),
+      const prepared = await compressImage(selectedFile);
+      await addLocalDoc({
+        document_type: docType,
+        document_label: docLabel.trim() || null,
+        notes: docNotes.trim() || null,
+        file: prepared,
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || 'Failed to save document.');
-        return;
-      }
-
-      toast.success('Document saved!');
+      toast.success('Saved to this device.');
       setDocType('');
       setDocLabel('');
       setDocNotes('');
       clearFile();
-      await loadDocs(token);
+      await loadLocalDocs();
+    } catch {
+      toast.error('Could not save to this device. Your browser may be out of storage.');
     } finally {
       setUploading(false);
     }
   }
 
-  async function handleView(doc: ResidencyDoc) {
+  /** Opens a device-stored document in a new tab from an in-memory URL. */
+  async function handleViewLocal(id: string) {
+    try {
+      const file = await getLocalDocFile(id);
+      if (!file) { toast.error('That document is no longer on this device.'); return; }
+      const url = URL.createObjectURL(file);
+      window.open(url, '_blank', 'noopener');
+      // Give the new tab time to take the URL before it is revoked.
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch {
+      toast.error('Could not open that document.');
+    }
+  }
+
+  async function handleDeleteLocal(id: string) {
+    setDeletingId(id);
+    try {
+      await deleteLocalDoc(id);
+      setConfirmDeleteId(null);
+      setSelectedSavedDocs(prev => { const n = new Set(prev); n.delete(id); return n; });
+      await loadLocalDocs();
+      toast.success('Removed from this device.');
+    } catch {
+      toast.error('Could not remove that document.');
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  /** Legacy only: opens a document still held in Supabase. */
+  async function handleView(doc: LegacyResidencyDoc) {
     const toastId = toast.loading('Generating secure link...');
     try {
       const token = await getToken();
@@ -288,6 +331,7 @@ export default function ResidencyPage() {
     }
   }
 
+  /** Legacy only: deletes the Supabase copy left by the previous version. */
   async function handleDelete(id: string) {
     setDeletingId(id);
     try {
@@ -298,9 +342,9 @@ export default function ResidencyPage() {
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || 'Delete failed.'); return; }
-      toast.success('Document deleted.');
+      toast.success('Removed from our server.');
       setConfirmDeleteId(null);
-      await loadDocs(token);
+      await loadLegacyDocs(token);
     } finally {
       setDeletingId(null);
     }
@@ -350,7 +394,23 @@ export default function ResidencyPage() {
     setEmailFiles(prev => prev.filter((_, i) => i !== index));
   }
 
-  const emailTotalBytes = emailFiles.reduce((sum, f) => sum + f.size, 0);
+  function toggleSavedDoc(id: string) {
+    setSelectedSavedDocs(prev => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+    setEmailSentTo('');
+  }
+
+  // Everything now travels in the request body: the saved library lives on this
+  // device, so its bytes are uploaded at send time just like a fresh pick.
+  const savedSelectedBytes = localDocs
+    .filter(d => selectedSavedDocs.has(d.id))
+    .reduce((sum, d) => sum + d.size, 0);
+  const emailTotalBytes =
+    emailFiles.reduce((sum, f) => sum + f.size, 0) + savedSelectedBytes;
+  const emailAttachmentCount = emailFiles.length + selectedSavedDocs.size;
 
   /**
    * Sends the chosen files to the production as real email attachments.
@@ -362,7 +422,11 @@ export default function ResidencyPage() {
    */
   async function handleSendEmail() {
     if (!productionEmail.trim()) { toast.error('Please enter the production email address.'); return; }
-    if (emailFiles.length === 0) { toast.error('Please attach at least one document.'); return; }
+    if (emailAttachmentCount === 0) { toast.error('Please attach at least one document.'); return; }
+    if (emailAttachmentCount > MAX_EMAIL_FILES) {
+      toast.error(`You can send up to ${MAX_EMAIL_FILES} documents at a time.`);
+      return;
+    }
     if (emailTotalBytes > MAX_EMAIL_TOTAL) {
       toast.error('Those documents are too large to send at once. Send them in two emails.');
       return;
@@ -378,6 +442,17 @@ export default function ResidencyPage() {
       form.append('message', emailMessage.trim());
       emailFiles.forEach(f => form.append('files', f, f.name));
 
+      // Pull the chosen library documents off this device and attach the bytes.
+      for (const id of selectedSavedDocs) {
+        const file = await getLocalDocFile(id);
+        if (!file) {
+          toast.error('One of your saved documents is no longer on this device.');
+          await loadLocalDocs();
+          return;
+        }
+        form.append('files', file, file.name);
+      }
+
       const res = await fetch('/api/residency/send', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -392,6 +467,7 @@ export default function ResidencyPage() {
 
       setEmailSentTo(productionEmail.trim());
       setEmailFiles([]);
+      setSelectedSavedDocs(new Set());
       if (emailFileInputRef.current) emailFileInputRef.current.value = '';
       if (emailCameraInputRef.current) emailCameraInputRef.current.value = '';
       toast.success(`Sent to ${productionEmail.trim()}.`);
@@ -532,26 +608,38 @@ export default function ResidencyPage() {
           </div>
         </div>
 
-        {/* ── My Stored Documents ── */}
+        {/* ── My Documents (this device only) ── */}
         <div>
-          <h2 className="text-xl font-bold text-gray-800 mb-4">
-            My Stored Documents
-            {docs.length > 0 && (
+          <h2 className="text-xl font-bold text-gray-800 mb-1">
+            My Documents
+            {localDocs.length > 0 && (
               <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
-                {docs.length}
+                {localDocs.length}
               </span>
             )}
           </h2>
+          <p className="text-sm text-gray-500 mb-4">
+            Saved on this device only — never uploaded to BGReady.
+          </p>
 
-          {docs.length === 0 ? (
+          {!localSupported && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+              <p className="text-sm text-red-800">
+                This browser cannot store documents on your device. You can still attach files
+                directly from your phone when emailing a production.
+              </p>
+            </div>
+          )}
+
+          {localDocs.length === 0 ? (
             <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-12 text-center">
               <p className="text-4xl mb-3">📂</p>
-              <p className="text-gray-500 font-medium">No documents uploaded yet.</p>
-              <p className="text-gray-400 text-sm mt-1">Upload your first document using the form below.</p>
+              <p className="text-gray-500 font-medium">No documents saved on this device yet.</p>
+              <p className="text-gray-400 text-sm mt-1">Add your first document using the form below.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {docs.map(doc => (
+              {localDocs.map(doc => (
                 <div key={doc.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col gap-3">
                   <div className="flex items-start gap-3">
                     <span className="text-3xl shrink-0 mt-0.5">{fileTypeIcon(doc.file_type)}</span>
@@ -573,13 +661,13 @@ export default function ResidencyPage() {
 
                   {confirmDeleteId === doc.id ? (
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-red-600 font-semibold flex-1">Delete this document?</span>
+                      <span className="text-xs text-red-600 font-semibold flex-1">Remove from this device?</span>
                       <button
-                        onClick={() => handleDelete(doc.id)}
+                        onClick={() => handleDeleteLocal(doc.id)}
                         disabled={deletingId === doc.id}
                         className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition disabled:opacity-50"
                       >
-                        {deletingId === doc.id ? '...' : 'Yes, Delete'}
+                        {deletingId === doc.id ? '...' : 'Yes, Remove'}
                       </button>
                       <button
                         onClick={() => setConfirmDeleteId(null)}
@@ -591,7 +679,7 @@ export default function ResidencyPage() {
                   ) : (
                     <div className="flex gap-2">
                       <button
-                        onClick={() => handleView(doc)}
+                        onClick={() => handleViewLocal(doc.id)}
                         className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition"
                       >
                         👁 View
@@ -600,7 +688,7 @@ export default function ResidencyPage() {
                         onClick={() => setConfirmDeleteId(doc.id)}
                         className="px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-semibold hover:bg-red-100 transition"
                       >
-                        🗑 Delete
+                        🗑 Remove
                       </button>
                     </div>
                   )}
@@ -614,7 +702,9 @@ export default function ResidencyPage() {
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
             <h2 className="font-bold text-gray-800 text-lg">Upload New Document</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Accepts JPG, PNG, HEIC, PDF · Max 10MB</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Saved on this device only · JPG, PNG, HEIC, PDF · Max 10MB
+            </p>
           </div>
           <div className="p-6 space-y-5">
 
@@ -814,6 +904,42 @@ export default function ResidencyPage() {
                 className="hidden"
               />
 
+              {localDocs.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                    Saved on this device
+                  </p>
+                  <div className="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100 max-h-56 overflow-y-auto">
+                    {localDocs.map(doc => (
+                      <label
+                        key={doc.id}
+                        className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedSavedDocs.has(doc.id)}
+                          onChange={() => toggleSavedDoc(doc.id)}
+                          className="w-4 h-4 rounded border-gray-300 accent-amber-500"
+                        />
+                        <span className="text-lg">{fileTypeIcon(doc.file_type)}</span>
+                        <span className="text-sm text-gray-700">
+                          <span className="font-medium">{doc.document_type}</span>
+                          {doc.document_label && (
+                            <span className="text-gray-500"> — {doc.document_label}</span>
+                          )}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {localDocs.length > 0 && (
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                  Or pick a file now
+                </p>
+              )}
+
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
@@ -855,8 +981,19 @@ export default function ResidencyPage() {
               <p className="text-xs text-gray-500 mt-1.5">
                 JPG, PNG, HEIC or PDF · {MAX_EMAIL_FILES} documents max · photos are
                 automatically shrunk so they send reliably
-                {emailFiles.length > 0 && ` · ${humanSize(emailTotalBytes)} total`}
+
               </p>
+              {emailAttachmentCount > 0 && (
+                <p className="text-xs font-semibold text-gray-700 mt-1">
+                  {emailAttachmentCount} document{emailAttachmentCount !== 1 ? 's' : ''} will be attached
+                  {emailTotalBytes > 0 ? ` · ${humanSize(emailTotalBytes)}` : ''}
+                </p>
+              )}
+              {emailAttachmentCount > MAX_EMAIL_FILES && (
+                <p className="text-xs text-red-600 font-semibold mt-1">
+                  That is more than {MAX_EMAIL_FILES} documents — remove one before sending.
+                </p>
+              )}
               {emailPreparing && (
                 <p className="text-xs text-gray-500 mt-1">Preparing documents...</p>
               )}
@@ -889,9 +1026,13 @@ export default function ResidencyPage() {
                 no links, nothing to expire, nothing for them to chase.
               </p>
               <p className="text-sm text-blue-800 leading-relaxed mt-2">
-                <strong>Nothing is stored.</strong> The files go from your device straight to the
-                production. BGReady does not keep a copy, and no shareable link is created.
-                The production replies directly to your email address.
+                Attach documents <strong>saved on this device</strong>, pick a file
+                <strong> right now</strong>, or a mix of both.
+              </p>
+              <p className="text-sm text-blue-800 leading-relaxed mt-2">
+                <strong>Nothing is stored on our side.</strong> The files go from your phone
+                straight to the production — no copy is kept and no link is created. The
+                production replies directly to your email address.
               </p>
             </div>
 
@@ -902,7 +1043,8 @@ export default function ResidencyPage() {
                 emailLoading ||
                 emailPreparing ||
                 !productionEmail.trim() ||
-                emailFiles.length === 0 ||
+                emailAttachmentCount === 0 ||
+                emailAttachmentCount > MAX_EMAIL_FILES ||
                 emailTotalBytes > MAX_EMAIL_TOTAL
               }
               className="w-full py-4 font-bold text-base rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
@@ -930,14 +1072,79 @@ export default function ResidencyPage() {
           </div>
         </div>
 
+        {/* ── Legacy: documents still on our server from the previous version ── */}
+        {legacyDocs.length > 0 && (
+          <div className="bg-white rounded-2xl border-2 border-red-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-5 bg-red-50 border-b border-red-200">
+              <h2 className="font-extrabold text-red-900 text-lg">
+                ⚠️ Stored on our server (old version)
+              </h2>
+              <p className="text-red-800 text-sm mt-1 leading-relaxed">
+                An earlier version of this page uploaded documents to our server. These
+                {legacyDocs.length === 1 ? ' is the one' : ' are the ones'} still there.
+                Save a copy to your phone if you want it, then remove it from our server.
+              </p>
+            </div>
+            <div className="p-6 space-y-3">
+              {legacyDocs.map(doc => (
+                <div
+                  key={doc.id}
+                  className="flex items-center gap-3 border border-gray-200 rounded-xl px-4 py-3 flex-wrap"
+                >
+                  <span className="text-2xl">{fileTypeIcon(doc.file_type)}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-semibold text-gray-800">{doc.document_type}</span>
+                    {doc.document_label && (
+                      <span className="block text-xs text-gray-500">{doc.document_label}</span>
+                    )}
+                  </span>
+                  {confirmDeleteId === doc.id ? (
+                    <span className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleDelete(doc.id)}
+                        disabled={deletingId === doc.id}
+                        className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition disabled:opacity-50"
+                      >
+                        {deletingId === doc.id ? '...' : 'Yes, remove'}
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(null)}
+                        className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition"
+                      >
+                        Cancel
+                      </button>
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleView(doc)}
+                        className="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition"
+                      >
+                        👁 View
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(doc.id)}
+                        className="px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-semibold hover:bg-red-100 transition"
+                      >
+                        Remove from server
+                      </button>
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ── Security Notice ── */}
         <div className="bg-gray-800 rounded-2xl p-6 text-center">
           <p className="text-white font-semibold text-base">
-            🔒 Your documents stay private.
+            🔒 Your documents never touch our servers.
           </p>
           <p className="text-gray-400 text-sm mt-1.5">
-            Documents you save here are visible only to you. Documents you email to a production
-            are sent straight from your device as attachments — BGReady never stores a copy of them.
+            They are saved on this device and sent straight from it as email attachments.
+            BGReady keeps no copy. That also means we cannot recover them — if you clear your
+            browser data or switch phones, you will need to add them again.
           </p>
         </div>
 

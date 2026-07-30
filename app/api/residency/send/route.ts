@@ -5,10 +5,13 @@ import { sendEmail } from '@/lib/email';
 /**
  * Sends residency documents straight to a production as real email attachments.
  *
- * Nothing is persisted. The files arrive as multipart form data, are held in
- * memory only for the length of this request, are handed to the mail provider,
- * and are then discarded. There is no Supabase Storage write, no database row,
- * and no signed link — so there is no copy of the document anywhere afterwards.
+ * Every file arrives from the performer's own device — either picked fresh or
+ * pulled out of the on-device library. They are held in memory only for the
+ * length of this request, handed to the mail provider, and discarded. There is
+ * no Storage write, no database row, no signed link, and no copy left behind.
+ *
+ * These are identity documents, so the absence of a server-side copy is the
+ * point, not an optimisation.
  */
 
 export const runtime = 'nodejs';
@@ -102,18 +105,31 @@ export async function POST(request: Request) {
   }
 
   // Read into memory only. No write to storage, no database row.
-  const attachments = await Promise.all(
+  const attachments: { filename: string; content: Buffer }[] = await Promise.all(
     files.map(async file => ({
       filename: file.name,
       content: Buffer.from(await file.arrayBuffer()),
     }))
   );
 
+  // Belt and braces: the platform already caps the request body, but the
+  // provider limit is checked explicitly so a change to one does not silently
+  // outrun the other.
+  const attachedBytes = attachments.reduce((sum, a) => sum + a.content.length, 0);
+  if (attachedBytes > 20 * 1024 * 1024) {
+    return NextResponse.json(
+      { error: 'Those documents are too large to send at once. Send them in two emails.' },
+      { status: 400 }
+    );
+  }
+
+  const attachmentNames = attachments.map(a => a.filename);
+
   const displayName = senderName || user.email?.split('@')[0] || 'Performer';
   const subject = `Proof of Residency — ${displayName}`;
   const bodyText =
     (message || 'Please find my proof of residency documents attached as requested.') +
-    `\n\nAttached: ${files.map(f => f.name).join(', ')}` +
+    `\n\nAttached: ${attachmentNames.join(', ')}` +
     `\n\nSent via BGReady on behalf of ${displayName} (${user.email}).`;
 
   const bodyHtml = `
@@ -121,8 +137,8 @@ export async function POST(request: Request) {
       <p style="white-space:pre-wrap;margin:0 0 16px">${escapeHtml(
         message || 'Please find my proof of residency documents attached as requested.'
       )}</p>
-      <p style="margin:0 0 16px"><strong>Attached:</strong> ${files
-        .map(f => escapeHtml(f.name))
+      <p style="margin:0 0 16px"><strong>Attached:</strong> ${attachmentNames
+        .map(n => escapeHtml(n))
         .join(', ')}</p>
       <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0" />
       <p style="font-size:12px;color:#6b7280;margin:0">
@@ -164,5 +180,5 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ sent: true, to, count: files.length });
+  return NextResponse.json({ sent: true, to, count: attachments.length });
 }
