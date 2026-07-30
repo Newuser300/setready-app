@@ -43,7 +43,7 @@ export async function POST(req: Request) {
             unit_amount: amount,
             product_data: {
               name: 'Support BGReady',
-              description: 'One-time donation to keep BGReady free for background performers across Canada.',
+              description: 'One-time tip to keep BGReady free for background performers across Canada.',
             },
           },
           quantity: 1,
@@ -52,7 +52,11 @@ export async function POST(req: Request) {
       metadata,
       success_url: `${appUrl}/donate/thank-you`,
       cancel_url: `${appUrl}/donate`,
-      submit_type: 'donate',
+      // Stripe only accepts 'auto' | 'book' | 'donate' | 'pay' here, and renders
+      // the checkout button from it — the wording cannot be customised. 'donate'
+      // rendered a "Donate" button, so 'pay' is used to keep that word off the
+      // page; it renders "Pay".
+      submit_type: 'pay',
     }
 
     if (donorEmail) sessionParams.customer_email = donorEmail
