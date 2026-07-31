@@ -441,67 +441,18 @@ export default function ResidencyPage() {
           <div className="px-6 py-5 border-b border-amber-300" style={{ backgroundColor: '#F59E0B' }}>
             <h2 className="font-extrabold text-gray-900 text-xl">📧 Email Documents to Production</h2>
             <p className="text-gray-800 font-medium mt-0.5 text-sm">
-              Attach from your phone — sent as real attachments, nothing stored
+              Two quick steps — nothing is stored
             </p>
           </div>
-          <div className="p-6 space-y-5">
+          <div className="p-6 space-y-6">
 
-            {/* Production Email */}
+            {/* Step 1: attach. The main path is two numbered steps; everything
+                optional is folded into a <details> so the card reads clean. */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Production Email <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                value={productionEmail}
-                onChange={e => { setProductionEmail(e.target.value); setEmailSentTo(''); }}
-                placeholder="Enter production email address"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 text-sm"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                This changes per production — find it on your call sheet or ask your agent.
+              <p className="text-sm font-bold text-gray-900 mb-2">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-400 text-gray-900 text-xs font-extrabold mr-2">1</span>
+                Attach your documents
               </p>
-            </div>
-
-            {/* Your Name */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Your Name</label>
-              <input
-                type="text"
-                value={emailUserName}
-                onChange={e => setEmailUserName(e.target.value)}
-                placeholder="Your name"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 text-sm"
-              />
-            </div>
-
-            {/* Attach Documents */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Attach Documents <span className="text-red-500">*</span>
-              </label>
-
-              {/*
-                BGReady holds no document library, so "Choose Files" can only
-                show what is already on the device. Performers who keep their
-                documents in email or cloud storage need to save them down
-                first, and will otherwise find an empty file picker.
-              */}
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-3">
-                <p className="text-sm font-semibold text-amber-900 mb-1">
-                  📥 Save your documents to this device first
-                </p>
-                <p className="text-sm text-amber-800 leading-relaxed">
-                  BGReady does not keep a copy of your documents, so it can only attach what is
-                  already saved on this phone or computer. If yours are in your email, Google
-                  Drive, iCloud, or Dropbox, download them to your device first — then they will
-                  appear when you tap <strong>Choose Files</strong>.
-                </p>
-                <p className="text-sm text-amber-800 leading-relaxed mt-2">
-                  Do not have a copy yet? Tap <strong>Take Photo</strong> to photograph the
-                  document right now.
-                </p>
-              </div>
 
               <input
                 ref={emailFileInputRef}
@@ -558,83 +509,98 @@ export default function ResidencyPage() {
                 </div>
               )}
 
-              <p className="text-xs text-gray-500 mt-1.5">
-                JPG, PNG, HEIC or PDF · {MAX_EMAIL_FILES} documents max · photos are
-                automatically shrunk so they send reliably
-
+              {/* One hint line; warnings appear only when something is wrong. */}
+              <p className="text-xs text-gray-500 mt-2">
+                Pick files from your phone, or photograph the document now. If yours are in
+                email or cloud storage, save them to your phone first.
               </p>
-              {emailAttachmentCount > 0 && (
-                <p className="text-xs font-semibold text-gray-700 mt-1">
-                  {emailAttachmentCount} document{emailAttachmentCount !== 1 ? 's' : ''} will be attached
-                  {emailTotalBytes > 0 ? ` · ${humanSize(emailTotalBytes)}` : ''}
-                </p>
+              {emailPreparing && (
+                <p className="text-xs text-gray-500 mt-1">Preparing…</p>
               )}
               {emailAttachmentCount > MAX_EMAIL_FILES && (
                 <p className="text-xs text-red-600 font-semibold mt-1">
-                  That is more than {MAX_EMAIL_FILES} documents — remove one before sending.
+                  Up to {MAX_EMAIL_FILES} documents per email — remove one before sending.
                 </p>
-              )}
-              {emailPreparing && (
-                <p className="text-xs text-gray-500 mt-1">Preparing documents...</p>
               )}
               {emailTotalBytes > MAX_EMAIL_TOTAL && (
                 <p className="text-xs text-red-600 font-semibold mt-1">
-                  These add up to more than {humanSize(MAX_EMAIL_TOTAL)} — remove one, or send
-                  them in two emails.
+                  Too large for one email — remove a document, or send two emails.
                 </p>
               )}
             </div>
 
-            {/* Message */}
+            {/* Step 2: destination */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Message <span className="text-gray-400 font-normal">(optional)</span>
-              </label>
-              <textarea
-                value={emailMessage}
-                onChange={e => setEmailMessage(e.target.value)}
-                rows={5}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 text-sm font-mono resize-none"
+              <p className="text-sm font-bold text-gray-900 mb-2">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-400 text-gray-900 text-xs font-extrabold mr-2">2</span>
+                Enter the production&rsquo;s email
+              </p>
+              <input
+                type="email"
+                value={productionEmail}
+                onChange={e => { setProductionEmail(e.target.value); setEmailSentTo(''); }}
+                placeholder="e.g. casting@theproduction.com"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 text-sm"
               />
-            </div>
-
-            {/* How it works */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <p className="text-sm font-semibold text-blue-900 mb-1">How this works</p>
-              <p className="text-sm text-blue-800 leading-relaxed">
-                Your documents are sent to the production as <strong>real email attachments</strong> —
-                no links, nothing to expire, nothing for them to chase.
-              </p>
-              <p className="text-sm text-blue-800 leading-relaxed mt-2">
-                <strong>Nothing is stored anywhere.</strong> Your documents stay in your own
-                phone&rsquo;s files and go straight to the production — BGReady keeps no copy and
-                creates no link. The production replies directly to your email address.
+              <p className="text-xs text-gray-500 mt-1.5">
+                It&rsquo;s on your call sheet — or ask your agent.
               </p>
             </div>
 
-            {/* Send button */}
-            <button
-              onClick={handleSendEmail}
-              disabled={
-                emailLoading ||
-                emailPreparing ||
-                !productionEmail.trim() ||
-                emailAttachmentCount === 0 ||
-                emailAttachmentCount > MAX_EMAIL_FILES ||
-                emailTotalBytes > MAX_EMAIL_TOTAL
-              }
-              className="w-full py-4 font-bold text-base rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
-              style={{ backgroundColor: '#F59E0B', color: '#1F2937' }}
-            >
-              {emailLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-gray-800 border-t-transparent rounded-full animate-spin" />
-                  Sending...
-                </span>
-              ) : (
-                '📧 Send Documents to Production'
-              )}
-            </button>
+            {/* Optional extras, folded away so the main path stays two steps */}
+            <details className="group">
+              <summary className="text-sm font-semibold text-gray-600 cursor-pointer select-none list-none flex items-center gap-1.5">
+                <span className="text-gray-400 transition-transform group-open:rotate-90">▸</span>
+                Your name &amp; message
+                <span className="text-gray-400 font-normal">(optional)</span>
+              </summary>
+              <div className="mt-3 space-y-3 pl-4">
+                <input
+                  type="text"
+                  value={emailUserName}
+                  onChange={e => setEmailUserName(e.target.value)}
+                  placeholder="Your name"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 text-sm"
+                />
+                <textarea
+                  value={emailMessage}
+                  onChange={e => setEmailMessage(e.target.value)}
+                  rows={4}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 text-sm resize-none"
+                />
+              </div>
+            </details>
+
+            {/* Send */}
+            <div>
+              <button
+                onClick={handleSendEmail}
+                disabled={
+                  emailLoading ||
+                  emailPreparing ||
+                  !productionEmail.trim() ||
+                  emailAttachmentCount === 0 ||
+                  emailAttachmentCount > MAX_EMAIL_FILES ||
+                  emailTotalBytes > MAX_EMAIL_TOTAL
+                }
+                className="w-full py-4 font-bold text-base rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                style={{ backgroundColor: '#F59E0B', color: '#1F2937' }}
+              >
+                {emailLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-gray-800 border-t-transparent rounded-full animate-spin" />
+                    Sending…
+                  </span>
+                ) : emailAttachmentCount > 0 ? (
+                  `📧 Send ${emailAttachmentCount} Document${emailAttachmentCount !== 1 ? 's' : ''} to Production`
+                ) : (
+                  '📧 Send Documents to Production'
+                )}
+              </button>
+              <p className="text-xs text-gray-400 text-center mt-2">
+                Sent as real attachments · BGReady keeps no copy · replies come to your inbox
+              </p>
+            </div>
 
             {emailSentTo && (
               <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
