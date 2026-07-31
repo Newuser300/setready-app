@@ -438,140 +438,181 @@ export default function ResidencyPage() {
           nothing. No upload to storage, no saved record, no shareable link.
         */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-5 border-b border-amber-300" style={{ backgroundColor: '#F59E0B' }}>
+          <div className="px-6 py-5" style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)' }}>
             <h2 className="font-extrabold text-gray-900 text-xl">📧 Email Documents to Production</h2>
-            <p className="text-gray-800 font-medium mt-0.5 text-sm">
-              Two quick steps — nothing is stored
+            <p className="text-gray-900/80 font-semibold mt-1 text-sm">
+              Two quick steps · sent in seconds · nothing stored
             </p>
           </div>
           <div className="p-6 space-y-6">
 
-            {/* Step 1: attach. The main path is two numbered steps; everything
-                optional is folded into a <details> so the card reads clean. */}
-            <div>
-              <p className="text-sm font-bold text-gray-900 mb-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-400 text-gray-900 text-xs font-extrabold mr-2">1</span>
-                Attach your documents
-              </p>
-
-              <input
-                ref={emailFileInputRef}
-                type="file"
-                multiple
-                accept={ACCEPTED_EXTENSIONS}
-                onChange={e => addEmailFiles(e.target.files)}
-                className="hidden"
-              />
-              <input
-                ref={emailCameraInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={e => addEmailFiles(e.target.files)}
-                className="hidden"
-              />
-
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => emailFileInputRef.current?.click()}
-                  className="py-3 px-4 border-2 border-dashed border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:border-amber-400 hover:bg-amber-50 transition"
+            {/* ── Step 1: attach ── */}
+            <div className="rounded-2xl border-2 border-amber-200 overflow-hidden shadow-sm">
+              <div className="flex items-center gap-3 px-5 py-3.5 bg-amber-50 border-b border-amber-200">
+                <span
+                  className="flex items-center justify-center w-8 h-8 rounded-full text-sm font-extrabold text-gray-900 shadow-sm shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #F59E0B, #FBBF24)' }}
                 >
-                  📎 Choose Files
-                </button>
-                <button
-                  type="button"
-                  onClick={() => emailCameraInputRef.current?.click()}
-                  className="py-3 px-4 border-2 border-dashed border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:border-amber-400 hover:bg-amber-50 transition"
-                >
-                  📷 Take Photo
-                </button>
+                  1
+                </span>
+                <div>
+                  <p className="text-sm font-bold text-gray-900 leading-tight">Attach your documents</p>
+                  <p className="text-xs text-amber-700 mt-0.5">From this phone — or photograph them right now</p>
+                </div>
               </div>
 
-              {emailFiles.length > 0 && (
-                <div className="mt-3 border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100">
-                  {emailFiles.map((file, i) => (
-                    <div key={`${file.name}-${i}`} className="flex items-center gap-3 px-4 py-3">
-                      <span className="text-lg">{fileTypeIcon(file.type)}</span>
-                      <span className="flex-1 min-w-0">
-                        <span className="block text-sm font-medium text-gray-800 truncate">{file.name}</span>
-                        <span className="block text-xs text-gray-500">{humanSize(file.size)}</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => removeEmailFile(i)}
-                        className="text-xs font-semibold text-red-600 hover:text-red-800 transition"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* One hint line; warnings appear only when something is wrong. */}
-              <p className="text-xs text-gray-500 mt-2">
-                Pick files from your phone, or photograph the document now. If yours are in
-                email or cloud storage, save them to your phone first.
-              </p>
-              {emailPreparing && (
-                <p className="text-xs text-gray-500 mt-1">Preparing…</p>
-              )}
-              {emailAttachmentCount > MAX_EMAIL_FILES && (
-                <p className="text-xs text-red-600 font-semibold mt-1">
-                  Up to {MAX_EMAIL_FILES} documents per email — remove one before sending.
-                </p>
-              )}
-              {emailTotalBytes > MAX_EMAIL_TOTAL && (
-                <p className="text-xs text-red-600 font-semibold mt-1">
-                  Too large for one email — remove a document, or send two emails.
-                </p>
-              )}
-            </div>
-
-            {/* Step 2: destination */}
-            <div>
-              <p className="text-sm font-bold text-gray-900 mb-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-400 text-gray-900 text-xs font-extrabold mr-2">2</span>
-                Enter the production&rsquo;s email
-              </p>
-              <input
-                type="email"
-                value={productionEmail}
-                onChange={e => { setProductionEmail(e.target.value); setEmailSentTo(''); }}
-                placeholder="e.g. casting@theproduction.com"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 text-sm"
-              />
-              <p className="text-xs text-gray-500 mt-1.5">
-                It&rsquo;s on your call sheet — or ask your agent.
-              </p>
-            </div>
-
-            {/* Optional extras, folded away so the main path stays two steps */}
-            <details className="group">
-              <summary className="text-sm font-semibold text-gray-600 cursor-pointer select-none list-none flex items-center gap-1.5">
-                <span className="text-gray-400 transition-transform group-open:rotate-90">▸</span>
-                Your name &amp; message
-                <span className="text-gray-400 font-normal">(optional)</span>
-              </summary>
-              <div className="mt-3 space-y-3 pl-4">
+              <div className="p-4 sm:p-5 bg-white">
                 <input
-                  type="text"
-                  value={emailUserName}
-                  onChange={e => setEmailUserName(e.target.value)}
-                  placeholder="Your name"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 text-sm"
+                  ref={emailFileInputRef}
+                  type="file"
+                  multiple
+                  accept={ACCEPTED_EXTENSIONS}
+                  onChange={e => addEmailFiles(e.target.files)}
+                  className="hidden"
                 />
-                <textarea
-                  value={emailMessage}
-                  onChange={e => setEmailMessage(e.target.value)}
-                  rows={4}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 text-sm resize-none"
+                <input
+                  ref={emailCameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={e => addEmailFiles(e.target.files)}
+                  className="hidden"
                 />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => emailFileInputRef.current?.click()}
+                    className="flex flex-col items-center gap-1 py-4 px-3 rounded-xl border-2 border-dashed border-amber-300 bg-amber-50 hover:bg-amber-100 hover:border-amber-400 active:scale-[0.98] transition"
+                  >
+                    <span className="text-2xl">📎</span>
+                    <span className="text-sm font-bold text-gray-900">Choose Files</span>
+                    <span className="text-[11px] text-gray-500">JPG · PNG · HEIC · PDF</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => emailCameraInputRef.current?.click()}
+                    className="flex flex-col items-center gap-1 py-4 px-3 rounded-xl border-2 border-dashed border-blue-300 bg-blue-50 hover:bg-blue-100 hover:border-blue-400 active:scale-[0.98] transition"
+                  >
+                    <span className="text-2xl">📷</span>
+                    <span className="text-sm font-bold text-gray-900">Take Photo</span>
+                    <span className="text-[11px] text-gray-500">Use your camera</span>
+                  </button>
+                </div>
+
+                {emailFiles.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+                      Attached ({emailFiles.length})
+                    </p>
+                    {emailFiles.map((file, i) => (
+                      <div
+                        key={`${file.name}-${i}`}
+                        className="flex items-center gap-3 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl"
+                      >
+                        <span className="flex items-center justify-center w-9 h-9 rounded-lg bg-white border border-gray-200 text-lg shrink-0 shadow-sm">
+                          {fileTypeIcon(file.type)}
+                        </span>
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-sm font-semibold text-gray-800 truncate">{file.name}</span>
+                          <span className="block text-xs text-gray-500">{humanSize(file.size)}</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeEmailFile(i)}
+                          aria-label={`Remove ${file.name}`}
+                          className="flex items-center justify-center w-7 h-7 rounded-full bg-red-50 border border-red-200 text-red-600 text-xs font-bold hover:bg-red-100 transition shrink-0"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <p className="text-xs text-gray-500 mt-3 flex items-start gap-1.5">
+                  <span>💡</span>
+                  <span>In your email or cloud storage? Save it to this phone first, then attach it here.</span>
+                </p>
+                {emailPreparing && (
+                  <p className="text-xs text-amber-600 font-semibold mt-1.5">Preparing documents…</p>
+                )}
+                {emailAttachmentCount > MAX_EMAIL_FILES && (
+                  <p className="text-xs text-red-600 font-semibold mt-1.5 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                    Up to {MAX_EMAIL_FILES} documents per email — remove one before sending.
+                  </p>
+                )}
+                {emailTotalBytes > MAX_EMAIL_TOTAL && (
+                  <p className="text-xs text-red-600 font-semibold mt-1.5 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                    Too large for one email — remove a document, or send two emails.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* ── Step 2: destination ── */}
+            <div className="rounded-2xl border-2 border-blue-200 overflow-hidden shadow-sm">
+              <div className="flex items-center gap-3 px-5 py-3.5 bg-blue-50 border-b border-blue-200">
+                <span className="flex items-center justify-center w-8 h-8 rounded-full text-sm font-extrabold text-white shadow-sm shrink-0 bg-blue-600">
+                  2
+                </span>
+                <div>
+                  <p className="text-sm font-bold text-gray-900 leading-tight">Send to the production</p>
+                  <p className="text-xs text-blue-700 mt-0.5">Their casting email — it&rsquo;s on your call sheet</p>
+                </div>
+              </div>
+
+              <div className="p-4 sm:p-5 bg-white">
+                <input
+                  type="email"
+                  value={productionEmail}
+                  onChange={e => { setProductionEmail(e.target.value); setEmailSentTo(''); }}
+                  placeholder="casting@theproduction.com"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none text-sm font-medium transition"
+                />
+                <p className="text-xs text-gray-500 mt-2 flex items-start gap-1.5">
+                  <span>📋</span>
+                  <span>Not sure? Check your call sheet or ask your agent — it changes per production.</span>
+                </p>
+              </div>
+            </div>
+
+            {/* ── Optional extras, folded so the main path stays two steps ── */}
+            <details className="group rounded-2xl border-2 border-gray-200 overflow-hidden">
+              <summary className="flex items-center gap-3 px-5 py-3.5 bg-gray-50 cursor-pointer select-none list-none hover:bg-gray-100 transition">
+                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-base shrink-0">
+                  ✏️
+                </span>
+                <span className="flex-1">
+                  <span className="block text-sm font-bold text-gray-800">Your name &amp; message</span>
+                  <span className="block text-xs text-gray-500 mt-0.5">Optional — a friendly note is pre-written for you</span>
+                </span>
+                <span className="text-gray-400 transition-transform group-open:rotate-90 text-lg">›</span>
+              </summary>
+              <div className="p-4 sm:p-5 bg-white border-t border-gray-200 space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Your name</label>
+                  <input
+                    type="text"
+                    value={emailUserName}
+                    onChange={e => setEmailUserName(e.target.value)}
+                    placeholder="Your name"
+                    className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-amber-400 focus:ring-2 focus:ring-amber-100 outline-none text-sm transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Message to production</label>
+                  <textarea
+                    value={emailMessage}
+                    onChange={e => setEmailMessage(e.target.value)}
+                    rows={4}
+                    className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-amber-400 focus:ring-2 focus:ring-amber-100 outline-none text-sm resize-none transition"
+                  />
+                </div>
               </div>
             </details>
 
-            {/* Send */}
+            {/* ── Send ── */}
             <div>
               <button
                 onClick={handleSendEmail}
@@ -583,8 +624,8 @@ export default function ResidencyPage() {
                   emailAttachmentCount > MAX_EMAIL_FILES ||
                   emailTotalBytes > MAX_EMAIL_TOTAL
                 }
-                className="w-full py-4 font-bold text-base rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
-                style={{ backgroundColor: '#F59E0B', color: '#1F2937' }}
+                className="w-full py-4 font-extrabold text-base rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none shadow-lg hover:shadow-xl hover:brightness-105 active:scale-[0.99]"
+                style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)', color: '#1F2937' }}
               >
                 {emailLoading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -597,17 +638,24 @@ export default function ResidencyPage() {
                   '📧 Send Documents to Production'
                 )}
               </button>
-              <p className="text-xs text-gray-400 text-center mt-2">
-                Sent as real attachments · BGReady keeps no copy · replies come to your inbox
-              </p>
+
+              {/* Trust strip */}
+              <div className="flex items-center justify-center gap-x-5 gap-y-1 flex-wrap mt-3 text-[11px] text-gray-500 font-medium">
+                <span className="flex items-center gap-1"><span>📎</span> Real attachments</span>
+                <span className="flex items-center gap-1"><span>🔒</span> No copy kept</span>
+                <span className="flex items-center gap-1"><span>↩️</span> Replies come to you</span>
+              </div>
             </div>
 
             {emailSentTo && (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
-                <p className="text-sm font-semibold text-green-900">✅ Sent to {emailSentTo}</p>
-                <p className="text-xs text-green-800 mt-1">
-                  The attachments were delivered and nothing was kept. Check your own inbox for a
-                  reply — the production replies straight to you.
+              <div className="bg-green-50 border-2 border-green-300 rounded-2xl p-5 text-center shadow-sm">
+                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-green-100 border-2 border-green-300 text-2xl mx-auto mb-2">
+                  ✅
+                </div>
+                <p className="text-base font-extrabold text-green-900">Sent to {emailSentTo}</p>
+                <p className="text-xs text-green-800 mt-1.5 leading-relaxed">
+                  Your documents were delivered as attachments and nothing was kept.
+                  The production replies straight to your inbox.
                 </p>
               </div>
             )}
