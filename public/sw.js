@@ -1,4 +1,6 @@
-const CACHE = 'bgready-v1'
+// Bump this on any caching-behaviour change: activate purges every cache
+// that doesn't match, so old HTML/assets can't linger after an update.
+const CACHE = 'bgready-v2'
 const PRECACHE = [
   '/',
   '/dashboard',

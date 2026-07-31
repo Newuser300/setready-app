@@ -10,6 +10,11 @@ export default function PWAInstaller() {
   const [show, setShow] = useState(false)
   const pathname = usePathname()
 
+  // Service worker registration and update flow. This deliberately lives in
+  // its own effect, ungated: the old code returned early when running as an
+  // installed PWA (the standalone check meant for the banner), so the
+  // installed app never re-registered the worker and users kept seeing the
+  // previous version until the browser's own ~24h update check.
   useEffect(() => {
     // In development, unregister any lingering service worker and clear caches,
     // then bail — Turbopack's changing filenames break cached responses.
@@ -21,6 +26,48 @@ export default function PWAInstaller() {
       return
     }
 
+    if (!('serviceWorker' in navigator)) return
+
+    let onVisible: (() => void) | null = null
+
+    // If a worker was already controlling this page, a controllerchange means
+    // a NEW version just took over — reload once so it shows immediately.
+    // (Without the hadController guard, the very first install would also
+    // trigger a pointless reload via clients.claim().)
+    const hadController = !!navigator.serviceWorker.controller
+    let reloaded = false
+    const onControllerChange = () => {
+      if (!hadController || reloaded) return
+      reloaded = true
+      window.location.reload()
+    }
+    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange)
+
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then(reg => {
+        // Check for a new build now…
+        reg.update().catch(() => {})
+        // …and every time the app comes back to the foreground. Tapping the
+        // home-screen icon usually resumes the app rather than reloading it,
+        // so this is the moment a stale PWA learns about the new version.
+        onVisible = () => {
+          if (document.visibilityState === 'visible') reg.update().catch(() => {})
+        }
+        document.addEventListener('visibilitychange', onVisible)
+      })
+      .catch(err => console.log('SW failed', err))
+
+    return () => {
+      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange)
+      if (onVisible) document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [])
+
+  // Install banner — separate concern, keeps its original gating.
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') return
+
     // Only show on allowed pages
     if (!pathname || !ALLOWED_PATHS.includes(pathname)) return
 
@@ -29,13 +76,6 @@ export default function PWAInstaller() {
 
     // Don't show if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) return
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .then(reg => console.log('SW registered', reg.scope))
-        .catch(err => console.log('SW failed', err))
-    }
 
     const handler = (e: any) => {
       e.preventDefault()
